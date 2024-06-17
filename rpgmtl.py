@@ -123,7 +123,7 @@ def load_event_data(content):
                     if isinstance(pm, str):
                         strings.append(pm)
                         current_group.append(pm)
-            case 320|122|405|111:
+            case 320|122|405|111|401:
                 for pm in cmd["parameters"]:
                     if isinstance(pm, str):
                         strings.append(pm)
@@ -149,12 +149,17 @@ def load_data_JSON(data):
     groups = []
     for e in data:
         if isinstance(e, dict):
-            for k in ["name", "description", "message1", "message2", "message3", "message4", "note", "list"]:
+            for k in ["name", "description", "message1", "message2", "message3", "message4", "note", "list", "pages"]:
                 if k in e:
                     if k == "list":
                         s, g = load_event_data(e[k])
                         strings += s
                         groups += g
+                    elif k == "pages":
+                        for p in e[k]:
+                            s, g = load_event_data(p["list"])
+                            strings += s
+                            groups += g
                     else:
                         if isinstance(e[k], str) and e[k] not in strings:
                             strings.append(e[k])
@@ -367,7 +372,7 @@ def patch_event_data(data, index):
                     if isinstance(pm, str):
                         tl = index["strings"].get(pm, None)
                         if isinstance(tl, str): data[i]["parameters"][j] = tl
-            case 320|122|405|111:
+            case 320|122|405|111|401:
                 for j, pm in enumerate(cmd["parameters"]):
                     if isinstance(pm, str):
                         tl = index["strings"].get(pm, None)
@@ -387,10 +392,13 @@ def patch_event_data(data, index):
 def patch_data_JSON(data, index):
     for i in range(len(data)):
         if isinstance(data[i], dict):
-            for k in ["name", "description", "message1", "message2", "message3", "message4", "note", "list"]:
+            for k in ["name", "description", "message1", "message2", "message3", "message4", "note", "list", "pages"]:
                 if k in data[i]:
                     if k == "list":
                         data[i][k] = patch_event_data(data[i][k], index)
+                    elif k == "pages":
+                        for j, p in enumerate(data[i][k]):
+                            data[i][k][j]["list"] = patch_event_data(data[i][k][j]["list"], index)
                     else:
                         if isinstance(data[i][k], str):
                             tl = index["strings"].get(data[i][k], None)
@@ -492,7 +500,7 @@ def patch():
             print("Done")
 
 def main():
-    print("RPG Maker MV/MZ MTL Patcher v1.1")
+    print("RPG Maker MV/MZ MTL Patcher v1.2")
     init()
     while True:
         print("")
