@@ -75,3 +75,17 @@ TRANSLATOR = GoogleTranslator(source='auto', target='en')
 ```  
 And the `translate_string` function if you want to go further.  
 See the Github repository linked above for more informations on deep translator..  
+  
+### Test Server  
+Found in the the `test_server` folder are a few files to test the strings directly in game.  
+Do note that it has only be tested in a few RPG Maker MZ games.  
+To use:  
+1. Copy the content of `test_server` to the game folder.  
+2. Copy your `strings.json` to the game folder.  
+3. Start a local web server. A way to do it is, with Python, is using the command `python -m http.server`. On Windows, you can double click `start_server.bat`.  
+4. Open any Chromium-type Browser and go to `http://localhost:8000/server.html`.  
+  
+The strings will cycle one by one.  
+You can use CTRL to skip ahead.  
+You can also open the Dev tools (using F12), go to the Console tab and change the value of `test_count` to change the next line. Example, `test_count = 0;` will reset to the beginning.  
+  
