@@ -269,7 +269,7 @@ def translate():
                                     raise Exception("Invalid string group length")
                                 for i in range(len(cs)):
                                     if index["strings"][g[i]] is None:
-                                        index["strings"][g[i]] = cs[i].replace("……", "...").replace("…", "...")
+                                        index["strings"][g[i]] = cs[i].replace("……", "...").replace("…", "...").strip()
                                         tl_count += 1
                             except:
                                 pass
@@ -280,7 +280,7 @@ def translate():
                                     pair = sg[ix].split(":", 1)
                                     if pair[0] == "SG説明":
                                         try:
-                                            pair[1] = translate_string(pair[1])
+                                            pair[1] = translate_string(pair[1]).replace("……", "...").replace("…", "...").strip()
                                             sg[ix] = ":".join(pair)
                                         except:
                                             pass
@@ -290,7 +290,7 @@ def translate():
                                     tl_count += 1
                             else:
                                 try:
-                                    index["strings"][s] = translate_string(s)
+                                    index["strings"][s] = translate_string(s).replace("……", "...").replace("…", "...").strip()
                                     tl_count += 1
                                 except:
                                     pass
