@@ -186,7 +186,8 @@ def load_system_JSON(data):
     strings = []
     groups = []
     for k, v in data.items():
-        if k in ["variables", "switches"]: continue
+        lk = k.lower()
+        if k in ["variables", "switches", "locale", "name"] or "font" in lk or "battle" in lk or "character" in lk: continue
         if isinstance(v, str):
             strings.append(v)
         elif isinstance(v, list):
@@ -199,11 +200,17 @@ def load_system_JSON(data):
             groups += g
     return strings, groups
 
+def apply_default(d):
+    default_tl = {'レベル': 'Level', 'Lv': 'Lv', 'ＨＰ': 'HP', 'HP': 'HP', 'ＳＰ': 'SP', 'SP': 'SP', '経験値': 'Experience point', 'EXP': 'EXP', '戦う': 'Fight', '逃げる': 'Run away', '攻撃': 'Attack', '防御': 'Defense', 'アイテム': 'Items', 'スキル': 'Skills', '装備': 'Equipment', 'ステータス': 'Status', '並び替え': 'Sort', 'セーブ': 'Save', 'ゲーム終了': 'To Title', 'オプション': 'Settings', '大事なもの': 'Key Items', 'ニューゲーム': 'New Game', 'コンティニュー': 'Continue', 'タイトルへ': 'Go to Title', 'やめる': 'Stop', '購入する': 'Buy', '売却する': 'Sell', '最大ＨＰ': 'Max HP', '最大ＭＰ': 'Max MP', '攻撃力': 'ATK', '防御力': 'DEF', '魔法力': 'M.ATK.', '魔法防御': 'M.DEF', '敏捷性': 'AGI', '運': 'Luck', '命中率': 'ACC', '回避率': 'EVA', '常時ダッシュ': 'Always run', 'コマンド記憶': 'Command Memory', 'タッチUI': 'Touch UI', 'BGM 音量': 'BGM volume', 'BGS 音量': 'BGS volume', 'ME 音量': 'ME Volume', 'SE 音量': 'SE volume', '所持数': 'Owned', '現在の%1': 'Current %1', '次の%1まで': 'Until next %1', 'どのファイルにセーブしますか？': 'Which file do you want to save it to?', 'どのファイルをロードしますか？': 'Which file do you want to load?', 'ファイル': 'File', 'オートセーブ': 'Auto Save', '%1たち': '%1', '%1が出現！': '%1 appears!', '%1は先手を取った！': '%1 took the initiative!', '%1は不意をつかれた！': '%1 was caught off guard!', '%1は逃げ出した！': '%1 ran away!', 'しかし逃げることはできなかった！': "But I couldn't escape!", '%1の勝利！': '%1 wins!', '%1は戦いに敗れた。': '%1 lost the battle.', '%1 の%2を獲得！': 'Obtained %2 for %1!', 'お金を %1\\G 手に入れた！': 'Obtained %1 \\G!', '%1を手に入れた！': 'I got %1!', '%1は%2 %3 に上がった！': '%1 rose to %2 %3!', '%1を覚えた！': 'I learned %1!', '%1は%2を使った！': '%1 used %2!', '会心の一撃！！': 'A decisive blow! !', '痛恨の一撃！！': 'A painful blow! !', '%1は %2 のダメージを受けた！': '%1 received %2 damage!', '%1の%2が %3 回復した！': "%1's %2 has recovered his %3!", '%1の%2が %3 増えた！': '%2 of %1 has increased by %3!', '%1の%2が %3 減った！': '%1 %2 decreased %3!', '%1は%2を %3 奪われた！': '%1 was robbed of %2 %3!', '%1はダメージを受けていない！': '%1 has not received any damage!', 'ミス！\u3000%1はダメージを受けていない！': 'Miss! %1 has not received any damage!', '%1に %2 のダメージを与えた！': 'Inflicted %2 damage to %1!', '%1の%2を %3 奪った！': '%2 of %1 was stolen from %3!', '%1にダメージを与えられない！': 'Cannot damage %1!', 'ミス！\u3000%1にダメージを与えられない！': "Miss! Can't damage %1!", '%1は攻撃をかわした！': '%1 dodged the attack!', '%1は魔法を打ち消した！': '%1 canceled the magic!', '%1は魔法を跳ね返した！': '%1 rebounded the magic!', '%1の反撃！': "%1's counterattack!", '%1が%2をかばった！': '%1 protected %2!', '%1の%2が上がった！': '%2 of %1 has gone up!', '%1の%2が下がった！': '%2 of %1 has gone down!', '%1の%2が元に戻った！': '%2 of %1 is back to normal!', '%1には効かなかった！': "It didn't work for %1!"}
+    d["strings"] = default_tl | d["strings"]
+    return d
+
 def generate():
     if check_confirmation("generate"):
         old, _continue = load_strings()
         if _continue:
             if backup_strings_file(old):
+                old = apply_default(old)
                 index = {"strings":{}, "groups":[]}
                 for fn, data in untouched_JSON():
                     print("Reading", fn)
@@ -228,7 +235,7 @@ def translate_string(s):
     time.sleep(0.2)
     cs = TRANSLATOR.translate(s)
     if cs is None or cs == "": raise Exception("Unusable translation")
-    if " " not in cs: cs = cs.capitalize()
+    if " " not in cs and cs != s: cs = cs.capitalize()
     return cs
 
 def translate():
@@ -251,8 +258,11 @@ def translate():
                                 cs = translate_string("\r\n".join(g)).replace("\r\n", "\n")
                                 if len(cs.split("\n")) != len(g):
                                     cs = cs.replace("\n", "")
-                                    l = len(cs) // len(g)
-                                    cs = textwrap.fill(cs, width=l, max_lines=len(g)).split("\n")
+                                    l = len(cs) // len(g) + 10
+                                    cs = textwrap.fill(cs, width=l).split("\n")
+                                    while len(cs) > len(g):
+                                        cs[len(cs)-2] = cs[len(cs)-2] + " " + cs[len(cs)-1]
+                                        del cs[len(cs)-1]
                                 else:
                                     cs = cs.split("\n")
                                 if len(cs) != len(g):
@@ -388,6 +398,9 @@ def patch_data_JSON(data, index):
     return data
 
 def patch_map_JSON(data, index):
+    if isinstance(data["displayName"], str):
+        tl = index["strings"].get(data["displayName"], None)
+        if isinstance(tl, str): data["displayName"] = tl
     for i in range(len(data["events"])):
         if isinstance(data["events"][i], dict):
             for j in range(len(data["events"][i]["pages"])):
@@ -402,7 +415,7 @@ def patch_commonevent_JSON(data, index):
 
 def patch_system_JSON(data, index):
     for k, v in data.items():
-        if k in ["variables", "switches", "battlerName", "locale", "name"]: continue
+        if k in ["variables", "switches", "battlerName", "locale", "name"] or "font" in k.lower(): continue
         if isinstance(v, str):
             tl = index["strings"].get(v, None)
             if isinstance(tl, str): data[k] = tl
@@ -479,7 +492,7 @@ def patch():
             print("Done")
 
 def main():
-    print("RPG Maker MV/MZ MTL Patcher v1.0")
+    print("RPG Maker MV/MZ MTL Patcher v1.1")
     init()
     while True:
         print("")
