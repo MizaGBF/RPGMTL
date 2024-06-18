@@ -123,7 +123,7 @@ def load_event_data(content):
                     if isinstance(pm, str):
                         strings.append(pm)
                         current_group.append(pm)
-            case 320|122|405|111|401:
+            case 320|122|405|111|401|324:
                 for pm in cmd["parameters"]:
                     if isinstance(pm, str):
                         strings.append(pm)
@@ -149,7 +149,7 @@ def load_data_JSON(data):
     groups = []
     for e in data:
         if isinstance(e, dict):
-            for k in ["name", "description", "message1", "message2", "message3", "message4", "note", "list", "pages"]:
+            for k in ["name", "description", "message1", "message2", "message3", "message4", "note", "list", "pages", "nickname", "profile"]:
                 if k in e:
                     if k == "list":
                         s, g = load_event_data(e[k])
@@ -248,15 +248,25 @@ def translate():
         index, _continue = load_strings(quit_on_error=True)
         if _continue:
             if backup_strings_file(index):
+                all = (input("Type 'all' if you want to translate all files:").lower().strip() == "all")
                 group_table = {}
                 for i, g in enumerate(index["groups"]):
                     for s in g:
                         if s not in group_table:
                             group_table[s] = i
+                print("Starting translation...")
+                if not all: print("Only translation Map, Event and Item strings...")
+                current_file = None
                 count = 0
                 tl_count = 0
                 for s in index["strings"]:
-                    if index["strings"][s] is None:
+                    sys.stdout.write("\rString {} / {}                ".format(count, len(index["strings"])))
+                    sys.stdout.flush()
+                    if isinstance(index["strings"][s], int) and ".json" in s:
+                        current_file = s.replace("=", "").replace(".json").strip()
+                    elif index["strings"][s] is None:
+                        if not all and not current_file.startswith("Map") and current_file not in ["Actors", "Armors", "Classes", "CommonEvents", "Enemies", "Items", "Skills", "States", "Weapons"]:
+                            continue
                         if s in group_table:
                             g = index["groups"][group_table[s]]
                             try:
@@ -300,8 +310,6 @@ def translate():
                                 except:
                                     pass
                     count += 1
-                    sys.stdout.write("\rString {} / {}                ".format(count, len(index["strings"])))
-                    sys.stdout.flush()
                 print("")
                 print("Done")
                 if tl_count > 0:
@@ -372,7 +380,7 @@ def patch_event_data(data, index):
                     if isinstance(pm, str):
                         tl = index["strings"].get(pm, None)
                         if isinstance(tl, str): data[i]["parameters"][j] = tl
-            case 320|122|405|111|401:
+            case 320|122|405|111|401|324:
                 for j, pm in enumerate(cmd["parameters"]):
                     if isinstance(pm, str):
                         tl = index["strings"].get(pm, None)
@@ -392,7 +400,7 @@ def patch_event_data(data, index):
 def patch_data_JSON(data, index):
     for i in range(len(data)):
         if isinstance(data[i], dict):
-            for k in ["name", "description", "message1", "message2", "message3", "message4", "note", "list", "pages"]:
+            for k in ["name", "description", "message1", "message2", "message3", "message4", "note", "list", "pages", "nickname", "profile"]:
                 if k in data[i]:
                     if k == "list":
                         data[i][k] = patch_event_data(data[i][k], index)
@@ -500,7 +508,7 @@ def patch():
             print("Done")
 
 def main():
-    print("RPG Maker MV/MZ MTL Patcher v1.2")
+    print("RPG Maker MV/MZ MTL Patcher v1.3")
     init()
     while True:
         print("")
