@@ -18,8 +18,9 @@ const scriptUrls = [
 ];
 const effekseerWasmUrl = "test/libs/effekseer.wasm";
 
-var test_strings = {"strings":{}, "groups":[]};
-var test_groups = {};
+var test_strings = {};
+var test_groups = [];
+var test_group_table = {};
 var test_count = -1;
 
 class Main {
@@ -33,21 +34,37 @@ class Main {
         this.showLoadingSpinner();
         this.testXhr();
         this.hookNwjsClose();
-        this.test_start();
+        this.test_get_string();
+        this.test_get_group();
         this.loadMainScripts();
     }
     
-    test_start()
+    test_get_string()
     {
         const xhr = new XMLHttpRequest();
         xhr.open("GET", "strings.json");
         xhr.onload = function() {
             if (xhr.readyState === 4) {
                 test_strings = JSON.parse(xhr.response);
-                for(let i = 0; i < test_strings["groups"].length; ++i)
+            }
+        };
+        xhr.send();
+    }
+    
+    test_get_group()
+    {
+        const xhr = new XMLHttpRequest();
+        xhr.open("GET", "groups.json");
+        xhr.onload = function() {
+            if (xhr.readyState === 4) {
+                test_groups = JSON.parse(xhr.response);
+                for(let i = 0; i < test_groups.length; ++i)
                 {
-                    if(test_groups[test_strings["groups"][i][0]] === undefined)
-                        test_groups[test_strings["groups"][i][0]] = i;
+                    for(let j = 0; j < test_groups[i].length; ++j)
+                    {
+                        if(test_group_table[test_groups[i][j]] === undefined)
+                            test_group_table[test_groups[i][j]] = i;
+                    }
                 }
             }
         };

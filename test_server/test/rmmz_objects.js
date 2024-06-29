@@ -9658,23 +9658,39 @@ Game_Interpreter.prototype.executeCommand = function() {
         return false;
     }
 
-    const keys = Object.keys(test_strings["strings"]);
+    const keys = Object.keys(test_strings);
     test_count = (test_count + 1) % keys.length;
-    $gameMessage.setSpeakerName(JSON.stringify(test_count));
-    if(test_groups[keys[test_count]] !== undefined)
+    
+    if(keys[test_count].startsWith("=============="))
     {
-        const i = test_groups[keys[test_count]];
-        test_count = (test_count + test_strings["groups"][i].length - 1) % keys.length;
-        for(let j = 0; j < test_strings["groups"][i].length; ++j)
+        $gameMessage.setSpeakerName("");
+        $gameMessage.add(keys[test_count]);
+        return true;
+    }
+    while(keys[test_count].startsWith("==== TALKING:"))
+    {
+        const params = keys[test_count].replace(" ==============", "").split(" ").slice(1).join(" ").split(":").slice(2);
+        $gameMessage.setFaceImage(params[0], parseInt(params[1]));
+        $gameMessage.setBackground(parseInt(params[2]));
+        $gameMessage.setPositionType(parseInt(params[3]));
+        $gameMessage.setSpeakerName(test_strings[params[4]] != null ? test_strings[params[4]] : params[4]);
+        test_count = (test_count + 1) % keys.length;
+    }
+    if(test_group_table[keys[test_count]] !== undefined)
+    {
+        const i = test_group_table[keys[test_count]];
+        //console.log(i, test_groups[i]);
+        test_count = (test_count + test_groups[i].length - 1) % keys.length;
+        for(let j = 0; j < test_groups[i].length; ++j)
         {
-            if(test_strings["strings"][test_strings["groups"][i][j]] != null) $gameMessage.add(test_strings["strings"][test_strings["groups"][i][j]]);
-            else $gameMessage.add(test_strings["groups"][i][j]);
+            if(test_strings[test_groups[i][j]] != null) $gameMessage.add(test_strings[test_groups[i][j]]);
+            else $gameMessage.add(test_groups[i][j]);
         }
     }
     else
     {
         $gameMessage.add(keys[test_count]);
-        if(test_strings["strings"][keys[test_count]] != null) $gameMessage.add(test_strings["strings"][keys[test_count]]);
+        if(test_strings[keys[test_count]] != null) $gameMessage.add(test_strings[keys[test_count]]);
     }
     return true;
 };

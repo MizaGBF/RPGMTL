@@ -1,3 +1,4 @@
+from typing import Optional
 import json
 import time
 import textwrap
@@ -8,17 +9,25 @@ from pathlib import Path
 import shutil
 import tkinter as tk
 from tkinter import filedialog
-from deep_translator import GoogleTranslator
+try:
+    from deep_translator import GoogleTranslator
+    TRANSLATOR = GoogleTranslator(source='auto', target='en')
+except:
+    print("WARNING: Missing third-party module: deep_translator")
+    print("Use the following command line to install: pip install deep_translator")
+    TRANSLATOR = None
 
 INPUT_FOLDER = "manual_edit/"
 ORIGINAL_FOLDER = "untouched_files/"
 OUTPUT_FOLDER = "release/"
 FILES = next(os.walk(ORIGINAL_FOLDER + "/data"), (None, None, []))[2]
-TRANSLATOR = GoogleTranslator(source='auto', target='en')
+UNIQUE_STR = "=============="
+TALKING_COUNTER = 0
+TALKING_STR = "==== TALKING:"
 root = None
 
 
-def init():
+def init() -> None:
     try:
         if not os.path.exists(INPUT_FOLDER) or not os.path.isdir(INPUT_FOLDER):
             Path(INPUT_FOLDER).mkdir(parents=True, exist_ok=True)
@@ -39,7 +48,7 @@ def init():
         print("Exception while generating patches.json")
         print(e)
 
-def update_original(clean=False):
+def update_original(clean : bool = False) -> bool:
     global root
     print("Please select a RPGMV or RPGMZ Executable (It's usually named Game.exe)")
     if root is None:
@@ -63,31 +72,47 @@ def update_original(clean=False):
         print("Operation cancelled...")
         return False
 
-def load_strings(quit_on_error = False):
+def load_strings(quit_on_error : bool = False) -> tuple:
     try:
         with open("strings.json", mode="r", encoding="utf-8") as f:
             loaded = json.load(f)
-        if not isinstance(loaded, dict) or "strings" not in loaded or "groups" not in loaded:
+        if not isinstance(loaded, dict):
             raise Exception("Invalid strings.json format")
+        if "strings" in loaded: # old format
+            loaded = loaded["strings"]
         return loaded, True
     except Exception as e:
         if "no such file" not in str(e).lower():
             print("Failed to load strings.json")
             print(e)
             if quit_on_error or input("Type 'y' to continue anyway:").lower() != "y":
-                return {"strings":{}, "groups":[]}, False
-        return {"strings":{}, "groups":[]}, True
+                return {}, False
+        return {}, True
 
-def save_strings(data):
+def load_groups() -> tuple:
+    try:
+        with open("groups.json", mode="r", encoding="utf-8") as f:
+            loaded = json.load(f)
+        return loaded, True
+    except Exception as e:
+        if "no such file" not in str(e).lower():
+            print("Failed to load groups.json")
+            print(e)
+        return [], True
+
+def save_files(strings : dict, groups : Optional[list]) -> None:
     with open("strings.json", mode="w", encoding="utf-8") as f:
-        json.dump(data, f, ensure_ascii=False, indent=0)
+        json.dump(strings, f, ensure_ascii=False, indent=0)
+    if groups is not None:
+        with open("groups.json", mode="w", encoding="utf-8") as f:
+            json.dump(groups, f, ensure_ascii=False, indent=0)
 
-def backup_strings_file(loaded = None) -> bool:
+def backup_strings_file(loaded : Optional[dict] = None) -> bool:
     try:
         if not loaded:
             with open("strings.json", mode="r", encoding="utf-8") as f: # checking for validity
                 loaded = json.load(f)
-        if not isinstance(loaded, dict) or "strings" not in loaded or "groups" not in loaded:
+        if not isinstance(loaded, dict):
             raise Exception("Invalid strings.json format")
         # backing up...
         bak_strings = [".bak-5", ".bak-4", ".bak-3", ".bak-2", ".bak-1", ""]
@@ -111,11 +136,11 @@ def untouched_JSON():
             data = json.load(f)
         yield (fn, data)
 
-def load_event_data(content):
+def load_event_data(content) -> tuple:
+    global TALKING_COUNTER
     strings = []
     groups = []
     current_group = []
-    prev = -1
     for cmd in content:
         match cmd["code"]:
             case 401:
@@ -127,7 +152,15 @@ def load_event_data(content):
                 for pm in cmd["parameters"]:
                     if isinstance(pm, str):
                         strings.append(pm)
-            case 101|402:
+            case 101:
+                s = ""
+                for p in cmd["parameters"]:
+                    s += ":" + str(p)
+                strings.append(TALKING_STR + str(TALKING_COUNTER) + s + " " + UNIQUE_STR)
+                if isinstance(cmd["parameters"][-1], str) and cmd["parameters"][-1] != "":
+                    TALKING_COUNTER += 1
+                    strings.append(cmd["parameters"][-1])
+            case 402:
                 strings.append(cmd["parameters"][-1])
             case 102:
                 for pm in cmd["parameters"][0]:
@@ -135,16 +168,14 @@ def load_event_data(content):
                         strings.append(pm)
             case _:
                 pass
-        prev = cmd["code"]
-        if prev != 401 and len(current_group) > 1:
-            groups.append(current_group)
+        if cmd["code"] != 401 and len(current_group) > 0:
+            if len(current_group) > 1: groups.append(current_group)
             current_group = []
     if len(current_group) > 1:
         groups.append(current_group)
     return strings, groups
-    
 
-def load_data_JSON(data):
+def load_data_JSON(data) -> tuple:
     strings = []
     groups = []
     for e in data:
@@ -165,7 +196,7 @@ def load_data_JSON(data):
                             strings.append(e[k])
     return strings, groups
 
-def load_map_JSON(data):
+def load_map_JSON(data) -> tuple:
     strings = []
     groups = []
     strings.append(data["displayName"])
@@ -177,7 +208,7 @@ def load_map_JSON(data):
                 groups += g
     return strings, groups
 
-def load_commonevent_JSON(data):
+def load_commonevent_JSON(data) -> tuple:
     strings = []
     groups = []
     for i, ev in enumerate(data):
@@ -187,7 +218,7 @@ def load_commonevent_JSON(data):
             groups += g
     return strings, groups
 
-def load_system_JSON(data):
+def load_system_JSON(data) -> tuple:
     strings = []
     groups = []
     for k, v in data.items():
@@ -205,18 +236,21 @@ def load_system_JSON(data):
             groups += g
     return strings, groups
 
-def apply_default(d):
+def apply_default(d : dict) -> dict:
     default_tl = {'レベル': 'Level', 'Lv': 'Lv', 'ＨＰ': 'HP', 'HP': 'HP', 'ＳＰ': 'SP', 'SP': 'SP', '経験値': 'Experience point', 'EXP': 'EXP', '戦う': 'Fight', '逃げる': 'Run away', '攻撃': 'Attack', '防御': 'Defense', 'アイテム': 'Items', 'スキル': 'Skills', '装備': 'Equipment', 'ステータス': 'Status', '並び替え': 'Sort', 'セーブ': 'Save', 'ゲーム終了': 'To Title', 'オプション': 'Settings', '大事なもの': 'Key Items', 'ニューゲーム': 'New Game', 'コンティニュー': 'Continue', 'タイトルへ': 'Go to Title', 'やめる': 'Stop', '購入する': 'Buy', '売却する': 'Sell', '最大ＨＰ': 'Max HP', '最大ＭＰ': 'Max MP', '攻撃力': 'ATK', '防御力': 'DEF', '魔法力': 'M.ATK.', '魔法防御': 'M.DEF', '敏捷性': 'AGI', '運': 'Luck', '命中率': 'ACC', '回避率': 'EVA', '常時ダッシュ': 'Always run', 'コマンド記憶': 'Command Memory', 'タッチUI': 'Touch UI', 'BGM 音量': 'BGM volume', 'BGS 音量': 'BGS volume', 'ME 音量': 'ME Volume', 'SE 音量': 'SE volume', '所持数': 'Owned', '現在の%1': 'Current %1', '次の%1まで': 'Until next %1', 'どのファイルにセーブしますか？': 'Which file do you want to save it to?', 'どのファイルをロードしますか？': 'Which file do you want to load?', 'ファイル': 'File', 'オートセーブ': 'Auto Save', '%1たち': '%1', '%1が出現！': '%1 appears!', '%1は先手を取った！': '%1 took the initiative!', '%1は不意をつかれた！': '%1 was caught off guard!', '%1は逃げ出した！': '%1 ran away!', 'しかし逃げることはできなかった！': "But I couldn't escape!", '%1の勝利！': '%1 wins!', '%1は戦いに敗れた。': '%1 lost the battle.', '%1 の%2を獲得！': 'Obtained %2 for %1!', 'お金を %1\\G 手に入れた！': 'Obtained %1 \\G!', '%1を手に入れた！': 'I got %1!', '%1は%2 %3 に上がった！': '%1 rose to %2 %3!', '%1を覚えた！': 'I learned %1!', '%1は%2を使った！': '%1 used %2!', '会心の一撃！！': 'A decisive blow! !', '痛恨の一撃！！': 'A painful blow! !', '%1は %2 のダメージを受けた！': '%1 received %2 damage!', '%1の%2が %3 回復した！': "%1's %2 has recovered his %3!", '%1の%2が %3 増えた！': '%2 of %1 has increased by %3!', '%1の%2が %3 減った！': '%1 %2 decreased %3!', '%1は%2を %3 奪われた！': '%1 was robbed of %2 %3!', '%1はダメージを受けていない！': '%1 has not received any damage!', 'ミス！\u3000%1はダメージを受けていない！': 'Miss! %1 has not received any damage!', '%1に %2 のダメージを与えた！': 'Inflicted %2 damage to %1!', '%1の%2を %3 奪った！': '%2 of %1 was stolen from %3!', '%1にダメージを与えられない！': 'Cannot damage %1!', 'ミス！\u3000%1にダメージを与えられない！': "Miss! Can't damage %1!", '%1は攻撃をかわした！': '%1 dodged the attack!', '%1は魔法を打ち消した！': '%1 canceled the magic!', '%1は魔法を跳ね返した！': '%1 rebounded the magic!', '%1の反撃！': "%1's counterattack!", '%1が%2をかばった！': '%1 protected %2!', '%1の%2が上がった！': '%2 of %1 has gone up!', '%1の%2が下がった！': '%2 of %1 has gone down!', '%1の%2が元に戻った！': '%2 of %1 is back to normal!', '%1には効かなかった！': "It didn't work for %1!"}
-    d["strings"] = default_tl | d["strings"]
+    d = default_tl | d
     return d
 
-def generate():
+def generate() -> None:
     if check_confirmation("generate"):
         old, _continue = load_strings()
         if _continue:
             if backup_strings_file(old):
+                global TALKING_COUNTER
+                TALKING_COUNTER = 0
                 old = apply_default(old)
-                index = {"strings":{}, "groups":[]}
+                strings = {}
+                groups = []
                 for fn, data in untouched_JSON():
                     print("Reading", fn)
                     if fn.startswith("Map") and fn != "MapInfos.json":
@@ -227,30 +261,34 @@ def generate():
                         s, g = load_system_JSON(data)
                     else:
                         s, g = load_data_JSON(data)
-                    index["strings"]["============== " + fn + " =============="] = 0
+                    strings[UNIQUE_STR + " " + fn + " " + UNIQUE_STR] = 0
                     for st in s:
                         if st is None or st == "": continue
-                        if st not in index["strings"]:
-                            index["strings"][st] = old["strings"].get(st, None)
-                    index["groups"] += g
-                save_strings(index)
+                        if st not in strings and isinstance(st, str):
+                            if st.startswith(TALKING_STR):
+                                strings[st] = 0
+                            else:
+                                strings[st] = old.get(st, None)
+                    groups += g
+                save_files(strings, groups)
                 print("Done")
 
-def translate_string(s):
+def translate_string(s : str) -> str:
     time.sleep(0.2)
     cs = TRANSLATOR.translate(s)
     if cs is None or cs == "": raise Exception("Unusable translation")
     if " " not in cs and cs != s: cs = cs.capitalize()
     return cs
 
-def translate():
+def translate() -> None:
     if check_confirmation("translate"):
-        index, _continue = load_strings(quit_on_error=True)
+        strings, _continue = load_strings(quit_on_error=True)
         if _continue:
-            if backup_strings_file(index):
+            groups, _return = load_groups()
+            if backup_strings_file(strings):
                 all = (input("Type 'all' if you want to translate all files:").lower().strip() == "all")
                 group_table = {}
-                for i, g in enumerate(index["groups"]):
+                for i, g in enumerate(groups):
                     for s in g:
                         if s not in group_table:
                             group_table[s] = i
@@ -259,16 +297,16 @@ def translate():
                 current_file = None
                 count = 0
                 tl_count = 0
-                for s in index["strings"]:
-                    sys.stdout.write("\rString {} / {}                ".format(count, len(index["strings"])))
+                for s in strings:
+                    sys.stdout.write("\rString {} / {}                ".format(count, len(strings)))
                     sys.stdout.flush()
-                    if isinstance(index["strings"][s], int) and ".json" in s:
-                        current_file = s.replace("=", "").replace(".json").strip()
-                    elif index["strings"][s] is None:
+                    if isinstance(strings[s], int) and ".json" in s:
+                        current_file = s.replace("=", "").replace(".json", "").strip()
+                    elif strings[s] is None:
                         if not all and not current_file.startswith("Map") and current_file not in ["Actors", "Armors", "Classes", "CommonEvents", "Enemies", "Items", "Skills", "States", "Weapons"]:
                             continue
                         if s in group_table:
-                            g = index["groups"][group_table[s]]
+                            g = groups[group_table[s]]
                             try:
                                 cs = translate_string("\r\n".join(g)).replace("\r\n", "\n")
                                 if len(cs.split("\n")) != len(g):
@@ -283,8 +321,8 @@ def translate():
                                 if len(cs) != len(g):
                                     raise Exception("Invalid string group length")
                                 for i in range(len(cs)):
-                                    if index["strings"][g[i]] is None:
-                                        index["strings"][g[i]] = cs[i].replace("……", "...").replace("…", "...").strip()
+                                    if strings[g[i]] is None:
+                                        strings[g[i]] = cs[i].replace("……", "...").replace("…", "...").strip()
                                         tl_count += 1
                             except:
                                 pass
@@ -301,11 +339,11 @@ def translate():
                                             pass
                                 sg = "<" + ">\n<".join(sg) + ">"
                                 if sg != s:
-                                    index["strings"][s] = sg
+                                    strings[s] = sg
                                     tl_count += 1
                             else:
                                 try:
-                                    index["strings"][s] = translate_string(s).replace("……", "...").replace("…", "...").strip()
+                                    strings[s] = translate_string(s).replace("……", "...").replace("…", "...").strip()
                                     tl_count += 1
                                 except:
                                     pass
@@ -313,12 +351,12 @@ def translate():
                 print("")
                 print("Done")
                 if tl_count > 0:
-                    save_strings(index)
+                    save_files(strings, None)
                     print(tl_count, "modified strings")
                 else:
                     print("No new string translation")
 
-def write_json(path : str, data, file_type : int):
+def write_json(path : str, data, file_type : int) -> None:
     with open(path, mode="w", encoding="utf-8") as f:
         if file_type == 1:
             keys = list(data.keys())
@@ -349,7 +387,7 @@ def write_json(path : str, data, file_type : int):
         else:
             write_json_element(f, data)
 
-def write_json_element(f, data):
+def write_json_element(f, data) -> None:
     match data:
         case dict():
             f.write("{\n")
@@ -372,32 +410,32 @@ def write_json_element(f, data):
         case _:
             raise Exception("Error: " + str(type(data)))
 
-def patch_event_data(data, index):
+def patch_event_data(data, index : dict):
     for i, cmd in enumerate(data):
         match cmd["code"]:
             case 401:
                 for j, pm in enumerate(cmd["parameters"]):
                     if isinstance(pm, str):
-                        tl = index["strings"].get(pm, None)
+                        tl = index.get(pm, None)
                         if isinstance(tl, str): data[i]["parameters"][j] = tl
             case 320|122|405|111|401|324:
                 for j, pm in enumerate(cmd["parameters"]):
                     if isinstance(pm, str):
-                        tl = index["strings"].get(pm, None)
+                        tl = index.get(pm, None)
                         if isinstance(tl, str): data[i]["parameters"][j] = tl
             case 101|402:
-                tl = index["strings"].get(cmd["parameters"][-1], None)
+                tl = index.get(cmd["parameters"][-1], None)
                 if isinstance(tl, str): data[i]["parameters"][-1] = tl
             case 102:
                 for j, pm in enumerate(cmd["parameters"][0]):
                     if isinstance(pm, str):
-                        tl = index["strings"].get(pm, None)
+                        tl = index.get(pm, None)
                         if isinstance(tl, str): data[i]["parameters"][0][j] = tl
             case _:
                 pass
     return data
 
-def patch_data_JSON(data, index):
+def patch_data_JSON(data, index : dict):
     for i in range(len(data)):
         if isinstance(data[i], dict):
             for k in ["name", "description", "message1", "message2", "message3", "message4", "note", "list", "pages", "nickname", "profile"]:
@@ -409,13 +447,13 @@ def patch_data_JSON(data, index):
                             data[i][k][j]["list"] = patch_event_data(data[i][k][j]["list"], index)
                     else:
                         if isinstance(data[i][k], str):
-                            tl = index["strings"].get(data[i][k], None)
+                            tl = index.get(data[i][k], None)
                             if isinstance(tl, str): data[i][k] = tl
     return data
 
-def patch_map_JSON(data, index):
+def patch_map_JSON(data, index : dict):
     if isinstance(data["displayName"], str):
-        tl = index["strings"].get(data["displayName"], None)
+        tl = index.get(data["displayName"], None)
         if isinstance(tl, str): data["displayName"] = tl
     for i in range(len(data["events"])):
         if isinstance(data["events"][i], dict):
@@ -423,28 +461,28 @@ def patch_map_JSON(data, index):
                 data["events"][i]["pages"][j]["list"] = patch_event_data(data["events"][i]["pages"][j]["list"], index)
     return data
 
-def patch_commonevent_JSON(data, index):
+def patch_commonevent_JSON(data, index : dict):
     for i in range(len(data)):
         if isinstance(data[i], dict):
             data[i]["list"] = patch_event_data(data[i]["list"], index)
     return data
 
-def patch_system_JSON(data, index):
+def patch_system_JSON(data, index : dict):
     for k, v in data.items():
         if k in ["variables", "switches", "battlerName", "locale", "name"] or "font" in k.lower(): continue
         if isinstance(v, str):
-            tl = index["strings"].get(v, None)
+            tl = index.get(v, None)
             if isinstance(tl, str): data[k] = tl
         elif isinstance(v, list):
             for j, s in enumerate(v):
                 if isinstance(s, str):
-                    tl = index["strings"].get(s, None)
+                    tl = index.get(s, None)
                     if isinstance(tl, str): data[k][j] = tl
         elif isinstance(v, dict):
             data[k] = patch_system_JSON(v, index)
     return data
 
-def patch_json(fn : str, data, index, patches):
+def patch_json(fn : str, data, index : dict, patches):
     if fn.startswith("Map") and fn != "MapInfos.json":
         data = patch_map_JSON(data, index)
     elif fn == "CommonEvents.json":
@@ -464,9 +502,9 @@ def patch_json(fn : str, data, index, patches):
                 print(e)
     return data
 
-def patch():
+def patch() -> None:
     if check_confirmation("patch"):
-        index, _continue = load_strings()
+        strings, _continue = load_strings()
         if _continue:
             if os.path.exists(OUTPUT_FOLDER) and os.path.isdir(OUTPUT_FOLDER):
                 try:
@@ -489,7 +527,7 @@ def patch():
                 patches = {}
             for fn, data in untouched_JSON():
                 old_data = str(data)
-                data = patch_json(fn, data, index, patches)
+                data = patch_json(fn, data, strings, patches)
                 if str(data) != old_data:
                     file_type = 0
                     if fn.startswith("Map") and fn != "MapInfos.json": file_type = 1
@@ -508,12 +546,12 @@ def patch():
             print("Done")
 
 def main():
-    print("RPG Maker MV/MZ MTL Patcher v1.3")
+    print("RPG Maker MV/MZ MTL Patcher v1.4")
     init()
     while True:
         print("")
         print("[0] Generate strings.json")
-        print("[1] Machine Translate")
+        print("[1] Machine Translate" + (" (Requires the deep_translator module)" if TRANSLATOR is None else ""))
         print("[2] Create patch")
         print("===========================")
         print("[3] Game got updated")
@@ -523,7 +561,12 @@ def main():
                 case "0":
                     generate()
                 case "1":
-                    translate()
+                    if TRANSLATOR is None:
+                        print("Missing third-party module: deep_translator")
+                        print("Use the following command line to install: pip install deep_translator")
+                        print("ERROR: Can't proceed with machine translation. Restart the script once deep_translator has been installed.")
+                    else:
+                        translate()
                 case "2":
                     patch()
                 case "3":

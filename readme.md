@@ -20,12 +20,19 @@ For now, it's exclusively for JSON files of the data folder.
 Repeat step 8 if you update your translation.  
   
 ### strings.json  
-It's composed of two parts:  
-* The string list, called `strings`. You'll see the original string and its translation on the right. They are ordered by order of occurence in the game files and only the first occurence is saved.  
-* The group list, called `groups`. It's used to improve the machine translation. You can ignore it.  
+It's a table of all strings and their translation or the `null` value.  
+They are ordered by order of occurence in the game files and only the first occurence is saved.  
+To help with the context, you'll also see strings such as the following :  
+`"============== Actors.json =============="` which indicates that the next strings were found in the file Actors.json.  
+`"==== TALKING:394:Face:0:1:2:NPC_name =============="` which indicates the last speaker (Event command 101) in the event list.  
+Those special strings always have the value 0 and you shouldn't change it.  
   
 Backups are automatically created when using the tool.  
 It will also tell you if you made an error in the JSON format.  
+  
+### groups.json  
+For internal use and for the test server tool (see below).  
+You don't have to modify it.
   
 ### manual_edit Folder  
 Simply put the other files that you modified yourself inside.  
@@ -56,6 +63,7 @@ You can add how many as you want and they must be grouped by files:
 }
 ```  
 And, of course, it must be valid python code.  
+There is no real limit. Just make sure to escape the quote with a backslash. Use `\n` for new lines.  
 Note: They will always run AFTER the patching of the strings.  
   
 ### Game update  
@@ -78,10 +86,10 @@ See the Github repository linked above for more informations on deep translator.
   
 ### Test Server  
 Found in the the `test_server` folder are a few files to test the strings directly in game.  
-Do note that it has only be tested in a few RPG Maker MZ games.  
+Do note that it's VERY experimental and has only be tested in a few RPG Maker MZ games.  
 To use:  
 1. Copy the content of `test_server` to the game folder.  
-2. Copy your `strings.json` to the game folder.  
+2. Copy your `strings.json` and `groups.json` to the game folder.  
 3. Start a local web server. A way to do it is, with Python, is using the command `python -m http.server`. On Windows, you can double click `start_server.bat`.  
 4. Open any Chromium-type Browser and go to `http://localhost:8000/server.html`.  
   
