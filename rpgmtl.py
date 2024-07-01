@@ -58,8 +58,8 @@ def update_original(clean : bool = False) -> bool:
     if file_path != "":
         file_path = "/".join(file_path.split("/")[:-1])
         if clean:
-            shutil.rmtree(INPUT_FOLDER)
-        Path(INPUT_FOLDER).mkdir(parents=True, exist_ok=True)
+            shutil.rmtree(ORIGINAL_FOLDER)
+        Path(ORIGINAL_FOLDER).mkdir(parents=True, exist_ok=True)
         for f in ["js", "data"]:
             try:
                 shutil.copytree(file_path + "/" + f, ORIGINAL_FOLDER + f)
@@ -546,7 +546,7 @@ def patch() -> None:
             print("Done")
 
 def main():
-    print("RPG Maker MV/MZ MTL Patcher v1.4")
+    print("RPG Maker MV/MZ MTL Patcher v1.5")
     init()
     while True:
         print("")
