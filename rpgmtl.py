@@ -62,7 +62,7 @@ def update_original(clean : bool = False) -> bool:
         Path(ORIGINAL_FOLDER).mkdir(parents=True, exist_ok=True)
         for f in ["js", "data"]:
             try:
-                shutil.copytree(file_path + "/" + f, ORIGINAL_FOLDER + f)
+                shutil.copytree(file_path + "/" + f, ORIGINAL_FOLDER + f, ignore=include_patterns('*.png', '*.jpg'))
             except Exception as e:
                 print("Couldn't copy", file_path + "/" + f)
                 print(e)
