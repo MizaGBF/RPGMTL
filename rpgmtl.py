@@ -308,7 +308,7 @@ def translate() -> None:
                 tl_count = 0
                 print_flag = False
                 for s in strings:
-                    sys.stdout.write("\rProgress {:.2f}%      ".format(100*count/len(strings)))
+                    sys.stdout.write("\rProgress {:.2f}%              ".format(100*count/len(strings)))
                     sys.stdout.flush()
                     if isinstance(strings[s], int) and ".json" in s:
                         current_file = s.replace("=", "").split('/')[-1].strip()
