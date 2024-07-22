@@ -366,7 +366,8 @@ def translate() -> None:
                                 except:
                                     pass
                     count += 1
-                print("")
+                sys.stdout.write("\rProgress: 100%                 \n")
+                sys.stdout.flush()
                 print("Done")
                 if tl_count > 0:
                     save_files(strings, None)
