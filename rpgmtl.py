@@ -308,8 +308,6 @@ def translate() -> None:
                 tl_count = 0
                 print_flag = False
                 for s in strings:
-                    sys.stdout.write("\rProgress {:.2f}%              ".format(100*count/len(strings)))
-                    sys.stdout.flush()
                     if isinstance(strings[s], int) and ".json" in s:
                         current_file = s.replace("=", "").split('/')[-1].strip()
                         sys.stdout.write("\rIn section: {}              ".format(current_file))
@@ -569,7 +567,7 @@ def patch() -> None:
             print("Done")
 
 def main():
-    print("RPG Maker MV/MZ MTL Patcher v1.7")
+    print("RPG Maker MV/MZ MTL Patcher v1.8")
     init()
     while True:
         print("")
