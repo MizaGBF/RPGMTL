@@ -139,7 +139,7 @@ def untouched_JSON():
                     data = json.load(f)
                 yield (fn.replace(ORIGINAL_FOLDER, ''), data)
 
-def load_event_data(content) -> tuple:
+def load_event_data(content, old : dict) -> tuple:
     global TALKING_COUNTER
     strings = []
     groups = []
@@ -158,7 +158,9 @@ def load_event_data(content) -> tuple:
             case 101:
                 s = ""
                 for p in cmd["parameters"]:
-                    s += ":" + str(p)
+                    pt = str(p)
+                    if isinstance(old.get(pt, None), str): pt = old[pt]
+                    s += ":" + pt
                 strings.append(TALKING_STR + str(TALKING_COUNTER) + s + " " + UNIQUE_STR)
                 if isinstance(cmd["parameters"][-1], str) and cmd["parameters"][-1] != "":
                     TALKING_COUNTER += 1
@@ -178,7 +180,7 @@ def load_event_data(content) -> tuple:
         groups.append(current_group)
     return strings, groups
 
-def load_data_JSON(data) -> tuple:
+def load_data_JSON(data, old : dict) -> tuple:
     strings = []
     groups = []
     for e in data:
@@ -186,12 +188,12 @@ def load_data_JSON(data) -> tuple:
             for k in ["name", "description", "message1", "message2", "message3", "message4", "note", "list", "pages", "nickname", "profile"]:
                 if k in e:
                     if k == "list":
-                        s, g = load_event_data(e[k])
+                        s, g = load_event_data(e[k], old)
                         strings += s
                         groups += g
                     elif k == "pages":
                         for p in e[k]:
-                            s, g = load_event_data(p["list"])
+                            s, g = load_event_data(p["list"], old)
                             strings += s
                             groups += g
                     else:
@@ -199,24 +201,24 @@ def load_data_JSON(data) -> tuple:
                             strings.append(e[k])
     return strings, groups
 
-def load_map_JSON(data) -> tuple:
+def load_map_JSON(data, old : dict) -> tuple:
     strings = []
     groups = []
     strings.append(data["displayName"])
     for ev in data["events"]:
         if isinstance(ev, dict):
             for p in ev["pages"]:
-                s, g = load_event_data(p["list"])
+                s, g = load_event_data(p["list"], old)
                 strings += s
                 groups += g
     return strings, groups
 
-def load_commonevent_JSON(data) -> tuple:
+def load_commonevent_JSON(data, old : dict) -> tuple:
     strings = []
     groups = []
     for i, ev in enumerate(data):
         if isinstance(ev, dict):
-            s, g = load_event_data(ev["list"])
+            s, g = load_event_data(ev["list"], old)
             strings += s
             groups += g
     return strings, groups
@@ -265,13 +267,17 @@ def generate() -> None:
                     else:
                         s, g = load_data_JSON(data)
                     strings[UNIQUE_STR + " " + fn + " " + UNIQUE_STR] = 0
+                    previously_added = ""
                     for st in s:
                         if st is None or st == "": continue
                         if st not in strings and isinstance(st, str):
                             if st.startswith(TALKING_STR):
                                 strings[st] = 0
+                                if previously_added.startswith(TALKING_STR):
+                                    strings.pop(previously_added)
                             else:
                                 strings[st] = old.get(st, None)
+                            previously_added = st
                     groups += g
                 save_files(strings, groups)
                 print("Done")
@@ -553,7 +559,7 @@ def patch() -> None:
             print("Done")
 
 def main():
-    print("RPG Maker MV/MZ MTL Patcher v1.6")
+    print("RPG Maker MV/MZ MTL Patcher v1.7")
     init()
     while True:
         print("")
