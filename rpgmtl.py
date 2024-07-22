@@ -20,11 +20,11 @@ except:
 INPUT_FOLDER = "manual_edit/"
 ORIGINAL_FOLDER = "untouched_files/"
 OUTPUT_FOLDER = "release/"
-FILES = next(os.walk(ORIGINAL_FOLDER + "/data"), (None, None, []))[2]
 UNIQUE_STR = "=============="
 TALKING_COUNTER = 0
 TALKING_STR = "==== TALKING:"
 root = None
+data_set = None
 
 
 def init() -> None:
@@ -131,10 +131,13 @@ def check_confirmation(password : str) -> bool:
     return input("Type '{}' to confirm:".format(password)).lower().strip() == password
 
 def untouched_JSON():
-    for fn in FILES:
-        with open(ORIGINAL_FOLDER + "data/" + fn, mode="r", encoding="utf-8") as f:
-            data = json.load(f)
-        yield (fn, data)
+    for path, subdirs, files in os.walk(ORIGINAL_FOLDER):
+        for name in files:
+            if name.endswith('.json') and '_chara10' not in path:
+                fn = os.path.join(path, name).replace('\\', '/')
+                with open(fn, mode="r", encoding="utf-8") as f:
+                    data = json.load(f)
+                yield (fn.replace(ORIGINAL_FOLDER, ''), data)
 
 def load_event_data(content) -> tuple:
     global TALKING_COUNTER
@@ -492,9 +495,13 @@ def patch_json(fn : str, data, index : dict, patches):
     else:
         data = patch_data_JSON(data, index)
     if fn in patches:
+        global data_set
         for p in patches[fn]:
             try:
+                data_set = None
                 exec(p)
+                if data_set is not None:
+                    data = data_set
             except Exception as e:
                 print("Failed to run the following patch:")
                 print(p)
@@ -546,7 +553,7 @@ def patch() -> None:
             print("Done")
 
 def main():
-    print("RPG Maker MV/MZ MTL Patcher v1.5")
+    print("RPG Maker MV/MZ MTL Patcher v1.6")
     init()
     while True:
         print("")

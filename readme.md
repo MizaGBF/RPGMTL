@@ -66,6 +66,13 @@ And, of course, it must be valid python code.
 There is no real limit. Just make sure to escape the quote with a backslash. Use `\n` for new lines.  
 Note: They will always run AFTER the patching of the strings.  
   
+Additionally if you need to mutate the data variable, you can do something like the following:
+```python
+global data_set; data_set = data; # do stuff ...
+```  
+If `data_set` is detected to not be `None` after the execution, its content is set inside `data`.  
+So you can use this type of line to do pretty much whatever you want.  
+  
 ### Game update  
 If a game got updated and you want to update the string list, simply use the fourth option `Game got updated` and select your game folder again. It will recreate the `untouched_files` folder. You can then reuse the first option `Generate strings.json`. It will add the new strings and delete the ones not used anymore.  
 Make sure to not mix and matches different games by mistake.  
