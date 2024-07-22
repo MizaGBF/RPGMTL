@@ -306,15 +306,23 @@ def translate() -> None:
                 current_file = None
                 count = 0
                 tl_count = 0
+                print_flag = False
                 for s in strings:
                     sys.stdout.write("\rProgress {:.2f}%      ".format(100*count/len(strings)))
                     sys.stdout.flush()
                     if isinstance(strings[s], int) and ".json" in s:
                         current_file = s.replace("=", "").split('/')[-1].strip()
-                        print("\rIn section:", current_file)
+                        sys.stdout.write("\rIn section: {}              ".format(current_file))
+                        sys.stdout.flush()
+                        print_flag = True
                     elif strings[s] is None:
                         if not all and not current_file.startswith("Map") and current_file not in ["Actors.json", "Armors.json", "Classes.json", "CommonEvents.json", "Enemies.json", "Items.json", "Skills.json", "States.json", "Weapons.json"]:
                             continue
+                        if print_flag:
+                            print_flag = False
+                            print("")
+                        sys.stdout.write("\rProgress {:.2f}%                 ".format(100*count/len(strings)))
+                        sys.stdout.flush()
                         if s in group_table:
                             g = groups[group_table[s]]
                             try:
