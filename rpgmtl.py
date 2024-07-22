@@ -302,7 +302,7 @@ def translate() -> None:
                         if s not in group_table:
                             group_table[s] = i
                 print("Starting translation...")
-                if not all: print("Only translation Map, Event and Item strings...")
+                if not all: print("Only translating Map, Event and Item strings...")
                 current_file = None
                 count = 0
                 tl_count = 0
