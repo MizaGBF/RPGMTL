@@ -272,15 +272,16 @@ def generate() -> None:
                         if st is None or st == "": continue
                         if st not in strings and isinstance(st, str):
                             if st.startswith(TALKING_STR):
-                                strings[st] = 0
                                 if previously_added.startswith(TALKING_STR):
                                     strings.pop(previously_added)
+                                strings[st] = 0
                             else:
                                 strings[st] = old.get(st, None)
                             previously_added = st
                     groups += g
                 save_files(strings, groups)
                 print("Done")
+                print("strings.json has been updated.")
 
 def translate_string(s : str) -> str:
     time.sleep(0.2)
@@ -565,6 +566,7 @@ def patch() -> None:
             except:
                 print("WARNING: Couldn't copy content from the folder 'manual_edit'. Ignore if it doesn't exist")
             print("Done")
+            print("The patched files are available in the", OUTPUT_FOLDER, "folder")
 
 def main():
     print("RPG Maker MV/MZ MTL Patcher v1.8")
