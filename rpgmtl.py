@@ -248,7 +248,7 @@ def apply_default(d : dict) -> dict:
 
 def generate() -> None:
     if check_confirmation("generate"):
-        old, _continue = load_strings()
+        old, _continue = load_strings(quit_on_error=True)
         if _continue:
             if backup_strings_file(old):
                 global TALKING_COUNTER
