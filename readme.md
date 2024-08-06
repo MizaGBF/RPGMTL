@@ -39,38 +39,49 @@ Simply put the other files that you modified yourself inside.
 For example, if you want to modify `js/plugins.js`, make a new folder named `js` and copy the original `plugins.js` inside. Then edit it.  
 When you'll create the patch, it will automatically be copied to the `release` folder.  
   
-### patches.json  
+### patches.py  
 Used for fine tuning. You can set python code to run for specific files.  
 The default file is always:  
 ```python
-{
-"System.json":[
-"data[\"locale\"] = \"en_UK\""
-]
-}
+#@@@System.json
+data["locale"] = "en_UK"
 ```  
 Where it sets the value of the `locale` of `System.json` to `"en_UK"`.
 You can add how many as you want and they must be grouped by files:  
 ```python
-{
-"System.json":[
-"data[\"locale\"] = \"en_UK\"",
-"data[\"gameTitle\"] = \"I changed the game title!!\""
-],
-"Items.json":[
-"data[0]["description"] = \"Super strong item, for real!\""
-]
-}
+#@@@System.json
+data["locale"] = "en_UK"
+
+#@@@Items.json
+data[0]["description"] = "Super strong item, for real!"
 ```  
-And, of course, it must be valid python code.  
+Files are delimited using `#@@@`.  
+Multiple files can also be set for one patch using a semicolon `;`.  
+For example: `#@@@System.json;Items.json`.  
+In a similar fashion, multiple patches can be set for one file:  
+```python
+#@@@System.json
+data["locale"] = "en_UK"
+
+#@@@System.json
+data["gameTitle"] = "Cool game"
+```  
+Patches are executed in order of occurence.  
+  
+And, of course, the content in-between these lines must be valid python code.  
 There is no real limit. Just make sure to escape the quote with a backslash. Use `\n` for new lines.  
 Note: They will always run AFTER the patching of the strings.  
   
 Additionally if you need to mutate the data variable, you can do something like the following:
 ```python
-global data_set; data_set = data; # do stuff ...
+#@@@Myfile
+global data_set
+# do stuff
+# ...
+# end
+data_set = data # set this variable
 ```  
-If `data_set` is detected to not be `None` after the execution, its content is set inside `data`.  
+If `data_set` is detected to not be `None` after the execution, its content is set back inside `data`.  
 So you can use this type of line to do pretty much whatever you want.  
   
 ### Game update  

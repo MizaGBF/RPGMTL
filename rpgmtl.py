@@ -23,6 +23,7 @@ OUTPUT_FOLDER = "release/"
 UNIQUE_STR = "=============="
 TALKING_COUNTER = 0
 TALKING_STR = "==== TALKING:"
+PATCH_STR = "#@@@"
 root = None
 data_set = None
 
@@ -41,11 +42,11 @@ def init() -> None:
         else:
             print("WARNING: This script might not function properly")
     try:
-        if not os.path.exists("patches.json") or not os.path.isfile("patches.json"):
-            with open("patches.json", mode="w", encoding="utf-8") as f:
-                f.write("{\n\"System.json\":[\n\"data[\\\"locale\\\"] = \\\"en_UK\\\"\"\n]\n}")
+        if not os.path.exists("patches.py") or not os.path.isfile("patches.py"):
+            with open("patches.py", mode="w", encoding="utf-8") as f:
+                f.write(PATCH_STR + "System.json\ndata[\"locale\"] = \"en_UK\"")
     except Exception as e:
-        print("Exception while generating patches.json")
+        print("Exception while generating patches.py")
         print(e)
 
 def update_original(clean : bool = False) -> bool:
@@ -62,7 +63,7 @@ def update_original(clean : bool = False) -> bool:
         Path(ORIGINAL_FOLDER).mkdir(parents=True, exist_ok=True)
         for f in ["js", "data"]:
             try:
-                shutil.copytree(file_path + "/" + f, ORIGINAL_FOLDER + f, ignore=shutil.ignore_patterns('*.png', '*.jpg', '*.psd', '*.webm', '*.gif', '*.png_', '*.jpg_'))
+                shutil.copytree(file_path + "/" + f, ORIGINAL_FOLDER + f, ignore=shutil.ignore_patterns('*.png', '*.jpg', '*.psd', '*.tmp', '*.webm', '*.gif', '*.png_', '*.jpg_'))
             except Exception as e:
                 print("Couldn't copy", file_path + "/" + f)
                 print(e)
@@ -133,7 +134,7 @@ def check_confirmation(password : str) -> bool:
 def untouched_JSON():
     for path, subdirs, files in os.walk(ORIGINAL_FOLDER):
         for name in files:
-            if name.endswith('.json') and '_chara10' not in path:
+            if name.endswith('.json'):
                 fn = os.path.join(path, name).replace('\\', '/')
                 with open(fn, mode="r", encoding="utf-8") as f:
                     data = json.load(f)
@@ -258,14 +259,15 @@ def generate() -> None:
                 groups = []
                 for fn, data in untouched_JSON():
                     print("Reading", fn)
-                    if fn.startswith("Map") and fn != "MapInfos.json":
-                        s, g = load_map_JSON(data)
-                    elif fn == "CommonEvents.json":
-                        s, g = load_commonevent_JSON(data)
-                    elif fn == "System.json":
+                    sn = fn.split('/')[-1]
+                    if sn.startswith("Map") and sn != "MapInfos.json":
+                        s, g = load_map_JSON(data, old)
+                    elif sn == "CommonEvents.json":
+                        s, g = load_commonevent_JSON(data, old)
+                    elif sn == "System.json":
                         s, g = load_system_JSON(data)
                     else:
-                        s, g = load_data_JSON(data)
+                        s, g = load_data_JSON(data, old)
                     strings[UNIQUE_STR + " " + fn + " " + UNIQUE_STR] = 0
                     previously_added = ""
                     for st in s:
@@ -500,7 +502,7 @@ def patch_system_JSON(data, index : dict):
             data[k] = patch_system_JSON(v, index)
     return data
 
-def patch_json(fn : str, data, index : dict, patches):
+def patch_json(fn : str, data, index : dict, patches : dict):
     if fn.startswith("Map") and fn != "MapInfos.json":
         data = patch_map_JSON(data, index)
     elif fn == "CommonEvents.json":
@@ -524,6 +526,48 @@ def patch_json(fn : str, data, index : dict, patches):
                 print(e)
     return data
 
+def patch_mkdir(fn : str) -> None:
+    try:
+        Path(OUTPUT_FOLDER+'/'.join(fn.split('/')[:-1])).mkdir(parents=True, exist_ok=True)
+    except Exception as e:
+        print("WARNING: Couldn't create", OUTPUT_FOLDER)
+        print(e)
+
+def load_python_patches() -> dict:
+    patches = {}
+    try:
+        with open("patches.py", mode="r", encoding="utf-8") as f:
+            content = f.read()
+        try:
+            content = content.split("\n")
+            string = []
+            target_file = []
+            for line in content:
+                if line.startswith(PATCH_STR):
+                    if len(target_file) > 0 and len(string) > 0:
+                        for f in target_file:
+                            
+                            if f not in patches:
+                                patches[f] = []
+                            patches[f].append("\n".join(string))
+                    target_file = line[len(PATCH_STR):].split(";")
+                    for i in range(len(target_file)):
+                        target_file[i] = target_file[i].strip()
+                else:
+                    string.append(line)
+            if len(target_file) > 0 and len(string) > 0:
+                for f in target_file:
+                    
+                    if f not in patches:
+                        patches[f] = []
+                    patches[f].append("\n".join(string))
+        except Exception as e:
+            print("WARNING: Couldn't load patches.py")
+            print(e)
+    except:
+        pass
+    return patches
+
 def patch() -> None:
     if check_confirmation("patch"):
         strings, _continue = load_strings()
@@ -535,26 +579,17 @@ def patch() -> None:
                 except Exception as e:
                     print("WARNING:", OUTPUT_FOLDER, "cleanup failed")
                     print(e)
-            try:
-                Path(OUTPUT_FOLDER+"data/").mkdir(parents=True, exist_ok=True)
-            except Exception as e:
-                print("WARNING: Couldn't create", OUTPUT_FOLDER)
-                print(e)
-            try:
-                with open("patches.json", mode="r", encoding="utf-8") as f:
-                    patches = json.load(f)
-            except Exception as e:
-                print("WARNING: Couldn't load patches.json")
-                print(e)
-                patches = {}
+            patches = load_python_patches()
             for fn, data in untouched_JSON():
+                sn = fn.split('/')[-1]
                 old_data = str(data)
-                data = patch_json(fn, data, strings, patches)
+                data = patch_json(sn, data, strings, patches)
                 if str(data) != old_data:
                     file_type = 0
-                    if fn.startswith("Map") and fn != "MapInfos.json": file_type = 1
-                    elif fn == "System.json": file_type = 2
-                    write_json(OUTPUT_FOLDER+"data/" + fn, data, file_type)
+                    if sn.startswith("Map") and sn != "MapInfos.json": file_type = 1
+                    elif sn == "System.json": file_type = 2
+                    patch_mkdir(fn)
+                    write_json(OUTPUT_FOLDER+fn, data, file_type)
                     print("Patched file", fn)
             try:
                 for path, subdirs, files in os.walk(INPUT_FOLDER):
@@ -569,7 +604,7 @@ def patch() -> None:
             print("The patched files are available in the", OUTPUT_FOLDER, "folder")
 
 def main():
-    print("RPG Maker MV/MZ MTL Patcher v1.8")
+    print("RPG Maker MV/MZ MTL Patcher v1.9")
     init()
     while True:
         print("")
