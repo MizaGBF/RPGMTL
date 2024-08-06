@@ -13,7 +13,7 @@ For now, it's exclusively for JSON files of the data folder.
 3. Run it.  
 4. It will ask you to select the location of the game executable (Usually, Game.exe).  
 5. It will create two folders: `manual_edit` where you can add files you manually edited (for examples javascript or image files) and `untouched_files` which is a **backup** of your game `data` and `js` folders.  
-6. `patches.json` should also have been created. More on it on a section below.  
+6. `patches.py` should also have been created. More on it on a section below.  
 7. In the terminal, you can use the first option `Generate strings.json` by typing `0`. You can then use the second option to attempt to translate them or manually edit it with your favorite text editor.  
 8. Once you're done, you can use the third option `Create patch` by typing `2`. A new folder called `release` which will contain your patched files. You can copy them to your game folder and overwrite to test them.  
   
