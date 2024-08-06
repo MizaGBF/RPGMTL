@@ -550,6 +550,7 @@ def load_python_patches() -> dict:
                             if f not in patches:
                                 patches[f] = []
                             patches[f].append("\n".join(string))
+                    string = []
                     target_file = line[len(PATCH_STR):].split(";")
                     for i in range(len(target_file)):
                         target_file[i] = target_file[i].strip()
