@@ -61,6 +61,8 @@ def update_original(clean : bool = False) -> bool:
         if clean:
             shutil.rmtree(ORIGINAL_FOLDER)
         Path(ORIGINAL_FOLDER).mkdir(parents=True, exist_ok=True)
+        try: shutil.copyfile(file_path + "/package.json", ORIGINAL_FOLDER + "/package.json")
+        except: pass
         for f in ["js", "data"]:
             try:
                 shutil.copytree(file_path + "/" + f, ORIGINAL_FOLDER + f, ignore=shutil.ignore_patterns('*.png', '*.jpg', '*.psd', '*.tmp', '*.webm', '*.gif', '*.png_', '*.jpg_'))
@@ -242,6 +244,10 @@ def load_system_JSON(data) -> tuple:
             groups += g
     return strings, groups
 
+def load_package_JSON(data) -> tuple:
+    try: return [data["window"]["title"]], []
+    except: return [], []
+
 def apply_default(d : dict) -> dict:
     default_tl = {'レベル': 'Level', 'Lv': 'Lv', 'ＨＰ': 'HP', 'HP': 'HP', 'ＳＰ': 'SP', 'SP': 'SP', '経験値': 'Experience point', 'EXP': 'EXP', '戦う': 'Fight', '逃げる': 'Run away', '攻撃': 'Attack', '防御': 'Defense', 'アイテム': 'Items', 'スキル': 'Skills', '装備': 'Equipment', 'ステータス': 'Status', '並び替え': 'Sort', 'セーブ': 'Save', 'ゲーム終了': 'To Title', 'オプション': 'Settings', '大事なもの': 'Key Items', 'ニューゲーム': 'New Game', 'コンティニュー': 'Continue', 'タイトルへ': 'Go to Title', 'やめる': 'Stop', '購入する': 'Buy', '売却する': 'Sell', '最大ＨＰ': 'Max HP', '最大ＭＰ': 'Max MP', '攻撃力': 'ATK', '防御力': 'DEF', '魔法力': 'M.ATK.', '魔法防御': 'M.DEF', '敏捷性': 'AGI', '運': 'Luck', '命中率': 'ACC', '回避率': 'EVA', '常時ダッシュ': 'Always run', 'コマンド記憶': 'Command Memory', 'タッチUI': 'Touch UI', 'BGM 音量': 'BGM volume', 'BGS 音量': 'BGS volume', 'ME 音量': 'ME Volume', 'SE 音量': 'SE volume', '所持数': 'Owned', '現在の%1': 'Current %1', '次の%1まで': 'Until next %1', 'どのファイルにセーブしますか？': 'Which file do you want to save it to?', 'どのファイルをロードしますか？': 'Which file do you want to load?', 'ファイル': 'File', 'オートセーブ': 'Auto Save', '%1たち': '%1', '%1が出現！': '%1 appears!', '%1は先手を取った！': '%1 took the initiative!', '%1は不意をつかれた！': '%1 was caught off guard!', '%1は逃げ出した！': '%1 ran away!', 'しかし逃げることはできなかった！': "But I couldn't escape!", '%1の勝利！': '%1 wins!', '%1は戦いに敗れた。': '%1 lost the battle.', '%1 の%2を獲得！': 'Obtained %2 for %1!', 'お金を %1\\G 手に入れた！': 'Obtained %1 \\G!', '%1を手に入れた！': 'I got %1!', '%1は%2 %3 に上がった！': '%1 rose to %2 %3!', '%1を覚えた！': 'I learned %1!', '%1は%2を使った！': '%1 used %2!', '会心の一撃！！': 'A decisive blow! !', '痛恨の一撃！！': 'A painful blow! !', '%1は %2 のダメージを受けた！': '%1 received %2 damage!', '%1の%2が %3 回復した！': "%1's %2 has recovered his %3!", '%1の%2が %3 増えた！': '%2 of %1 has increased by %3!', '%1の%2が %3 減った！': '%1 %2 decreased %3!', '%1は%2を %3 奪われた！': '%1 was robbed of %2 %3!', '%1はダメージを受けていない！': '%1 has not received any damage!', 'ミス！\u3000%1はダメージを受けていない！': 'Miss! %1 has not received any damage!', '%1に %2 のダメージを与えた！': 'Inflicted %2 damage to %1!', '%1の%2を %3 奪った！': '%2 of %1 was stolen from %3!', '%1にダメージを与えられない！': 'Cannot damage %1!', 'ミス！\u3000%1にダメージを与えられない！': "Miss! Can't damage %1!", '%1は攻撃をかわした！': '%1 dodged the attack!', '%1は魔法を打ち消した！': '%1 canceled the magic!', '%1は魔法を跳ね返した！': '%1 rebounded the magic!', '%1の反撃！': "%1's counterattack!", '%1が%2をかばった！': '%1 protected %2!', '%1の%2が上がった！': '%2 of %1 has gone up!', '%1の%2が下がった！': '%2 of %1 has gone down!', '%1の%2が元に戻った！': '%2 of %1 is back to normal!', '%1には効かなかった！': "It didn't work for %1!"}
     d = default_tl | d
@@ -254,6 +260,7 @@ def generate() -> None:
             if backup_strings_file(old):
                 global TALKING_COUNTER
                 TALKING_COUNTER = 0
+                string_counter = 0
                 old = apply_default(old)
                 strings = {}
                 groups = []
@@ -266,6 +273,8 @@ def generate() -> None:
                         s, g = load_commonevent_JSON(data, old)
                     elif sn == "System.json":
                         s, g = load_system_JSON(data)
+                    elif sn == "package.json":
+                        s, g = load_package_JSON(data)
                     else:
                         s, g = load_data_JSON(data, old)
                     strings[UNIQUE_STR + " " + fn + " " + UNIQUE_STR] = 0
@@ -279,11 +288,17 @@ def generate() -> None:
                                 strings[st] = 0
                             else:
                                 strings[st] = old.get(st, None)
+                                if st not in old:
+                                    string_counter += 1
                             previously_added = st
                     groups += g
                 save_files(strings, groups)
                 print("Done")
                 print("strings.json has been updated.")
+                if string_counter > 0:
+                    print(string_counter, "new/updated string(s).")
+                else:
+                    print("no new/updated strings detected.")
 
 def translate_string(s : str) -> str:
     time.sleep(0.2)
@@ -503,12 +518,20 @@ def patch_system_JSON(data, index : dict):
     return data
 
 def patch_json(fn : str, data, index : dict, patches : dict):
-    if fn.startswith("Map") and fn != "MapInfos.json":
+    sn = fn.split('/')[-1]
+    if sn.startswith("Map") and fn != "MapInfos.json":
         data = patch_map_JSON(data, index)
-    elif fn == "CommonEvents.json":
+    elif sn == "CommonEvents.json":
         data = patch_commonevent_JSON(data, index)
-    elif fn == "System.json":
+    elif sn == "System.json":
         data = patch_system_JSON(data, index)
+    elif sn == "package.json":
+        try:
+            tl = index.get(data["window"]["title"], None)
+            if tl is not None:
+                data["window"]["title"] = tl
+        except:
+            pass
     else:
         data = patch_data_JSON(data, index)
     if fn in patches:
@@ -584,7 +607,7 @@ def patch() -> None:
             for fn, data in untouched_JSON():
                 sn = fn.split('/')[-1]
                 old_data = str(data)
-                data = patch_json(sn, data, strings, patches)
+                data = patch_json(fn, data, strings, patches)
                 if str(data) != old_data:
                     file_type = 0
                     if sn.startswith("Map") and sn != "MapInfos.json": file_type = 1
@@ -605,7 +628,7 @@ def patch() -> None:
             print("The patched files are available in the", OUTPUT_FOLDER, "folder")
 
 def main():
-    print("RPG Maker MV/MZ MTL Patcher v1.9")
+    print("RPG Maker MV/MZ MTL Patcher v1.10")
     init()
     while True:
         print("")
