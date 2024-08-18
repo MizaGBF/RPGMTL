@@ -136,10 +136,13 @@ def check_confirmation(password : str) -> bool:
     return input("Type '{}' to confirm:".format(password)).lower().strip() == password
 
 def untouched_CSV():
-    fn = "data/ExternMessage.csv"
-    with open(ORIGINAL_FOLDER + fn, mode="r", encoding="utf-8") as f:
-        data = f.read()
-    yield (fn.replace(ORIGINAL_FOLDER, ''), data)
+    try:
+        fn = "data/ExternMessage.csv"
+        with open(ORIGINAL_FOLDER + fn, mode="r", encoding="utf-8") as f:
+            data = f.read()
+        yield (fn.replace(ORIGINAL_FOLDER, ''), data)
+    except:
+        yield from []
 
 def untouched_JAVA():
     for path, subdirs, files in os.walk(ORIGINAL_FOLDER):
