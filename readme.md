@@ -1,6 +1,6 @@
 # RPGMTL  
 Small tool to create MTL patches for RPG Maker MV and MZ games.  
-For now, it's exclusively for JSON files of the data folder.  
+For now, it's exclusively for JSON files of the data folder and externMessages.csv when available.  
   
 ### Requirements  
 * Tested on Python 3.11.

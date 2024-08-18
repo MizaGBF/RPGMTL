@@ -9,6 +9,8 @@ from pathlib import Path
 import shutil
 import tkinter as tk
 from tkinter import filedialog
+import csv
+from io import StringIO
 try:
     from deep_translator import GoogleTranslator
     TRANSLATOR = GoogleTranslator(source='auto', target='en')
@@ -133,6 +135,21 @@ def backup_strings_file(loaded : Optional[dict] = None) -> bool:
 def check_confirmation(password : str) -> bool:
     return input("Type '{}' to confirm:".format(password)).lower().strip() == password
 
+def untouched_CSV():
+    fn = "data/ExternMessage.csv"
+    with open(ORIGINAL_FOLDER + fn, mode="r", encoding="utf-8") as f:
+        data = f.read()
+    yield (fn.replace(ORIGINAL_FOLDER, ''), data)
+
+def untouched_JAVA():
+    for path, subdirs, files in os.walk(ORIGINAL_FOLDER):
+        for name in files:
+            if name.endswith('.js'):
+                fn = os.path.join(path, name).replace('\\', '/')
+                with open(fn, mode="r", encoding="utf-8") as f:
+                    data = f.read()
+                yield (fn.replace(ORIGINAL_FOLDER, ''), data)
+
 def untouched_JSON():
     for path, subdirs, files in os.walk(ORIGINAL_FOLDER):
         for name in files:
@@ -253,6 +270,23 @@ def apply_default(d : dict) -> dict:
     d = default_tl | d
     return d
 
+def generate_sub(string_counter : int, strings: dict, old: dict, groups : list, s : list, g : list) -> tuple:
+    previously_added = ""
+    for st in s:
+        if st is None or st == "": continue
+        if st not in strings and isinstance(st, str):
+            if st.startswith(TALKING_STR):
+                if previously_added.startswith(TALKING_STR):
+                    strings.pop(previously_added)
+                strings[st] = 0
+            else:
+                strings[st] = old.get(st, None)
+                if st not in old:
+                    string_counter += 1
+            previously_added = st
+    groups += g
+    return string_counter, strings, groups
+
 def generate() -> None:
     if check_confirmation("generate"):
         old, _continue = load_strings(quit_on_error=True)
@@ -264,6 +298,12 @@ def generate() -> None:
                 old = apply_default(old)
                 strings = {}
                 groups = []
+                for fn, data in untouched_CSV():
+                    print("Reading", fn)
+                    sn = fn.split('/')[-1]
+                    s, g = load_externmessage_CSV(data)
+                    strings[UNIQUE_STR + " " + fn + " " + UNIQUE_STR] = 0
+                    string_counter, strings, groups = generate_sub(string_counter, strings, old, groups, s, g)
                 for fn, data in untouched_JSON():
                     print("Reading", fn)
                     sn = fn.split('/')[-1]
@@ -278,20 +318,7 @@ def generate() -> None:
                     else:
                         s, g = load_data_JSON(data, old)
                     strings[UNIQUE_STR + " " + fn + " " + UNIQUE_STR] = 0
-                    previously_added = ""
-                    for st in s:
-                        if st is None or st == "": continue
-                        if st not in strings and isinstance(st, str):
-                            if st.startswith(TALKING_STR):
-                                if previously_added.startswith(TALKING_STR):
-                                    strings.pop(previously_added)
-                                strings[st] = 0
-                            else:
-                                strings[st] = old.get(st, None)
-                                if st not in old:
-                                    string_counter += 1
-                            previously_added = st
-                    groups += g
+                    string_counter, strings, groups = generate_sub(string_counter, strings, old, groups, s, g)
                 save_files(strings, groups)
                 print("Done")
                 print("strings.json has been updated.")
@@ -299,6 +326,17 @@ def generate() -> None:
                     print(string_counter, "new/updated string(s).")
                 else:
                     print("no new/updated strings detected.")
+
+
+def load_externmessage_CSV(data : str) -> tuple:
+    reader = csv.reader(StringIO(data))
+    content = [row for row in reader]
+    strings = []
+    for row in content:
+        for cell in row:
+            if cell != "" and not cell.isdigit():
+                strings.append(cell)
+    return strings, []
 
 def translate_string(s : str) -> str:
     time.sleep(0.2)
@@ -519,7 +557,7 @@ def patch_system_JSON(data, index : dict):
 
 def patch_json(fn : str, data, index : dict, patches : dict):
     sn = fn.split('/')[-1]
-    if sn.startswith("Map") and fn != "MapInfos.json":
+    if sn.startswith("Map") and sn != "MapInfos.json":
         data = patch_map_JSON(data, index)
     elif sn == "CommonEvents.json":
         data = patch_commonevent_JSON(data, index)
@@ -549,6 +587,34 @@ def patch_json(fn : str, data, index : dict, patches : dict):
                 print(e)
     return data
 
+
+def patch_csv(fn : str, data, index : dict, patches):
+    reader = csv.reader(StringIO(data))
+    content = [row for row in reader]
+    output = StringIO()
+    writer = csv.writer(output, delimiter=',', lineterminator='\n')
+    for i in range(len(content)):
+        for j in range(len(content[i])):
+            tl = index.get(content[i][j], None)
+            if isinstance(tl, str):
+                content[i][j] = tl
+        writer.writerow(content[i])
+    output.seek(0)
+    data = output.read()
+    if fn in patches:
+        global data_set
+        for p in patches[fn]:
+            try:
+                data_set = None
+                exec(p)
+                if data_set is not None:
+                    data = data_set
+            except Exception as e:
+                print("Failed to run the following patch:")
+                print(p)
+                print("Exception:")
+                print(e)
+    return data
 def patch_mkdir(fn : str) -> None:
     try:
         Path(OUTPUT_FOLDER+'/'.join(fn.split('/')[:-1])).mkdir(parents=True, exist_ok=True)
@@ -604,6 +670,14 @@ def patch() -> None:
                     print("WARNING:", OUTPUT_FOLDER, "cleanup failed")
                     print(e)
             patches = load_python_patches()
+            for fn, data in untouched_CSV():
+                old_data = str(data)
+                data = patch_csv(fn, data, strings, patches)
+                if str(data) != old_data:
+                    patch_mkdir(fn)
+                    with open(OUTPUT_FOLDER + fn, mode="w", encoding="utf-8") as f:
+                        f.write(data)
+                    print("Patched file", fn)
             for fn, data in untouched_JSON():
                 sn = fn.split('/')[-1]
                 old_data = str(data)
@@ -628,7 +702,7 @@ def patch() -> None:
             print("The patched files are available in the", OUTPUT_FOLDER, "folder")
 
 def main():
-    print("RPG Maker MV/MZ MTL Patcher v1.10")
+    print("RPG Maker MV/MZ MTL Patcher v1.11")
     init()
     while True:
         print("")
