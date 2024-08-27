@@ -65,11 +65,14 @@ def update_original(clean : bool = False) -> bool:
         Path(ORIGINAL_FOLDER).mkdir(parents=True, exist_ok=True)
         try: shutil.copyfile(file_path + "/package.json", ORIGINAL_FOLDER + "/package.json")
         except: pass
-        for f in ["js", "data"]:
+        for f in ["js", "data", "www/js", "www/data"]:
             try:
-                shutil.copytree(file_path + "/" + f, ORIGINAL_FOLDER + f, ignore=shutil.ignore_patterns('*.png', '*.jpg', '*.psd', '*.tmp', '*.webm', '*.gif', '*.png_', '*.jpg_'))
+                fp = file_path + "/" + f
+                if Path(fp).is_dir():
+                    Path(ORIGINAL_FOLDER + f).mkdir(parents=True, exist_ok=True)
+                    shutil.copytree(fp, ORIGINAL_FOLDER + f, ignore=shutil.ignore_patterns('*.png', '*.jpg', '*.psd', '*.tmp', '*.webm', '*.gif', '*.png_', '*.jpg_'), dirs_exist_ok=True)
             except Exception as e:
-                print("Couldn't copy", file_path + "/" + f)
+                print("Couldn't copy", fp)
                 print(e)
         print("Done")
         return True
@@ -705,7 +708,7 @@ def patch() -> None:
             print("The patched files are available in the", OUTPUT_FOLDER, "folder")
 
 def main():
-    print("RPG Maker MV/MZ MTL Patcher v1.11")
+    print("RPG Maker MV/MZ MTL Patcher v1.12")
     init()
     while True:
         print("")
