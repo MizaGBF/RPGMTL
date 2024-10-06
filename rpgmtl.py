@@ -416,6 +416,15 @@ def load_event_data(content, old : dict) -> tuple:
                 for pm in cmd["parameters"][0]:
                     if isinstance(pm, str):
                         strings.append(pm)
+            case 357:
+                for pm in cmd["parameters"]:
+                    if isinstance(pm, str):
+                        strings.append(pm)
+                    elif isinstance(pm, dict):
+                        if isinstance(pm.get("messageText", None), str):
+                            strings.append(pm["messageText"])
+                        if isinstance(pm.get("choices", None), str):
+                            strings.append(pm["choices"])
             case _:
                 pass
         if cmd["code"] != 401 and len(current_group) > 0:
@@ -863,6 +872,18 @@ def patch_event_data(data, index : dict):
                     if isinstance(pm, str):
                         tl = index.get(pm, None)
                         if isinstance(tl, str): data[i]["parameters"][0][j] = tl
+            case 357:
+                for j, pm in enumerate(cmd["parameters"]):
+                    if isinstance(pm, str):
+                        tl = index.get(pm, None)
+                        if isinstance(tl, str): data[i]["parameters"][j] = tl
+                    elif isinstance(pm, dict):
+                        if isinstance(pm.get("messageText", None), str):
+                            tl = index.get(pm["messageText"], None)
+                            if isinstance(tl, str): data[i]["parameters"][j]["messageText"] = tl
+                        if isinstance(pm.get("choices", None), str):
+                            tl = index.get(pm["choices"], None)
+                            if isinstance(tl, str): data[i]["parameters"][j]["choices"] = tl
             case _:
                 pass
     return data
