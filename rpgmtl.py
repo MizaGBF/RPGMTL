@@ -1,5 +1,7 @@
 from typing import Optional
 import json
+import zlib
+import struct
 import time
 import textwrap
 import traceback
@@ -22,13 +24,14 @@ except:
 INPUT_FOLDER = "manual_edit/"
 ORIGINAL_FOLDER = "untouched_files/"
 OUTPUT_FOLDER = "release/"
-UNIQUE_STR = "=============="
-TALKING_COUNTER = 0
-TALKING_STR = "==== TALKING:"
+FILES_TO_LOOK_FOR = set(['.json', '.js', '.csv', '.rxdata', '.rb'])
+TALKING_STR = "#@TALKING:"
+COMMENT_STR = "#"
+FILE_STR = "#@@@"
+DISABLE_STR = "#%%%"
 PATCH_STR = "#@@@"
 root = None
 data_set = None
-
 
 def init() -> None:
     try:
@@ -46,7 +49,7 @@ def init() -> None:
     try:
         if not os.path.exists("patches.py") or not os.path.isfile("patches.py"):
             with open("patches.py", mode="w", encoding="utf-8") as f:
-                f.write(PATCH_STR + "System.json\ndata[\"locale\"] = \"en_UK\"")
+                f.write(PATCH_STR + "file_name_example\n# Example for System.json:\ndata[\"locale\"] = \"en_UK\"")
     except Exception as e:
         print("Exception while generating patches.py")
         print(e)
@@ -60,42 +63,73 @@ def update_original(clean : bool = False) -> bool:
     file_path = filedialog.askopenfilename(title="Select a RPGMV or RPGMZ Executable", filetypes=[("Game", ".exe")])
     if file_path != "":
         file_path = "/".join(file_path.split("/")[:-1])
+        if not file_path.endswith('/'): file_path += '/'
         if clean:
             shutil.rmtree(ORIGINAL_FOLDER)
-        Path(ORIGINAL_FOLDER).mkdir(parents=True, exist_ok=True)
-        try: shutil.copyfile(file_path + "/package.json", ORIGINAL_FOLDER + "/package.json")
-        except: pass
-        for f in ["js", "data", "www/js", "www/data"]:
-            try:
-                fp = file_path + "/" + f
-                if Path(fp).is_dir():
-                    Path(ORIGINAL_FOLDER + f).mkdir(parents=True, exist_ok=True)
-                    shutil.copytree(fp, ORIGINAL_FOLDER + f, ignore=shutil.ignore_patterns('*.png', '*.jpg', '*.psd', '*.tmp', '*.webm', '*.gif', '*.png_', '*.jpg_'), dirs_exist_ok=True)
-            except Exception as e:
-                print("Couldn't copy", fp)
-                print(e)
+        encountered_path = set()
+        for path, subdirs, files in os.walk(file_path):
+            for name in files:
+                fp = os.path.join(path, name).replace('\\', '/')
+                try:
+                    extension = '.' + fp.split('/')[-1].split('.')[1]
+                    if extension not in FILES_TO_LOOK_FOR:
+                        continue
+                except:
+                    pass
+                fpr = fp.replace(file_path, '')
+                target_dir = '/'.join(fpr.split('/')[:-1]) + '/'
+                if target_dir not in encountered_path:
+                    encountered_path.add(target_dir)
+                    try:
+                        os.makedirs(os.path.dirname(ORIGINAL_FOLDER + target_dir), exist_ok=True)
+                    except Exception as e:
+                        print("Couldn't create folder", ORIGINAL_FOLDER + target_dir)
+                        print(e)
+                try:
+                    shutil.copy(fp, ORIGINAL_FOLDER + fpr)
+                except Exception as e:
+                    print("Couldn't copy", fp)
+                    print(e)
+                print("Found", fpr)
         print("Done")
+        print("Please check in '{}' if any file or folder got copied by mistake (such as the save data folder...".format(ORIGINAL_FOLDER))
         return True
     else:
         print("Operation cancelled...")
         return False
 
-def load_strings(quit_on_error : bool = False) -> tuple:
+def load_strings(with_file_strings : bool = False) -> tuple:
     try:
-        with open("strings.json", mode="r", encoding="utf-8") as f:
-            loaded = json.load(f)
-        if not isinstance(loaded, dict):
-            raise Exception("Invalid strings.json format")
-        if "strings" in loaded: # old format
-            loaded = loaded["strings"]
-        return loaded, True
+        with open("strings.py", mode="r", encoding="utf-8") as f:
+            loaded = {}
+            disabled = set()
+            line_count = 1
+            while line := f.readline():
+                if line.startswith(DISABLE_STR):
+                    disabled.add(line.replace(DISABLE_STR, '').strip())
+                    if with_file_strings:
+                        loaded[line.strip()] = None
+                elif line.strip() == "":
+                    pass
+                elif not line.startswith(TALKING_STR) and not line.startswith(FILE_STR) and not line.startswith(COMMENT_STR):
+                    try:
+                        d = json.loads("{"+line+"}")
+                        if not isinstance(d, dict):
+                            raise Exception()
+                    except:
+                        raise Exception("Line", line_count, "is invalid")
+                    loaded = loaded | d
+                elif with_file_strings:
+                    loaded[line.strip()] = None
+                line_count += 1
+        return loaded, disabled, True
     except Exception as e:
-        if "no such file" not in str(e).lower():
-            print("Failed to load strings.json")
+        b = "no such file" in str(e).lower()
+        if not b:
+            print("Failed to load strings.py")
             print(e)
-            if quit_on_error or input("Type 'y' to continue anyway:").lower() != "y":
-                return {}, False
-        return {}, True
+            print("Try to fix its content.")
+        return {}, set(), b
 
 def load_groups() -> tuple:
     try:
@@ -108,28 +142,52 @@ def load_groups() -> tuple:
             print(e)
         return [], True
 
-def save_files(strings : dict, groups : Optional[list]) -> None:
-    with open("strings.json", mode="w", encoding="utf-8") as f:
-        json.dump(strings, f, ensure_ascii=False, indent=0)
+def save_files(strings : list, groups : Optional[list]) -> None:
+    with open("strings.py", mode="w", encoding="utf-8") as f:
+        f.write("\n".join(strings))
     if groups is not None:
         with open("groups.json", mode="w", encoding="utf-8") as f:
             json.dump(groups, f, ensure_ascii=False, indent=0)
 
-def backup_strings_file(loaded : Optional[dict] = None) -> bool:
+def update_string_file_with_tl(strings : dict) -> None:
     try:
-        if not loaded:
-            with open("strings.json", mode="r", encoding="utf-8") as f: # checking for validity
-                loaded = json.load(f)
-        if not isinstance(loaded, dict):
-            raise Exception("Invalid strings.json format")
+        with open("strings.py", mode="r", encoding="utf-8") as f:
+            lines = []
+            while line := f.readline():
+                lines.append(line)
+        for i, line in enumerate(lines):
+            if not line.startswith(DISABLE_STR) and not line.startswith(TALKING_STR) and not line.startswith(FILE_STR) and not line.startswith(COMMENT_STR) and line.strip() != "":
+                try:
+                    d = json.loads("{"+line+"}")
+                    if not isinstance(d, dict):
+                        raise Exception()
+                    st = list(d.keys())[0]
+                    d[st] = strings.get(st, None)
+                    lines[i] = "{}:{}\n".format(json.dumps(st, ensure_ascii=False, separators=(',', ':')), json.dumps(d[st], ensure_ascii=False, separators=(',', ':')))
+                except Exception as x:
+                    print(x)
+                    raise Exception("Line", i+1, "is invalid", line)
+            else:
+                pass
+            
+        with open("strings.py", mode="w", encoding="utf-8") as f:
+            for line in lines:
+                f.write(line)
+    except Exception as e:
+        print("An error occured while updating strings.py")
+        print(e)
+    
+
+def backup_strings_file() -> bool:
+    try:
         # backing up...
         bak_strings = [".bak-5", ".bak-4", ".bak-3", ".bak-2", ".bak-1", ""]
         for i in range(1, len(bak_strings)):
-            try: shutil.copyfile("strings"+bak_strings[i]+".json", "strings"+bak_strings[i-1]+".json")
+            try: shutil.copyfile("strings"+bak_strings[i]+".py", "strings"+bak_strings[i-1]+".py")
             except: pass
     except Exception as e:
         if "no such file" not in str(e).lower():
-            print("Failed to backup strings.json")
+            print("Failed to backup strings.py")
             print(e)
             if input("Type 'y' to continue anyway:").lower() != "y":
                 return False
@@ -165,8 +223,172 @@ def untouched_JSON():
                     data = json.load(f)
                 yield (fn.replace(ORIGINAL_FOLDER, ''), data)
 
+def read_MARSHAL_long(handle) -> int:
+    length = struct.unpack("b", handle.read(1))[0]
+    if length == 0:
+        return 0
+    if 5 < length < 128:
+        return length - 5
+    elif -129 < length < -5:
+        return length + 5
+    result = 0
+    factor = 1
+    for s in range(abs(length)):
+        result += struct.unpack("B", handle.read(1))[0] * factor
+        factor *= 256
+    if length < 0:
+        result = result - factor
+    return result
+
+def read_MARSHAL_short(handle):
+    return struct.unpack("<H", handle.read(2))[0]
+
+class MarshalElement():
+    def __init__(self, token, content=None):
+        self.token = token
+        self.content = content
+        self.extras = []
+
+    def set(self, content, extras=None):
+        self.content = content
+        if extras is not None: self.extras = extras
+        return self
+
+    def __str__(self):
+        return "MarshalElement<{}:{}:{}>".format(self.token, self.content, self.extras)
+
+def read_MARSHAL(handle, token=None) -> tuple:
+    if token is None:
+        token = handle.read(1)
+    elem = MarshalElement(token)
+    match token:
+        case b"0":
+            return elem.set(None)
+        case b"T":
+            return elem.set(True)
+        case b"F":
+            return elem.set(False)
+        case b"I":
+            return elem.set(bytes(), [read_MARSHAL(handle)])
+        case b'"':
+            return elem.set(handle.read(read_MARSHAL_long(handle)))
+        case b":":
+            return elem.set(handle.read(read_MARSHAL_long(handle)))
+        case b'i':
+            return elem.set(read_MARSHAL_long(handle))
+        case b"[":
+            size = read_MARSHAL_long(handle)
+            return elem.set([read_MARSHAL(handle) for i in range(size)])
+        case b"{":
+            size = read_MARSHAL_long(handle)
+            return elem.set({read_MARSHAL(handle):read_MARSHAL(handle) for i in range(size)})
+        case b"f":
+            return elem.set(float(handle.read(read_MARSHAL_long(read_MARSHAL_long(handle))).split(b"\0")[0].decode("utf-8")))
+        case b"l":
+            return elem.set(handle.read(read_MARSHAL_long(handle)*2))
+        case b"/":
+            return elem.set(handle.read(read_MARSHAL_long(handle)))
+        case b"U":
+            return elem.set(bytes(), [read_MARSHAL(handle), read_MARSHAL(handle)])
+        case b";":
+            return elem.set(read_MARSHAL_long(handle))
+        case b"@":
+            return elem.set(read_MARSHAL_long(handle))
+        case b"u":
+            sym = read_MARSHAL(handle)
+            pdata = read_MARSHAL(handle, b'"').content
+            return elem.set(pdata, [sym])
+        case b"m":
+            return elem.set(read_MARSHAL(handle, b'"').content)
+        case b"o":
+            return elem.set(bytes(), [read_MARSHAL(handle), read_MARSHAL(handle, b"{")])
+        case b"e":
+            return elem.set(read_MARSHAL(handle, b'"').content)
+        case b"c":
+            return elem.set(read_MARSHAL(handle, b'"').content)
+        case _:
+            raise Exception("Uninplemented", token, handle.tell())
+
+def read_MARSHAL_file(handle):
+    if handle.read(1) != b"\x04" or handle.read(1) != b"\x08": raise Exception("Invalid Magic Number")
+    return read_MARSHAL(handle)
+
+def untouched_MARSHAL():
+    for path, subdirs, files in os.walk(ORIGINAL_FOLDER):
+        for name in files:
+            if name.endswith('.rxdata'):
+                fn = os.path.join(path, name).replace('\\', '/')
+                with open(fn, mode="rb") as f:
+                    data = read_MARSHAL_file(f)
+                yield (fn.replace(ORIGINAL_FOLDER, ''), data)
+
+def untouched_RUBY():
+    for path, subdirs, files in os.walk(ORIGINAL_FOLDER):
+        for name in files:
+            if name.endswith('.rb'):
+                fn = os.path.join(path, name).replace('\\', '/')
+                with open(fn, mode="r", encoding="utf-8", errors='ignore') as f:
+                    data = f.read()
+                yield (fn.replace(ORIGINAL_FOLDER, ''), data)
+
+def parse_MARSHAL_script(script : str) -> list:
+    in_string = False
+    escaped = False
+    strings = []
+    buf = ""
+    for i in range(len(script)):
+        c = script[i]
+        if not in_string:
+            if not escaped:
+                if c == '"':
+                    in_string = True
+                    buf = ""
+                elif c == "\\":
+                    escaped = True
+            else:
+                escaped = False
+        elif escaped:
+            if c == "n": buf += "\n"
+            else: buf += c
+            escaped = False
+        else:
+            if c == '\\':
+                escaped = True
+            elif c == '"':
+                strings.append(buf)
+                buf = ""
+                in_string = False
+            else:
+                buf += c
+    return strings
+
+def load_MARSHAL(element, is_script=False):
+    strings = []
+    if element.token == b"[":
+        strings = []
+        for e in element.content:
+            s, g = load_MARSHAL(e, is_script)
+            strings += s
+    elif element.token == b"{":
+        strings = []
+        for k, v in element.content.items():
+            s, g = load_MARSHAL(v, is_script)
+            strings += s
+    elif element.token == b'"':
+        try:
+            strings = [element.content.decode('utf-8')]
+        except Exception as e:
+            if is_script:
+                d = zlib.decompressobj().decompress(element.content)
+                strings = parse_MARSHAL_script(d.decode('utf-8'))
+            else:
+                raise e
+    for e in element.extras:
+        s, g = load_MARSHAL(e, is_script)
+        strings += s
+    return strings, []
+
 def load_event_data(content, old : dict) -> tuple:
-    global TALKING_COUNTER
     strings = []
     groups = []
     current_group = []
@@ -182,14 +404,11 @@ def load_event_data(content, old : dict) -> tuple:
                     if isinstance(pm, str):
                         strings.append(pm)
             case 101:
-                s = ""
                 for p in cmd["parameters"]:
                     pt = str(p)
                     if isinstance(old.get(pt, None), str): pt = old[pt]
-                    s += ":" + pt
-                strings.append(TALKING_STR + str(TALKING_COUNTER) + s + " " + UNIQUE_STR)
+                strings.append(TALKING_STR + pt)
                 if isinstance(cmd["parameters"][-1], str) and cmd["parameters"][-1] != "":
-                    TALKING_COUNTER += 1
                     strings.append(cmd["parameters"][-1])
             case 402:
                 strings.append(cmd["parameters"][-1])
@@ -276,42 +495,52 @@ def apply_default(d : dict) -> dict:
     d = default_tl | d
     return d
 
-def generate_sub(string_counter : int, strings: dict, old: dict, groups : list, s : list, g : list) -> tuple:
+def generate_sub(fn : str, string_counter : int, index: set, strings: list, old: dict, groups : list, s : list, g : list) -> tuple:
+    strings.append(FILE_STR + fn)
     previously_added = ""
     for st in s:
-        if st is None or st == "": continue
-        if st not in strings and isinstance(st, str):
-            if st.startswith(TALKING_STR):
-                if previously_added.startswith(TALKING_STR):
-                    strings.pop(previously_added)
-                strings[st] = 0
-            else:
-                strings[st] = old.get(st, None)
-                if st not in old:
-                    string_counter += 1
-            previously_added = st
+        if st is None or st == "" or st in index: continue
+        if st.startswith(TALKING_STR):
+            if previously_added.startswith(TALKING_STR):
+                strings.pop(-1)
+            strings.append(st)
+        else:
+            tl = old.get(st, None)
+            strings.append(json.dumps(st, ensure_ascii=False) + ":" + json.dumps(tl, ensure_ascii=False))
+            if st not in old:
+                string_counter += 1
+            index.add(st)
+        previously_added = st
     groups += g
-    return string_counter, strings, groups
+    return string_counter, index, strings, groups
 
 def generate() -> None:
     if check_confirmation("generate"):
-        old, _continue = load_strings(quit_on_error=True)
+        old, disabled, _continue = load_strings()
         if _continue:
-            if backup_strings_file(old):
-                global TALKING_COUNTER
-                TALKING_COUNTER = 0
+            if backup_strings_file():
                 string_counter = 0
+                base_old = old
                 old = apply_default(old)
-                strings = {}
+                index = set()
+                strings = []
                 groups = []
                 for fn, data in untouched_CSV():
-                    print("Reading", fn)
+                    if fn in disabled:
+                        print("Skipping", fn, "(Disabled by user)")
+                        continue
+                    else:
+                        print("Reading", fn)
                     sn = fn.split('/')[-1]
                     s, g = load_externmessage_CSV(data)
-                    strings[UNIQUE_STR + " " + fn + " " + UNIQUE_STR] = 0
-                    string_counter, strings, groups = generate_sub(string_counter, strings, old, groups, s, g)
+                    if len(s) > 0 or len(g) > 0:
+                        string_counter, index, strings, groups = generate_sub(fn, string_counter, index, strings, old, groups, s, g)
                 for fn, data in untouched_JSON():
-                    print("Reading", fn)
+                    if fn in disabled:
+                        print("Skipping", fn, "(Disabled by user)")
+                        continue
+                    else:
+                        print("Reading", fn)
                     sn = fn.split('/')[-1]
                     if sn.startswith("Map") and sn != "MapInfos.json":
                         s, g = load_map_JSON(data, old)
@@ -323,16 +552,55 @@ def generate() -> None:
                         s, g = load_package_JSON(data)
                     else:
                         s, g = load_data_JSON(data, old)
-                    strings[UNIQUE_STR + " " + fn + " " + UNIQUE_STR] = 0
-                    string_counter, strings, groups = generate_sub(string_counter, strings, old, groups, s, g)
+                    if len(s) > 0 or len(g) > 0:
+                        string_counter, index, strings, groups = generate_sub(fn, string_counter, index, strings, old, groups, s, g)
+                for fn, data in untouched_JAVA():
+                    if 'plugins' in fn:
+                        if fn in disabled:
+                            print("Skipping", fn, "(Disabled by user)")
+                            continue
+                        else:
+                            print("Reading", fn)
+                        if fn.endswith('plugins.js'):
+                            s, g = load_plugins_java(data)
+                        else:
+                            s, g = load_java(data)
+                        if len(s) > 0 or len(g) > 0:
+                            string_counter, index, strings, groups = generate_sub(fn, string_counter, index, strings, old, groups, s, g)
+                for fn, data in untouched_MARSHAL():
+                    if fn in disabled:
+                        print("Skipping", fn, "(Disabled by user)")
+                        continue
+                    else:
+                        print("Reading", fn)
+                    sn = fn.split('/')[-1]
+                    s, g = load_MARSHAL(data, "Scripts" in fn)
+                    if len(s) > 0 or len(g) > 0:
+                        string_counter, index, strings, groups = generate_sub(fn, string_counter, index, strings, old, groups, s, g)
+                for fn, data in untouched_RUBY():
+                    if fn in disabled:
+                        print("Skipping", fn, "(Disabled by user)")
+                        continue
+                    else:
+                        print("Reading", fn)
+                    sn = fn.split('/')[-1]
+                    s = parse_MARSHAL_script(data,)
+                    if len(s) > 0:
+                        string_counter, index, strings, groups = generate_sub(fn, string_counter, index, strings, old, groups, s, [])
+                for fn in disabled:
+                    strings.append(DISABLE_STR+fn)
                 save_files(strings, groups)
                 print("Done")
-                print("strings.json has been updated.")
                 if string_counter > 0:
                     print(string_counter, "new/updated string(s).")
                 else:
-                    print("no new/updated strings detected.")
-
+                    print("No new/updated strings detected.")
+                string_counter = 0
+                for k in base_old:
+                    if k not in index:
+                        string_counter += 1
+                if string_counter > 0:
+                    print(string_counter, "removed unused string(s).")
 
 def load_externmessage_CSV(data : str) -> tuple:
     reader = csv.reader(StringIO(data))
@@ -344,6 +612,75 @@ def load_externmessage_CSV(data : str) -> tuple:
                 strings.append(cell)
     return strings, []
 
+def load_plugins_java(data : str) -> tuple:
+    try:
+        strings = []
+        start = data.find('plugins =') + len('plugins =')
+        end = len(data) - 1
+        while data[end] != ';': end -= 1
+        plugins = json.loads(data[start:end])
+        for p in plugins:
+            if 'parameters' in p:
+                for k, v in p['parameters'].items():
+                    if v != "" and not v.isdigit():
+                        strings.append(v)
+        return strings, []
+    except Exception as e:
+        print("Failed to parse plugins.json")
+        print(e)
+        return [], []
+
+def load_java(data : str) -> tuple:
+    string_ouputs = []
+    string = ""
+    escaped = False
+    string_char = None
+    in_string = False
+    in_comment = None
+    skip_char = False
+    for i, c in enumerate(data):
+        if skip_char:
+            skip_char = False
+        elif in_comment is not None:
+            if (in_comment == '/' and c == '\n') or (in_comment == '*' and c == '*' and i < len(data)-1 and data[i+1] == '/'):
+                in_comment = None
+        elif in_string and escaped:
+            if c == "n": string += "\n"
+            elif c == "\\": string += "\\\\"
+            else:
+                if string_char == '/': string += "\\"
+                string += c
+            escaped = False
+        elif in_string:
+            match c:
+                case ('"'|"'"|'`'|'/'):
+                    if c == string_char:
+                        string_char = None
+                        string_ouputs.append(string)
+                        string = ""
+                        in_string = False
+                    else:
+                        string += c
+                case '\\':
+                    escaped = True
+                case _:
+                    string += c
+        elif c == '/': # regex check
+            if i < len(data)-1 and data[i+1] in ('*', '/'):
+                in_comment = data[i+1]
+                skip_char = True
+            elif i > 0 and data[i-1] == '(': # probably regex string. NOTE: doesn't cover all cases
+                string_char = c
+                in_string = True
+        else:
+            match c:
+                case ('"'|"'"|'`'):
+                    string_char = c
+                    in_string = True
+                case _:
+                    pass
+    return string_ouputs, []
+
 def translate_string(s : str) -> str:
     time.sleep(0.2)
     cs = TRANSLATOR.translate(s)
@@ -353,10 +690,10 @@ def translate_string(s : str) -> str:
 
 def translate() -> None:
     if check_confirmation("translate"):
-        strings, _continue = load_strings(quit_on_error=True)
+        strings, disabled, _continue = load_strings(with_file_strings=True)
         if _continue:
             groups, _return = load_groups()
-            if backup_strings_file(strings):
+            if backup_strings_file():
                 all = (input("Type 'all' if you want to translate all files:").lower().strip() == "all")
                 group_table = {}
                 for i, g in enumerate(groups):
@@ -370,11 +707,17 @@ def translate() -> None:
                 tl_count = 0
                 print_flag = False
                 for s in strings:
-                    if isinstance(strings[s], int) and ".json" in s:
-                        current_file = s.replace("=", "").split('/')[-1].strip()
+                    if s.startswith(FILE_STR):
+                        current_file = s.replace(FILE_STR, '').strip()
+                        if current_file in disabled:
+                            sys.stdout.write("\rFile is disabled by the user, skipping...\n")
                         sys.stdout.write("\rIn section: {}              ".format(current_file))
                         sys.stdout.flush()
                         print_flag = True
+                    elif s.startswith(COMMENT_STR) or s.startswith(DISABLE_STR) or s.startswith(TALKING_STR):
+                        continue
+                    elif current_file in disabled:
+                        continue
                     elif strings[s] is None:
                         if not all and not current_file.startswith("Map") and current_file not in ["Actors.json", "Armors.json", "Classes.json", "CommonEvents.json", "Enemies.json", "Items.json", "Skills.json", "States.json", "Weapons.json"]:
                             continue
@@ -430,7 +773,7 @@ def translate() -> None:
                 sys.stdout.flush()
                 print("Done")
                 if tl_count > 0:
-                    save_files(strings, None)
+                    update_string_file_with_tl(strings)
                     print(tl_count, "modified strings")
                 else:
                     print("No new string translation")
@@ -593,6 +936,99 @@ def patch_json(fn : str, data, index : dict, patches : dict):
                 print(e)
     return data
 
+def patch_java(fn : str, data, index : dict, patches):
+    if 'plugins' in fn:
+        if fn.endswith('plugins.js'):
+            try:
+                start = data.find('plugins =') + len('plugins =')
+                end = len(data) - 1
+                while data[end] != ';': end -= 1
+                plugins = json.loads(data[start:end])
+                for i in range(len(plugins)):
+                    if 'parameters' in plugins[i]:
+                        for k, v in plugins[i]['parameters'].items():
+                            if v != "" and not v.isdigit() and index.get(v, None) is not None:
+                                plugins[i]['parameters'][k] = index[v]
+                content = "\n[\n"
+                for i in range(len(plugins)):
+                    content += json.dumps(plugins[i], ensure_ascii=False, separators=(',', ':'))
+                    if i != len(plugins)-1: content += ","
+                    content += "\n"
+                content += "\n]"
+                data = data[:start] + content + data[end:]
+            except Exception as e:
+                print("Failed to parse plugins.js")
+                print(e)
+        else: # regular json
+            begin = -1
+            string = ""
+            escaped = False
+            string_char = None
+            in_string = False
+            in_comment = None
+            i = 0
+            while i < len(data):
+                c = data[i]
+                if in_comment is not None:
+                    if (in_comment == '/' and c == '\n') or (in_comment == '*' and c == '*' and i < len(data)-1 and data[i+1] == '/'):
+                        in_comment = None
+                elif in_string and escaped:
+                    if c == "n": string += "\n"
+                    elif c == "\\": string += "\\\\"
+                    else:
+                        if string_char == '/': string += "\\"
+                        string += c
+                    escaped = False
+                elif in_string:
+                    match c:
+                        case ('"'|"'"|'`'|'/'):
+                            if c == string_char:
+                                if string != "":
+                                    tl = index.get(string, None)
+                                    if isinstance(tl, str):
+                                        tl = tl.replace('\n', '\\n').replace(string_char, '\\'+string_char)
+                                        data = data[:begin] + tl + data[i:]
+                                        i = begin + len(tl)
+                                        begin = -1
+                                string_char = None
+                                string = ""
+                                in_string = False
+                            else:
+                                string += c
+                        case '\\':
+                            escaped = True
+                        case _:
+                            string += c
+                elif c == '/': # regex check
+                    if i < len(data)-1 and data[i+1] in ('*', '/'):
+                        in_comment = data[i+1]
+                        i += 1 # skip char
+                    elif i > 0 and data[i-1] == '(': # probably regex string. NOTE: doesn't cover all cases
+                        string_char = c
+                        in_string = True
+                else:
+                    match c:
+                        case ('"'|"'"|'`'):
+                            begin = i + 1
+                            string_char = c
+                            in_string = True
+                        case _:
+                            pass
+                i += 1
+    if fn in patches:
+        global data_set
+        for p in patches[fn]:
+            try:
+                data_set = None
+                exec(p)
+                if data_set is not None:
+                    data = data_set
+            except Exception as e:
+                print("Failed to run the following patch:")
+                print(p)
+                print("Exception:")
+                print(e)
+    return data
 
 def patch_csv(fn : str, data, index : dict, patches):
     reader = csv.reader(StringIO(data))
@@ -666,7 +1102,7 @@ def load_python_patches() -> dict:
 
 def patch() -> None:
     if check_confirmation("patch"):
-        strings, _continue = load_strings()
+        strings, disabled, _continue = load_strings()
         if _continue:
             if os.path.exists(OUTPUT_FOLDER) and os.path.isdir(OUTPUT_FOLDER):
                 try:
@@ -677,6 +1113,9 @@ def patch() -> None:
                     print(e)
             patches = load_python_patches()
             for fn, data in untouched_CSV():
+                if fn in disabled:
+                    print("Skipping", fn, "(Disabled by user)")
+                    continue
                 old_data = str(data)
                 data = patch_csv(fn, data, strings, patches)
                 if str(data) != old_data:
@@ -684,7 +1123,20 @@ def patch() -> None:
                     with open(OUTPUT_FOLDER + fn, mode="w", encoding="utf-8") as f:
                         f.write(data)
                     print("Patched file", fn)
+            for fn, data in untouched_JAVA():
+                if fn in disabled:
+                    print("Skipping", fn, "(Disabled by user)")
+                    continue
+                old_data = str(data)
+                data = patch_java(fn, data, strings, patches)
+                if str(data) != old_data:
+                    patch_mkdir(fn)
+                    with open(OUTPUT_FOLDER + fn, mode="w", encoding="utf-8") as f:
+                        f.write(data)
             for fn, data in untouched_JSON():
+                if fn in disabled:
+                    print("Skipping", fn, "(Disabled by user)")
+                    continue
                 sn = fn.split('/')[-1]
                 old_data = str(data)
                 data = patch_json(fn, data, strings, patches)
@@ -708,7 +1160,7 @@ def patch() -> None:
             print("The patched files are available in the", OUTPUT_FOLDER, "folder")
 
 def main():
-    print("RPG Maker MV/MZ MTL Patcher v1.12")
+    print("RPG Maker MV/MZ MTL Patcher v2.0")
     init()
     while True:
         print("")

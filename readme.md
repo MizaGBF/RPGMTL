@@ -1,64 +1,79 @@
 # RPGMTL  
-Small tool to create MTL patches for RPG Maker MV and MZ games.  
-For now, it's exclusively for JSON files of the data folder and externMessages.csv when available.  
+Small tool to create MTL patches for RPG Maker games.  
   
-### Requirements  
-* Tested on Python 3.11.
+## Supported files  
+* JSON files (such as RPG Maker MV/MZ data files)  
+* JS files (such as RPG Maker MV/MZ js files)  
+* CSV files (such as RPG Maker MV/MZ externMessages.csv file)  
+  
+And partial support for:
+* RXDATA files (RPG Maker XP. Currently only supports reading from it, not patching them).  
+* RB files (RPG Maker Ruby scripts. Currently only supports reading from it, not patching them).  
+  
+## Requirements  
+* Tested on Python 3.11. At least 3.10 should be required.
 * See [requirements.txt](https://github.com/MizaGBF/RPGMTL/blob/master/requirements.txt) for a list of third-party modules.  
 * `python -m pip install -r requirements.txt`, in a terminal/command prompt, to install or update them.  
   
-### First time  
-1. Create a folder for the game you want to patch. It doesn't have to be in this game folder.  
-2. Copy and paste rpgmtl.py inside.  
-3. Run it.  
-4. It will ask you to select the location of the game executable (Usually, Game.exe).  
-5. It will create two folders: `manual_edit` where you can add files you manually edited (for examples javascript or image files) and `untouched_files` which is a **backup** of your game `data` and `js` folders.  
-6. `patches.py` should also have been created. More on it on a section below.  
-7. In the terminal, you can use the first option `Generate strings.json` by typing `0`. You can then use the second option to attempt to translate them or manually edit it with your favorite text editor.  
-8. Once you're done, you can use the third option `Create patch` by typing `2`. A new folder called `release` which will contain your patched files. You can copy them to your game folder and overwrite to test them.  
+## Usage  
+Upon starting the script in an empty folder, it will prompt you to select the location of a game.  
+It will create two folders: `manual_edit` where you can add files you manually edited yourself (for examples, image files) and `untouched_files` which is a **backup** of your game files and will be used to read the strings from.  
+It will also created a file named `patches.py`. More on it on a section below.  
   
-Repeat step 8 if you update your translation.  
+Once done, you can use the first option `Generate strings.json` by typing `0`. It will generate two files named `strings.py` and `groups.json`. Future uses will create backups of `strings.py` (in case of a mistake or bug).  
+
+### strings.py
+While it has a `.py` file extension, it's not an executable script. Its content is actually more of a mix of python and json.  
+Open it in your favorite text editor:  
+```python
+#@@@data/Actors.json
+"Hero":null
+"Mage":null
+"Warrior":null
+```
+(This is an example for illustration purpose)  
+Each line of the file is a string, followed by a colon `:` and another string (if it's translated) or `null` if it's not.  
+There are also special strings, which start with:  
+* `#@@@`: Indicates which file this string is first encountered in.  
+* `#%%%`: Add it so that the script to ignore the file entirely. Its strings will be discarded at the next generation..  
+* `#@TALKING:`: Used for events. Indicates you which character is talking.  
+* `#`: Use it if you wish to add a comment.  
   
-### strings.json  
-It's a table of all strings and their translation or the `null` value.  
-They are ordered by order of occurence in the game files and only the first occurence is saved.  
-To help with the context, you'll also see strings such as the following :  
-`"============== Actors.json =============="` which indicates that the next strings were found in the file Actors.json.  
-`"==== TALKING:394:Face:0:1:2:NPC_name =============="` which indicates the last speaker (Event command 101) in the event list.  
-Those special strings always have the value 0 and you shouldn't change it.  
-  
-Backups are automatically created when using the tool.  
-It will also tell you if you made an error in the JSON format.  
+These special strings can be modified by modifying them at the top of the script.  
+I plan to build a dedicated editor, eventually.  
   
 ### groups.json  
-For internal use and for the test server tool (see below).  
-You don't have to modify it.
+You can ignore this file entirely, it's used by the auto translate feature.  
   
 ### manual_edit Folder  
 Simply put the other files that you modified yourself inside.  
 For example, if you want to modify `js/plugins.js`, make a new folder named `js` and copy the original `plugins.js` inside. Then edit it.  
-When you'll create the patch, it will automatically be copied to the `release` folder.  
+When you'll create the patch, it will automatically be copied to the `release` folder. Do note that it overwrites any file created by the patch (if you have `A.whatever` in `manual_edit` and this file is also patched by the script, your will have the priority. Check the next section if you need to make specific modifications to patched files.  
   
 ### patches.py  
 Used for fine tuning. You can set python code to run for specific files.  
-The default file is always:  
+It requires you to know a bit of python.  
+The file will must look this way:  
 ```python
-#@@@System.json
+#@@@data/System.json
 data["locale"] = "en_UK"
 ```  
-Where it sets the value of the `locale` of `System.json` to `"en_UK"`.
-You can add how many as you want and they must be grouped by files:  
+The first line starting with `#@@@` indicates which file(s) are patched (you can put multiples separated by a semicolon. Example: `#@@@A.json;B.json;C.json` and the code will run for each of these files).  
+The rest is python code to modify the file(s).  
+For JSON files, you can simply access the data variable directly.  
+In the example above, I modify the `locale` value to english.  
+For text files (javascript, for example), a bit of trickery is involved as you'll have to mutate the data variable:  
 ```python
-#@@@System.json
-data["locale"] = "en_UK"
-
-#@@@Items.json
-data[0]["description"] = "Super strong item, for real!"
+#@@@Myfile
+global data_set
+# do stuff
+# ... for example, data = data.replace("my_string", "cool_string")
+# end
+data_set = data # set this variable
 ```  
-Files are delimited using `#@@@`.  
-Multiple files can also be set for one patch using a semicolon `;`.  
-For example: `#@@@System.json;Items.json`.  
-In a similar fashion, multiple patches can be set for one file:  
+If `data_set` is detected to not be `None` after the execution, its content is set back inside `data`.  
+  
+You can chain as many patches as you wish:  
 ```python
 #@@@System.json
 data["locale"] = "en_UK"
@@ -66,30 +81,21 @@ data["locale"] = "en_UK"
 #@@@System.json
 data["gameTitle"] = "Cool game"
 ```  
-Patches are executed in order of occurence.  
   
 And, of course, the content in-between these lines must be valid python code.  
 There is no real limit. Just make sure to escape the quote with a backslash. Use `\n` for new lines.  
-Note: They will always run AFTER the patching of the strings.  
+Note: The code will always run AFTER the patching of the strings.  
   
-Additionally if you need to mutate the data variable, you can do something like the following:
-```python
-#@@@Myfile
-global data_set
-# do stuff
-# ...
-# end
-data_set = data # set this variable
-```  
-If `data_set` is detected to not be `None` after the execution, its content is set back inside `data`.  
-So you can use this type of line to do pretty much whatever you want.  
+The delimiter `#@@@` can be modified by changing `PATCH_STR` at the top of `rpgmtl.py`, like the others.  
   
 ### Game update  
 If a game got updated and you want to update the string list, simply use the fourth option `Game got updated` and select your game folder again. It will recreate the `untouched_files` folder. You can then reuse the first option `Generate strings.json`. It will add the new strings and delete the ones not used anymore.  
 Make sure to not mix and matches different games by mistake.  
+One thing you can do next is compare `strings.py` with one of its backup (usually `strings.bak-1.py`) in a file comparator, to see what strings changed and modify them quickly.
   
 ### Machine translation  
 The script uses the [deep translator](https://github.com/prataffel/deep_translator) module for translations.  
+This feature is still experimental and isn't perfect.
 By default, the script is set and intended to be used with Google Translate, and it targets the english language.  
 You can change this behavior by changing those line:  
 ```python
@@ -103,8 +109,9 @@ And the `translate_string` function if you want to go further.
 See the Github repository linked above for more informations on deep translator..  
   
 ### Test Server  
+Another experimental feature.
 Found in the the `test_server` folder are a few files to test the strings directly in game.  
-Do note that it's VERY experimental and has only be tested in a few RPG Maker MZ games.  
+Do note that it's VERY experimental and has only be tested in a few RPG Maker MV/MZ games.  
 To use:  
 1. Copy the content of `test_server` to the game folder.  
 2. Copy your `strings.json` and `groups.json` to the game folder.  
