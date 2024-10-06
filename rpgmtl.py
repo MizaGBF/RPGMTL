@@ -622,8 +622,18 @@ def load_plugins_java(data : str) -> tuple:
         for p in plugins:
             if 'parameters' in p:
                 for k, v in p['parameters'].items():
-                    if v != "" and not v.isdigit():
-                        strings.append(v)
+                    match v:
+                        case str():
+                            if v != "" and not v.isdigit():
+                                strings.append(v)
+                        case list():
+                            for el in v:
+                                if isinstance(el, str) and el != "" and not el.isdigit():
+                                    strings.append(el)
+                        case dict():
+                            for elk, el in v.items():
+                                if isinstance(el, str) and el != "" and not el.isdigit():
+                                    strings.append(el)
         return strings, []
     except Exception as e:
         print("Failed to parse plugins.json")
@@ -947,8 +957,18 @@ def patch_java(fn : str, data, index : dict, patches):
                 for i in range(len(plugins)):
                     if 'parameters' in plugins[i]:
                         for k, v in plugins[i]['parameters'].items():
-                            if v != "" and not v.isdigit() and index.get(v, None) is not None:
-                                plugins[i]['parameters'][k] = index[v]
+                            match v:
+                                case str():
+                                    if v != "" and not v.isdigit() and index.get(v, None) is not None:
+                                        plugins[i]['parameters'][k] = index[v]
+                                case list():
+                                    for j, el in enumerate(v):
+                                        if isinstance(el, str) and el != "" and not el.isdigit() and index.get(el, None) is not None:
+                                            plugins[i]['parameters'][k][j] = index[el]
+                                case dict():
+                                    for elk, el in v.items():
+                                        if isinstance(el, str) and el != "" and not el.isdigit() and index.get(el, None) is not None:
+                                            plugins[i]['parameters'][k][elk] = index[el]
                 content = "\n[\n"
                 for i in range(len(plugins)):
                     content += json.dumps(plugins[i], ensure_ascii=False, separators=(',', ':'))
@@ -1160,7 +1180,7 @@ def patch() -> None:
             print("The patched files are available in the", OUTPUT_FOLDER, "folder")
 
 def main():
-    print("RPG Maker MV/MZ MTL Patcher v2.0")
+    print("RPG Maker MV/MZ MTL Patcher v2.1")
     init()
     while True:
         print("")
