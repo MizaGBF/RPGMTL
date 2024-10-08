@@ -5,10 +5,8 @@ Small tool to create MTL patches for RPG Maker games.
 * JSON files (such as RPG Maker MV/MZ data files)  
 * JS files (such as RPG Maker MV/MZ js files)  
 * CSV files (such as RPG Maker MV/MZ externMessages.csv file)  
-  
-And partial support for:
-* RXDATA files (RPG Maker XP. Currently only supports reading from it, not patching them).  
-* RB files (RPG Maker Ruby scripts. Currently only supports reading from it, not patching them).  
+* RXDATA files (RPG Maker XP. EXPERIMENTAL).  
+* RB files (RPG Maker Ruby scripts. EXPERIMENTAL).  
   
 ## Requirements  
 * Tested on Python 3.11. At least 3.10 should be required.

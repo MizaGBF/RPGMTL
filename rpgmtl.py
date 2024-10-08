@@ -1,8 +1,9 @@
-from typing import Optional
+from typing import Optional, Any
 import json
 import zlib
 import struct
 import time
+import math
 import textwrap
 import traceback
 import os
@@ -223,7 +224,7 @@ def untouched_JSON():
                     data = json.load(f)
                 yield (fn.replace(ORIGINAL_FOLDER, ''), data)
 
-def read_MARSHAL_long(handle) -> int:
+def read_RUBYMARSHAL_long(handle) -> int:
     length = struct.unpack("b", handle.read(1))[0]
     if length == 0:
         return 0
@@ -240,8 +241,30 @@ def read_MARSHAL_long(handle) -> int:
         result = result - factor
     return result
 
-def read_MARSHAL_short(handle):
-    return struct.unpack("<H", handle.read(2))[0]
+def write_RUBYMARHSHAL_long(value : int) -> bytes:
+    if value == 0:
+        return b"\0"
+    elif 0 < value < 123:
+        return struct.pack("b", value + 5)
+    elif -124 < value < 0:
+        return struct.pack("b", value - 5)
+    else:
+        size = int(math.ceil(value.bit_length() / 8.0))
+        if size > 5:
+            raise Exception("{} is too long for serialization".format(value))
+        back = value
+        factor = 256 ** size
+        if value < 0 and value == -factor:
+            size -= 1
+            value += factor / 256
+        elif value < 0:
+            value += factor
+        sign = int(math.copysign(size, back))
+        output = struct.pack("b", sign)
+        for i in range(size):
+            output += struct.pack("B", value % 256)
+            value = value >> 8
+        return output
 
 class MarshalElement():
     def __init__(self, token, content=None):
@@ -254,10 +277,111 @@ class MarshalElement():
         if extras is not None: self.extras = extras
         return self
 
-    def __str__(self):
+    def __str__(self) -> str:
         return "MarshalElement<{}:{}:{}>".format(self.token, self.content, self.extras)
 
-def read_MARSHAL(handle, token=None) -> tuple:
+    def dump(self) -> Any: # export
+        match self.token:
+            case b"0":
+                return None
+            case b"T":
+                return True
+            case b"F":
+                return False
+            case b"I":
+                return ["type:I",self.extras[0].dump()]
+            case b'"':
+                return self.content.decode('utf-8')
+            case b":":
+                return str(self.content)
+            case b'i':
+                return self.content
+            case b"[":
+                return [e.dump() for e in self.content]
+            case b"{":
+                d = {}
+                for k, v in self.content.items():
+                    d[str(k.dump())] = v.dump()
+                return d
+            case b"f":
+                return ["type:U",self.extras[0].dump(),self.extras[1].dump()]
+            case b"l":
+                output = ["type:l", self.extras[0], self.extras[1]]
+                for i in range(2, len(self.extras)):
+                    output.append(self.extras[i])
+                return output
+            case b"/":
+                return ["type:/",str(self.content)]
+            case b"U":
+                return ["type:U",self.extras[0].dump(),self.extras[1].dump()]
+            case b";":
+                return ["type:;",self.content]
+            case b"@":
+                return ["type:@",self.content]
+            case b"u":
+                return ["type:u",str(self.content), self.extras[0].dump()]
+            case b"m":
+                return ["type:m",str(self.content)]
+            case b"o":
+                return ["type:o",self.extras[0].dump(),self.extras[1].dump()]
+            case b"e":
+                return ["type:e",str(self.content)]
+            case b"c":
+                return ["type:c",str(self.content)]
+            case _:
+                raise Exception("Uninplemented", self.token)
+
+    def binary(self) -> bytes:
+        match self.token:
+            case b"0"|b"T"|b"F":
+                return self.token
+            case b"I":
+                return self.token + write_RUBYMARHSHAL_long(self.extras[0])
+            case b'"':
+                return self.token + write_RUBYMARHSHAL_long(len(self.content)) + self.content
+            case b":":
+                return self.token + write_RUBYMARHSHAL_long(len(self.content)) + self.content
+            case b"i":
+                return self.token + write_RUBYMARHSHAL_long(self.content)
+            case b"[":
+                tmp = self.token + write_RUBYMARHSHAL_long(len(self.content))
+                for e in self.content:
+                    tmp += e.binary()
+                return tmp
+            case b"{":
+                tmp = self.token + write_RUBYMARHSHAL_long(len(self.content))
+                for k, v in self.content.items():
+                    tmp += k.binary() + v.binary()
+                return tmp
+            case b"f":
+                return self.token + write_RUBYMARHSHAL_long(self.extras[0]) + self.extras[1].binary()
+            case b"l":
+                tmp = self.token + self.extras[0] + write_RUBYMARHSHAL_long(self.extras[1])
+                for i in range(self.extras[1]):
+                    tmp += self.extras[2+i]
+                return tmp
+            case b"/":
+                return self.token + write_RUBYMARHSHAL_long(len(self.content)) + self.content
+            case b"U":
+                return self.token + self.extras[0].binary() + self.extras[1].binary()
+            case b";":
+                return self.token + write_RUBYMARHSHAL_long(self.content)
+            case b"@":
+                return self.token + write_RUBYMARHSHAL_long(self.content)
+            case b"u":
+                return self.token + self.extras[0].binary() + write_RUBYMARHSHAL_long(len(self.content)) + self.content
+            case b"m":
+                return self.token + write_RUBYMARHSHAL_long(len(self.content)) + self.content
+            case b"o":
+                return self.token + self.extras[0].binary() + self.extras[1].binary()[1:]
+            case b"e":
+                return self.token + write_RUBYMARHSHAL_long(len(self.content)) + self.content
+            case b"c":
+                return self.token + write_RUBYMARHSHAL_long(len(self.content)) + self.content
+            case _:
+                raise Exception("Uninplemented", self.token)
+
+def read_RUBYMARSHAL(handle, token=None) -> tuple:
     if token is None:
         token = handle.read(1)
     elem = MarshalElement(token)
@@ -269,57 +393,61 @@ def read_MARSHAL(handle, token=None) -> tuple:
         case b"F":
             return elem.set(False)
         case b"I":
-            return elem.set(bytes(), [read_MARSHAL(handle)])
+            return elem.set(bytes(), [read_RUBYMARSHAL(handle)])
         case b'"':
-            return elem.set(handle.read(read_MARSHAL_long(handle)))
+            return elem.set(handle.read(read_RUBYMARSHAL_long(handle)))
         case b":":
-            return elem.set(handle.read(read_MARSHAL_long(handle)))
+            return elem.set(handle.read(read_RUBYMARSHAL_long(handle)))
         case b'i':
-            return elem.set(read_MARSHAL_long(handle))
+            return elem.set(read_RUBYMARSHAL_long(handle))
         case b"[":
-            size = read_MARSHAL_long(handle)
-            return elem.set([read_MARSHAL(handle) for i in range(size)])
+            size = read_RUBYMARSHAL_long(handle)
+            return elem.set([read_RUBYMARSHAL(handle) for i in range(size)])
         case b"{":
-            size = read_MARSHAL_long(handle)
-            return elem.set({read_MARSHAL(handle):read_MARSHAL(handle) for i in range(size)})
+            size = read_RUBYMARSHAL_long(handle)
+            return elem.set({read_RUBYMARSHAL(handle):read_RUBYMARSHAL(handle) for i in range(size)})
         case b"f":
-            return elem.set(float(handle.read(read_MARSHAL_long(read_MARSHAL_long(handle))).split(b"\0")[0].decode("utf-8")))
+            size = read_RUBYMARSHAL_long(handle)
+            return elem.set(bytes(), [size, handle.read(size)])
         case b"l":
-            return elem.set(handle.read(read_MARSHAL_long(handle)*2))
+            extras = [handle.read(1), read_RUBYMARSHAL_long(handle)]
+            for n in extras[1]:
+                extras.append(struct.unpack("<H", handle.read(2))[0])
+            return elem.set(bytes(), extras)
         case b"/":
-            return elem.set(handle.read(read_MARSHAL_long(handle)))
+            return elem.set(handle.read(read_RUBYMARSHAL_long(handle)))
         case b"U":
-            return elem.set(bytes(), [read_MARSHAL(handle), read_MARSHAL(handle)])
+            return elem.set(bytes(), [read_RUBYMARSHAL(handle), read_RUBYMARSHAL(handle)])
         case b";":
-            return elem.set(read_MARSHAL_long(handle))
+            return elem.set(read_RUBYMARSHAL_long(handle))
         case b"@":
-            return elem.set(read_MARSHAL_long(handle))
+            return elem.set(read_RUBYMARSHAL_long(handle))
         case b"u":
-            sym = read_MARSHAL(handle)
-            pdata = read_MARSHAL(handle, b'"').content
+            sym = read_RUBYMARSHAL(handle)
+            pdata = read_RUBYMARSHAL(handle, b'"').content
             return elem.set(pdata, [sym])
         case b"m":
-            return elem.set(read_MARSHAL(handle, b'"').content)
+            return elem.set(read_RUBYMARSHAL(handle, b'"').content)
         case b"o":
-            return elem.set(bytes(), [read_MARSHAL(handle), read_MARSHAL(handle, b"{")])
+            return elem.set(bytes(), [read_RUBYMARSHAL(handle), read_RUBYMARSHAL(handle, b"{")])
         case b"e":
-            return elem.set(read_MARSHAL(handle, b'"').content)
+            return elem.set(read_RUBYMARSHAL(handle, b'"').content)
         case b"c":
-            return elem.set(read_MARSHAL(handle, b'"').content)
+            return elem.set(read_RUBYMARSHAL(handle, b'"').content)
         case _:
             raise Exception("Uninplemented", token, handle.tell())
 
-def read_MARSHAL_file(handle):
+def read_RUBYMARSHAL_file(handle):
     if handle.read(1) != b"\x04" or handle.read(1) != b"\x08": raise Exception("Invalid Magic Number")
-    return read_MARSHAL(handle)
+    return read_RUBYMARSHAL(handle)
 
-def untouched_MARSHAL():
+def untouched_RUBYMARSHAL():
     for path, subdirs, files in os.walk(ORIGINAL_FOLDER):
         for name in files:
             if name.endswith('.rxdata'):
                 fn = os.path.join(path, name).replace('\\', '/')
                 with open(fn, mode="rb") as f:
-                    data = read_MARSHAL_file(f)
+                    data = read_RUBYMARSHAL_file(f)
                 yield (fn.replace(ORIGINAL_FOLDER, ''), data)
 
 def untouched_RUBY():
@@ -331,7 +459,7 @@ def untouched_RUBY():
                     data = f.read()
                 yield (fn.replace(ORIGINAL_FOLDER, ''), data)
 
-def parse_MARSHAL_script(script : str) -> list:
+def parse_RUBYMARSHAL_script(script : str) -> list:
     in_string = False
     escaped = False
     strings = []
@@ -362,33 +490,39 @@ def parse_MARSHAL_script(script : str) -> list:
                 buf += c
     return strings
 
-def load_MARSHAL(element, is_script=False):
+def load_RUBYMARSHAL(element : MarshalElement, parent : Optional[MarshalElement] = None, file_type=0) -> tuple:
     strings = []
     if element.token == b"[":
-        strings = []
         for e in element.content:
-            s, g = load_MARSHAL(e, is_script)
+            s, g = load_RUBYMARSHAL(e, element, file_type)
             strings += s
     elif element.token == b"{":
-        strings = []
+        # code detection BEGIN
+        if file_type == 2 and len(element.content) == 3 and parent.token == b"[":
+            keys = list(element.content.keys())
+            if len(keys) > 0 and keys[-1].token == b";": 
+                el = element.content[keys[-1]]
+                if el.token == b"i" and el.content == 101: # show face code
+                    strings.append(TALKING_STR + " ".join(element.content[keys[0]].dump()))
+        # # code detection END
         for k, v in element.content.items():
-            s, g = load_MARSHAL(v, is_script)
+            s, g = load_RUBYMARSHAL(v, element, file_type)
             strings += s
     elif element.token == b'"':
         try:
             strings = [element.content.decode('utf-8')]
         except Exception as e:
-            if is_script:
+            if file_type == 1:
                 d = zlib.decompressobj().decompress(element.content)
-                strings = parse_MARSHAL_script(d.decode('utf-8'))
+                strings = parse_RUBYMARSHAL_script(d.decode('utf-8'))
             else:
                 raise e
     for e in element.extras:
-        s, g = load_MARSHAL(e, is_script)
+        s, g = load_RUBYMARSHAL(e, parent, file_type)
         strings += s
     return strings, []
 
-def load_event_data(content, old : dict) -> tuple:
+def load_event_data_JSON(content, old : dict) -> tuple:
     strings = []
     groups = []
     current_group = []
@@ -442,12 +576,12 @@ def load_data_JSON(data, old : dict) -> tuple:
             for k in ["name", "description", "message1", "message2", "message3", "message4", "note", "list", "pages", "nickname", "profile"]:
                 if k in e:
                     if k == "list":
-                        s, g = load_event_data(e[k], old)
+                        s, g = load_event_data_JSON(e[k], old)
                         strings += s
                         groups += g
                     elif k == "pages":
                         for p in e[k]:
-                            s, g = load_event_data(p["list"], old)
+                            s, g = load_event_data_JSON(p["list"], old)
                             strings += s
                             groups += g
                     else:
@@ -462,7 +596,7 @@ def load_map_JSON(data, old : dict) -> tuple:
     for ev in data["events"]:
         if isinstance(ev, dict):
             for p in ev["pages"]:
-                s, g = load_event_data(p["list"], old)
+                s, g = load_event_data_JSON(p["list"], old)
                 strings += s
                 groups += g
     return strings, groups
@@ -472,7 +606,7 @@ def load_commonevent_JSON(data, old : dict) -> tuple:
     groups = []
     for i, ev in enumerate(data):
         if isinstance(ev, dict):
-            s, g = load_event_data(ev["list"], old)
+            s, g = load_event_data_JSON(ev["list"], old)
             strings += s
             groups += g
     return strings, groups
@@ -576,14 +710,17 @@ def generate() -> None:
                             s, g = load_java(data)
                         if len(s) > 0 or len(g) > 0:
                             string_counter, index, strings, groups = generate_sub(fn, string_counter, index, strings, old, groups, s, g)
-                for fn, data in untouched_MARSHAL():
+                for fn, data in untouched_RUBYMARSHAL():
                     if fn in disabled:
                         print("Skipping", fn, "(Disabled by user)")
                         continue
                     else:
                         print("Reading", fn)
                     sn = fn.split('/')[-1]
-                    s, g = load_MARSHAL(data, "Scripts" in fn)
+                    if "Scripts" in sn: file_type = 1
+                    elif ("Map" in sn and "Infos" not in sn) or ("CommonEvents" in sn): file_type = 2
+                    else: file_type = 0
+                    s, g = load_RUBYMARSHAL(data, None, file_type)
                     if len(s) > 0 or len(g) > 0:
                         string_counter, index, strings, groups = generate_sub(fn, string_counter, index, strings, old, groups, s, g)
                 for fn, data in untouched_RUBY():
@@ -593,7 +730,7 @@ def generate() -> None:
                     else:
                         print("Reading", fn)
                     sn = fn.split('/')[-1]
-                    s = parse_MARSHAL_script(data,)
+                    s = parse_RUBYMARSHAL_script(data,)
                     if len(s) > 0:
                         string_counter, index, strings, groups = generate_sub(fn, string_counter, index, strings, old, groups, s, [])
                 for fn in disabled:
@@ -935,7 +1072,7 @@ def patch_system_JSON(data, index : dict):
             data[k] = patch_system_JSON(v, index)
     return data
 
-def patch_json(fn : str, data, index : dict, patches : dict):
+def patch_JSON(fn : str, data, index : dict, patches : dict):
     sn = fn.split('/')[-1]
     if sn.startswith("Map") and sn != "MapInfos.json":
         data = patch_map_JSON(data, index)
@@ -967,7 +1104,7 @@ def patch_json(fn : str, data, index : dict, patches : dict):
                 print(e)
     return data
 
-def patch_java(fn : str, data, index : dict, patches):
+def patch_JAVA(fn : str, data, index : dict, patches):
     if 'plugins' in fn:
         if fn.endswith('plugins.js'):
             try:
@@ -1071,7 +1208,7 @@ def patch_java(fn : str, data, index : dict, patches):
                 print(e)
     return data
 
-def patch_csv(fn : str, data, index : dict, patches):
+def patch_CSV(fn : str, data, index : dict, patches):
     reader = csv.reader(StringIO(data))
     content = [row for row in reader]
     output = StringIO()
@@ -1098,7 +1235,105 @@ def patch_csv(fn : str, data, index : dict, patches):
                 print("Exception:")
                 print(e)
     return data
-def patch_mkdir(fn : str) -> None:
+
+def patch_RUBYMARSHAL_element(element: MarshalElement, index : dict, file_type : int) -> bool:
+    modified = False
+    if element.token == b"[":
+        for e in element.content:
+            modified = patch_RUBYMARSHAL_element(e, index, file_type) or modified
+    elif element.token == b"{":
+        for k, v in element.content.items():
+            modified = patch_RUBYMARSHAL_element(v, index, file_type) or modified
+    elif element.token == b'"':
+        try:
+            s = element.content.decode('utf-8')
+            tl = index.get(s, None)
+            if tl is not None and tl != s:
+                element.content = tl.encode('utf-8')
+                modified = True
+        except Exception as e:
+            if file_type == 1:
+                d = zlib.decompressobj().decompress(element.content).decode('utf-8')
+                old = str(d)
+                d = patch_RUBY_script("Scripts.rxdata", d, index, {})
+                if old != d:
+                    compressor = zlib.compressobj()
+                    element.content = compressor.compress(d.encode("utf-8")) + compressor.flush()
+                    modified = True
+            else:
+                raise e
+    for e in element.extras:
+        modified = patch_RUBYMARSHAL_element(e, index, file_type) or modified
+    return modified
+
+def patch_RUBYMARSHAL(fn : str, data : MarshalElement, index : dict, patches : dict, file_type : int) -> tuple:
+    modified = patch_RUBYMARSHAL_element(data, index, file_type)
+    if fn in patches:
+        global data_set
+        for p in patches[fn]:
+            try:
+                data_set = None
+                exec(p)
+                if data_set is not None:
+                    data = data_set
+            except Exception as e:
+                print("Failed to run the following patch:")
+                print(p)
+                print("Exception:")
+                print(e)
+    data = b"\x04\x08" + data.binary()
+    return data, modified
+
+def patch_RUBY_script(fn : str, data : str, index : dict, patches : dict) -> str:
+    in_string = False
+    escaped = False
+    buf = ""
+    i = 0
+    while i < len(data):
+        c = data[i]
+        if not in_string:
+            if not escaped:
+                if c == '"':
+                    in_string = True
+                    buf = ""
+                elif c == "\\":
+                    escaped = True
+            else:
+                escaped = False
+        elif escaped:
+            if c == "n": buf += "\n"
+            else: buf += c
+            escaped = False
+        else:
+            if c == '\\':
+                escaped = True
+            elif c == '"':
+                tl = index.get(buf, None)
+                if tl is not None:
+                    data = data[:i - len(buf)] + tl + data[i:]
+                    i = i - len(buf) + len(tl)
+                buf = ""
+                in_string = False
+            else:
+                buf += c
+        i += 1
+    
+    if fn in patches:
+        global data_set
+        for p in patches[fn]:
+            try:
+                data_set = None
+                exec(p)
+                if data_set is not None:
+                    data = data_set
+            except Exception as e:
+                print("Failed to run the following patch:")
+                print(p)
+                print("Exception:")
+                print(e)
+    return data
+
+def mkdir_patch_folder(fn : str) -> None:
     try:
         Path(OUTPUT_FOLDER+'/'.join(fn.split('/')[:-1])).mkdir(parents=True, exist_ok=True)
     except Exception as e:
@@ -1158,9 +1393,9 @@ def patch() -> None:
                     print("Skipping", fn, "(Disabled by user)")
                     continue
                 old_data = str(data)
-                data = patch_csv(fn, data, strings, patches)
+                data = patch_CSV(fn, data, strings, patches)
                 if str(data) != old_data:
-                    patch_mkdir(fn)
+                    mkdir_patch_folder(fn)
                     with open(OUTPUT_FOLDER + fn, mode="w", encoding="utf-8") as f:
                         f.write(data)
                     print("Patched file", fn)
@@ -1169,9 +1404,9 @@ def patch() -> None:
                     print("Skipping", fn, "(Disabled by user)")
                     continue
                 old_data = str(data)
-                data = patch_java(fn, data, strings, patches)
+                data = patch_JAVA(fn, data, strings, patches)
                 if str(data) != old_data:
-                    patch_mkdir(fn)
+                    mkdir_patch_folder(fn)
                     with open(OUTPUT_FOLDER + fn, mode="w", encoding="utf-8") as f:
                         f.write(data)
             for fn, data in untouched_JSON():
@@ -1180,13 +1415,37 @@ def patch() -> None:
                     continue
                 sn = fn.split('/')[-1]
                 old_data = str(data)
-                data = patch_json(fn, data, strings, patches)
+                data = patch_JSON(fn, data, strings, patches)
                 if str(data) != old_data:
                     file_type = 0
                     if sn.startswith("Map") and sn != "MapInfos.json": file_type = 1
                     elif sn == "System.json": file_type = 2
-                    patch_mkdir(fn)
+                    mkdir_patch_folder(fn)
                     write_json(OUTPUT_FOLDER+fn, data, file_type)
+                    print("Patched file", fn)
+            for fn, data in untouched_RUBYMARSHAL():
+                if fn in disabled:
+                    print("Skipping", fn, "(Disabled by user)")
+                    continue
+                sn = fn.split('/')[-1]
+                if "Scripts" in sn: file_type = 1
+                else: file_type = 0
+                data, modified = patch_RUBYMARSHAL(fn, data, strings, patches, file_type)
+                if modified:
+                    mkdir_patch_folder(fn)
+                    with open(OUTPUT_FOLDER+fn, mode="wb") as f:
+                        f.write(data)
+                    print("Patched file", fn)
+            for fn, data in untouched_RUBY():
+                if fn in disabled:
+                    print("Skipping", fn, "(Disabled by user)")
+                    continue
+                old_data = str(data)
+                data = patch_RUBY_script(fn, data, strings, patches)
+                if str(data) != old_data:
+                    mkdir_patch_folder(fn)
+                    with open(OUTPUT_FOLDER + fn, mode="w", encoding="utf-8") as f:
+                        f.write(data)
                     print("Patched file", fn)
             try:
                 for path, subdirs, files in os.walk(INPUT_FOLDER):
@@ -1201,7 +1460,7 @@ def patch() -> None:
             print("The patched files are available in the", OUTPUT_FOLDER, "folder")
 
 def main():
-    print("RPG Maker MV/MZ MTL Patcher v2.1")
+    print("RPG Maker MV/MZ MTL Patcher v2.2")
     init()
     while True:
         print("")
