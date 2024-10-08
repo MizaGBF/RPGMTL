@@ -500,35 +500,43 @@ def parse_RUBYMARSHAL_script(script : str) -> list:
                 buf += c
     return strings
 
-def load_RUBYMARSHAL(element : MarshalElement, parent : Optional[MarshalElement] = None, file_type=0) -> tuple:
+def load_RUBYMARSHAL(element : MarshalElement, index : dict, parent : Optional[MarshalElement] = None, file_type=0) -> tuple:
     strings = []
     if element.token == b"[":
         for e in element.content:
-            s, g = load_RUBYMARSHAL(e, element, file_type)
+            s, g = load_RUBYMARSHAL(e, index, element, file_type)
             strings += s
     elif element.token == b"{":
         # code detection BEGIN
         if file_type == 2 and len(element.content) == 3 and parent.token == b"[":
             keys = list(element.content.keys())
-            if len(keys) > 0 and keys[-1].token == b";": 
+            if len(keys) > 0 and keys[-1].token == b";" and element.content[keys[0]].token == b"[": 
                 el = element.content[keys[-1]]
                 if el.token == b"i" and el.content == 101: # show face code
-                    strings.append(TALKING_STR + " ".join(element.content[keys[0]].dump()))
+                    tl = []
+                    for d in element.content[keys[0]].dump():
+                        tl.append(index[d] if index.get(d, None) is not None else str(d))
+                    strings.append(TALKING_STR + ":".join(tl))
         # # code detection END
         for k, v in element.content.items():
-            s, g = load_RUBYMARSHAL(v, element, file_type)
+            s, g = load_RUBYMARSHAL(v, index, element, file_type)
             strings += s
     elif element.token == b'"':
         try:
             strings = [element.content.decode('utf-8')]
         except Exception as e:
             if file_type == 1:
+                try:
+                    d = parent.content[1].content.decode('utf-8')
+                    strings.append(TALKING_STR + "RB-SCRIPT:" + (index[d] if index.get(d, None) is not None else d))
+                except:
+                    pass
                 d = zlib.decompressobj().decompress(element.content)
-                strings = parse_RUBYMARSHAL_script(d.decode('utf-8'))
+                strings += parse_RUBYMARSHAL_script(d.decode('utf-8'))
             else:
                 raise e
     for e in element.extras:
-        s, g = load_RUBYMARSHAL(e, parent, file_type)
+        s, g = load_RUBYMARSHAL(e, index, parent, file_type)
         strings += s
     return strings, []
 
@@ -730,7 +738,7 @@ def generate() -> None:
                     if "Scripts" in sn: file_type = 1
                     elif ("Map" in sn and "Infos" not in sn) or ("CommonEvents" in sn): file_type = 2
                     else: file_type = 0
-                    s, g = load_RUBYMARSHAL(data, None, file_type)
+                    s, g = load_RUBYMARSHAL(data, old, None, file_type)
                     if len(s) > 0 or len(g) > 0:
                         string_counter, index, strings, groups = generate_sub(fn, string_counter, index, strings, old, groups, s, g)
                 for fn, data in untouched_RUBY():
