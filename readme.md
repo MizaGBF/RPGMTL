@@ -35,7 +35,7 @@ There are also special strings, which start with:
 * `#@@@`: Indicates which file this string is first encountered in.  
 * `#%%%`: Add it so that the script to ignore the file entirely. Its strings will be discarded at the next generation..  
 * `#@TALKING:`: Used for events. Indicates you which character is talking.  
-* `#`: Use it if you wish to add a comment.  
+* `#`: Use it if you wish to add a comment (NOTE: Comments are LOST when regenerating `strings.py`)  
   
 These special strings can be modified by modifying them at the top of the script.  
 I plan to build a dedicated editor, eventually.  

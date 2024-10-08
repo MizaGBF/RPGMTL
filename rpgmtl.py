@@ -100,7 +100,7 @@ def update_original(clean : bool = False) -> bool:
         print("Operation cancelled...")
         return False
 
-def load_strings(with_file_strings : bool = False) -> tuple:
+def load_strings(with_special_strings : bool = False) -> tuple:
     try:
         with open("strings.py", mode="r", encoding="utf-8") as f:
             loaded = {}
@@ -114,8 +114,8 @@ def load_strings(with_file_strings : bool = False) -> tuple:
             for line in f.readlines():
                 if line[:DISABLE_STR_LEN] == DISABLE_STR:
                     disabled.add(line.replace(DISABLE_STR, '').strip())
-                    if with_file_strings:
-                        loaded[line.strip()] = None
+                    if with_special_strings:
+                        loaded[line.strip()] = 0
                 elif line.strip() == "":
                     pass
                 elif not line[:TALKING_STR_LEN] == TALKING_STR and not line[:FILE_STR_LEN] == FILE_STR and not line[:COMMENT_STR_LEN] == COMMENT_STR:
@@ -127,8 +127,8 @@ def load_strings(with_file_strings : bool = False) -> tuple:
                         loaded[key] = d[key]
                     except:
                         raise Exception("Line", line_count, "is invalid")
-                elif with_file_strings:
-                    loaded[line.strip()] = None
+                elif with_special_strings:
+                    loaded[line.strip()] = 0
                 line_count += 1
         return loaded, disabled, True
     except Exception as e:
@@ -175,7 +175,6 @@ def update_string_file_with_tl(strings : dict) -> None:
                     raise Exception("Line", i+1, "is invalid", line)
             else:
                 pass
-            
         with open("strings.py", mode="w", encoding="utf-8") as f:
             for line in lines:
                 f.write(line)
@@ -515,7 +514,7 @@ def load_RUBYMARSHAL(element : MarshalElement, index : dict, parent : Optional[M
                 if el.token == b"i" and el.content == 101: # show face code
                     tl = []
                     for d in element.content[keys[0]].dump():
-                        tl.append(index[d] if index.get(d, None) is not None else str(d))
+                        tl.append(index[d] if isinstance(index.get(d, None), str) else str(d))
                     strings.append(TALKING_STR + ":".join(tl))
         # # code detection END
         for k, v in element.content.items():
@@ -528,7 +527,7 @@ def load_RUBYMARSHAL(element : MarshalElement, index : dict, parent : Optional[M
             if file_type == 1:
                 try:
                     d = parent.content[1].content.decode('utf-8')
-                    strings.append(TALKING_STR + "RB-SCRIPT:" + (index[d] if index.get(d, None) is not None else d))
+                    strings.append(TALKING_STR + "RB-SCRIPT:" + (index[d] if isinstance(index.get(d, None), str) else d))
                 except:
                     pass
                 d = zlib.decompressobj().decompress(element.content)
@@ -677,7 +676,7 @@ def generate_sub(fn : str, string_counter : int, index: set, strings: list, old:
 
 def generate() -> None:
     if check_confirmation("generate"):
-        old, disabled, _continue = load_strings()
+        old, disabled, _continue = load_strings(with_special_strings=True)
         if _continue:
             if backup_strings_file():
                 string_counter = 0
@@ -864,7 +863,7 @@ def translate_string(s : str) -> str:
 
 def translate() -> None:
     if check_confirmation("translate"):
-        strings, disabled, _continue = load_strings(with_file_strings=True)
+        strings, disabled, _continue = load_strings(with_special_strings=True)
         if _continue:
             groups, _return = load_groups()
             if backup_strings_file():
@@ -1265,7 +1264,7 @@ def patch_RUBYMARSHAL_element(element: MarshalElement, index : dict, file_type :
         try:
             s = element.content.decode('utf-8')
             tl = index.get(s, None)
-            if tl is not None and tl != s:
+            if isinstance(tl, str) and tl != s:
                 element.content = tl.encode('utf-8')
         except Exception as e:
             if file_type == 1:
@@ -1323,7 +1322,7 @@ def patch_RUBY_script(fn : str, data : str, index : dict, patches : dict) -> str
                 escaped = True
             elif c == '"':
                 tl = index.get(buf, None)
-                if tl is not None:
+                if isinstance(tl, str):
                     data = data[:i - len(buf)] + tl + data[i:]
                     i = i - len(buf) + len(tl)
                 buf = ""
