@@ -4,6 +4,7 @@ import zlib
 import struct
 import time
 import math
+import re
 import textwrap
 import traceback
 import os
@@ -105,7 +106,7 @@ def load_strings(with_file_strings : bool = False) -> tuple:
             loaded = {}
             disabled = set()
             line_count = 1
-            while line := f.readline():
+            for line in f.readlines():
                 if line.startswith(DISABLE_STR):
                     disabled.add(line.replace(DISABLE_STR, '').strip())
                     if with_file_strings:
@@ -153,9 +154,7 @@ def save_files(strings : list, groups : Optional[list]) -> None:
 def update_string_file_with_tl(strings : dict) -> None:
     try:
         with open("strings.py", mode="r", encoding="utf-8") as f:
-            lines = []
-            while line := f.readline():
-                lines.append(line)
+            lines = f.readlines()
         for i, line in enumerate(lines):
             if not line.startswith(DISABLE_STR) and not line.startswith(TALKING_STR) and not line.startswith(FILE_STR) and not line.startswith(COMMENT_STR) and line.strip() != "":
                 try:
@@ -177,7 +176,6 @@ def update_string_file_with_tl(strings : dict) -> None:
     except Exception as e:
         print("An error occured while updating strings.py")
         print(e)
-    
 
 def backup_strings_file() -> bool:
     try:
@@ -280,7 +278,7 @@ class MarshalElement():
     def __str__(self) -> str:
         return "MarshalElement<{}:{}:{}>".format(self.token, self.content, self.extras)
 
-    def dump(self) -> Any: # export
+    def dump(self, is_script=False) -> Any: # export
         match self.token:
             case b"0":
                 return None
@@ -289,22 +287,28 @@ class MarshalElement():
             case b"F":
                 return False
             case b"I":
-                return ["type:I",self.extras[0].dump()]
+                return ["type:I",self.extras[0].dump(is_script)]
             case b'"':
-                return self.content.decode('utf-8')
+                try:
+                    return self.content.decode('utf-8')
+                except Exception as e:
+                    if is_script:
+                        return zlib.decompressobj().decompress(self.content).decode('utf-8')
+                    else:
+                        raise e
             case b":":
                 return str(self.content)
             case b'i':
                 return self.content
             case b"[":
-                return [e.dump() for e in self.content]
+                return [e.dump(is_script) for e in self.content]
             case b"{":
                 d = {}
                 for k, v in self.content.items():
-                    d[str(k.dump())] = v.dump()
+                    d[str(k.dump(is_script))] = v.dump(is_script)
                 return d
             case b"f":
-                return ["type:U",self.extras[0].dump(),self.extras[1].dump()]
+                return ["type:U",self.extras[0].dump(is_script),self.extras[1].dump(is_script)]
             case b"l":
                 output = ["type:l", self.extras[0], self.extras[1]]
                 for i in range(2, len(self.extras)):
@@ -313,17 +317,17 @@ class MarshalElement():
             case b"/":
                 return ["type:/",str(self.content)]
             case b"U":
-                return ["type:U",self.extras[0].dump(),self.extras[1].dump()]
+                return ["type:U",self.extras[0].dump(is_script),self.extras[1].dump(is_script)]
             case b";":
                 return ["type:;",self.content]
             case b"@":
                 return ["type:@",self.content]
             case b"u":
-                return ["type:u",str(self.content), self.extras[0].dump()]
+                return ["type:u",str(self.content), self.extras[0].dump(is_script)]
             case b"m":
                 return ["type:m",str(self.content)]
             case b"o":
-                return ["type:o",self.extras[0].dump(),self.extras[1].dump()]
+                return ["type:o",self.extras[0].dump(is_script),self.extras[1].dump(is_script)]
             case b"e":
                 return ["type:e",str(self.content)]
             case b"c":
@@ -1236,21 +1240,19 @@ def patch_CSV(fn : str, data, index : dict, patches):
                 print(e)
     return data
 
-def patch_RUBYMARSHAL_element(element: MarshalElement, index : dict, file_type : int) -> bool:
-    modified = False
+def patch_RUBYMARSHAL_element(element: MarshalElement, index : dict, file_type : int) -> None:
     if element.token == b"[":
         for e in element.content:
-            modified = patch_RUBYMARSHAL_element(e, index, file_type) or modified
+            patch_RUBYMARSHAL_element(e, index, file_type)
     elif element.token == b"{":
         for k, v in element.content.items():
-            modified = patch_RUBYMARSHAL_element(v, index, file_type) or modified
+            patch_RUBYMARSHAL_element(v, index, file_type)
     elif element.token == b'"':
         try:
             s = element.content.decode('utf-8')
             tl = index.get(s, None)
             if tl is not None and tl != s:
                 element.content = tl.encode('utf-8')
-                modified = True
         except Exception as e:
             if file_type == 1:
                 d = zlib.decompressobj().decompress(element.content).decode('utf-8')
@@ -1259,15 +1261,13 @@ def patch_RUBYMARSHAL_element(element: MarshalElement, index : dict, file_type :
                 if old != d:
                     compressor = zlib.compressobj()
                     element.content = compressor.compress(d.encode("utf-8")) + compressor.flush()
-                    modified = True
             else:
                 raise e
     for e in element.extras:
-        modified = patch_RUBYMARSHAL_element(e, index, file_type) or modified
-    return modified
+        patch_RUBYMARSHAL_element(e, index, file_type)
 
-def patch_RUBYMARSHAL(fn : str, data : MarshalElement, index : dict, patches : dict, file_type : int) -> tuple:
-    modified = patch_RUBYMARSHAL_element(data, index, file_type)
+def patch_RUBYMARSHAL(fn : str, data : MarshalElement, index : dict, patches : dict, file_type : int) -> bytes:
+    patch_RUBYMARSHAL_element(data, index, file_type)
     if fn in patches:
         global data_set
         for p in patches[fn]:
@@ -1282,7 +1282,7 @@ def patch_RUBYMARSHAL(fn : str, data : MarshalElement, index : dict, patches : d
                 print("Exception:")
                 print(e)
     data = b"\x04\x08" + data.binary()
-    return data, modified
+    return data
 
 def patch_RUBY_script(fn : str, data : str, index : dict, patches : dict) -> str:
     in_string = False
@@ -1430,8 +1430,9 @@ def patch() -> None:
                 sn = fn.split('/')[-1]
                 if "Scripts" in sn: file_type = 1
                 else: file_type = 0
-                data, modified = patch_RUBYMARSHAL(fn, data, strings, patches, file_type)
-                if modified:
+                old = b"\x04\x08" + data.binary()
+                data = patch_RUBYMARSHAL(fn, data, strings, patches, file_type)
+                if old != data:
                     mkdir_patch_folder(fn)
                     with open(OUTPUT_FOLDER+fn, mode="wb") as f:
                         f.write(data)
@@ -1460,15 +1461,15 @@ def patch() -> None:
             print("The patched files are available in the", OUTPUT_FOLDER, "folder")
 
 def main():
-    print("RPG Maker MV/MZ MTL Patcher v2.2")
+    print("RPG Maker MV/MZ MTL Patcher v2.3")
     init()
     while True:
         print("")
         print("[0] Generate strings.json")
         print("[1] Machine Translate" + (" (Requires the deep_translator module)" if TRANSLATOR is None else ""))
         print("[2] Create patch")
-        print("===========================")
         print("[3] Game got updated")
+        print("[4] Utility")
         print("[Any] Quit")
         try:
             match input().strip():
@@ -1486,6 +1487,50 @@ def main():
                 case "3":
                     if update_original(clean=True):
                         print("Regenerate strings.json to update the strings")
+                case "4":
+                    while True:
+                        print("")
+                        print("[0] RPGM XP: Extract RXDATA file content")
+                        print("[1] RPGM XP: Extract Scripts.rxdata scripts")
+                        print("[Any] Back")
+                        match input().strip():
+                            case "0":
+                                s = input("Input the path of the tile to extract:")
+                                if s != "":
+                                    try:
+                                        with open(s, mode="rb") as f:
+                                            data = read_RUBYMARSHAL_file(f)
+                                    except Exception as e:
+                                        print(e)
+                                        data = None
+                                    if data is not None:
+                                        data = data.dump("Scripts" in s)
+                                        s = s.replace('\\', '/').split('/')[-1]
+                                        with open(s+".json", mode="w", encoding="utf-8") as f:
+                                            json.dump(data, f, ensure_ascii=False, indent=4)
+                                        print("File content extracted to", s+".json")
+                            case "1":
+                                try:
+                                    with open(ORIGINAL_FOLDER + "Data/Scripts.rxdata", mode="rb") as f:
+                                        data = read_RUBYMARSHAL_file(f)
+                                except Exception as e:
+                                    print(e)
+                                    data = None
+                                if data is not None:
+                                    try:
+                                        Path("rbScripts").mkdir(parents=True, exist_ok=True)
+                                        restrip = re.compile(r'[\\/*?:"<>|]')
+                                        for i, s in enumerate(data.content):
+                                            with open("rbScripts/" + str(i).zfill(4) + " - " + restrip.sub("",s.content[1].content.decode('utf-8')) + ".rb", mode="w", encoding="utf-8") as f:
+                                                f.write(zlib.decompressobj().decompress(s.content[2].content).decode('utf-8'))
+                                        print("Scripts extracted in the rbScripts folder.")
+                                    except Exception as e:
+                                        print(e)
+                                        print("".join(traceback.format_exception(type(e), e, e.__traceback__)))
+                                        print("Failed to extract scripts, process interrupted.")
+                                        print("Partial content can be found in the rbScripts folder.")
+                            case _:
+                                break;
                 case _:
                     break
         except Exception as e:
