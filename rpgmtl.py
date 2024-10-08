@@ -106,21 +106,27 @@ def load_strings(with_file_strings : bool = False) -> tuple:
             loaded = {}
             disabled = set()
             line_count = 1
+            # replaced startswith (too slow)
+            DISABLE_STR_LEN = len(DISABLE_STR)
+            TALKING_STR_LEN = len(TALKING_STR)
+            FILE_STR_LEN = len(FILE_STR)
+            COMMENT_STR_LEN = len(COMMENT_STR)
             for line in f.readlines():
-                if line.startswith(DISABLE_STR):
+                if line[:DISABLE_STR_LEN] == DISABLE_STR:
                     disabled.add(line.replace(DISABLE_STR, '').strip())
                     if with_file_strings:
                         loaded[line.strip()] = None
                 elif line.strip() == "":
                     pass
-                elif not line.startswith(TALKING_STR) and not line.startswith(FILE_STR) and not line.startswith(COMMENT_STR):
+                elif not line[:TALKING_STR_LEN] == TALKING_STR and not line[:FILE_STR_LEN] == FILE_STR and not line[:COMMENT_STR_LEN] == COMMENT_STR:
                     try:
                         d = json.loads("{"+line+"}")
                         if not isinstance(d, dict):
                             raise Exception()
+                        key = list(d.keys())[0]
+                        loaded[key] = d[key]
                     except:
                         raise Exception("Line", line_count, "is invalid")
-                    loaded = loaded | d
                 elif with_file_strings:
                     loaded[line.strip()] = None
                 line_count += 1
