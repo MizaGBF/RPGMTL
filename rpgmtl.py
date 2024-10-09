@@ -32,10 +32,13 @@ COMMENT_STR = "#"
 FILE_STR = "#@@@"
 DISABLE_STR = "#%%%"
 PATCH_STR = "#@@@"
+SETTINGS = {}
+SETTINGS_MODIFIED = False
 root = None
 data_set = None
 
 def init() -> None:
+    load_settings()
     try:
         if not os.path.exists(INPUT_FOLDER) or not os.path.isdir(INPUT_FOLDER):
             Path(INPUT_FOLDER).mkdir(parents=True, exist_ok=True)
@@ -54,6 +57,27 @@ def init() -> None:
                 f.write(PATCH_STR + "file_name_example\n# Example for System.json:\ndata[\"locale\"] = \"en_UK\"")
     except Exception as e:
         print("Exception while generating patches.py")
+        print(e)
+
+def load_settings() -> None:
+    global SETTINGS
+    try:
+        with open("settings.json", mode="r", encoding="utf-8") as f:
+            SETTINGS = json.load(f)
+    except Exception as e:
+        if "no such file" not in str(e).lower():
+            print("Failed to load settings.json")
+            print(e)
+
+def save_settings() -> None:
+    global SETTINGS_MODIFIED
+    try:
+        if SETTINGS_MODIFIED:
+            with open("settings.json", mode="w", encoding="utf-8") as f:
+                json.dump(SETTINGS, f)
+            SETTINGS_MODIFIED = False
+    except Exception as e:
+        print("Failed to save settings.json")
         print(e)
 
 def update_original(clean : bool = False) -> bool:
@@ -100,18 +124,44 @@ def update_original(clean : bool = False) -> bool:
         print("Operation cancelled...")
         return False
 
+def read_string_files() -> dict:
+    output = {}
+    if SETTINGS.get('last_generated_mode', None) is None:
+        print("Which files should I load?")
+        print("[0] strings.py")
+        print("[1] strings.partX.py")
+        while True:
+            match input():
+                case '0':
+                    files = ['strings.py']
+                    break
+                case '1':
+                    files = ['strings.part0.py', 'strings.part1.py', 'strings.part2.py', 'strings.part3.py', 'strings.part4.py', 'strings.part5.py', 'strings.part6.py', 'strings.part7.py', 'strings.part8.py', 'strings.part9.py']
+                    break
+    elif SETTINGS['last_generated_mode'] is False:
+        files = ['strings.py']
+    else:
+        files = ['strings.part0.py', 'strings.part1.py', 'strings.part2.py', 'strings.part3.py', 'strings.part4.py', 'strings.part5.py', 'strings.part6.py', 'strings.part7.py', 'strings.part8.py', 'strings.part9.py']
+    for fn in files:
+        try:
+            with open(fn, mode="r", encoding="utf-8") as f:
+                output[fn] = f.readlines()
+        except:
+            if fn != 'strings.py':
+                break
+    return output
+
 def load_strings(with_special_strings : bool = False) -> tuple:
-    try:
-        with open("strings.py", mode="r", encoding="utf-8") as f:
-            loaded = {}
-            disabled = set()
-            line_count = 1
-            # replaced startswith (too slow)
-            DISABLE_STR_LEN = len(DISABLE_STR)
-            TALKING_STR_LEN = len(TALKING_STR)
-            FILE_STR_LEN = len(FILE_STR)
-            COMMENT_STR_LEN = len(COMMENT_STR)
-            for line in f.readlines():
+    loaded = {}
+    disabled = set()
+    # to replace startswith (too slow)
+    DISABLE_STR_LEN = len(DISABLE_STR)
+    TALKING_STR_LEN = len(TALKING_STR)
+    FILE_STR_LEN = len(FILE_STR)
+    COMMENT_STR_LEN = len(COMMENT_STR)
+    for fn, lines in read_string_files().items():
+        try:
+            for line_count, line in enumerate(lines):
                 if line[:DISABLE_STR_LEN] == DISABLE_STR:
                     disabled.add(line.replace(DISABLE_STR, '').strip())
                     if with_special_strings:
@@ -126,18 +176,16 @@ def load_strings(with_special_strings : bool = False) -> tuple:
                         key = list(d.keys())[0]
                         loaded[key] = d[key]
                     except:
-                        raise Exception("Line", line_count, "is invalid")
+                        raise Exception(str(fn) + ": Line " + str(line_count+1) + " is invalid")
                 elif with_special_strings:
                     loaded[line.strip()] = 0
-                line_count += 1
-        return loaded, disabled, True
-    except Exception as e:
-        b = "no such file" in str(e).lower()
-        if not b:
-            print("Failed to load strings.py")
+            return loaded, disabled, True
+        except Exception as e:
+            print("Failed to process", fn)
             print(e)
             print("Try to fix its content.")
-        return {}, set(), b
+            return {}, set(), False
+    return loaded, set(), True
 
 def load_groups() -> tuple:
     try:
@@ -151,50 +199,73 @@ def load_groups() -> tuple:
         return [], True
 
 def save_files(strings : list, groups : Optional[list]) -> None:
-    with open("strings.py", mode="w", encoding="utf-8") as f:
-        f.write("\n".join(strings))
+    global SETTINGS
+    global SETTINGS_MODIFIED
+    if SETTINGS.get('multi', False) is False:
+        with open("strings.py", mode="w", encoding="utf-8") as f:
+            f.write("\n".join(strings))
+    else:
+        part_count = max(5000, (len(strings) // 10))
+        counter = 0
+        file = None
+        file_id = -1
+        for line in strings:
+            if file is None or (counter >= part_count and line.startswith(FILE_STR) and file_id < 9):
+                file_id += 1
+                counter = 0
+                if file is not None: file.close()
+                file = open("strings.part{}.py".format(file_id), mode="w", encoding="utf-8")
+            file.write(line)
+            file.write("\n")
+            counter += 1
+        if file is not None: file.close()
+    SETTINGS['last_generated_mode'] = SETTINGS.get('multi', False)
+    SETTINGS_MODIFIED = True
     if groups is not None:
         with open("groups.json", mode="w", encoding="utf-8") as f:
             json.dump(groups, f, ensure_ascii=False, indent=0)
 
 def update_string_file_with_tl(strings : dict) -> None:
+    global SETTINGS
+    global SETTINGS_MODIFIED
     try:
-        with open("strings.py", mode="r", encoding="utf-8") as f:
-            lines = f.readlines()
-        for i, line in enumerate(lines):
-            if not line.startswith(DISABLE_STR) and not line.startswith(TALKING_STR) and not line.startswith(FILE_STR) and not line.startswith(COMMENT_STR) and line.strip() != "":
-                try:
-                    d = json.loads("{"+line+"}")
-                    if not isinstance(d, dict):
-                        raise Exception()
-                    st = list(d.keys())[0]
-                    d[st] = strings.get(st, None)
-                    lines[i] = "{}:{}\n".format(json.dumps(st, ensure_ascii=False, separators=(',', ':')), json.dumps(d[st], ensure_ascii=False, separators=(',', ':')))
-                except Exception as x:
-                    print(x)
-                    raise Exception("Line", i+1, "is invalid", line)
-            else:
-                pass
-        with open("strings.py", mode="w", encoding="utf-8") as f:
-            for line in lines:
-                f.write(line)
+        for fn, lines in read_string_files().items():
+            for i, line in enumerate(lines):
+                if not line.startswith(DISABLE_STR) and not line.startswith(TALKING_STR) and not line.startswith(FILE_STR) and not line.startswith(COMMENT_STR) and line.strip() != "":
+                    try:
+                        d = json.loads("{"+line+"}")
+                        if not isinstance(d, dict):
+                            raise Exception()
+                        st = list(d.keys())[0]
+                        d[st] = strings.get(st, None)
+                        lines[i] = "{}:{}\n".format(json.dumps(st, ensure_ascii=False, separators=(',', ':')), json.dumps(d[st], ensure_ascii=False, separators=(',', ':')))
+                    except Exception as x:
+                        print(x)
+                        raise Exception(str(fn) + ": Line " + str(i+1) + " is invalid")
+                else:
+                    pass
+            with open(fn, mode="w", encoding="utf-8") as f:
+                for line in lines:
+                    f.write(line)
+        SETTINGS['last_generated_mode'] = SETTINGS.get('multi', False)
+        SETTINGS_MODIFIED = True
     except Exception as e:
-        print("An error occured while updating strings.py")
+        print("An error occured while updating", fn)
         print(e)
 
 def backup_strings_file() -> bool:
     try:
         # backing up...
         bak_strings = [".bak-5", ".bak-4", ".bak-3", ".bak-2", ".bak-1", ""]
-        for i in range(1, len(bak_strings)):
-            try: shutil.copyfile("strings"+bak_strings[i]+".py", "strings"+bak_strings[i-1]+".py")
-            except: pass
+        for f in ['strings', 'strings.part0', 'strings.part1', 'strings.part2', 'strings.part3', 'strings.part4', 'strings.part5', 'strings.part6', 'strings.part7', 'strings.part8', 'strings.part9']:
+            for i in range(1, len(bak_strings)):
+                try: shutil.copyfile(f+bak_strings[i]+".py", f+bak_strings[i-1]+".py")
+                except: pass
     except Exception as e:
-        if "no such file" not in str(e).lower():
-            print("Failed to backup strings.py")
-            print(e)
-            if input("Type 'y' to continue anyway:").lower() != "y":
-                return False
+        print("Failed to backup", f)
+        print(e)
+        if input("Type 'y' to continue anyway:").lower() != "y":
+            return False
     return True
 
 def check_confirmation(password : str) -> bool:
@@ -652,7 +723,9 @@ def load_package_JSON(data) -> tuple:
 
 def apply_default(d : dict) -> dict:
     default_tl = {'レベル': 'Level', 'Lv': 'Lv', 'ＨＰ': 'HP', 'HP': 'HP', 'ＳＰ': 'SP', 'SP': 'SP', '経験値': 'Experience point', 'EXP': 'EXP', '戦う': 'Fight', '逃げる': 'Run away', '攻撃': 'Attack', '防御': 'Defense', 'アイテム': 'Items', 'スキル': 'Skills', '装備': 'Equipment', 'ステータス': 'Status', '並び替え': 'Sort', 'セーブ': 'Save', 'ゲーム終了': 'To Title', 'オプション': 'Settings', '大事なもの': 'Key Items', 'ニューゲーム': 'New Game', 'コンティニュー': 'Continue', 'タイトルへ': 'Go to Title', 'やめる': 'Stop', '購入する': 'Buy', '売却する': 'Sell', '最大ＨＰ': 'Max HP', '最大ＭＰ': 'Max MP', '攻撃力': 'ATK', '防御力': 'DEF', '魔法力': 'M.ATK.', '魔法防御': 'M.DEF', '敏捷性': 'AGI', '運': 'Luck', '命中率': 'ACC', '回避率': 'EVA', '常時ダッシュ': 'Always run', 'コマンド記憶': 'Command Memory', 'タッチUI': 'Touch UI', 'BGM 音量': 'BGM volume', 'BGS 音量': 'BGS volume', 'ME 音量': 'ME Volume', 'SE 音量': 'SE volume', '所持数': 'Owned', '現在の%1': 'Current %1', '次の%1まで': 'Until next %1', 'どのファイルにセーブしますか？': 'Which file do you want to save it to?', 'どのファイルをロードしますか？': 'Which file do you want to load?', 'ファイル': 'File', 'オートセーブ': 'Auto Save', '%1たち': '%1', '%1が出現！': '%1 appears!', '%1は先手を取った！': '%1 took the initiative!', '%1は不意をつかれた！': '%1 was caught off guard!', '%1は逃げ出した！': '%1 ran away!', 'しかし逃げることはできなかった！': "But I couldn't escape!", '%1の勝利！': '%1 wins!', '%1は戦いに敗れた。': '%1 lost the battle.', '%1 の%2を獲得！': 'Obtained %2 for %1!', 'お金を %1\\G 手に入れた！': 'Obtained %1 \\G!', '%1を手に入れた！': 'I got %1!', '%1は%2 %3 に上がった！': '%1 rose to %2 %3!', '%1を覚えた！': 'I learned %1!', '%1は%2を使った！': '%1 used %2!', '会心の一撃！！': 'A decisive blow! !', '痛恨の一撃！！': 'A painful blow! !', '%1は %2 のダメージを受けた！': '%1 received %2 damage!', '%1の%2が %3 回復した！': "%1's %2 has recovered his %3!", '%1の%2が %3 増えた！': '%2 of %1 has increased by %3!', '%1の%2が %3 減った！': '%1 %2 decreased %3!', '%1は%2を %3 奪われた！': '%1 was robbed of %2 %3!', '%1はダメージを受けていない！': '%1 has not received any damage!', 'ミス！\u3000%1はダメージを受けていない！': 'Miss! %1 has not received any damage!', '%1に %2 のダメージを与えた！': 'Inflicted %2 damage to %1!', '%1の%2を %3 奪った！': '%2 of %1 was stolen from %3!', '%1にダメージを与えられない！': 'Cannot damage %1!', 'ミス！\u3000%1にダメージを与えられない！': "Miss! Can't damage %1!", '%1は攻撃をかわした！': '%1 dodged the attack!', '%1は魔法を打ち消した！': '%1 canceled the magic!', '%1は魔法を跳ね返した！': '%1 rebounded the magic!', '%1の反撃！': "%1's counterattack!", '%1が%2をかばった！': '%1 protected %2!', '%1の%2が上がった！': '%2 of %1 has gone up!', '%1の%2が下がった！': '%2 of %1 has gone down!', '%1の%2が元に戻った！': '%2 of %1 is back to normal!', '%1には効かなかった！': "It didn't work for %1!"}
-    d = default_tl | d
+    for k, v in default_tl.items():
+        if k in d and d[k] is None:
+            d[k] = v
     return d
 
 def generate_sub(fn : str, string_counter : int, index: set, strings: list, old: dict, groups : list, s : list, g : list) -> tuple:
@@ -665,10 +738,12 @@ def generate_sub(fn : str, string_counter : int, index: set, strings: list, old:
                 strings.pop(-1)
             strings.append(st)
         else:
-            tl = old.get(st, None)
-            strings.append(json.dumps(st, ensure_ascii=False) + ":" + json.dumps(tl, ensure_ascii=False))
-            if st not in old:
+            if st in old:
+                tl = old[st]
+            else:
+                tl = None
                 string_counter += 1
+            strings.append(json.dumps(st, ensure_ascii=False) + ":" + json.dumps(tl, ensure_ascii=False))
             index.add(st)
         previously_added = st
     groups += g
@@ -680,7 +755,6 @@ def generate() -> None:
         if _continue:
             if backup_strings_file():
                 string_counter = 0
-                base_old = old
                 old = apply_default(old)
                 index = set()
                 strings = []
@@ -755,15 +829,9 @@ def generate() -> None:
                 save_files(strings, groups)
                 print("Done")
                 if string_counter > 0:
-                    print(string_counter, "new/updated string(s).")
+                    print(string_counter, "new string(s).")
                 else:
-                    print("No new/updated strings detected.")
-                string_counter = 0
-                for k in base_old:
-                    if k not in index:
-                        string_counter += 1
-                if string_counter > 0:
-                    print(string_counter, "removed unused string(s).")
+                    print("No new strings detected.")
 
 def load_externmessage_CSV(data : str) -> tuple:
     reader = csv.reader(StringIO(data))
@@ -862,6 +930,10 @@ def translate_string(s : str) -> str:
     return cs
 
 def translate() -> None:
+    if SETTINGS.get('last_generated_mode', None) is not SETTINGS.get('multi', False):
+        print("string files have either never been generated or you changed the multi-part setting.")
+        print("Please regenerate the project and try again.")
+        return
     if check_confirmation("translate"):
         strings, disabled, _continue = load_strings(with_special_strings=True)
         if _continue:
@@ -1474,15 +1546,19 @@ def patch() -> None:
             print("The patched files are available in the", OUTPUT_FOLDER, "folder")
 
 def main():
-    print("RPG Maker MV/MZ MTL Patcher v2.3")
+    global SETTINGS
+    global SETTINGS_MODIFIED
+    print("RPG Maker MV/MZ MTL Patcher v2.4")
     init()
     while True:
+        save_settings()
         print("")
         print("[0] Generate strings.json")
         print("[1] Machine Translate" + (" (Requires the deep_translator module)" if TRANSLATOR is None else ""))
         print("[2] Create patch")
         print("[3] Game got updated")
         print("[4] Utility")
+        print("[5] Settings")
         print("[Any] Quit")
         try:
             match input().strip():
@@ -1544,6 +1620,32 @@ def main():
                                         print("Partial content can be found in the rbScripts folder.")
                             case _:
                                 break;
+                case "5":
+                    while True:
+                        save_settings()
+                        print("")
+                        print("[0] Enable Multi-part mode (Current: {})".format("Enabled" if SETTINGS.get('multi', False) else "Disabled"))
+                        print("[1] Enable file selection upon next strings file loading.")
+                        print("[Any] Back")
+                        match input().strip():
+                            case "0":
+                                if SETTINGS.get('multi', False) is False:
+                                    SETTINGS['multi'] = True
+                                    SETTINGS_MODIFIED = True
+                                    print("Multi-part mode: Enabled")
+                                    print("strings.py will be divided in multiple file")
+                                else:
+                                    SETTINGS['multi'] = False
+                                    SETTINGS_MODIFIED = True
+                                    print("Multi-part mode: Disabled")
+                                    print("strings.py will be a single file")
+                                print("Re-generate the strings to apply the change")
+                            case "1":
+                                SETTINGS['last_generated_mode'] = None
+                                SETTINGS_MODIFIED = True
+                                print("Done")
+                            case _:
+                                break
                 case _:
                     break
         except Exception as e:

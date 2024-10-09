@@ -86,6 +86,13 @@ Note: The code will always run AFTER the patching of the strings.
   
 The delimiter `#@@@` can be modified by changing `PATCH_STR` at the top of `rpgmtl.py`, like the others.  
   
+### Settings  
+The Settings menu allows you to change the script behavior.  
+Settings are saved in `settings.json`.  
+Currently:  
+* **Multi-part mode**: Allows you to breakdown strings.py into multiple files (up to 10) for big projects. I recommend to enable it before starting any translation on your current project.  
+* **Next loading file select**: The scripts will ask you to load either strings.py or part files the next time it loads strings. Useful if you tinkered with the Mult-part setting midway during a project.  
+  
 ### Game update  
 If a game got updated and you want to update the string list, simply use the fourth option `Game got updated` and select your game folder again. It will recreate the `untouched_files` folder. You can then reuse the first option `Generate strings.json`. It will add the new strings and delete the ones not used anymore.  
 Make sure to not mix and matches different games by mistake.  
