@@ -179,7 +179,6 @@ def load_strings(with_special_strings : bool = False) -> tuple:
                         raise Exception(str(fn) + ": Line " + str(line_count+1) + " is invalid")
                 elif with_special_strings:
                     loaded[line.strip()] = 0
-            return loaded, disabled, True
         except Exception as e:
             print("Failed to process", fn)
             print(e)
