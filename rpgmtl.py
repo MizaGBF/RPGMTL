@@ -1578,11 +1578,23 @@ def main():
                 case "4":
                     while True:
                         print("")
-                        print("[0] RPGM XP: Extract RXDATA file content")
-                        print("[1] RPGM XP: Extract Scripts.rxdata scripts")
+                        print("=== General ===")
+                        print("[0] Delete backup files")
+                        print("=== RPGM XP ===")
+                        print("[10] Extract RXDATA file content")
+                        print("[11] Extract Scripts.rxdata scripts")
                         print("[Any] Back")
                         match input().strip():
                             case "0":
+                                if check_confirmation("delete"):
+                                    for i in range(5):
+                                        try: os.remove("strings.bak-{}.py".format(i+1))
+                                        except: pass
+                                        for j in range(10):
+                                            try: os.remove("strings.part{}.bak-{}.py".format(j, i+1))
+                                            except: pass
+                                    print("Clean up complete")
+                            case "10":
                                 s = input("Input the path of the tile to extract:")
                                 if s != "":
                                     try:
@@ -1597,7 +1609,7 @@ def main():
                                         with open(s+".json", mode="w", encoding="utf-8") as f:
                                             json.dump(data, f, ensure_ascii=False, indent=4)
                                         print("File content extracted to", s+".json")
-                            case "1":
+                            case "11":
                                 try:
                                     with open(ORIGINAL_FOLDER + "Data/Scripts.rxdata", mode="rb") as f:
                                         data = read_RUBYMARSHAL_file(f)
