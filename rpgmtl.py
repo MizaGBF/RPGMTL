@@ -353,6 +353,45 @@ class MarshalElement():
     def __str__(self) -> str:
         return "MarshalElement<{}:{}:{}>".format(self.token, self.content, self.extras)
 
+    def get(self, key, symlinks : dict = {}) -> Any:
+        match self.token:
+            case b"[":
+                return self.content[key]
+            case b"{":
+                link = symlinks.get(key, None)
+                for k, v in self.content.items():
+                    if (k.content == key) or (link is not None and k.token == link.token and k.content == link.content):
+                        return v
+                raise Exception("Key not found:" + str(key))
+            case b"o":
+                return self.extras[key]
+            case _:
+                raise Exception("Uncompatible type " + str(self.token))
+
+    def get_links(self, symlinks : dict) -> dict:
+        match self.token:
+            case b":":
+                if self.content not in symlinks:
+                    symlinks[self.content] = MarshalElement(b";", len(symlinks))
+                return symlinks
+            case b"[":
+                for e in self.content:
+                    symlinks = e.get_links(symlinks)
+                return symlinks
+            case b"{":
+                for k, v in self.content.items():
+                    symlinks = k.get_links(symlinks)
+                    symlinks = v.get_links(symlinks)
+                return symlinks
+            case b"/":
+                return self.token + write_RUBYMARHSHAL_long(len(self.content)) + self.content
+            case b"U"|b"o"|b"u":
+                for e in self.extras:
+                    symlinks = e.get_links(symlinks)
+                return symlinks
+            case _:
+                return symlinks
+
     def dump(self, is_script=False) -> Any: # export
         match self.token:
             case b"0":
@@ -372,7 +411,7 @@ class MarshalElement():
                     else:
                         raise e
             case b":":
-                return str(self.content)
+                return ["type::",self.content.decode('utf-8')]
             case b'i':
                 return self.content
             case b"[":
@@ -408,7 +447,7 @@ class MarshalElement():
             case b"c":
                 return ["type:c",str(self.content)]
             case _:
-                raise Exception("Uninplemented", self.token)
+                raise Exception("Uninplemented " + str(self.token))
 
     def binary(self) -> bytes:
         match self.token:
@@ -458,7 +497,7 @@ class MarshalElement():
             case b"c":
                 return self.token + write_RUBYMARHSHAL_long(len(self.content)) + self.content
             case _:
-                raise Exception("Uninplemented", self.token)
+                raise Exception("Uninplemented " + str(self.token))
 
 def read_RUBYMARSHAL(handle, token=None) -> tuple:
     if token is None:
@@ -514,7 +553,7 @@ def read_RUBYMARSHAL(handle, token=None) -> tuple:
         case b"c":
             return elem.set(read_RUBYMARSHAL(handle, b'"').content)
         case _:
-            raise Exception("Uninplemented", token, handle.tell())
+            raise Exception("Uninplemented " + str(token) + " at position " + str(handle.tell()))
 
 def read_RUBYMARSHAL_file(handle):
     if handle.read(1) != b"\x04" or handle.read(1) != b"\x08": raise Exception("Invalid Magic Number")
@@ -569,27 +608,73 @@ def parse_RUBYMARSHAL_script(script : str) -> list:
                 buf += c
     return strings
 
-def load_RUBYMARSHAL(element : MarshalElement, index : dict, parent : Optional[MarshalElement] = None, file_type=0) -> tuple:
+def load_RUBYMARSHAL(element : MarshalElement, index : dict, parent : MarshalElement, file_type : int, symlinks : dict = {}) -> tuple:
     strings = []
-    if element.token == b"[":
+    groups = []
+    current_group = []
+    if parent is None:
+        symlinks = element.get_links({})
+    if file_type >= 2: # Map and CommonEvents
+        if parent is None:
+            if file_type == 2: # Map
+                events = element.get(1).get(b"@events", symlinks).content
+                for k, v in events.items():
+                    pages = v.get(1).get(b"@pages", symlinks).content
+                    for p in pages:
+                        s, g = load_RUBYMARSHAL(p, index, element, file_type, symlinks)
+                        strings += s
+                        groups += g
+            elif file_type == 3: # CommonEvents
+                for ev in element.content:
+                    if ev.token != b"0":
+                        s, g = load_RUBYMARSHAL(ev, index, element, file_type, symlinks)
+                        strings += s
+                        groups += g
+        else:
+            for cmd in element.get(1).get(b"@list", symlinks).content:
+                cmd_details = cmd.get(1)
+                code = cmd_details.get(b"@code", symlinks).content
+                parameters = cmd_details.get(b"@parameters", symlinks).content
+                match code:
+                    case 401:
+                        for pm in parameters:
+                           if pm.token == b'"':
+                               s = pm.content.decode('utf-8')
+                               strings.append(s)
+                               current_group.append(s)
+                    case 320|122|405|111|324|355|655:
+                        for pm in parameters:
+                            if pm.token == b'"':
+                               strings.append(pm.content.decode('utf-8'))
+                    case 101:
+                        tl = []
+                        for pm in parameters:
+                            if pm.token == b'"':
+                                s = pm.content.decode("utf-8")
+                                strings.append(s)
+                                tl.append(index[s] if isinstance(index.get(s, None), str) else s)
+                        strings.append(TALKING_STR + ":".join(tl))
+                    case 102:
+                       for pm in parameters:
+                            if pm.token == b'"':
+                               strings.append(pm.content.decode('utf-8'))
+                            elif pm.token == b"[":
+                                for pms in pm.content:
+                                    if pms.token == b'"':
+                                       strings.append(pms.content.decode('utf-8'))
+                if code != 401 and len(current_group) > 0:
+                    if len(current_group) > 1: groups.append(current_group)
+                    current_group = []
+    elif element.token == b"[":
         for e in element.content:
-            s, g = load_RUBYMARSHAL(e, index, element, file_type)
+            s, g = load_RUBYMARSHAL(e, index, element, file_type, symlinks)
             strings += s
+            groups += g
     elif element.token == b"{":
-        # code detection BEGIN
-        if file_type == 2 and len(element.content) == 3 and parent.token == b"[":
-            keys = list(element.content.keys())
-            if len(keys) > 0 and keys[-1].token == b";" and element.content[keys[0]].token == b"[": 
-                el = element.content[keys[-1]]
-                if el.token == b"i" and el.content == 101: # show face code
-                    tl = []
-                    for d in element.content[keys[0]].dump():
-                        tl.append(index[d] if isinstance(index.get(d, None), str) else str(d))
-                    strings.append(TALKING_STR + ":".join(tl))
-        # # code detection END
         for k, v in element.content.items():
-            s, g = load_RUBYMARSHAL(v, index, element, file_type)
+            s, g = load_RUBYMARSHAL(v, index, element, file_type, symlinks)
             strings += s
+            groups += g
     elif element.token == b'"':
         try:
             strings = [element.content.decode('utf-8')]
@@ -604,10 +689,14 @@ def load_RUBYMARSHAL(element : MarshalElement, index : dict, parent : Optional[M
                 strings += parse_RUBYMARSHAL_script(d.decode('utf-8'))
             else:
                 raise e
-    for e in element.extras:
-        s, g = load_RUBYMARSHAL(e, index, parent, file_type)
-        strings += s
-    return strings, []
+    if file_type < 2:
+        for e in element.extras:
+            s, g = load_RUBYMARSHAL(e, index, parent, file_type, symlinks)
+            strings += s
+            groups += g
+    if len(current_group) > 1:
+        groups.append(current_group)
+    return strings, groups
 
 def load_event_data_JSON(content, old : dict) -> tuple:
     strings = []
@@ -808,7 +897,8 @@ def generate() -> None:
                         print("Reading", fn)
                     sn = fn.split('/')[-1]
                     if "Scripts" in sn: file_type = 1
-                    elif ("Map" in sn and "Infos" not in sn) or ("CommonEvents" in sn): file_type = 2
+                    elif "Map" in sn and "Infos" not in sn: file_type = 2
+                    elif "CommonEvents" in sn: file_type = 3
                     else: file_type = 0
                     s, g = load_RUBYMARSHAL(data, old, None, file_type)
                     if len(s) > 0 or len(g) > 0:
@@ -1352,8 +1442,65 @@ def patch_RUBYMARSHAL_element(element: MarshalElement, index : dict, file_type :
     for e in element.extras:
         patch_RUBYMARSHAL_element(e, index, file_type)
 
+
+def patch_RUBYMARSHAL_event(element : MarshalElement, index : dict, file_type : int, symlinks : dict) -> None:
+    for cmd in element.get(1).get(b"@list", symlinks).content:
+        cmd_details = cmd.get(1)
+        code = cmd_details.get(b"@code", symlinks).content
+        parameters = cmd_details.get(b"@parameters", symlinks).content
+        match code:
+            case 401:
+                for pm in parameters:
+                   if pm.token == b'"':
+                       s = pm.content.decode('utf-8')
+                       tl = index.get(s, None)
+                       if isinstance(tl, str):
+                           pm.content = tl.encode('utf-8')
+            case 320|122|405|111|324|355|655:
+                for pm in parameters:
+                    if pm.token == b'"':
+                       s = pm.content.decode('utf-8')
+                       tl = index.get(s, None)
+                       if isinstance(tl, str):
+                           pm.content = tl.encode('utf-8')
+            case 101:
+                tl = []
+                for pm in parameters:
+                    if pm.token == b'"':
+                        s = pm.content.decode("utf-8")
+                        tl = index.get(s, None)
+                        if isinstance(tl, str):
+                            pm.content = tl.encode('utf-8')
+            case 102:
+                for pm in parameters:
+                    if pm.token == b'"':
+                        s = pm.content.decode("utf-8")
+                        tl = index.get(s, None)
+                        if isinstance(tl, str):
+                            pm.content = tl.encode('utf-8')
+                    elif pm.token == b"[":
+                        for pms in pm.content:
+                            if pms.token == b'"':
+                                s = pms.content.decode("utf-8")
+                                tl = index.get(s, None)
+                                if isinstance(tl, str):
+                                    pms.content = tl.encode('utf-8')
+
 def patch_RUBYMARSHAL(fn : str, data : MarshalElement, index : dict, patches : dict, file_type : int) -> bytes:
-    patch_RUBYMARSHAL_element(data, index, file_type)
+    if file_type >= 2: # Map and CommonEvents
+        symlinks = data.get_links({})
+        if file_type == 2: # Map
+            events = data.get(1).get(b"@events", symlinks).content
+            for k, v in events.items():
+                pages = v.get(1).get(b"@pages", symlinks).content
+                for p in pages:
+                    patch_RUBYMARSHAL_event(p, index, file_type, symlinks)
+        elif file_type == 3: # CommonEvents
+            for ev in data.content:
+                if ev.token != b"0":
+                    patch_RUBYMARSHAL_event(ev, index, file_type, symlinks)
+    else:
+        patch_RUBYMARSHAL_element(data, index, file_type)
     if fn in patches:
         global data_set
         for p in patches[fn]:
@@ -1549,7 +1696,7 @@ def patch() -> None:
 def main():
     global SETTINGS
     global SETTINGS_MODIFIED
-    print("RPG Maker MV/MZ MTL Patcher v2.5")
+    print("RPG Maker MV/MZ MTL Patcher v2.6")
     init()
     while True:
         save_settings()
