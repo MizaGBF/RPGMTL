@@ -963,7 +963,7 @@ def translate() -> None:
                     elif current_file in disabled:
                         continue
                     elif strings[s] is None:
-                        if not all and not current_file.startswith("Map") and current_file not in ["Actors.json", "Armors.json", "Classes.json", "CommonEvents.json", "Enemies.json", "Items.json", "Skills.json", "States.json", "Weapons.json"]:
+                        if not all and (not current_file.startswith("Map") or current_file not in ["Actors.json", "Armors.json", "Classes.json", "CommonEvents.json", "Enemies.json", "Items.json", "Skills.json", "States.json", "Weapons.json"]):
                             continue
                         if print_flag:
                             print_flag = False
