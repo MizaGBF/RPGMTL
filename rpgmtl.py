@@ -620,7 +620,7 @@ def load_event_data_JSON(content, old : dict) -> tuple:
                     if isinstance(pm, str):
                         strings.append(pm)
                         current_group.append(pm)
-            case 320|122|405|111|401|324:
+            case 320|122|405|111|324:
                 for pm in cmd["parameters"]:
                     if isinstance(pm, str):
                         strings.append(pm)
@@ -1084,7 +1084,7 @@ def patch_event_data(data, index : dict):
                     if isinstance(pm, str):
                         tl = index.get(pm, None)
                         if isinstance(tl, str): data[i]["parameters"][j] = tl
-            case 320|122|405|111|401|324:
+            case 320|122|405|111|324:
                 for j, pm in enumerate(cmd["parameters"]):
                     if isinstance(pm, str):
                         tl = index.get(pm, None)
