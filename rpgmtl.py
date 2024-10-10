@@ -184,7 +184,7 @@ def load_strings(with_special_strings : bool = False) -> tuple:
             print(e)
             print("Try to fix its content.")
             return {}, set(), False
-    return loaded, set(), True
+    return loaded, disabled, True
 
 def load_groups() -> tuple:
     try:
