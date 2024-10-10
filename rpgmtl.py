@@ -947,12 +947,14 @@ def translate() -> None:
                 print("Starting translation...")
                 if not all: print("Only translating Map, Event and Item strings...")
                 current_file = None
+                current_file_without_extension = None
                 count = 0
                 tl_count = 0
                 print_flag = False
                 for s in strings:
                     if s.startswith(FILE_STR):
                         current_file = s.replace(FILE_STR, '').strip()
+                        current_file_without_extension = '.'.join(current_file.split('.')[:-1])
                         if current_file in disabled:
                             sys.stdout.write("\rFile is disabled by the user, skipping...\n")
                         sys.stdout.write("\rIn section: {}              ".format(current_file))
@@ -963,7 +965,7 @@ def translate() -> None:
                     elif current_file in disabled:
                         continue
                     elif strings[s] is None:
-                        if not all and (not current_file.startswith("Map") or current_file not in ["Actors.json", "Armors.json", "Classes.json", "CommonEvents.json", "Enemies.json", "Items.json", "Skills.json", "States.json", "Weapons.json"]):
+                        if not all and (not current_file.startswith("Map") or current_file_without_extension not in ["Actors", "Armors", "Classes", "CommonEvents", "Enemies", "Items", "Skills", "States", "Weapons"]):
                             continue
                         if print_flag:
                             print_flag = False
@@ -1547,7 +1549,7 @@ def patch() -> None:
 def main():
     global SETTINGS
     global SETTINGS_MODIFIED
-    print("RPG Maker MV/MZ MTL Patcher v2.4")
+    print("RPG Maker MV/MZ MTL Patcher v2.5")
     init()
     while True:
         save_settings()
