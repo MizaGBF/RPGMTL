@@ -1595,7 +1595,7 @@ def main():
                                             except: pass
                                     print("Clean up complete")
                             case "10":
-                                s = input("Input the path of the tile to extract:")
+                                s = input("Input the path of the file to extract:")
                                 if s != "":
                                     try:
                                         with open(s, mode="rb") as f:
