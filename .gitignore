@@ -1,0 +1,9 @@
+﻿projects/*
+projects
+rpgmtl.lo*
+*.crt
+*.key
+*.pem
+settings.json
+dev/*
+dev/
