@@ -2,14 +2,14 @@
 Small Tool to create Translation Patches for RPG Maker games (from XP to MZ) and more.  
   
 ## Table of contents  
-* [Introduction](introduction)  
-* [Installation](installation)  
-* [Usage](usage)
-* [Project Management](project-management)
-* [Translation](translation)
-* [Advanced Usage](advanced-usage)
-* [Plugins](plugins)
-* [API](api)
+* [Introduction](#introduction)  
+* [Installation](#installation)  
+* [Usage](#usage)  
+* [Project Management](#project-management)  
+* [Translation](#translation)  
+* [Advanced Usage](#advanced-usage)  
+* [Plugins](#plugins)  
+* [API](#api)  
   
 ## Introduction  
   
