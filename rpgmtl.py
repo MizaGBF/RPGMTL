@@ -448,6 +448,7 @@ class RPGMTL():
             '防御': 'Defense',
             'アイテム': 'Items',
             'スキル': 'Skills',
+            '必殺技': 'Specials',
             '装備': 'Equipment',
             'ステータス': 'Status',
             '並び替え': 'Sort',
@@ -539,6 +540,7 @@ class RPGMTL():
             '光':'Light',
             '闇':'Darkness',
             '盾':'Shield',
+            '武器':'Weapon',
             '頭':'Head',
             '身体':'Body',
             '装飾品':'Accessories',
@@ -551,7 +553,8 @@ class RPGMTL():
             '並び替え':'Sort',
             '防具':'Armor',
             '最強装備':'Optimize',
-            '全て外す':'Remove all'
+            '全て外す':'Remove all',
+            'ja_JP':'en_US'
         }
         for s in self.strings[name]["strings"]:
             if self.strings[name]["strings"][s][0] in default_tl:
@@ -568,6 +571,14 @@ class RPGMTL():
                     self.projects[name]["files"][f]["ignored"] = True
                     self.modified[name] = True
                     break
+        # Disable RPG Maker switches, variables and others
+        for f in ["www/data/System.json", "data/System.json"]:
+            if f in self.strings[name]["files"]:
+                for i, g in enumerate(self.strings[name]["files"][f]):
+                    if g[0] in ['switches', 'variables', 'encryptionKey']:
+                        for j in range(1, len(g)):
+                            self.strings[name]["files"][f][i][j][3] = 1
+                            self.modified[name] = True
         # Disabling specific RPG maker event codes
         text_codes = set(["Command: Show Text", "Command: Choices", "Command: When ..."])
         for f in self.strings[name]["files"]:
