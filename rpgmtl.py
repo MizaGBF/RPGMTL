@@ -588,6 +588,20 @@ class RPGMTL():
                     for j in range(1, len(group)):
                         self.strings[name]["files"][f][i][j][3] = 1
                         self.modified[name] = True
+        # Disable number strings
+        strids = set()
+        for k, v in self.strings[name]["strings"].items():
+            try:
+                float(v[0])
+                strids.add(k)
+            except:
+                pass
+        for f in self.strings[name]["files"]:
+            for i, group in enumerate(self.strings[name]["files"][f]):
+                for j in range(1, len(group)):
+                    if group[j][0] in strids:
+                        self.strings[name]["files"][f][i][j][3] = 1
+                        self.modified[name] = True
 
     # load a project config.json file
     def load_project(self : RPGMTL, name : str) -> dict[str, Any]:
