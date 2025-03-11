@@ -286,6 +286,11 @@ html, body {
 	border-color: #ffffff;
 }
 
+.complete {
+	background: #1d420b;
+	color: #bbbbbb;
+}
+
 .unlinked {
 	background: #5d7d5a;
 	border-color: #75e86b;

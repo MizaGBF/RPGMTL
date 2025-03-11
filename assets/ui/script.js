@@ -711,6 +711,8 @@ function browse_files(data)
 			let total = prj["files"][key]["strings"] - prj["files"][key]["disabled_strings"];
 			let count = prj["files"][key]["translated"];
 			let percent = total > 0 ? ', ' + (Math.round(10000 * count / total) / 100) + '%)' : ')';
+			if(count == total)
+				button.classList.add("complete");
 			button.innerHTML = key + ' (' + total + ' strings' + percent;
 		}
 		updateMain(fragment);
