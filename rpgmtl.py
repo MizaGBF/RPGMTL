@@ -59,7 +59,7 @@ class PatcherHelper():
 ######################################################
 class RPGMTL():
     # constant
-    VERSION = "3.0"
+    VERSION = "3.1"
     def __init__(self : RPGMTL) -> None:
         # Setting up logging
         handler = RotatingFileHandler(filename="rpgmtl.log", encoding='utf-8', mode='w', maxBytes=51200, backupCount=3)
@@ -108,6 +108,7 @@ class RPGMTL():
                 web.post('/api/update_string', self.edit_string), # Edit string values
                 web.post('/api/translate_string', self.translate_string), # Translate a string
                 web.post('/api/translate_file', self.translate_file), # Translate a file
+                web.post('/api/search_string', self.search_string), # Search a file
         ])
         
         # loaded data containers
@@ -1440,6 +1441,36 @@ class RPGMTL():
                 asyncio.create_task(self.compute_translated(name, self.projects[name]["version"]))
             # Respond
             return web.json_response({"result":"ok", "data":{"config":self.projects[name], "name":name, "path":path, "strings":self.strings[name]["strings"], "list":self.strings[name]["files"][path]}, "message":"{} string(s) have been translated".format(count)})
+
+    # /api/search_string
+    async def search_string(self : RPGMTL, request : web.Request) -> web.Response:
+        payload = await request.json()
+        path = payload.get('path', None)
+        name = payload.get('name', None)
+        search = payload.get('search', None)
+        if path is None:
+            return web.json_response({"result":"bad", "message":"Bad request, missing 'path' parameter"}, status=400)
+        elif search is None:
+            return web.json_response({"result":"bad", "message":"Bad request, missing 'search' parameter"}, status=400)
+        elif name is None:
+            return web.json_response({"result":"bad", "message":"Bad request, missing 'name' parameter"}, status=400)
+        else:
+            id_matches : set[str] = ([k for k, s in self.strings[name]["strings"].items() if search in s[0] or (s[1] is not None and search in s[1])])
+            files : set[str] = set()
+            for f, groups in self.strings[name]["files"].items():
+                for g in groups:
+                    if f in files:
+                        break
+                    for i in range(1, len(g)):
+                        if g[i][0] in id_matches or (g[i][1] is not None and search in g[i][1]):
+                            files.add(f)
+                            break
+            result : dict[str, bool] = {}
+            keys : list[str] = list(files)
+            keys.sort()
+            for f in keys:
+                result[f] = self.projects[name]["files"].get(f, {}).get("ignored", False)
+            return web.json_response({"result":"ok", "data":{"config":self.projects[name], "name":name, "path":path, "search":search, "files":result}, "message":"{} matches found".format(len(files))})
 
 if __name__ == "__main__":
     RPGMTL().run()

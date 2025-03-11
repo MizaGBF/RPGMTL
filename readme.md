@@ -413,4 +413,10 @@ Return in data: string 'translation'
 /api/translate_file
 Payload:  project 'name', file 'path', project 'version'
 Return in data: project 'name', project 'config', file 'path', project 'strings', 'list' of strings in file
-'''
+```
+
+```
+/api/search_string
+Payload:  project 'name', file 'path', 'search' string
+Return in data: project 'name', project 'config', 'search' string, matched 'files'
+```

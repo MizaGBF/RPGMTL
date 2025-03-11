@@ -641,18 +641,18 @@ function browse_files(data)
 		// top bar
 		let fragment = clearBar();
 		addTo(fragment, "div", {cls:["interact", "button"], br:false, onclick:function() {
-			let returnpath = bp.includes('/') ? bp.split('/').slice(0, bp.split('/').length-2).join('/')+'/' : "";
+			let returnpath = bp.includes('/') ? bp.split('/').slice(0, bp.split('/').length-2).join('/') : "";
 			if(returnpath == "" || returnpath == "/")
 				project_menu();
 			else
-				postAPI("/api/browse", browse_files, null, {name:prjname, path:returnpath});
+				postAPI("/api/browse", browse_files, null, {name:prjname, path:returnpath+'/'});
 		}}).innerHTML = '<img src="assets/images/back.png">';
 		addTo(fragment, "div", {cls:["inline"], br:false}).innerHTML = "Path: " + bp;
 		addTo(fragment, "div", {cls:["barfill"], br:false});
 		addTo(fragment, "div", {cls:["interact", "button"], br:false, onclick:function(){
 			document.getElementById("help").innerHTML = "<ul>\
 				<li>CTRL+Click on a file to <b>disable</b> it, it won't be patched during the release process.</li>\
-				<li>The number of strings is the number of <b>unique</b> strings.</li>\
+				<li>The number of strings is the number of <b>unique</b> active strings.</li>\
 				<li>The completion percentages don't update in real time, don't take them for granted.</li>\
 			</ul>";
 			document.getElementById("help").style.display = "";
@@ -662,6 +662,13 @@ function browse_files(data)
 		// main part
 		fragment = clearMain();
 		addTo(fragment, "div", {cls:["title"]}).innerHTML = prjname;
+		
+		const input = addTo(fragment, "input", {cls:["input", "smallinput"], br:false});
+		input.placeholder = "Search a string";
+		addTo(fragment, "div", {cls:["interact", "button"], onclick:function(){
+			if(input.value != "")
+				postAPI("/api/search_string", string_search, null, {name:prjname, path:bp, search:input.value});
+		}}).innerHTML = '<img src="assets/images/search.png">';
 		addTo(fragment, "div", {cls:["title", "left"]}).innerHTML = bp;
 		for(let i = 0; i < data["folders"].length; ++i)
 		{
@@ -684,6 +691,71 @@ function browse_files(data)
 			};
 		}
 		addTo(fragment, "div", {cls:["title", "left"]}).innerHTML = "List of Files";
+		let cls = [
+			["interact"],
+			["interact", "disabled"]
+		];
+		for(const [key, value] of Object.entries(data["files"]))
+		{
+			let button = addTo(fragment, "div", {cls:cls[+value], br:false, id:"text:"+key, onclick:function(){
+				if(window.event.ctrlKey)
+				{
+					postAPI("/api/ignore_file", update_file_list, null, {name:prjname, path:key, state:+!this.classList.contains("disabled")});
+				}
+				else
+				{
+					set_loading_text("Opening " + key + "...");
+					postAPI("/api/file", open_file, null, {name:prjname, path:key});
+				}
+			}});
+			let total = prj["files"][key]["strings"] - prj["files"][key]["disabled_strings"];
+			let count = prj["files"][key]["translated"];
+			let percent = total > 0 ? ', ' + (Math.round(10000 * count / total) / 100) + '%)' : ')';
+			button.innerHTML = key + ' (' + total + ' strings' + percent;
+		}
+		updateMain(fragment);
+	}
+	catch(err)
+	{
+		console.error("Exception thrown", err.stack);
+		pushPopup("An unexpected error occured.");
+		project_menu();
+	}
+}
+
+// search a string
+function string_search(data)
+{
+	try
+	{
+		const bp = data["path"];
+		// top bar
+		let fragment = clearBar();
+		addTo(fragment, "div", {cls:["interact", "button"], br:false, onclick:function() {
+			postAPI("/api/browse", browse_files, null, {name:prjname, path:data["path"]});
+		}}).innerHTML = '<img src="assets/images/back.png">';
+		addTo(fragment, "div", {cls:["inline"], br:false}).innerHTML = "Search Results";
+		addTo(fragment, "div", {cls:["barfill"], br:false});
+		addTo(fragment, "div", {cls:["interact", "button"], br:false, onclick:function(){
+			document.getElementById("help").innerHTML = "<ul>\
+				<li>Your search results are displayed here.</li>\
+			</ul>";
+			document.getElementById("help").style.display = "";
+		}}).innerHTML = '<img src="assets/images/help.png">';
+		updateBar(fragment);
+		
+		// main part
+		fragment = clearMain();
+		addTo(fragment, "div", {cls:["title"]}).innerHTML = prjname;
+		
+		const input = addTo(fragment, "input", {cls:["input", "smallinput"], br:false});
+		input.placeholder = "Search a string";
+		input.value = data["search"];
+		addTo(fragment, "div", {cls:["interact", "button"], onclick:function(){
+			if(input.value != "")
+				postAPI("/api/search_string", string_search, null, {name:prjname, path:bp, search:input.value});
+		}}).innerHTML = '<img src="assets/images/search.png">';
+		addTo(fragment, "div", {cls:["title", "left"]}).innerHTML = "Search Results";
 		let cls = [
 			["interact"],
 			["interact", "disabled"]
@@ -924,12 +996,12 @@ function prepareGroupOn(node, i)
 		
 		span.onclick = function()
 		{
-			if(window.event.ctrlKey)
+			if(window.event.ctrlKey && !window.event.shiftKey)
 			{
 				set_loading_text("Updating...");
 				postAPI("/api/update_string", update_string_list, null, {setting:1, version:prjversion, name:prjname, path:prjdata["path"], group:this.group, index:this.string});
 			}
-			else if(window.event.shiftKey)
+			else if(!window.event.ctrlKey && window.event.shiftKey)
 			{
 				if(bottom.style.display == "none")
 				{
@@ -937,28 +1009,55 @@ function prepareGroupOn(node, i)
 					postAPI("/api/update_string", update_string_list, null, {setting:0, version:prjversion, name:prjname, path:prjdata["path"], group:this.group, index:this.string});
 				}
 			}
-			else
+		};
+		original.onclick = function()
+		{
+			if(!window.event.ctrlKey && !window.event.shiftKey && window.event.altKey)
 			{
-				let ss = prjlist[span.group][span.string];
-				document.getElementById("edit-ori").textContent = prjstring[ss[0]][0];
-				let edittl = document.getElementById("edit-tl");
-				if(ss[2])
+				if(navigator.clipboard != undefined)
 				{
-					if(ss[1] != null)
-						edittl.value = ss[1];
+					navigator.clipboard.writeText(original.textContent);
+					pushPopup('The String has been copied');
+				}
+				else pushPopup('You need to be on a secure origin to use the Copy button');
+			}
+		};
+		translation.onclick = function()
+		{
+			if(!window.event.ctrlKey && !window.event.shiftKey)
+			{
+				if(window.event.altKey)
+				{
+					if(navigator.clipboard != undefined)
+					{
+						navigator.clipboard.writeText(translation.textContent);
+						pushPopup('The String has been copied');
+					}
+					else pushPopup('You need to be on a secure origin to use the Copy button');
+				}
+				else
+				{
+					let ss = prjlist[span.group][span.string];
+					document.getElementById("edit-ori").textContent = prjstring[ss[0]][0];
+					let edittl = document.getElementById("edit-tl");
+					if(ss[2])
+					{
+						if(ss[1] != null)
+							edittl.value = ss[1];
+						else
+							edittl.value = prjstring[ss[0]][0]; // default to original
+					}
+					else if(prjstring[ss[0]][1] != null)
+						edittl.value = prjstring[ss[0]][1];
 					else
 						edittl.value = prjstring[ss[0]][0]; // default to original
+					document.getElementById("string-length").innerHTML = edittl.value.length;
+					bottom.style.display = "";
+					edittl.focus();
+					currentstr = span;
 				}
-				else if(prjstring[ss[0]][1] != null)
-					edittl.value = prjstring[ss[0]][1];
-				else
-					edittl.value = prjstring[ss[0]][0]; // default to original
-				document.getElementById("string-length").innerHTML = edittl.value.length;
-				bottom.style.display = "";
-				edittl.focus();
-				currentstr = span;
 			}
-		}
+		};
 	}
 }
 
@@ -984,6 +1083,9 @@ function open_file(data)
 			document.getElementById("help").innerHTML = "<ul>\
 				<li>CTRL+Click on a line to <b>disable</b> it, it'll be skipped during the release process.</li>\
 				<li>SHIFT+Click on a line to <b>unlink</b> it, if you need to set it to a translation specific to this part of the file.</li>\
+				<li>ALT+Click on the original string (on the left) to copy it.</li>\
+				<li>ALT+Click on the translated string (on the right) to copy it.</li>\
+				<li>Click on the translated string (on the right) to edit it.</li>\
 				<li>On top, if available, you'll find <b>Plugin Actions</b> for this file.</li>\
 				<li>You'll also find the <b>Translate the File</b> button.</li>\
 			</ul>";
@@ -1028,6 +1130,16 @@ function open_file(data)
 		bottom.style.display = "none";
 		project_menu();
 	}
+}
+
+function copy_string() // used on the index.html
+{
+	if(navigator.clipboard != undefined)
+	{
+		navigator.clipboard.writeText(document.getElementById('edit-ori').textContent);
+		pushPopup('Original String has been copied');
+	}
+	else pushPopup('You need to be on a secure origin to use the Copy button');
 }
 
 // send and confirm a string change

@@ -282,6 +282,10 @@ html, body {
 	min-height: 30px;
 }
 
+.original:hover, .translation:hover {
+	border-color: #ffffff;
+}
+
 .unlinked {
 	background: #5d7d5a;
 	border-color: #75e86b;
