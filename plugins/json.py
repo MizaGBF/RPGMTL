@@ -5,7 +5,7 @@ import io
 from typing import Any
 
 class JSON(Plugin):
-    DEFAULT_RPGMK_DATA_FILE : set[str] = set(["data/Actors.json", "data/Animations.json", "data/Armors.json", "data/Classes.json", "data/Enemies.json", "data/Items.json", "data/MapInfos.json", "data/Troops.json", "data/Skills.json", "data/States.json", "data/Tilesets.json", "data/Weapons.json"])
+    DEFAULT_RPGMK_DATA_FILE : set[str] = set(["data/Actors.json", "data/Animations.json", "data/Armors.json", "data/Classes.json", "data/Enemies.json", "data/Items.json", "data/MapInfos.json", "data/Skills.json", "data/States.json", "data/Tilesets.json", "data/Weapons.json"])
     RPGMVMZ_CODE_TABLE = {
         101: "Show Text",
         102: "Choices",
@@ -129,7 +129,7 @@ class JSON(Plugin):
     def __init__(self : JSON) -> None:
         super().__init__()
         self.name : str = "JSON"
-        self.description : str = "v1.0\nHandle JSON files, including ones from RPG Maker MV/MZ"
+        self.description : str = "v1.1\nHandle JSON files, including ones from RPG Maker MV/MZ"
 
     def get_setting_infos(self : Plugin) -> dict[str, list]:
         return {
@@ -150,6 +150,8 @@ class JSON(Plugin):
             return self._read_walk_map(data)
         elif file_path.endswith("data/CommonEvents.json"): # CommonEvents file of RPGMV/MZ
             return self._read_walk_common(data)
+        elif file_path.endswith("data/Troops.json"): # Troops.json file of RPGMV/MZ
+            return self._read_walk_troops(data)
         elif '/' in file_path and '/'.join(file_path.split('/')[-2:]) in self.DEFAULT_RPGMK_DATA_FILE:
             return self._read_walk_data(data)
         else:
@@ -167,6 +169,8 @@ class JSON(Plugin):
                 self._write_walk_map(data, helper)
             elif file_path.endswith("data/CommonEvents.json"): # CommonEvents file of RPGMV/MZ
                 self._write_walk_common(data, helper)
+            elif file_path.endswith("data/Troops.json"): # Troops.json file of RPGMV/MZ
+                self._write_walk_troops(data, helper)
             elif '/' in file_path and '/'.join(file_path.split('/')[-2:]) in self.DEFAULT_RPGMK_DATA_FILE:
                 self._write_walk_data(data, helper)
             else:
@@ -243,15 +247,17 @@ class JSON(Plugin):
                 raise Exception("Error: " + str(type(data)))
     
     # Generic JSON processing
-    def _read_walk(self : JSON, obj : Any) -> list[list[str]]:
+    def _read_walk(self : JSON, obj : Any, ignore_key : str|None = None) -> list[list[str]]:
         entries : list[list[str]] = []
         match obj:
             case dict():
                 for k in obj:
-                    entries.extend(self._read_walk(obj[k]))
+                    if ignore_key is not None and ignore_key == k:
+                        continue
+                    entries.extend(self._read_walk(obj[k], ignore_key))
             case list():
                 for i in range(len(obj)):
-                    entries.extend(self._read_walk(obj[i]))
+                    entries.extend(self._read_walk(obj[i], ignore_key))
             case str():
                 if obj != "":
                     entries.append(["", obj])
@@ -259,22 +265,24 @@ class JSON(Plugin):
                 pass
         return entries
 
-    def _write_walk(self : JSON, obj : Any, helper : WalkHelper) -> None:
+    def _write_walk(self : JSON, obj : Any, helper : WalkHelper, ignore_key : str|None = None) -> None:
         match obj:
             case dict():
                 for k in obj:
+                    if ignore_key is not None and ignore_key == k:
+                        continue
                     if isinstance(obj[k], str):
                         if obj[k] != "":
                             obj[k] = helper.apply_string(obj[k])
                     else:
-                        self._write_walk(obj[k], helper)
+                        self._write_walk(obj[k], helper, ignore_key)
             case list():
                 for i in range(len(obj)):
                     if isinstance(obj[i], str):
                         if obj[i] != "":
                             obj[i] = helper.apply_string(obj[i])
                     else:
-                        self._write_walk(obj[i], helper)
+                        self._write_walk(obj[i], helper, ignore_key)
             case str():
                 raise Exception("[JSON] Invalid code path")
             case _:
@@ -385,7 +393,7 @@ class JSON(Plugin):
     # RPGMV/MZ Events processing
     # Used by both Map and CommonEvents
     # We process differently based on the event codes
-    def _walk_event_continuous_command(self : JSON, i : index, cmds : list[dict], code : int) -> tuple[int, list[str]]:
+    def _walk_event_continuous_command(self : JSON, i : int, cmds : list[dict], code : int) -> tuple[int, list[str]]:
         text : list[str] = []
         while i < len(cmds) and cmds[i]["code"] == code:
             text.append(cmds[i]["parameters"][0])
@@ -518,6 +526,30 @@ class JSON(Plugin):
                         if isinstance(cmd["parameters"][j], str) and cmd["parameters"][j] != "":
                             cmds[i]["parameters"][j] = helper.apply_string(cmds[i]["parameters"][j], group)
             i += 1
+
+    # RPGMV/MZ standard Data Files processing
+    def _read_walk_troops(self : JSON, obj : Any) -> list[list[str]]:
+        entries : list[list[str]] = []
+        for ev in obj:
+            if ev is None:
+                continue
+            strings = self._read_walk(ev, "pages")
+            if len(strings) > 0:
+                entries.append(["ID " + str(ev["id"])])
+                entries.extend(strings)
+            if "pages" in ev:
+                for p in ev["pages"]:
+                    entries.extend(self._read_walk_event(p["list"]))
+        return entries
+
+    def _write_walk_troops(self : JSON, obj : Any, helper : WalkHelper) -> None:
+        for i in range(len(obj)):
+            if obj[i] is None:
+                continue
+            self._write_walk(obj[i], helper, "pages")
+            if "pages" in obj[i]:
+                for j in range(len(obj[i]["pages"])):
+                    self._write_walk_event(obj[i]["pages"][j]["list"], helper)
 
     # RPGMV/MZ standard Data Files processing
     def _read_walk_data(self : JSON, obj : Any) -> list[list[str]]:
