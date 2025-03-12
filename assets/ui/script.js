@@ -678,6 +678,7 @@ function browse_files(data)
 {
 	try
 	{
+		laststringsearch = null;
 		const bp = data["path"];
 		// top bar
 		let fragment = clearBar();
