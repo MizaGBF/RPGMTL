@@ -13,7 +13,9 @@ var prjversion = 0;
 var prjstring = null;
 var prjlist = null;
 var currentstr = null;
-var strtablecache = null;
+var strtablecache = [];
+var lastfileopened = null;
+var laststringsearch = null;
 
 // entry point
 function init()
@@ -200,6 +202,8 @@ function project_list(data)
 	prjlist = null;
 	currentstr = null;
 	trtablecache = null;
+	lastfileopened = null;
+	laststringsearch = null;
 	
 	// top bar
 	let fragment = clearBar();
@@ -299,7 +303,9 @@ function setting_menu(data)
 		let count = 0;
 		for(const [file, fsett] of Object.entries(layout))
 		{
-			addTo(fragment, "div", {cls:["title", "left"]}).innerHTML = file + " Plugin settings";
+			addTo(fragment, "div", {cls:["title", "left"], br:false}).innerHTML = file + " Plugin settings";
+			if(file in data["descriptions"] && data["descriptions"][file] != "")
+				addTo(fragment, "div", {cls:["left", "interact-group", "smalltext"]}).innerText = data["descriptions"][file];
 			for(const [key, fdata] of Object.entries(fsett))
 			{
 				switch(fdata[1])
@@ -368,6 +374,14 @@ function setting_menu(data)
 									postAPI("/api/update_settings", callback, null, {key:key, value:val});
 							}});
 							elem.innerHTML = '<img src="assets/images/confirm.png">';
+							input.addEventListener('keypress', function(event) {
+								if (event.key === 'Enter')
+								{
+									event.preventDefault();
+									elem.click();
+								}
+							});
+							
 							if(key in settings)
 								input.value = settings[key];
 							++count;
@@ -632,6 +646,33 @@ function project_menu(data = null)
 	}
 }
 
+function addSearchBar(node, bp, defaultVal = null)
+{
+	const input = addTo(node, "input", {cls:["input", "smallinput"], br:false});
+	input.placeholder = "Search a string";
+	if(defaultVal != null)
+		input.value = defaultVal;
+	else if(laststringsearch != null)
+		input.value = laststringsearch;
+	else
+		input.value = "";
+	const button = addTo(node, "div", {cls:["interact", "button"], onclick:function(){
+		if(input.value != "")
+		{
+			laststringsearch = input.value;
+			postAPI("/api/search_string", string_search, null, {name:prjname, path:bp, search:laststringsearch});
+		}
+	}});
+	button.innerHTML = '<img src="assets/images/search.png">';
+	input.addEventListener('keypress', function(event) {
+		if (event.key === 'Enter')
+		{
+			event.preventDefault();
+			button.click();
+		}
+	});
+}
+
 // open folder
 function browse_files(data)
 {
@@ -641,19 +682,22 @@ function browse_files(data)
 		// top bar
 		let fragment = clearBar();
 		addTo(fragment, "div", {cls:["interact", "button"], br:false, onclick:function() {
-			let returnpath = bp.includes('/') ? bp.split('/').slice(0, bp.split('/').length-2).join('/') : "";
-			if(returnpath == "" || returnpath == "/")
+			let returnpath = bp.includes('/') ? bp.split('/').slice(0, bp.split('/').length-2).join('/')+'/' : "";
+			if(bp == "")
 				project_menu();
 			else
-				postAPI("/api/browse", browse_files, null, {name:prjname, path:returnpath+'/'});
+			{
+				if(returnpath == '/') returnpath = '';
+				postAPI("/api/browse", browse_files, null, {name:prjname, path:returnpath});
+			}
 		}}).innerHTML = '<img src="assets/images/back.png">';
 		addTo(fragment, "div", {cls:["inline"], br:false}).innerHTML = "Path: " + bp;
 		addTo(fragment, "div", {cls:["barfill"], br:false});
 		addTo(fragment, "div", {cls:["interact", "button"], br:false, onclick:function(){
 			document.getElementById("help").innerHTML = "<ul>\
 				<li>CTRL+Click on a file to <b>disable</b> it, it won't be patched during the release process.</li>\
-				<li>The number of strings is the number of <b>unique</b> active strings.</li>\
-				<li>The completion percentages don't update in real time, don't take them for granted.</li>\
+				<li>The number of strings is the number of <b>unique</b> strings.</li>\
+				<li>The string counts and completion percentages update slowly in the background, don't take them for granted.</li>\
 			</ul>";
 			document.getElementById("help").style.display = "";
 		}}).innerHTML = '<img src="assets/images/help.png">';
@@ -662,13 +706,13 @@ function browse_files(data)
 		// main part
 		fragment = clearMain();
 		addTo(fragment, "div", {cls:["title"]}).innerHTML = prjname;
+		addSearchBar(fragment, bp);
 		
-		const input = addTo(fragment, "input", {cls:["input", "smallinput"], br:false});
-		input.placeholder = "Search a string";
-		addTo(fragment, "div", {cls:["interact", "button"], onclick:function(){
-			if(input.value != "")
-				postAPI("/api/search_string", string_search, null, {name:prjname, path:bp, search:input.value});
-		}}).innerHTML = '<img src="assets/images/search.png">';
+		let completion = addTo(fragment, "div", {cls:["title", "left"]});
+		let fstring = 0;
+		let ftotal = 0;
+		let fcount = 0;
+		
 		addTo(fragment, "div", {cls:["title", "left"]}).innerHTML = bp;
 		for(let i = 0; i < data["folders"].length; ++i)
 		{
@@ -695,6 +739,7 @@ function browse_files(data)
 			["interact"],
 			["interact", "disabled"]
 		];
+		let scrollTo = null;
 		for(const [key, value] of Object.entries(data["files"]))
 		{
 			let button = addTo(fragment, "div", {cls:cls[+value], br:false, id:"text:"+key, onclick:function(){
@@ -710,15 +755,31 @@ function browse_files(data)
 			}});
 			let total = prj["files"][key]["strings"] - prj["files"][key]["disabled_strings"];
 			let count = prj["files"][key]["translated"];
-			let percent = total > 0 ? ', ' + (Math.round(10000 * count / total) / 100) + '%)' : ')';
+			let percent = total > 0 ? ", " + (Math.round(10000 * count / total) / 100) + "%)" : ")";
+			
+			if(!value)
+			{
+				fstring += prj["files"][key]["strings"];
+				ftotal += total;
+				fcount += count;
+			}
+			
 			if(count == total)
 				button.classList.add("complete");
-			button.innerHTML = key + ' (' + total + ' strings' + percent;
+			button.innerHTML = key + ' (' + prj["files"][key]["strings"] + " strings" + percent;
+			if(key == lastfileopened)
+				scrollTo = button;
 		}
+		let percent = ftotal > 0 ? ', ' + (Math.round(10000 * fcount / ftotal) / 100) + '%' : '';
+		completion.innerHTML = "Current Total: " + fstring + " strings" + percent;
 		updateMain(fragment);
+		if(scrollTo != null)
+			scrollTo.scrollIntoView();
+		lastfileopened = null;
 	}
 	catch(err)
 	{
+		lastfileopened = null;
 		console.error("Exception thrown", err.stack);
 		pushPopup("An unexpected error occured.");
 		project_menu();
@@ -749,14 +810,8 @@ function string_search(data)
 		// main part
 		fragment = clearMain();
 		addTo(fragment, "div", {cls:["title"]}).innerHTML = prjname;
+		addSearchBar(fragment, bp, data["search"]);
 		
-		const input = addTo(fragment, "input", {cls:["input", "smallinput"], br:false});
-		input.placeholder = "Search a string";
-		input.value = data["search"];
-		addTo(fragment, "div", {cls:["interact", "button"], onclick:function(){
-			if(input.value != "")
-				postAPI("/api/search_string", string_search, null, {name:prjname, path:bp, search:input.value});
-		}}).innerHTML = '<img src="assets/images/search.png">';
 		addTo(fragment, "div", {cls:["title", "left"]}).innerHTML = "Search Results";
 		let cls = [
 			["interact"],
@@ -778,7 +833,7 @@ function string_search(data)
 			let total = prj["files"][key]["strings"] - prj["files"][key]["disabled_strings"];
 			let count = prj["files"][key]["translated"];
 			let percent = total > 0 ? ', ' + (Math.round(10000 * count / total) / 100) + '%)' : ')';
-			button.innerHTML = key + ' (' + total + ' strings' + percent;
+			button.innerHTML = key + ' (' + total + " strings" + percent;
 		}
 		updateMain(fragment);
 	}
@@ -994,7 +1049,7 @@ function prepareGroupOn(node, i)
 		translation.group = i;
 		translation.string = j;
 		
-		strtablecache.push([span, marker, translation]);
+		strtablecache.push([span, marker, translation, original]);
 		
 		span.onclick = function()
 		{
@@ -1071,15 +1126,19 @@ function open_file(data)
 		prjstring = data["strings"];
 		prjlist = data["list"];
 		prjdata = data;
+		lastfileopened = data["path"];
 		
 		// top bar
 		let fragment = clearBar();
-		const returnpath = data["path"].includes('/') ? data["path"].split('/').slice(0, data["path"].split('/').length-1).join('/')+'/' : "";
+		const returnpath = lastfileopened.includes('/') ? lastfileopened.split('/').slice(0, lastfileopened.split('/').length-1).join('/')+'/' : "";
 		addTo(fragment, "div", {cls:["interact", "button"], br:false, onclick:function(){
 			bottom.style.display = "none";
-			postAPI("/api/browse", browse_files, null, {name:prjname, path:returnpath});
+			if(laststringsearch != null)
+				postAPI("/api/search_string", string_search, null, {name:prjname, path:returnpath, search:laststringsearch});
+			else
+				postAPI("/api/browse", browse_files, null, {name:prjname, path:returnpath});
 		}}).innerHTML = '<img src="assets/images/back.png">';
-		addTo(fragment, "div", {cls:["inline"], br:false}).innerHTML = "File: " + data["path"];
+		addTo(fragment, "div", {cls:["inline"], br:false}).innerHTML = "File: " + lastfileopened;
 		addTo(fragment, "div", {cls:["barfill"], br:false});
 		addTo(fragment, "div", {cls:["interact", "button"], br:false, onclick:function(){
 			document.getElementById("help").innerHTML = "<ul>\
@@ -1098,15 +1157,16 @@ function open_file(data)
 		// main part
 		fragment = clearMain();
 		
-		addTo(fragment, "div", {cls:["title"]}).innerHTML = prjname;
-		addTo(fragment, "div", {cls:["title", "left"]}).innerHTML = data["path"];
+		let topsection = addTo(fragment, "div", {cls:["title"]});
+		topsection.innerHTML = prjname;
+		addTo(fragment, "div", {cls:["title", "left"]}).innerHTML = lastfileopened;
 		
 		for(const [key, value] of Object.entries(data["actions"]))
 		{
 			addTo(fragment, "div", {cls:["interact"], onclick:function() {
 				postAPI("/api/file_action", null, function() {
 					postAPI("/api/browse", browse_files, null, {name:prjname, path:returnpath});
-				}, {name:prjname, path:data["path"], version:prjversion, key:key});
+				}, {name:prjname, path:lastfileopened, version:prjversion, key:key});
 			}}).innerHTML = '<img src="assets/images/setting.png">' + value;
 		}
 		addTo(fragment, "div", {cls:["interact"], onclick:function() {
@@ -1114,7 +1174,7 @@ function open_file(data)
 			postAPI("/api/translate_file", update_string_list, function(){
 				bottom.style.display = "none";
 				postAPI("/api/browse", browse_files, null, {name:prjname, path:returnpath});
-			}, {name:prjname, path:data["path"], version:prjversion});
+			}, {name:prjname, path:lastfileopened, version:prjversion});
 		}}).innerHTML = '<img src="assets/images/translate.png">Translate the File';
 		
 		strtablecache = [];
@@ -1123,7 +1183,11 @@ function open_file(data)
 			prepareGroupOn(fragment, i);
 		}
 		updateMain(fragment);
-		update_string_list(data);
+		let scrollTo = update_string_list(data);
+		if(scrollTo)
+			scrollTo.scrollIntoView();
+		else
+			topsection.scrollIntoView();
 	}
 	catch(err)
 	{
@@ -1166,12 +1230,13 @@ function apply_string(trash = false)
 function update_string_list(data)
 {
 	const parent = main.parentNode;
+	let searched = null;
 	try
 	{
 		prjstring = data["strings"];
 		prjlist = data["list"];
 		parent.removeChild(main);
-		
+		let lcstringsearch = laststringsearch != null ? laststringsearch.toLowerCase() : "";
 		for(let i = 0; i < strtablecache.length; ++i)
 		{
 			const elems = strtablecache[i];
@@ -1207,6 +1272,8 @@ function update_string_list(data)
 			}
 			elems[0].classList.toggle("disabled", s[3] != 0);
 			elems[1].classList.toggle("modified", s[4] != 0);
+			if(laststringsearch != null && searched == null && (elems[2].textContent.toLowerCase().includes(lcstringsearch) || elems[3].textContent.toLowerCase().includes(lcstringsearch)))
+				searched = elems[2].parentNode;
 		}
 		parent.appendChild(main);
 		set_loading(false);
@@ -1219,6 +1286,7 @@ function update_string_list(data)
 		pushPopup("An unexpected error occured.");
 		project_menu();
 	}
+	return searched;
 }
 
 function translate_string()
@@ -1226,7 +1294,6 @@ function translate_string()
 	set_loading_text("Fetching translation...");
 	postAPI("/api/translate_string", function(data) {
 		set_loading(false);
-		console.log(data["translation"]);
 		if(data["translation"] != null)
 			document.getElementById("edit-tl").value = data["translation"];
 	}, function() {}, {name:prjname, string:document.getElementById("edit-ori").textContent});

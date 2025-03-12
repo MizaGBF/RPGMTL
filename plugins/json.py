@@ -133,7 +133,7 @@ class JSON(Plugin):
 
     def get_setting_infos(self : Plugin) -> dict[str, list]:
         return {
-            "json_rpgm_multiline": ["Merge multiline elements into one string", "bool", False, None]
+            "json_rpgm_multiline": ["Merge multiline commands into one (Require re-extract)", "bool", False, None]
         }
 
     def file_extension(self : JSON) -> list[str]:

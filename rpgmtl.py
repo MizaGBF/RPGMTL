@@ -59,7 +59,7 @@ class PatcherHelper():
 ######################################################
 class RPGMTL():
     # constant
-    VERSION = "3.1"
+    VERSION = "3.2"
     def __init__(self : RPGMTL) -> None:
         # Setting up logging
         handler = RotatingFileHandler(filename="rpgmtl.log", encoding='utf-8', mode='w', maxBytes=51200, backupCount=3)
@@ -121,6 +121,7 @@ class RPGMTL():
         self.settings : dict[str, Any] = {} # store global plugins setting
         self.settings_modified : bool = False
         self.setting_menu : dict[str, dict[str, list]] = {} # store info for setting menu, per plugin file
+        self.plugin_descriptions : dict[str, str] = {} # store plugin descriptions
         self.actions : dict[str, list] = {} # store plugin actions
         # loaded plugins
         self.plugins : dict[str, plugins.Plugin] = {}
@@ -189,6 +190,7 @@ class RPGMTL():
         # Add and connect plugin
         self.plugins[plugin.name] = plugin
         plugin.connect(self)
+        self.plugin_descriptions[plugin.name] = plugin.description
 
     # Add a translator to RPGMTL
     def add_translator(self : RPGMTL, plugin : plugins.TranslatorPlugin) -> None:
@@ -204,6 +206,7 @@ class RPGMTL():
             self.settings["rpgmtl_current_translator"] = plugin.name
             self.settings_modified = True
         plugin.connect(self)
+        self.plugin_descriptions[plugin.name] = plugin.description
 
     # Retrieve a specific plugin by its name
     def get_plugin(self : RPGMTL, name : str) -> plugins.Plugin|None:
@@ -1141,10 +1144,10 @@ class RPGMTL():
         name = payload.get('name', None)
         settings = copy.deepcopy(self.settings)
         if name is None:
-            return web.json_response({"result":"ok", "data":{"layout":self.setting_menu, "settings":settings}})
+            return web.json_response({"result":"ok", "data":{"layout":self.setting_menu, "settings":settings, "descriptions":self.plugin_descriptions}})
         else:
             settings = settings | self.projects[name].get("settings", {})
-            return web.json_response({"result":"ok", "data":{"name":name, "config":self.projects[name], "layout":self.setting_menu, "settings":settings}})
+            return web.json_response({"result":"ok", "data":{"name":name, "config":self.projects[name], "layout":self.setting_menu, "settings":settings, "descriptions":self.plugin_descriptions}})
         
     # /api/update_settings
     async def update_setting(self : RPGMTL, request : web.Request) -> web.Response:
@@ -1537,14 +1540,15 @@ class RPGMTL():
         elif name is None:
             return web.json_response({"result":"bad", "message":"Bad request, missing 'name' parameter"}, status=400)
         else:
-            id_matches : set[str] = ([k for k, s in self.strings[name]["strings"].items() if search in s[0] or (s[1] is not None and search in s[1])])
+            search = search.lower()
+            id_matches : set[str] = ([k for k, s in self.strings[name]["strings"].items() if search in s[0].lower() or (s[1] is not None and search in s[1].lower())])
             files : set[str] = set()
             for f, groups in self.strings[name]["files"].items():
                 for g in groups:
                     if f in files:
                         break
                     for i in range(1, len(g)):
-                        if g[i][0] in id_matches or (g[i][1] is not None and search in g[i][1]):
+                        if g[i][0] in id_matches or (g[i][1] is not None and search in g[i][1].lower()):
                             files.add(f)
                             break
             result : dict[str, bool] = {}

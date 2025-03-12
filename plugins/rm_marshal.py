@@ -133,7 +133,7 @@ class RM_Marshal(Plugin):
 
     def get_setting_infos(self : Plugin) -> dict[str, list]:
         return {
-            "rm_marshal_multiline": ["Merge multiline elements into one string", "bool", False, None]
+            "rm_marshal_multiline": ["Merge multiline commands into one (Require re-extract)", "bool", False, None]
         }
 
     def get_action_infos(self : Plugin) -> dict[str, list]:

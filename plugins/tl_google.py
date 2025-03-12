@@ -9,7 +9,7 @@ class DeepTL(TranslatorPlugin):
     def __init__(self : DeepTL) -> None:
         super().__init__()
         self.name : str = "TL Google"
-        self.description : str = " v1.0\nGoogle Translator\nWrapper around the third-party deep-translator module"
+        self.description : str = " v1.0\nWrapper around the deep-translator module\nGoogle Translator is used"
         self.instance = None
         self.past_setting = None
 

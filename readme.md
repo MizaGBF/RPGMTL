@@ -275,13 +275,13 @@ Return in data: project 'name', project 'config'
   
 ```
 /api/settings (Global)
-Return in data: menu 'layout', global 'settings'
+Return in data: menu 'layout', global 'settings', plugin 'description'
 ```
   
 ```
 /api/settings (Project Specific)
 Payload: project 'name'
-Return in data: project 'name', project 'config', menu 'layout', global 'settings'
+Return in data: project 'name', project 'config', menu 'layout', global 'settings', plugin 'description'
 ```
   
 ```
