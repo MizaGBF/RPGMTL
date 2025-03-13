@@ -697,7 +697,6 @@ function browse_files(data)
 		addTo(fragment, "div", {cls:["interact", "button"], br:false, onclick:function(){
 			document.getElementById("help").innerHTML = "<ul>\
 				<li>CTRL+Click on a file to <b>disable</b> it, it won't be patched during the release process.</li>\
-				<li>The number of strings is the number of <b>unique</b> strings.</li>\
 				<li>The string counts and completion percentages update slowly in the background, don't take them for granted.</li>\
 			</ul>";
 			document.getElementById("help").style.display = "";
