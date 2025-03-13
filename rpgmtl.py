@@ -299,7 +299,7 @@ class RPGMTL():
     async def autosave(self : RPGMTL):
         while True:
             try:
-                await asyncio.sleep(60) # call save() every 60s
+                await asyncio.sleep(300) # call save() every 300s
                 self.save()
             except asyncio.CancelledError:
                 return
@@ -705,6 +705,7 @@ class RPGMTL():
 
     # extract strings from backed up files
     def generate(self : RPGMTL, name : str) -> int:
+        self.save() # save first!
         self.backup_strings_file(name) # backup strings.json
         self.load_strings(name) # load strings.json
         self.log.info("Extracting strings for project " + name + "...")
@@ -1294,6 +1295,7 @@ class RPGMTL():
         elif file is None:
             return web.json_response({"result":"bad", "message":"Bad request, missing 'file' parameter"}, status=400)
         else:
+            self.save() # save
             shutil.copyfile('projects/' + name + '/' + file, 'projects/' + name + '/backup.tmp.file.json')
             bak : list[str] = ["strings.bak-5.json", "strings.bak-4.json", "strings.bak-3.json", "strings.bak-2.json", "strings.bak-1.json", "strings.bak.json"]
             meet : bool = False
