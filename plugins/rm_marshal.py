@@ -128,7 +128,7 @@ class RM_Marshal(Plugin):
     def __init__(self : RM_Marshal) -> None:
         super().__init__()
         self.name : str = "RPG Maker Marshal"
-        self.description : str = "v1.0\nHandle files from RPG Maker XP, VX and VX Ace"
+        self.description : str = "v1.1\nHandle files from RPG Maker XP, VX and VX Ace"
         self.allow_ruby_plugin : bool = True # Leave it on by default
 
     def get_setting_infos(self : Plugin) -> dict[str, list]:
@@ -375,11 +375,15 @@ class RM_Marshal(Plugin):
                     strings.append([r[0].data.decode('utf-8')])
                 r = ev[1].searchHash(b"@pages")
                 if len(r) > 0:
-                    for p in r[0].data:
+                    for i, p in enumerate(r[0].data):
                         r2 = p.searchHash(b"@list")
                         if len(r2) > 0:
-                            strings.extend(self._read_walk_event(r2[0]))
-                if len(strings) > 1:
+                            results = self._read_walk_event(r2[0])
+                            if len(results) > 0:
+                                strings.append(["Page {}".format(i+1)])
+                                strings.extend(results)
+                            strings.extend()
+                if len(strings) > 0:
                     entries.extend(strings)
         return entries
 

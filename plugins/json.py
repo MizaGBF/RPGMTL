@@ -129,7 +129,7 @@ class JSON(Plugin):
     def __init__(self : JSON) -> None:
         super().__init__()
         self.name : str = "JSON"
-        self.description : str = "v1.1\nHandle JSON files, including ones from RPG Maker MV/MZ"
+        self.description : str = "v1.2\nHandle JSON files, including ones from RPG Maker MV/MZ"
 
     def get_setting_infos(self : Plugin) -> dict[str, list]:
         return {
@@ -336,8 +336,11 @@ class JSON(Plugin):
                     if k == "events":
                         for ev in v:
                             if isinstance(ev, dict):
-                                for p in ev["pages"]:
-                                    entries.extend(self._read_walk_event(p["list"]))
+                                for i, p in enumerate(ev["pages"]):
+                                    strings = self._read_walk_event(p["list"])
+                                    if len(strings) > 0:
+                                        entries.append(["Page {}".format(i+1)])
+                                        entries.extend(strings)
                     else:
                         group : list[str] = [k]
                         for s in v:
@@ -538,8 +541,11 @@ class JSON(Plugin):
                 entries.append(["ID " + str(ev["id"])])
                 entries.extend(strings)
             if "pages" in ev:
-                for p in ev["pages"]:
-                    entries.extend(self._read_walk_event(p["list"]))
+                for i, p in enumerate(ev["pages"]):
+                    strings = self._read_walk_event(p["list"])
+                    if len(strings) > 0:
+                        entries.append(["Page {}".format(i+1)])
+                        entries.extend(strings)
         return entries
 
     def _write_walk_troops(self : JSON, obj : Any, helper : WalkHelper) -> None:
