@@ -1542,15 +1542,15 @@ class RPGMTL():
         elif name is None:
             return web.json_response({"result":"bad", "message":"Bad request, missing 'name' parameter"}, status=400)
         else:
-            search = search.lower()
-            id_matches : set[str] = ([k for k, s in self.strings[name]["strings"].items() if search in s[0].lower() or (s[1] is not None and search in s[1].lower())])
+            lsearch = search.lower()
+            id_matches : set[str] = ([k for k, s in self.strings[name]["strings"].items() if lsearch in s[0].lower() or (s[1] is not None and lsearch in s[1].lower())])
             files : set[str] = set()
             for f, groups in self.strings[name]["files"].items():
                 for g in groups:
                     if f in files:
                         break
                     for i in range(1, len(g)):
-                        if g[i][0] in id_matches or (g[i][1] is not None and search in g[i][1].lower()):
+                        if g[i][0] in id_matches or (g[i][1] is not None and lsearch in g[i][1].lower()):
                             files.add(f)
                             break
             result : dict[str, bool] = {}
