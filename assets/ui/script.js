@@ -766,7 +766,7 @@ function browse_files(data)
 			
 			if(count == total)
 				button.classList.add("complete");
-			button.innerHTML = key + ' (' + prj["files"][key]["strings"] + " strings" + percent;
+			button.innerHTML = key + ' (' + prj["files"][key]["strings"] + percent;
 			if(key == lastfileopened)
 				scrollTo = button;
 		}

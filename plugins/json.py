@@ -118,6 +118,7 @@ class JSON(Plugin):
         402: "When ...",
         403: "When Cancel",
         405: "Scrolling Line",
+        408: "Comment Line",
         411: "Else ...",
         413: "Repeat above...",
         601: "If Battle Win",
@@ -437,7 +438,7 @@ class JSON(Plugin):
                         for s in cmd["parameters"][0]:
                             if s != "":
                                 group.append(s)
-                case 108: # Comment
+                case 108|408: # Comment
                     pass
                 case 357: # Plugin Command (MZ only)
                     for pm in cmd["parameters"]:
