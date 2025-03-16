@@ -329,7 +329,9 @@ html, body {
 	width: 90%;
 	min-height: 34px;
 	padding: 5px;
+	padding-top: 0px;
 	margin: 5px;
+	margin-top: 0px;
 	text-align: left;
 	position: relative;
 	border-radius: 5px;
