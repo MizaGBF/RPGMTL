@@ -634,8 +634,8 @@ class RPGMTL():
                 self.modified[name] = True
         # Disabling common unrelated files
         ignored_starts = [
-            "data/Animations.json", "data/MapInfos.json", "data/Tilesets.json", "package.json", "js/plugins/", "js/libs/", "js/main.js", "js/rpg_core.js", "js/rpg_managers.js", "js/rpg_objects.js", "js/rpg_scenes.js", "js/rpg_sprites.js", "js/rpg_windows.js",
-            "www/data/Animations.json", "www/data/MapInfos.json", "www/data/Tilesets.json", "www/package.json", "www/js/plugins/", "www/js/libs/", "www/js/main.js", "www/js/rpg_core.js", "www/js/rpg_managers.js", "www/js/rpg_objects.js", "www/js/rpg_scenes.js", "www/js/rpg_sprites.js", "www/js/rpg_windows.js"
+            "data/Animations.json", "data/MapInfos.json", "data/Tilesets.json", "package.json", "js/plugins/", "js/libs/", "js/main.js", "js/rpg_core.js", "js/rpg_managers.js", "js/rpg_objects.js", "js/rpg_scenes.js", "js/rpg_sprites.js", "js/rpg_windows.js", "js/rmmz_core.js", "js/rmmz_managers.js", "js/rmmz_objects.js", "js/rmmz_scenes.js", "js/rmmz_sprites.js", "js/rmmz_windows.js",
+            "www/data/Animations.json", "www/data/MapInfos.json", "www/data/Tilesets.json", "www/package.json", "www/js/plugins/", "www/js/libs/", "www/js/main.js", "www/js/rpg_core.js", "www/js/rpg_managers.js", "www/js/rpg_objects.js", "www/js/rpg_scenes.js", "www/js/rpg_sprites.js", "www/js/rpg_windows.js", "www/js/rmmz_core.www/js", "www/js/rmmz_managers.www/js", "www/js/rmmz_objects.www/js", "www/js/rmmz_scenes.www/js", "www/js/rmmz_sprites.www/js", "www/js/rmmz_windows.www/js"
         ]
         for f in self.projects[name]["files"]:
             for i in ignored_starts:
@@ -659,14 +659,18 @@ class RPGMTL():
                     for j in range(1, len(group)):
                         self.strings[name]["files"][f][i][j][3] = 1
                         self.modified[name] = True
-        # Disable number strings
+        # Disable number/boolean strings
         strids = set()
         for k, v in self.strings[name]["strings"].items():
-            try:
+            if v[0] in ["True", "true", "False", "false"]: # bool check
+                strids.add(k)
+                continue
+            try: # number check
                 float(v[0])
                 strids.add(k)
             except:
                 pass
+        for k, v in self.strings[name]["strings"].items():
         for f in self.strings[name]["files"]:
             for i, group in enumerate(self.strings[name]["files"][f]):
                 for j in range(1, len(group)):
