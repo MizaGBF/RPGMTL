@@ -670,7 +670,6 @@ class RPGMTL():
                 strids.add(k)
             except:
                 pass
-        for k, v in self.strings[name]["strings"].items():
         for f in self.strings[name]["files"]:
             for i, group in enumerate(self.strings[name]["files"][f]):
                 for j in range(1, len(group)):
