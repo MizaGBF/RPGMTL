@@ -33,7 +33,7 @@ function init()
 document.onkeypress = function (e) {
 	if(keypressenabled)
 	{
-		if(e.code == 'Space' && strtablecache.length > 0)
+		if(e.code == 'Space' && strtablecache.length > 0 && e.target.tagName == "textarea")
 		{
 			if(e.ctrlKey && !e.shiftKey)
 			{
@@ -1299,12 +1299,14 @@ function update_string_list(data)
 				elems[0].classList.toggle("unlinked", true);
 				if(s[1] == null)
 				{
-					elems[2].textContent = "";
+					if(elems[2].textContent != "")
+						elems[2].textContent = "";
 					elems[2].classList.toggle("disabled", true);
 				}
 				else
 				{
-					elems[2].textContent = s[1];
+					if(elems[2].textContent != s[1])
+						elems[2].textContent = s[1];
 					elems[2].classList.toggle("disabled", false);
 				}
 			}
@@ -1314,12 +1316,14 @@ function update_string_list(data)
 				const g = prjstring[s[0]];
 				if(g[1] == null)
 				{
-					elems[2].textContent = "";
+					if(elems[2].textContent != "")
+						elems[2].textContent = "";
 					elems[2].classList.toggle("disabled", true);
 				}
 				else
 				{
-					elems[2].textContent = g[1];
+					if(elems[2].textContent != g[1])
+						elems[2].textContent = g[1];
 					elems[2].classList.toggle("disabled", false);
 				}
 			}
