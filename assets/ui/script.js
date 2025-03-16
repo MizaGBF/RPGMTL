@@ -1091,7 +1091,7 @@ function prepareGroupOn(node, i)
 		translation.string = j;
 		
 		strtablecache.push([span, marker, translation, original]);
-		const tsize = strtablecache.length;
+		const tsize = strtablecache.length - 1;
 		
 		span.onclick = function()
 		{
@@ -1287,6 +1287,7 @@ function update_string_list(data)
 	{
 		prjstring = data["strings"];
 		prjlist = data["list"];
+		let scrollval = main.scrollTop;
 		parent.removeChild(main);
 		let lcstringsearch = laststringsearch != null ? laststringsearch.toLowerCase() : "";
 		for(let i = 0; i < strtablecache.length; ++i)
@@ -1329,6 +1330,7 @@ function update_string_list(data)
 		}
 		parent.appendChild(main);
 		set_loading(false);
+		main.scrollTop = scrollval;
 	}
 	catch(err)
 	{
