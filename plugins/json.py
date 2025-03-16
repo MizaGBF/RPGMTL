@@ -130,7 +130,7 @@ class JSON(Plugin):
     def __init__(self : JSON) -> None:
         super().__init__()
         self.name : str = "JSON"
-        self.description : str = "v1.3\nHandle JSON files, including ones from RPG Maker MV/MZ"
+        self.description : str = "v1.4\nHandle JSON files, including ones from RPG Maker MV/MZ"
 
     def get_setting_infos(self : Plugin) -> dict[str, list]:
         return {
@@ -255,10 +255,18 @@ class JSON(Plugin):
                 for k in obj:
                     if ignore_key is not None and ignore_key == k:
                         continue
-                    entries.extend(self._read_walk(obj[k], ignore_key))
+                    if isinstance(obj[k], str):
+                        if obj[k] != "":
+                            entries.append([k, obj[k]])
+                    else:
+                        entries.extend(self._read_walk(obj[k], ignore_key))
             case list():
                 for i in range(len(obj)):
-                    entries.extend(self._read_walk(obj[i], ignore_key))
+                    if isinstance(obj[i], str):
+                        if obj[i] != "":
+                            entries.append([str(i), obj[i]])
+                    else:
+                        entries.extend(self._read_walk(obj[i], ignore_key))
             case str():
                 if obj != "":
                     entries.append(["", obj])
@@ -274,14 +282,14 @@ class JSON(Plugin):
                         continue
                     if isinstance(obj[k], str):
                         if obj[k] != "":
-                            obj[k] = helper.apply_string(obj[k])
+                            obj[k] = helper.apply_string(obj[k], k)
                     else:
                         self._write_walk(obj[k], helper, ignore_key)
             case list():
                 for i in range(len(obj)):
                     if isinstance(obj[i], str):
                         if obj[i] != "":
-                            obj[i] = helper.apply_string(obj[i])
+                            obj[i] = helper.apply_string(obj[i], str(i))
                     else:
                         self._write_walk(obj[i], helper, ignore_key)
             case str():

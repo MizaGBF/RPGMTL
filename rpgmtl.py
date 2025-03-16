@@ -236,19 +236,22 @@ class RPGMTL():
     def save(self : RPGMTL) -> None:
         for k, v in self.modified.items(): # check modified flags
             if v: # if raised
+                folder = 'projects/' + k + '/'
                 try:
                     self.modified[k] = False # reset it
                     # write config.json
-                    with open('projects/' + k + '/config.json', mode='w', encoding='utf-8') as f:
+                    with open(folder + "_tmp_config_.json", mode='w', encoding='utf-8') as f:
                         json.dump(self.projects[k], f, ensure_ascii=False, indent=4)
+                    shutil.move(folder + "_tmp_config_.json", folder + "config.json")
                     self.log.info("Updated projects/" + k + "/config.json")
                 except Exception as e:
                     self.log.error("Failed to update projects/" + k + "/config.json:\n" + self.trbk(e))
                 try:
                     if k in self.strings: # if strings.json is loaded
                         # also save it
-                        with open('projects/' + k + '/strings.json', mode='w', encoding='utf-8') as f:
+                        with open(folder + "_tmp_strings_.json", mode='w', encoding='utf-8') as f:
                             f.write(self.serialize_format_json(self.strings[k]))
+                        shutil.move(folder + "_tmp_strings_.json", folder + "strings.json")
                         self.log.info("Updated projects/" + k + "/strings.json")
                 except Exception as e:
                     self.log.error("Failed to update projects/" + k + "/strings.json:\n" + self.trbk(e))
@@ -454,6 +457,7 @@ class RPGMTL():
             '逃げる': 'Run away',
             '攻撃': 'Attack',
             'の攻撃！': ' attacked!',
+            '%1の攻撃！': '%1 attacked!',
             '防御': 'Defend',
             '連続攻撃': 'Continuous Attacks',
             '２回攻撃': 'Attack 2 times',
@@ -461,8 +465,8 @@ class RPGMTL():
             '様子を見る': 'Observe',
             '様子見': 'Wait and See',
             'アイテム': 'Items',
-            'スキル': 'Skills',
-            '必殺技': 'Specials',
+            'スキル': 'Skill',
+            '必殺技': 'Special',
             '装備': 'Equipment',
             'ステータス': 'Status',
             '並び替え': 'Sort',
@@ -532,6 +536,7 @@ class RPGMTL():
             '%1は%2 %3 に上がった！': '%1 rose to %2 %3!',
             '%1を覚えた！': 'Learned %1!',
             '%1は%2を使った！': '%1 used %2!',
+            '%1は身を守っている。': '%1 is defending.',
             '会心の一撃！！': 'A decisive blow!!',
             '痛恨の一撃！！': 'A painful blow!!',
             '%1は %2 のダメージを受けた！': '%1 received %2 damage!',
@@ -555,7 +560,10 @@ class RPGMTL():
             '%1には効かなかった！': '%1 is unaffected!',
             'は倒れた！': ' has fallen!',
             'を倒した！': ' has been defeated!',
-            'は立ち上がった！': ' stood up!',
+            '%1を倒した！': '%1 has been defeated!',
+            '%1は倒れた！': '%1 has collapsed!',
+            'は立ち上がった！': ' has stood up!',
+            '%1は立ち上がった！': '%1 has stood up!',
             '戦闘不能': 'Incapacited',
             '不死身': 'Immortality',
             'は毒にかかった！': ' is poisoned!',
@@ -651,11 +659,12 @@ class RPGMTL():
                         for j in range(1, len(g)):
                             self.strings[name]["files"][f][i][j][3] = 1
                             self.modified[name] = True
-        # Disabling specific RPG maker event codes
+        # Disabling specific RPG maker event codes or groups
         text_codes = set(["Command: Show Text", "Command: Choices", "Command: When ..."]) # allowed ones
+        other_groups = set(["formula", "note"])
         for f in self.strings[name]["files"]:
             for i, group in enumerate(self.strings[name]["files"][f]):
-                if group[0].startswith("Command: ") and group[0] not in text_codes:
+                if (group[0].startswith("Command: ") and group[0] not in text_codes) or group[0] in other_groups:
                     for j in range(1, len(group)):
                         self.strings[name]["files"][f][i][j][3] = 1
                         self.modified[name] = True

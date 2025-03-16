@@ -128,7 +128,7 @@ class RM_Marshal(Plugin):
     def __init__(self : RM_Marshal) -> None:
         super().__init__()
         self.name : str = "RPG Maker Marshal"
-        self.description : str = "v1.2\nHandle files from RPG Maker XP, VX and VX Ace"
+        self.description : str = "v1.3\nHandle files from RPG Maker XP, VX and VX Ace"
         self.allow_ruby_plugin : bool = True # Leave it on by default
 
     def get_setting_infos(self : RM_Marshal) -> dict[str, list]:
@@ -315,11 +315,11 @@ class RM_Marshal(Plugin):
             case b'"'|b'I':
                 raise Exception("[RM_Marshal] Invalid code path")
             case b'[':
-                for e in me.data:
+                for i, e in enumerate(me.data):
                     tmp = self._util_read_string(e)
                     if tmp is not None:
                         if tmp != "":
-                            entries.append(["", tmp])
+                            entries.append([str(i), tmp])
                     else:
                         entries.extend(self._read_walk(e))
             case b'{':
@@ -327,7 +327,7 @@ class RM_Marshal(Plugin):
                     tmp = self._util_read_string(e[1])
                     if tmp is not None:
                         if tmp != "":
-                            entries.append(["", tmp])
+                            entries.append([e[0].at().data.decode('utf-8'), tmp])
                     else:
                         entries.extend(self._read_walk(e[1]))
             case b'o':
@@ -335,7 +335,7 @@ class RM_Marshal(Plugin):
                     tmp = self._util_read_string(e[1])
                     if tmp is not None:
                         if tmp != "":
-                            entries.append(["", tmp])
+                            entries.append([e[0].at().data.decode('utf-8'), tmp])
                     else:
                         entries.extend(self._read_walk(e[1]))
             case _:
@@ -348,15 +348,15 @@ class RM_Marshal(Plugin):
                 raise Exception("[RM_Marshal] Invalid code path")
             case b'[':
                 for i in range(len(me.data)):
-                    if not self._util_write_string(helper, me.data[i]):
+                    if not self._util_write_string(helper, me.data[i], str(i)):
                         self._write_walk(me.data[i], helper)
             case b'{':
                 for i in range(len(me.data)):
-                    if not self._util_write_string(helper, me.data[i][1]):
+                    if not self._util_write_string(helper, me.data[i][1], me.data[i][0].at().data.decode('utf-8')):
                         self._write_walk(me.data[i][1], helper)
             case b'o':
                 for i in range(len(me.data[1])):
-                    if not self._util_write_string(helper, me.data[1][i][1]):
+                    if not self._util_write_string(helper, me.data[1][i][1], me.data[1][i][0].at().data.decode('utf-8')):
                         self._write_walk(me.data[1][i][1], helper)
             case _:
                 pass
