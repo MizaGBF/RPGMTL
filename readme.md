@@ -125,6 +125,10 @@ You can **change** this behavior by pressing `Shift+Left Click` on a string you 
 You can also set a string to be ignored, as for files, by pressing `CTRL+Left Click`. It'll be skipped during the patching process.  
 Finally, to delete a translation, click on it and on the *Trashbin* button.
   
+> [!NOTE]  
+> By default, the little golden/yellow mark appearing on the left of a string line means the string has been modified or added in a previous string extraction.  
+> This marker can also be used by plugins however, such as the Character Limit one.  
+  
 ### Machine Translation  
   
 When modifying a string, you have the option to get a machine translation using the yellow *Translate* button.  
@@ -191,6 +195,7 @@ The following File Plugins are available:
     * It exposes one setting to merge RPG Maker Show Text/Script event commands as one string. You must re-extract the strings after changing it.
     * It exposes two File Actions to extract content and Ruby scripts, from those files.
 * `Ruby`: For Ruby scripts. It's also called by `RM Marshal` to patch RPG Maker XP/VX/VX Ace scripts.  
+* `Character Limit`: Add a simple action on all files to check whether a translated string is over a certain size limit.  
   
 The following Translator Plugins are available:  
 * `TL Google`: For Google Translations.  

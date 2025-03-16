@@ -6,12 +6,12 @@ class Javascript(Plugin):
     def __init__(self : Javascript) -> None:
         super().__init__()
         self.name : str = "Javascript"
-        self.description : str = " v1.0\nHandle Javascript files, including the plugins.js file from RPG Maker MV/MZ"
+        self.description : str = " v1.1\nHandle Javascript files, including the plugins.js file from RPG Maker MV/MZ"
 
     def file_extension(self : Javascript) -> list[str]:
         return ["js"]
 
-    def match(self : Javascript, file_path : str) -> bool:
+    def match(self : Javascript, file_path : str, is_for_action : bool) -> bool:
         return file_path.endswith(".js")
 
     def read(self : Javascript, file_path : str, content : bytes) -> list[list[str]]:

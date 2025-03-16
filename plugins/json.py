@@ -130,7 +130,7 @@ class JSON(Plugin):
     def __init__(self : JSON) -> None:
         super().__init__()
         self.name : str = "JSON"
-        self.description : str = "v1.2\nHandle JSON files, including ones from RPG Maker MV/MZ"
+        self.description : str = "v1.3\nHandle JSON files, including ones from RPG Maker MV/MZ"
 
     def get_setting_infos(self : Plugin) -> dict[str, list]:
         return {
@@ -140,7 +140,7 @@ class JSON(Plugin):
     def file_extension(self : JSON) -> list[str]:
         return ["json"]
 
-    def match(self : JSON, file_path : str) -> bool:
+    def match(self : JSON, file_path : str, is_for_action : bool) -> bool:
         return file_path.endswith(".json")
 
     def read(self : JSON, file_path : str, content : bytes) -> list[list[str]]:

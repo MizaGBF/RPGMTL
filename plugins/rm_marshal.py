@@ -128,21 +128,21 @@ class RM_Marshal(Plugin):
     def __init__(self : RM_Marshal) -> None:
         super().__init__()
         self.name : str = "RPG Maker Marshal"
-        self.description : str = "v1.1\nHandle files from RPG Maker XP, VX and VX Ace"
+        self.description : str = "v1.2\nHandle files from RPG Maker XP, VX and VX Ace"
         self.allow_ruby_plugin : bool = True # Leave it on by default
 
-    def get_setting_infos(self : Plugin) -> dict[str, list]:
+    def get_setting_infos(self : RM_Marshal) -> dict[str, list]:
         return {
             "rm_marshal_multiline": ["Merge multiline commands into one (Require re-extract)", "bool", False, None]
         }
 
-    def get_action_infos(self : Plugin) -> dict[str, list]:
+    def get_action_infos(self : RM_Marshal) -> dict[str, list]:
         return {
             "rm_marshal_export": ["Deserialize File Content", self._deserialize],
             "rm_marshal_script_export": ["Dump Ruby Scripts", self._export_script],
         }
 
-    def _deserialize(self : RM_Marshal, name : str, file_path : str) -> str:
+    def _deserialize(self : RM_Marshal, name : str, file_path : str, settings : dict[str, Any] = {}) -> str:
         try:
             with open("projects/" + name + "/originals/" + file_path, mode="rb") as f:
                 mc = MC(file_path.endswith('rvdata2'))
@@ -157,7 +157,7 @@ class RM_Marshal(Plugin):
             self.owner.log.error("[RPG Maker Marshal] Action 'rm_marshal_export' failed with error:\n" + self.owner.trbk(e))
             return "An error occured."
 
-    def _export_script(self : RM_Marshal, name : str, file_path : str) -> str:
+    def _export_script(self : RM_Marshal, name : str, file_path : str, settings : dict[str, Any] = {}) -> str:
         try:
             if file_path.endswith("ata/Scripts.rxdata") or file_path.endswith("ata/Scripts.rvdata") or file_path.endswith("ata/Scripts.rvdata2"):
                 self.allow_ruby_plugin = False
@@ -186,7 +186,7 @@ class RM_Marshal(Plugin):
     def file_extension(self : RM_Marshal) -> list[str]:
         return self.EXTENSIONS
 
-    def match(self : RM_Marshal, file_path : str) -> bool:
+    def match(self : RM_Marshal, file_path : str, is_for_action : bool) -> bool:
         return '.' in file_path and file_path.split('.')[-1] in self.EXTENSIONS
 
     def load_content(self : RM_Marshal, content : bytes, is_rv2 : bool) -> MC:

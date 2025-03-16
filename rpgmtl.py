@@ -740,7 +740,7 @@ class RPGMTL():
             try:
                 self.projects[name]['files'][f]["strings"] = 0
                 for p in self.plugins.values():
-                    if p.match(f): # this file match with the plugin
+                    if p.match(f, False): # this file match with the plugin
                         p.reset()
                         p.set_settings(self.settings | self.projects[name]['settings'])
                         index["files"][f] = []
@@ -867,7 +867,7 @@ class RPGMTL():
                 try:
                     if len(self.strings[name]["files"][f]) == 0:
                         continue
-                    if p.match(f): # file matches the plugin
+                    if p.match(f, False): # file matches the plugin
                         p.reset()
                         p.set_settings(self.settings | self.projects[name]['settings'])
                         content, modified = p.write(f, content, self.strings[name]) # write content
@@ -1175,8 +1175,10 @@ class RPGMTL():
                             if not isinstance(value, bool):
                                 raise Exception()
                         case "num":
-                            if not isinstance(value, float) and not isinstance(value, int):
-                                raise Exception()
+                            try:
+                                value = float(value)
+                            except:
+                                value = int(value)
                 except:
                     return web.json_response({"result":"bad", "message":"Invalid 'value' parameter, couldn't convert to setting type"}, status=400)
                 break
@@ -1370,7 +1372,7 @@ class RPGMTL():
             if path not in self.strings[name]["files"]:
                 return web.json_response({"result":"bad", "message":"Bad request, invalid 'path' parameter."}, status=400)
             else:
-                actions = {k : v[1] for k, v in self.actions.items() if self.plugins[v[0]].match(path)}
+                actions = {k : v[1] for k, v in self.actions.items() if self.plugins[v[0]].match(path, True)}
                 return web.json_response({"result":"ok", "data":{"config":self.projects[name], "name":name, "path":path, "strings":self.strings[name]["strings"], "list":self.strings[name]["files"][path], "actions":actions}})
 
     # /api/file_action
@@ -1393,7 +1395,7 @@ class RPGMTL():
         else:
             if version != self.projects[name]["version"]:
                 return web.json_response({"result":"bad", "message":"The project has been updated, redirecting..."})
-            message = self.actions[key][2](name, path)
+            message = self.actions[key][2](name, path, self.settings | self.projects[name].get("settings", {}))
             if message != "":
                 return web.json_response({"result":"ok", "data":{}, "message":message})
             else:

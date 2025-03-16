@@ -93,7 +93,7 @@ class Plugin:
         # }
         # action_key: must be unique among other plugin, use some unique ientifier
         # text_to_display: A string to be displayed on the UI
-        # callback: A function of your callback. It must take as a parameter the project name (str) and the file path (str). The return parameter is a string (a message to display, can be empty)
+        # callback: A function of your callback. It must take as a parameter the project name (str), the file path (str) and a (dict) of the plugin settings. The return parameter is a string (a message to display, can be empty)
         return {}
 
     def set_settings(self : Plugin, settings : dict[str, Any]) -> None:
@@ -103,8 +103,9 @@ class Plugin:
         # A list of file extensions, without the dot
         return []
 
-    def match(self : Plugin, file_path : str) -> bool:
+    def match(self : Plugin, file_path : str, is_for_action : bool) -> bool:
         # Return True if your plugin want to handle this file
+        # The second parameter indicates if it's for a file action
         return False
 
     def read(self : Plugin, file_path : str, file : bytes) -> list[list[str]]:

@@ -7,12 +7,12 @@ class CSV(Plugin):
     def __init__(self : CSV) -> None:
         super().__init__()
         self.name : str = "CSV"
-        self.description : str = " v1.0\nHandle CSV files, including externMessage files from RPG Maker MV/MZ"
+        self.description : str = " v1.1\nHandle CSV files, including externMessage files from RPG Maker MV/MZ"
 
     def file_extension(self : CSV) -> list[str]:
         return ["csv"]
 
-    def match(self : CSV, file_path : str) -> bool:
+    def match(self : CSV, file_path : str, is_for_action : bool) -> bool:
         return file_path.endswith(".csv")
 
     def read(self : CSV, file_path : str, content : bytes) -> list[list[str]]:
