@@ -5,6 +5,7 @@ var bar = null;
 var main = null;
 var bottom = null;
 // global variables
+var keypressenabled = false;
 var path = null;
 var prjname = null;
 var prj = null;
@@ -16,6 +17,7 @@ var currentstr = null;
 var strtablecache = [];
 var lastfileopened = null;
 var laststringsearch = null;
+var laststringinteracted = 0;
 
 // entry point
 function init()
@@ -27,6 +29,45 @@ function init()
 	// request the project list
 	postAPI("/api/main", project_list);
 }
+
+document.onkeypress = function (e) {
+	if(keypressenabled)
+	{
+		if(e.code == 'Space' && strtablecache.length > 0)
+		{
+			if(e.ctrlKey && !e.shiftKey)
+			{
+				let i = (laststringinteracted + 1) % strtablecache.length;
+				while(i != laststringinteracted)
+				{
+					if(!strtablecache[i][0].classList.contains("disabled") && strtablecache[i][2].classList.contains("disabled"))
+					{
+						laststringinteracted = i;
+						strtablecache[i][0].scrollIntoView();
+						break;
+					}
+					i = (i + 1) % strtablecache.length;
+				}
+				e.stopPropagation();
+			}
+			else if(!e.ctrlKey && e.shiftKey)
+			{
+				let i = (laststringinteracted + 1) % strtablecache.length;
+				while(i != laststringinteracted)
+				{
+					if(strtablecache[i][2].classList.contains("disabled"))
+					{
+						laststringinteracted = i;
+						strtablecache[i][0].scrollIntoView();
+						break;
+					}
+					i = (i + 1) % strtablecache.length;
+				}
+				e.stopPropagation();
+			}
+		}
+	}
+};
 
 // create and add a new element to a node, and return it
 function addTo(node, tagName, {cls = [], id = null, onload = null, onclick = null, onerror = null, br = true}={})
@@ -128,9 +169,7 @@ function clearMain()
 {
 	set_loading(false);
 	main.innerHTML = "";
-	let fragment = document.createDocumentFragment();
-	addTo(fragment, "div", {cls:["spacer"]});
-	return fragment;
+	return document.createDocumentFragment();
 }
 
 // update the main area with a fragment
@@ -193,6 +232,7 @@ function processAPI(success, failure)
 function project_list(data)
 {
 	// Reset
+	keypressenabled = null;
 	path = null;
 	prjname = null;
 	prj = null;
@@ -678,6 +718,7 @@ function browse_files(data)
 {
 	try
 	{
+		keypressenabled = false;
 		laststringsearch = null;
 		const bp = data["path"];
 		// top bar
@@ -1050,11 +1091,13 @@ function prepareGroupOn(node, i)
 		translation.string = j;
 		
 		strtablecache.push([span, marker, translation, original]);
+		const tsize = strtablecache.length;
 		
 		span.onclick = function()
 		{
 			if(window.event.ctrlKey && !window.event.shiftKey)
 			{
+				laststringinteracted = tsize;
 				set_loading_text("Updating...");
 				postAPI("/api/update_string", update_string_list, null, {setting:1, version:prjversion, name:prjname, path:prjdata["path"], group:this.group, index:this.string});
 			}
@@ -1062,6 +1105,7 @@ function prepareGroupOn(node, i)
 			{
 				if(bottom.style.display == "none")
 				{
+					laststringinteracted = tsize;
 					set_loading_text("Updating...");
 					postAPI("/api/update_string", update_string_list, null, {setting:0, version:prjversion, name:prjname, path:prjdata["path"], group:this.group, index:this.string});
 				}
@@ -1073,6 +1117,7 @@ function prepareGroupOn(node, i)
 			{
 				if(navigator.clipboard != undefined)
 				{
+					laststringinteracted = tsize;
 					navigator.clipboard.writeText(original.textContent);
 					pushPopup('The String has been copied');
 				}
@@ -1087,6 +1132,7 @@ function prepareGroupOn(node, i)
 				{
 					if(navigator.clipboard != undefined)
 					{
+						laststringinteracted = tsize;
 						navigator.clipboard.writeText(translation.textContent);
 						pushPopup('The String has been copied');
 					}
@@ -1094,6 +1140,7 @@ function prepareGroupOn(node, i)
 				}
 				else
 				{
+					laststringinteracted = tsize;
 					let ss = prjlist[span.group][span.string];
 					document.getElementById("edit-ori").textContent = prjstring[ss[0]][0];
 					let edittl = document.getElementById("edit-tl");
@@ -1123,6 +1170,8 @@ function open_file(data)
 {
 	try
 	{
+		keypressenabled = true;
+		laststringinteracted = 0;
 		prjstring = data["strings"];
 		prjlist = data["list"];
 		prjdata = data;
@@ -1147,6 +1196,8 @@ function open_file(data)
 				<li>ALT+Click on the original string (on the left) to copy it.</li>\
 				<li>ALT+Click on the translated string (on the right) to copy it.</li>\
 				<li>Click on the translated string (on the right) to edit it.</li>\
+				<li>SHIFT+Space to scroll to the next untranslated string.</li>\
+				<li>CTRL+Space to scroll to the next untranslated <b>enabled</b> string.</li>\
 				<li>On top, if available, you'll find <b>Plugin Actions</b> for this file.</li>\
 				<li>You'll also find the <b>Translate the File</b> button.</li>\
 			</ul>";
@@ -1191,6 +1242,7 @@ function open_file(data)
 	}
 	catch(err)
 	{
+		keypressenabled = false;
 		console.error("Exception thrown", err.stack);
 		pushPopup("An unexpected error occured.");
 		bottom.style.display = "none";

@@ -515,7 +515,7 @@ class JSON(Plugin):
                         for j in range(len(cmd["parameters"][0])):
                             if cmd["parameters"][0][j] != "":
                                 cmd["parameters"][0][j] = helper.apply_string(cmd["parameters"][0][j], group)
-                case 108: # Comment
+                case 108|408: # Comment
                     pass
                 case 357: # Plugin Command (MZ only)
                     for j in range(len(cmd["parameters"])):

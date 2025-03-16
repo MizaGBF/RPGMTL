@@ -10,7 +10,7 @@ html, body {
 #top {
 	background: #252526;
 	color: #eeeeee;
-	padding: 10px 20px;
+	padding: 0px 20px;
 	position: fixed;
 	top: 0;
 	left: 0;
@@ -20,6 +20,19 @@ html, body {
 	align-items: center;
 	z-index: 50;
 	border: none;
+}
+
+#main {
+	padding: 0px;
+	margin: 0px;
+	margin-top: 50px;
+	position: fixed;
+	top: 0;
+	left: 0;
+	right: 0;
+	z-index: 0;
+	overflow-y:auto;
+	max-height: calc(100vh - 50px);
 }
 
 #bottom {
@@ -176,6 +189,10 @@ html, body {
 .button {
 	width: 34px;
 	height: 34px;
+	margin-top: 0px;
+	margin-bottom: 0px;
+	padding-top: 0px;
+	padding-bottom: 0px;
 }
 
 .text-button {
@@ -203,7 +220,7 @@ html, body {
 	text-align: left;
 	padding: 5px;
 	margin: 5px;
-	margin-top: 14px;
+	margin-top: 5px;
 	margin-bottom: 2px;
 	color: #eeeeee;
 	font-size: 20px;

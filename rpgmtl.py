@@ -59,7 +59,7 @@ class PatcherHelper():
 ######################################################
 class RPGMTL():
     # constant
-    VERSION = "3.2"
+    VERSION = "3.3"
     def __init__(self : RPGMTL) -> None:
         # Setting up logging
         handler = RotatingFileHandler(filename="rpgmtl.log", encoding='utf-8', mode='w', maxBytes=51200, backupCount=3)
@@ -652,7 +652,7 @@ class RPGMTL():
                             self.strings[name]["files"][f][i][j][3] = 1
                             self.modified[name] = True
         # Disabling specific RPG maker event codes
-        text_codes = set(["Command: Show Text", "Command: Choices", "Command: When ..."])
+        text_codes = set(["Command: Show Text", "Command: Choices", "Command: When ..."]) # allowed ones
         for f in self.strings[name]["files"]:
             for i, group in enumerate(self.strings[name]["files"][f]):
                 if group[0].startswith("Command: ") and group[0] not in text_codes:
@@ -843,7 +843,7 @@ class RPGMTL():
         Path('/'.join(fn.split('/')[:-1])).mkdir(parents=True, exist_ok=True)
 
     # release game patch
-    def create_release(self : RPGMTL, name : str) -> int:
+    def create_release(self : RPGMTL, name : str) -> tuple[int, int]:
         err : int = 0
         # clean existing folder
         if os.path.isdir('projects/' + name + '/release'):
@@ -857,6 +857,7 @@ class RPGMTL():
         self.load_strings(name)
         self.log.info("Patching files for project " + name + "...")
         # for each file
+        patch_count : int = 0
         for f in self.projects[name]["files"]:
             if self.projects[name]["files"][f]["ignored"]: # skip ignored
                 continue
@@ -877,7 +878,7 @@ class RPGMTL():
                             self.mkdir_path_folder('projects/' + name + '/release/' + f) # create folder first
                             with open('projects/' + name + '/release/' + f, mode="wb") as iofile:
                                 iofile.write(content)
-                            self.log.info("Patched " + f + " for project " + name)
+                            patch_count += 1
                 except Exception as e:
                     self.log.error("Failed to patch strings in " + f + " for project " + name + " using the plugin " + p.name + "\n" + self.trbk(e))
                     err += 1
@@ -893,8 +894,11 @@ class RPGMTL():
                         self.log.info("Copied edit/" + f + " for project " + name + "...")
             except:
                 self.log.warning("Failed to copy the content of the edit folder for project " + name)
-        self.log.info("Patched files for project " + name + " available in the release folder")
-        return err
+        if patch_count > 0:
+            self.log.info("Patched {} files for project {} available in the release folder".format(patch_count, name))
+        else:
+            self.log.info("No patched {} files for project {}".format(patch_count, name))
+        return patch_count, err
 
     # execute and apply runtime fix/patch
     def apply_fixes(self : RPGMTL, _name_ : str, _file_path_ : str, _content_ : bytes, _modified_ : bool) -> tuple[bytes, bool]:
@@ -1208,8 +1212,11 @@ class RPGMTL():
         if name is None:
             return web.json_response({"result":"bad", "message":"Bad request, missing 'name' parameter"}, status=400)
         else:
-            err = self.create_release(name)
-            message = "Patch generated in projects/{}/release, but {} error(s) occured.".format(name, err) if err > 0 else "Patch generated in projects/{}/release with success.".format(name)
+            patch_count, err = self.create_release(name)
+            if patch_count > 0:
+                message = "Patch generated in projects/{}/release, but {} error(s) occured.".format(name, err) if err > 0 else "Patch generated in projects/{}/release with success.".format(name)
+            else:
+                message = "No files patched and {} error(s) occured.".format(err) if err > 0 else "No files patched."
             return web.json_response({"result":"ok", "data":{"name":name, "config":self.projects[name]}, "message":message})
 
     # /api/patches
