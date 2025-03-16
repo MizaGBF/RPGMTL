@@ -33,7 +33,7 @@ function init()
 document.onkeypress = function (e) {
 	if(keypressenabled)
 	{
-		if(e.code == 'Space' && strtablecache.length > 0 && e.target.tagName == "textarea")
+		if(e.code == 'Space' && strtablecache.length > 0 && e.target.tagName != "textarea")
 		{
 			if(e.ctrlKey && !e.shiftKey)
 			{
