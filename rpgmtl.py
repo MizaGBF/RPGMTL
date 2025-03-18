@@ -59,7 +59,7 @@ class PatcherHelper():
 ######################################################
 class RPGMTL():
     # constant
-    VERSION = "3.3"
+    VERSION = "3.4"
     def __init__(self : RPGMTL) -> None:
         # Setting up logging
         handler = RotatingFileHandler(filename="rpgmtl.log", encoding='utf-8', mode='w', maxBytes=51200, backupCount=3)
@@ -850,6 +850,25 @@ class RPGMTL():
         else:
             self.log.info("Computing the translation completion for project " + name + " is complete and up-to-date")
 
+    def get_list_of_update_string_index(self : RPGMTL, name : str, path : str, group : int, index : int, local : bool) -> list[int]:
+        # this function checks what string(s) got changed for the given parameters
+        # and return a list of index which should match the script.js strcachetable
+        pos : int = 0
+        if local: # for local edits
+            for i in range(0, group):
+                pos += len(self.strings[name]["files"][path][i]) - 1
+            pos += index - 1
+            return [pos]
+        else: # for global edits
+            sid : str = self.strings[name]["files"][path][group][index][0]
+            positions : list[int] = []
+            for g in self.strings[name]["files"][path]:
+                for i in range(1, len(g)):
+                    if g[i][0] == sid:
+                        positions.append(pos)
+                    pos += 1
+            return positions
+
     # create the folder(s) needed for given path
     def mkdir_path_folder(self : RPGMTL, fn : str) -> None:
         Path('/'.join(fn.split('/')[:-1])).mkdir(parents=True, exist_ok=True)
@@ -1439,23 +1458,28 @@ class RPGMTL():
             if path not in self.strings[name]["files"]:
                 return web.json_response({"result":"bad", "message":"Bad request, invalid 'path' parameter"}, status=400)
             else:
+                updated : list[int] = [] # list of updated string positions
                 match setting:
                     case 0: # Unlink
                         self.strings[name]["files"][path][group][index][2] = (self.strings[name]["files"][path][group][index][2] + 1) % 2
+                        updated = self.get_list_of_update_string_index(name, path, group, index, True)
                     case 1: # Disable
                         self.strings[name]["files"][path][group][index][3] = (self.strings[name]["files"][path][group][index][3] + 1) % 2
+                        updated = self.get_list_of_update_string_index(name, path, group, index, True)
                     case _: # Change string
                         if self.strings[name]["files"][path][group][index][2]:
                             self.strings[name]["files"][path][group][index][1] = string
+                            updated = self.get_list_of_update_string_index(name, path, group, index, True)
                         else:
                             self.strings[name]["strings"][self.strings[name]["files"][path][group][index][0]][1] = string
+                            updated = self.get_list_of_update_string_index(name, path, group, index, False)
                 # Remove modified flag
                 self.strings[name]["files"][path][group][index][4] = 0
                 self.modified[name] = True
                 # Start computation
                 asyncio.create_task(self.compute_translated(name, self.projects[name]["version"]))
                 # Respond
-                return web.json_response({"result":"ok", "data":{"config":self.projects[name], "name":name, "path":path, "strings":self.strings[name]["strings"], "list":self.strings[name]["files"][path]}})
+                return web.json_response({"result":"ok", "data":{"config":self.projects[name], "name":name, "path":path, "strings":self.strings[name]["strings"], "list":self.strings[name]["files"][path], "updated":updated}})
 
     # /api/translate_string
     async def translate_string(self : RPGMTL, request : web.Request) -> web.Response:

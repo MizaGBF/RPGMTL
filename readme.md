@@ -389,23 +389,17 @@ Return in data: project 'name', project 'config', file 'path', project 'strings'
 Payload: project 'name', file 'path', project 'version', action 'key'
 Return in data: project 'name', project 'config'
 ```
-  
-```
-/api/update_string
-Payload: project 'name', file 'path', project 'version', action 'key'
-Return in data: project 'name', project 'config'
-```
 
 ```
 /api/update_string (Edit Translation)
 Payload:  project 'name', file 'path', project 'version', 'group' index, string 'index', 'string' translation
-Return in data: project 'name', project 'config', file 'path', project 'strings', 'list' of strings in file
+Return in data: project 'name', project 'config', file 'path', project 'strings', 'list' of strings in file, 'updated' string indexes
 ```
 
 ```
 /api/update_string (Toggle Unlink/Ignore)
 Payload:  project 'name', file 'path', project 'version', 'group' index, string 'index', toggle 'setting' (0 for unlink, 1 for ignore)
-Return in data: project 'name', project 'config', file 'path', project 'strings', 'list' of strings in file
+Return in data: project 'name', project 'config', file 'path', project 'strings', 'list' of strings in file, 'updated' string indexes
 ```
 
 ```

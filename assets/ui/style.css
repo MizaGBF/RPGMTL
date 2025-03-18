@@ -299,10 +299,6 @@ html, body {
 	min-height: 30px;
 }
 
-.original:hover, .translation:hover {
-	border-color: #ffffff;
-}
-
 .complete {
 	background: #1d420b;
 	color: #bbbbbb;

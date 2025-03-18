@@ -1233,6 +1233,9 @@ function open_file(data)
 		{
 			prepareGroupOn(fragment, i);
 		}
+		addTo(fragment, "div", {cls:["spacer"]});
+		addTo(fragment, "div", {cls:["spacer"]});
+		addTo(fragment, "div", {cls:["spacer"]});
 		updateMain(fragment);
 		let scrollTo = update_string_list(data);
 		if(scrollTo)
@@ -1281,20 +1284,21 @@ function apply_string(trash = false)
 // update the string list
 function update_string_list(data)
 {
-	const parent = main.parentNode;
 	let searched = null;
 	try
 	{
+		set_loading_text("OK");
 		prjstring = data["strings"];
 		prjlist = data["list"];
-		let scrollval = main.scrollTop;
-		parent.removeChild(main);
+		let updated = "updated" in data ? data["updated"] : null; // list of updated string
 		let lcstringsearch = laststringsearch != null ? laststringsearch.toLowerCase() : "";
 		for(let i = 0; i < strtablecache.length; ++i)
 		{
+			if(updated != null && !updated.includes(i)) // if null or in the updated list, we update
+				continue; // else continue
 			const elems = strtablecache[i];
 			const s = prjlist[elems[0].group][elems[0].string];
-			if(s[2])
+			if(s[2]) // local/linked check
 			{
 				elems[0].classList.toggle("unlinked", true);
 				if(s[1] == null)
@@ -1310,7 +1314,7 @@ function update_string_list(data)
 					elems[2].classList.toggle("disabled", false);
 				}
 			}
-			else
+			else // global
 			{
 				elems[0].classList.toggle("unlinked", false);
 				const g = prjstring[s[0]];
@@ -1332,14 +1336,10 @@ function update_string_list(data)
 			if(laststringsearch != null && searched == null && (elems[2].textContent.toLowerCase().includes(lcstringsearch) || elems[3].textContent.toLowerCase().includes(lcstringsearch)))
 				searched = elems[2].parentNode;
 		}
-		parent.appendChild(main);
 		set_loading(false);
-		main.scrollTop = scrollval;
 	}
 	catch(err)
 	{
-		if(main.parentNode == null)
-			parent.appendChild(main);
 		console.error("Exception thrown", err.stack);
 		pushPopup("An unexpected error occured.");
 		project_menu();
