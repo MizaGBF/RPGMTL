@@ -35,7 +35,7 @@ document.onkeypress = function (e) {
 	{
 		if(e.code == 'Space' && strtablecache.length > 0 && e.target.tagName != "textarea")
 		{
-			if(e.ctrlKey && !e.altKey)
+			if(e.ctrlKey && !e.shiftKey)
 			{
 				let i = (laststringinteracted + 1) % strtablecache.length;
 				while(i != laststringinteracted)
@@ -50,7 +50,7 @@ document.onkeypress = function (e) {
 				}
 				e.stopPropagation();
 			}
-			else if(!e.ctrlKey && e.altKey)
+			else if(e.ctrlKey && e.shiftKey)
 			{
 				let i = (laststringinteracted + 1) % strtablecache.length;
 				while(i != laststringinteracted)
@@ -1196,8 +1196,8 @@ function open_file(data)
 				<li>ALT+Click on the original string (on the left) to copy it.</li>\
 				<li>ALT+Click on the translated string (on the right) to copy it.</li>\
 				<li>Click on the translated string (on the right) to edit it.</li>\
-				<li>ALT+Space to scroll to the next untranslated string.</li>\
 				<li>CTRL+Space to scroll to the next untranslated <b>enabled</b> string.</li>\
+				<li>SHIFT+CTRL+Space to scroll to the next untranslated string.</li>\
 				<li>On top, if available, you'll find <b>Plugin Actions</b> for this file.</li>\
 				<li>You'll also find the <b>Translate the File</b> button.</li>\
 			</ul>";
