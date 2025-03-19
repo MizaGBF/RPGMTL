@@ -59,7 +59,7 @@ class PatcherHelper():
 ######################################################
 class RPGMTL():
     # constant
-    VERSION = "3.4"
+    VERSION = "3.5"
     def __init__(self : RPGMTL) -> None:
         # Setting up logging
         handler = RotatingFileHandler(filename="rpgmtl.log", encoding='utf-8', mode='w', maxBytes=51200, backupCount=3)
@@ -76,7 +76,7 @@ class RPGMTL():
         # Autosave system
         self.app.on_startup.append(self.init_autosave)
         self.app.on_cleanup.append(self.stop_autosave)
-        # Route
+        # HTTP Routes
         self.app.router.add_static('/assets/images', path='./assets/images', name='assets')
         self.app.add_routes([
                 web.get('/', self.page),
@@ -111,7 +111,7 @@ class RPGMTL():
                 web.post('/api/search_string', self.search_string), # Search a file
         ])
         
-        # loaded data containers
+        # data containers
         self.projects : dict[str, Any] = {} # store loaded config.json
         self.strings : dict[str, Any] = {} # store loaded string.json
         self.modified : dict[str, bool] = {} # store flag indicating if config.json or string.json has pending changes waiting to be saved
@@ -140,17 +140,18 @@ class RPGMTL():
     # Generic function used by add_plugin and add_translator
     def process_infos(self : RPGMTL, plugin : Any) -> None:
         # Process plugin settings
-        for k, v in plugin.get_setting_infos().items():
-            if k in self.setting_key_set:
+        for k, v in plugin.get_setting_infos().items(): # go over returned settings
+            if len(v) != 4: # error if invalid format
+                raise Exception("[{}] Expected 4 values for setting key {}".format(plugin.name, k))
+            if k in self.setting_key_set: # error if setting key is already set
                 raise Exception("[{}] Setting key {} is already in use by another plugin".format(plugin.name, k))
             self.setting_key_set.add(k)
-            if len(v) != 4:
-                raise Exception("[{}] Expected 4 values for setting key {}".format(plugin.name, k))
-            menu_info = [v[0]]
-            match v[1]:
+            
+            menu_info = [v[0]] # Setting UI text
+            match v[1]: # check type
                 case "bool":
-                    menu_info.append(v[1])
-                    if not isinstance(v[2], bool):
+                    menu_info.append(v[1]) # add type string
+                    if not isinstance(v[2], bool): # check default value
                         raise Exception("[{}] Default value of setting key {} isn't of type bool".format(plugin.name, k))
                 case "str":
                     menu_info.append(v[1])
@@ -162,30 +163,33 @@ class RPGMTL():
                         raise Exception("[{}] Default value of setting key {} isn't of number".format(plugin.name, k))
                 case _:
                     raise Exception("[{}] Unexpected type for setting key {}".format(plugin.name, k))
-            menu_info.append(v[3])
-            # Add default value (if missing) and menu info
-            if k not in self.settings:
-                self.settings[k] = v[2]
+            menu_info.append(v[3]) # add choices
+            # Add setting to list
             if plugin.name not in self.setting_menu:
                 self.setting_menu[plugin.name] = {}
             self.setting_menu[plugin.name][k] = menu_info
+            # Add default value (if missing) to settings.json
+            if k not in self.settings:
+                self.settings[k] = v[2]
         
         # Process plugin actions
-        for k, v in plugin.get_action_infos().items():
-            if k in self.action_key_set:
+        for k, v in plugin.get_action_infos().items(): # same principle
+            if len(v) != 2: # check the format
+                raise Exception("[{}] Expected 2 values for action key {}".format(plugin.name, k))
+            if k in self.action_key_set: # check if key is already set
                 raise Exception("[{}] Action key {} is already in use by another Plugin".format(plugin.name, k))
             self.action_key_set.add(k)
-            if len(v) != 2:
-                raise Exception("[{}] Expected 2 values for action key {}".format(plugin.name, k))
-            self.actions[k] = [plugin.name, v[0], v[1]]
+            # add action
+            self.actions[k] = [plugin.name, v[0], v[1]] # plugin name (for reverse lookup), UI text and callback
 
     # Add a plugin to RPGMTL
     def add_plugin(self : RPGMTL, plugin : plugins.Plugin) -> None:
+        # Check validity
         if plugin.name == "__undefined__":
             raise Exception("The plugin doesn't have a name defined")
         elif plugin.name in self.plugins:
             raise Exception("[{}] Another plugin with the same name is already loaded".format(plugin.name))
-        # Parse setting and action infos
+        # Parse setting and action infos (see above function)
         self.process_infos(plugin)
         # Add and connect plugin
         self.plugins[plugin.name] = plugin
@@ -202,7 +206,7 @@ class RPGMTL():
         self.process_infos(plugin)
         # Add and connect plugin
         self.translators[plugin.name] = plugin
-        if "rpgmtl_current_translator" not in self.settings:
+        if "rpgmtl_current_translator" not in self.settings: # init translator setting if not set
             self.settings["rpgmtl_current_translator"] = plugin.name
             self.settings_modified = True
         plugin.connect(self)
@@ -212,16 +216,19 @@ class RPGMTL():
     def get_plugin(self : RPGMTL, name : str) -> plugins.Plugin|None:
         return self.plugins.get(name, None)
 
+    # return a tuple of the Translator-in-use name and instance
+    # name is the project name (to check a specific project setting)
     def get_current_translator(self : RPGMTL, name : str|None) -> tuple[str, plugins.TranslatorPlugin|None]:
-        if name is not None:
+        if name is not None: # check project setting
             if "rpgmtl_current_translator" in self.projects[name]["settings"]:
                 pname : str = self.projects[name]["settings"]["rpgmtl_current_translator"]
                 if pname in self.translators:
                     return pname, self.translators[pname]
-        if "rpgmtl_current_translator" in self.settings:
+        if "rpgmtl_current_translator" in self.settings: # check global setting
             pname : str = self.settings["rpgmtl_current_translator"]
             if pname in self.translators:
                 return pname, self.translators[pname]
+        # default, not found, result
         return "", None
 
     # load settings.json
@@ -240,8 +247,9 @@ class RPGMTL():
                 try:
                     self.modified[k] = False # reset it
                     # write config.json
-                    with open(folder + "_tmp_config_.json", mode='w', encoding='utf-8') as f:
+                    with open(folder + "_tmp_config_.json", mode='w', encoding='utf-8') as f: # file is written to temporary location in case of issue
                         json.dump(self.projects[k], f, ensure_ascii=False, indent=4)
+                    # move file to actual name
                     shutil.move(folder + "_tmp_config_.json", folder + "config.json")
                     self.log.info("Updated projects/" + k + "/config.json")
                 except Exception as e:
@@ -251,11 +259,12 @@ class RPGMTL():
                         # also save it
                         with open(folder + "_tmp_strings_.json", mode='w', encoding='utf-8') as f:
                             f.write(self.serialize_format_json(self.strings[k]))
+                        # move file to actual name
                         shutil.move(folder + "_tmp_strings_.json", folder + "strings.json")
                         self.log.info("Updated projects/" + k + "/strings.json")
                 except Exception as e:
                     self.log.error("Failed to update projects/" + k + "/strings.json:\n" + self.trbk(e))
-        if self.settings_modified:
+        if self.settings_modified: # write settings if flag is set
             try:
                 self.settings_modified = False
                 with open('settings.json', mode='w', encoding='utf-8') as f:
@@ -264,7 +273,7 @@ class RPGMTL():
             except Exception as e:
                 self.log.error("Failed to update settings.json:\n" + self.trbk(e))
 
-    # Recursive function to format strings.json in a certain way, to make it humanly readable and easy to pick apart by git
+    # Utility recursive function to format strings.json in a certain way, to make it humanly readable and easy to pick apart by git
     def serialize_format_json(self : RPGMTL, d : Any, level : int = 0, parent_is_list : bool = False) -> str|list[str]:
         parts : list[str] = [] # using an array instead of a string to avoid needless string allocations
         match d: # check type
@@ -298,7 +307,7 @@ class RPGMTL():
         else: # else the string
             return "".join(parts)
 
-    # autosave task autostarted
+    # autosave task
     async def autosave(self : RPGMTL):
         while True:
             try:
@@ -318,12 +327,12 @@ class RPGMTL():
     # check the projects folder and return a list of folder containing config.json files inside
     def load_project_list(self : RPGMTL) -> list[str]:
         try:
-            if not os.path.isdir('projects'):
+            if not os.path.isdir('projects'): # create folder if not found
                 os.mkdir('projects')
             dirs : list[str] = []
-            for d in os.walk('projects'):
+            for d in os.walk('projects'): # walk inside
                 try:
-                    if os.path.isfile(d[0] + '/config.json'):
+                    if os.path.isfile(d[0] + '/config.json'): # take note of folders with a config.json inside
                         dirs.append(d[0].replace('projects/', '').replace('projects\\', ''))
                 except:
                     pass
@@ -335,23 +344,24 @@ class RPGMTL():
     # name is the project name and is only in use in case we're updating the exe location
     def select_exe(self : RPGMTL, name : str|None = None) -> None|str:
         try:
+            # create a Tkinter context for the dialog (make it as invisible as possible)
             root = Tk.Tk()
             root.title('RPGMTL Dialog')
             root.geometry('1x1')
             root.iconify()
             self.log.info("Opening executable selection dialog...")
-            file_path = filedialog.askopenfilename(title="Select a Game Executable", filetypes=[("", ".exe")], parent=root).replace("\\", "/")
-            root.destroy()
-            file_path = "/".join(file_path.split('/')[:-1])
+            file_path = filedialog.askopenfilename(title="Select a Game Executable", filetypes=[("", ".exe")], parent=root).replace("\\", "/") # format windows backslash to forward slash
+            root.destroy() # clear the window
             self.log.info("Dialog output is: " + file_path)
-            if file_path == "":
+            if file_path == "" or file_path is None: # empty, user cancelled
                 return None
             else:
-                if name is not None: # if updating existing location
+                file_path = "/".join(file_path.split('/')[:-1]) # get the foler path from it
+                if name is not None: # if updating existing location, we set it
                     self.projects[name]["path"] = file_path + "/"
                     self.modified[name] = True
                     self.log.info("Project " + name + " path is updated to " + file_path)
-                return file_path
+                return file_path # return the path
         except Exception as e:
             self.log.error("Error during selection of an executable for project " + name + "\n" + self.trbk(e))
             return None
@@ -365,23 +375,28 @@ class RPGMTL():
             shutil.rmtree(dir_path)
         update_file_dict : dict[str, dict] = {}
         encountered_path : set[str] = set()
+        # walk into the game folder
         for path, subdirs, files in os.walk(self.projects[pname]["path"]):
             for name in files:
-                if name.split('.')[-1] in self.extensions:
-                    fp = os.path.join(path, name).replace('\\', '/')
-                    fpr = fp.replace(self.projects[pname]["path"], '')
-                    target_dir = '/'.join(fpr.split('/')[:-1]) + '/'
-                    if target_dir not in encountered_path:
+                if name.split('.')[-1] in self.extensions: # file has a supported extension
+                    # get the:
+                    fp = os.path.join(path, name).replace('\\', '/') # full file path
+                    fpr = fp.replace(self.projects[pname]["path"], '') # relative file path
+                    target_dir = '/'.join(fpr.split('/')[:-1]) + '/' # relative directory containing the file
+                    if target_dir == '/':
+                        target_dir = ""
+                    if target_dir not in encountered_path and not os.path.isdir(target_dir): # create directory if not found
                         encountered_path.add(target_dir)
                         try:
                             # create dir if needed
                             os.makedirs(os.path.dirname(dir_path + target_dir), exist_ok=True)
                         except Exception as e:
                             self.log.error("Couldn't create the following folder:" + dir_path + target_dir + "\n" + self.trbk(e))
+                    # backup
                     try:
-                        # file copy
+                        # file copy to project folder
                         shutil.copy(fp, dir_path + fpr)
-                        # add to struct
+                        # add to config.json
                         update_file_dict[fpr] = {
                             "ignored":False,
                             "strings":0,
@@ -418,7 +433,7 @@ class RPGMTL():
                     self.log.info("projects/" + name + k + " has been created")
                 except Exception as ex:
                     self.log.error("Couldn't create the following folder:" + name + k + "\n" + self.trbk(ex))
-            # initialize struct
+            # initialize config.json
             self.projects[name] = {
                 "version":0,
                 "settings":{},
@@ -640,7 +655,7 @@ class RPGMTL():
             if self.strings[name]["strings"][s][0] in default_tl:
                 self.strings[name]["strings"][s][1] = default_tl[self.strings[name]["strings"][s][0]]
                 self.modified[name] = True
-        # Disabling common unrelated files
+        # Disabling common unrelated files by default
         ignored_starts = [
             "data/Animations.json", "data/MapInfos.json", "data/Tilesets.json", "package.json", "js/plugins/", "js/libs/", "js/main.js", "js/rpg_core.js", "js/rpg_managers.js", "js/rpg_objects.js", "js/rpg_scenes.js", "js/rpg_sprites.js", "js/rpg_windows.js", "js/rmmz_core.js", "js/rmmz_managers.js", "js/rmmz_objects.js", "js/rmmz_scenes.js", "js/rmmz_sprites.js", "js/rmmz_windows.js",
             "www/data/Animations.json", "www/data/MapInfos.json", "www/data/Tilesets.json", "www/package.json", "www/js/plugins/", "www/js/libs/", "www/js/main.js", "www/js/rpg_core.js", "www/js/rpg_managers.js", "www/js/rpg_objects.js", "www/js/rpg_scenes.js", "www/js/rpg_sprites.js", "www/js/rpg_windows.js", "www/js/rmmz_core.www/js", "www/js/rmmz_managers.www/js", "www/js/rmmz_objects.www/js", "www/js/rmmz_scenes.www/js", "www/js/rmmz_sprites.www/js", "www/js/rmmz_windows.www/js"
@@ -726,12 +741,13 @@ class RPGMTL():
         reverse_strings : dict[str, str] = {}
         str_id : int = 0
         update_run_flag : int = 0
+        # keep copy of existing ones (if any)
         try:
             index = copy.deepcopy(self.strings[name])
             for k in index["strings"]:
-                str_id = max(str_id, int(k)+1)
-                reverse_strings[index["strings"][k][0]] = k
-                index["strings"][k][2] = 0
+                str_id = max(str_id, int(k)+1) # calculate last id
+                reverse_strings[index["strings"][k][0]] = k # keep track of string and its id in a reverse lookup table
+                index["strings"][k][2] = 0 # set occurence to 0
             old = index["files"] # put old files here
             index["files"] = {}
             self.log.info("Previous copy of projects/" + name + "/strings.json will be used")
@@ -746,15 +762,15 @@ class RPGMTL():
             reverse_strings = {}
             str_id = 0
             self.log.info("projects/" + name + "/strings.json will be generated from scratch")
-        # go over each string
+        # go over each files
         err : int = 0
         for f in self.projects[name]['files']:
             try:
                 self.projects[name]['files'][f]["strings"] = 0
                 for p in self.plugins.values():
                     if p.match(f, False): # this file match with the plugin
-                        p.reset()
-                        p.set_settings(self.settings | self.projects[name]['settings'])
+                        p.reset() # reset plugin state
+                        p.set_settings(self.settings | self.projects[name]['settings']) # and set setting
                         index["files"][f] = []
                         # read the content
                         with open('projects/' + name + '/originals/' + f, mode="rb") as infile:
@@ -766,13 +782,14 @@ class RPGMTL():
                                 s : str = group[i]
                                 group[i] = [str(str_id), None, 0, 0, update_run_flag] # id, indiv_tl, unlinked, ignored, modified/new
                                 self.projects[name]['files'][f]["strings"] += 1
+                                # if string already occured
                                 if s in reverse_strings:
-                                    group[i][0] = reverse_strings[s]
-                                    index["strings"][reverse_strings[s]][2] += 1
+                                    group[i][0] = reverse_strings[s] # get its id
+                                    index["strings"][reverse_strings[s]][2] += 1 # increase occurence count
                                 else:
-                                    reverse_strings[s] = str(str_id)
+                                    reverse_strings[s] = str(str_id) # new id
                                     index["strings"][str(str_id)] = [s, None, 1]
-                                    str_id += 1
+                                    str_id += 1 # increase for next id
                             index["files"][f].append(group)
                         break
             except Exception as e:
@@ -805,10 +822,14 @@ class RPGMTL():
                         for i in range(block.size):
                             xyA : tuple[int, int] = A_index[block.a+i]
                             xyB : tuple[int, int] = B_index[block.b+i]
-                            index["files"][k][xyA[0]][xyA[1]] = old[k][xyB[0]][xyB[1]]
+                            index["files"][k][xyA[0]][xyA[1]] = old[k][xyB[0]][xyB[1]] # match old to new (to keep individual translations and settings)
+        # set new string table
         self.strings[name] = index
+        # increase project version
         self.projects[name]["version"] = self.projects[name].get("version", -1) + 1
+        # start computing completion
         asyncio.create_task(self.compute_translated(name, self.projects[name]["version"]))
+        # set save flag
         self.modified[name] = True
         self.log.info("Strings extraction for project " + name + " completed")
         return err
@@ -949,28 +970,32 @@ class RPGMTL():
         return _content_, _modified_
 
     # Function to import strings from old RPGMTL formats (version 1 and 2)
+    # Return value is a tuple of state (-1 = error occured, 0 = nothing, 1 = success) and the imported string count
     def import_old_data(self : RPGMTL, name : str) -> tuple[int, int]:
         try:
             count : int = 0
             self.load_strings(name)
+            # create Tkinter context
             root = Tk.Tk()
             root.title('RPGMTL Dialog')
             root.geometry('1x1')
             root.iconify()
-            file_path = filedialog.askopenfilename(title="Select an old RPGMTL strings file", filetypes=[("strings", ".json"), ("strings", ".py")], parent=root).replace("\\", "/")
+            file_path = filedialog.askopenfilename(title="Select an old RPGMTL strings file", filetypes=[("strings", ".json"), ("strings", ".py")], parent=root).replace("\\", "/") # change windows backslash to forward slash
             root.destroy()
             if file_path == "" or file_path is None:
                 return 0, 0
+            # backup project strings.json
             self.backup_strings_file(name)
+            # read file
             with open(file_path, mode="rb") as f:
                 data = f.read()
-            if file_path.endswith(".json"):
+            if file_path.endswith(".json"): # old format 1
                 data = json.loads(data.decode("utf-8"))
-                if len(data) == 2 and "strings" in data:
+                if len(data) == 2 and "strings" in data: # very old format
                     ref = data["strings"]
                 else:
                     ref = data
-            elif file_path.endswith(".py"):
+            elif file_path.endswith(".py"): # old format 2
                 ref = {}
                 for line in data.decode("utf-8").split('\n'):
                     try:
@@ -983,6 +1008,7 @@ class RPGMTL():
                         pass
             else:
                 return
+            # go over our strings and match the strings we found
             for k, v in self.strings[name]["strings"].items():
                 if v[1] is None and isinstance(ref.get(v[0], None), str):
                     self.strings[name]["strings"][k][1] = ref[v[0]]
@@ -1466,6 +1492,14 @@ class RPGMTL():
                     case 1: # Disable
                         self.strings[name]["files"][path][group][index][3] = (self.strings[name]["files"][path][group][index][3] + 1) % 2
                         updated = self.get_list_of_update_string_index(name, path, group, index, True)
+                    case 2: # Disable all occurences in file
+                        sid : str = self.strings[name]["files"][path][group][index][0] # retrieve id
+                        state : int = (self.strings[name]["files"][path][group][index][3] + 1) % 2
+                        for i in range(len(self.strings[name]["files"][path])):
+                            for j in range(1, len(self.strings[name]["files"][path][i])):
+                                if self.strings[name]["files"][path][i][j][0] == sid: # for all matching id, disable
+                                    self.strings[name]["files"][path][i][j][3] = state
+                                    updated.extend(self.get_list_of_update_string_index(name, path, i, j, True))
                     case _: # Change string
                         if self.strings[name]["files"][path][group][index][2]:
                             self.strings[name]["files"][path][group][index][1] = string
@@ -1603,7 +1637,7 @@ class RPGMTL():
             keys.sort()
             for f in keys:
                 result[f] = self.projects[name]["files"].get(f, {}).get("ignored", False)
-            return web.json_response({"result":"ok", "data":{"config":self.projects[name], "name":name, "path":path, "search":search, "files":result}, "message":"{} matches found".format(len(files))})
+            return web.json_response({"result":"ok", "data":{"config":self.projects[name], "name":name, "path":path, "search":search, "files":result}, "message":"Found in {} files".format(len(files))})
 
 if __name__ == "__main__":
     RPGMTL().run()

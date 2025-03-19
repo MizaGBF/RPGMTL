@@ -318,6 +318,10 @@ html, body {
 	background: #de0000;
 }
 
+.control-spacer {
+	min-width: 5px;
+}
+
 .input {
 	background: #91a0b8;
 	color: #000000;
@@ -357,4 +361,8 @@ html, body {
 
 .gold {
 	background: #edcc1c;
+}
+
+.purple {
+	background: #501050;
 }

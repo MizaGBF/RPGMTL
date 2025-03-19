@@ -208,9 +208,12 @@ Translator Plugins must inherit from the `TranslatorPlugin` class defined in `pl
   
 Your Plugins must go into the `plugins` folder. They will be automatically loaded on startup.  
 I won't go into more details, check the existing Plugins for more informations.  
+  
+Breaking changes might be introduced in newer versions, as the project evolves.  
+If your plugin needs to target a specific version, you can check the `VERSION` string of the RPGMTL in your plugin `__init__` function and raise an exception to stop its loading.  
 
 ## API  
-Below is the server API, for documentation purpose.  
+Below is the server API used for the web interface, for documentation purpose.  
 An API call always return the following JSON:  
 ```json
 {
@@ -223,7 +226,7 @@ An API call always return the following JSON:
 * `result` can be either `ok` or `bad`.  
 * `data` content varies depending on the call. See below. Note: It's absent if the `result` is `bad`.  
     * When present inside `data`, `config` and `name` are automatically read.  
-* `message` is a string, which will be displayed as a popup. It's optional.  
+* `message` is a string, which will be displayed as a popup. It's optional and not always present.  
   
 ### API Endpoints  
 All requires POST requests.  
@@ -398,7 +401,7 @@ Return in data: project 'name', project 'config', file 'path', project 'strings'
 
 ```
 /api/update_string (Toggle Unlink/Ignore)
-Payload:  project 'name', file 'path', project 'version', 'group' index, string 'index', toggle 'setting' (0 for unlink, 1 for ignore)
+Payload:  project 'name', file 'path', project 'version', 'group' index, string 'index', toggle 'setting' (0 for unlink, 1 for ignore, 2 for ignore all occurence in file)
 Return in data: project 'name', project 'config', file 'path', project 'strings', 'list' of strings in file, 'updated' string indexes
 ```
 
