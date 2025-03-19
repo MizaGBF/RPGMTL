@@ -1184,7 +1184,7 @@ class ME(): # for Marshal Element
                 for i in range(len(self.data[1])):
                     self.data[1][i][0].deserialize(handle, is_script, level+1)
                     handle.write(': ')
-                    self.data[1][i][0].deserialize(handle, is_script, -(level+1))
+                    self.data[1][i][1].deserialize(handle, is_script, -(level+1))
                     if i != len(self.data[1])-1:
                         handle.write(',\n')
                 handle.write('\n')
