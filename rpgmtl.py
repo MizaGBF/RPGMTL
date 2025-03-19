@@ -1049,9 +1049,7 @@ class RPGMTL():
                 if d[0].replace("\\", "/") == patch_path:
                     for p in d[2]:
                         with open(d[0] + '/' + p, mode="r", encoding="utf-8") as f:
-                            content : str = f.read()
-                            lines : list[str] = content.split("\r\n") if content.find("\r\n") != -1 else content.split("\n")
-                            content = None
+                            lines : list[str] = f.read().splitlines()
                         if not lines[0].startswith("> RPGMAKER TRANS PATCH FILE VERSION 3"):
                             self.log.error("Invalid identifier for expected RPGMaker Trans File " + p + ", skipping...")
                             continue
