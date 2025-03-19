@@ -1196,19 +1196,19 @@ function prepareGroupOn(node, i)
 		// note: laststringinteracted is set to tsize (i.e. string index in table) whether a string is interacted with
 		span.onclick = function() // add string interactions
 		{
-			if(window.event.ctrlKey && !window.event.shiftKey) // single disable
+			if(window.event.ctrlKey && !window.event.shiftKey && !window.event.altKey) // single disable
 			{
 				laststringinteracted = tsize;
 				set_loading_text("Updating...");
 				postAPI("/api/update_string", update_string_list, null, {setting:1, version:prjversion, name:prjname, path:prjdata["path"], group:this.group, index:this.string});
 			}
-			else if(window.event.ctrlKey && window.event.shiftKey) // multi disable
+			else if(window.event.ctrlKey && !window.event.shiftKey && window.event.altKey) // multi disable
 			{
 				laststringinteracted = tsize;
 				set_loading_text("Updating...");
 				postAPI("/api/update_string", update_string_list, null, {setting:2, version:prjversion, name:prjname, path:prjdata["path"], group:this.group, index:this.string});
 			}
-			else if(!window.event.ctrlKey && window.event.shiftKey) // unlink
+			else if(!window.event.ctrlKey && window.event.shiftKey && !window.event.altKey) // unlink
 			{
 				if(bottom.style.display == "none")
 				{
@@ -1311,7 +1311,7 @@ function open_file(data)
 		addTo(fragment, "div", {cls:["interact", "button"], br:false, onclick:function(){
 			help.innerHTML = "<ul>\
 				<li>CTRL+Click on a line to <b>disable</b> it, it'll be skipped during the release process.</li>\
-				<li>SHIFT+CTRL+Click on a line to <b>disable</b> <b>ALL</b> this string occurence in this file.</li>\
+				<li>ALT+CTRL+Click on a line to <b>disable</b> <b>ALL</b> this string occurence in this file.</li>\
 				<li>SHIFT+Click on a line to <b>unlink</b> it, if you need to set it to a translation specific to this part of the file.</li>\
 				<li>ALT+Click on the original string (on the left) to copy it.</li>\
 				<li>ALT+Click on the translated string (on the right) to copy it.</li>\
