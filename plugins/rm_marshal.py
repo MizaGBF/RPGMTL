@@ -128,7 +128,7 @@ class RM_Marshal(Plugin):
     def __init__(self : RM_Marshal) -> None:
         super().__init__()
         self.name : str = "RPG Maker Marshal"
-        self.description : str = "v1.4\nHandle files from RPG Maker XP, VX and VX Ace"
+        self.description : str = "v1.5\nHandle files from RPG Maker XP, VX and VX Ace"
         self.allow_ruby_plugin : bool = True # Leave it on by default
 
     def get_setting_infos(self : RM_Marshal) -> dict[str, list]:

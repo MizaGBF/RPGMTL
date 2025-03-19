@@ -130,7 +130,7 @@ class JSON(Plugin):
     def __init__(self : JSON) -> None:
         super().__init__()
         self.name : str = "JSON"
-        self.description : str = "v1.4\nHandle JSON files, including ones from RPG Maker MV/MZ"
+        self.description : str = "v1.5\nHandle JSON files, including ones from RPG Maker MV/MZ"
 
     def get_setting_infos(self : Plugin) -> dict[str, list]:
         return {
