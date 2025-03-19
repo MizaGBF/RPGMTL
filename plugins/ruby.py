@@ -42,6 +42,8 @@ class Ruby(Plugin):
                 entry_offset = helper.group
         entries = []
         i = 0
+        funcs = ["", ""]
+        func_pos = [None, None]
         group = [""]
         string_table : list[tuple] = []
         c : str = ""
@@ -77,13 +79,36 @@ class Ruby(Plugin):
                         break
                     i += 1
             else:
+                if c.isalnum():
+                    # Function name detection
+                    if func_pos[0] is None:
+                        func_pos[0] = i
+                    func_pos[1] = i+1
+                else:
+                    # Function name detection
+                    if func_pos[0] is not None:
+                        funcs[-1] = script[func_pos[0]:func_pos[1]]
+                        func_pos[0] = None
+                    shift_array : bool = False
+                    if funcs[-1] != "" and funcs[-2] == "def":
+                        if len(group) > 1:
+                            entries.append(group)
+                            group = [""]
+                        group[0] = funcs[-1] + "()"
+                        shift_array = True
+                    else:
+                        shift_array = True
+                    # Shift funcs array
+                    if shift_array:
+                        funcs[0] = funcs[1]
+                        funcs[1] = ""
                 i += 1
         if len(group) > 1:
             entries.append(group)
         if helper is not None: # write mode
             for i in range(len(string_table)-1, -1, -1):
                 st = string_table[i]
-                tmp : str = helper.apply_string(entries[st[2]][st[3]], loc=(st[2]+entry_offset, st[3]))
+                tmp : str = helper.apply_string(entries[st[2]][st[3]], entries[st[2]][0], loc=(st[2]+entry_offset, st[3]))
                 if tmp != entries[st[2]][st[3]]:
                     script = script[:st[0]] + tmp.replace(st[4], '\\'+st[4]) + script[st[1]:]
             if len(string_table) > 0:
