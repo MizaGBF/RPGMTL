@@ -517,14 +517,15 @@ class RM_Marshal(Plugin):
                             group.extend(text)
                 case 355: # Show Text commands
                     tmp = self._util_read_string(parameters[0])
-                    if tmp is not None and tmp != "":
-                        group.append(tmp)
                     i += 1
                     i, text = self._walk_event_continuous_command(i, me.data, 655)
-                    if len(text) > 0:
+                    if tmp != "" or len(text) > 0:
                         if self.settings.get("rm_marshal_multiline", False):
+                            text.insert(0, tmp)
                             group.append("\n".join(text))
                         else:
+                            if tmp is not None and tmp != "":
+                                group.append(tmp)
                             group.extend(text)
                 case 102:
                     for pm in parameters:
@@ -571,7 +572,7 @@ class RM_Marshal(Plugin):
                     i += 1
                     i, text = self._walk_event_continuous_command(i, me.data, 401)
                     text.insert(0, tmp)
-                    if len(text) > 0:
+                    if tmp != "" or len(text) > 1:
                         if self.settings.get("rm_marshal_multiline", False):
                             # Multiline mode
                             combined : str = helper.apply_string("\n".join(text), group)
@@ -597,11 +598,12 @@ class RM_Marshal(Plugin):
                                     parameters[0].data.data = text[h].encode("utf-8")
                                     h += 1
                 case 355: # Show Text commands
-                    self._util_write_string(helper, parameters[0], group)
-                    i += 1
+                    tmp = self._util_read_string(parameters[0])
                     start = i
+                    i += 1
                     i, text = self._walk_event_continuous_command(i, me.data, 655)
-                    if len(text) > 0:
+                    text.insert(0, tmp)
+                    if tmp != "" or len(text) > 1:
                         if self.settings.get("rm_marshal_multiline", False):
                             # Multiline mode
                             combined : str = helper.apply_string("\n".join(text), group)

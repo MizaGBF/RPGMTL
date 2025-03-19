@@ -432,14 +432,19 @@ class JSON(Plugin):
                         else:
                             group.extend(text)
                 case 355: # Scripting
-                    if len(cmd["parameters"]) >= 1 and isinstance(cmd["parameters"][0], str) and cmd["parameters"][0] != "":
-                        group.append(cmd["parameters"][0])
+                    if len(cmd["parameters"]) >= 1 and isinstance(cmd["parameters"][0], str):
+                        tmp = cmd["parameters"][0]
+                    else:
+                        tmp = ""
                     i += 1
                     i, text = self._walk_event_continuous_command(i, cmds, 655)
-                    if len(text) > 0:
+                    if tmp != "" or len(text) > 0:
                         if self.settings.get("json_rpgm_multiline", False):
+                            text.insert(0, tmp)
                             group.append("\n".join(text))
                         else:
+                            if tmp != "":
+                                group.append(tmp)
                             group.extend(text)
                 case 102: # Choices
                     if len(cmd["parameters"]) >= 1 and isinstance(cmd["parameters"][0], list):
@@ -496,12 +501,16 @@ class JSON(Plugin):
                         for j in range(start, i+1):
                             cmds[j]["parameters"][0] = text[j-start]
                 case 355: # Scripting
-                    if len(cmd["parameters"]) >= 1 and isinstance(cmd["parameters"][0], str) and cmd["parameters"][0] != "":
-                        cmd["parameters"][0] = helper.apply_string(cmd["parameters"][0], group)
+                    if len(cmd["parameters"]) >= 1 and isinstance(cmd["parameters"][0], str):
+                        tmp = cmd["parameters"][0]
+                    else:
+                        tmp = ""
+                    start = i
                     i += 1
                     start = i
                     i, text = self._walk_event_continuous_command(i, cmds, 655)
-                    if len(text) > 0:
+                    text.insert(0, tmp)
+                    if tmp != "" or len(text) > 1:
                         if self.settings.get("json_rpgm_multiline", False):
                             # Multiline mode
                             combined : str = helper.apply_string("\n".join(text), group)
