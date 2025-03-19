@@ -51,7 +51,7 @@ def load(rpgmtl : RPGMTL) -> None:
             _loadPlugin_(rpgmtl, path_filename, filename, relative=".", package='plugins')
 
 class Plugin:
-    FILE_ENCODINGS : list[str] = ["utf-8", "shift_jis", "iso8859-1", "cp1251", "cp1252"] # To cover a lot of encoding scenarios
+    FILE_ENCODINGS : list[str] = ["utf-8", "shift_jis", "iso8859-1", "cp1251", "cp1252", "ascii"] # To cover a lot of encoding scenarios
     
     def __init__(self : Plugin) -> None:
         # Be sure to call super first, in your Plugin
