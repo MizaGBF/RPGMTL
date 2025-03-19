@@ -8,6 +8,9 @@ var loader = null;
 var loadertext = null;
 var loaderanim = null;
 var help = null;
+var edit_ori = null;
+var edit_tl = null;
+var tl_string_length = null;
 // global variables
 var keypressenabled = false;
 var path = null;
@@ -34,6 +37,9 @@ function init()
 	loadertext = document.getElementById("loader-text");
 	loaderanim = document.getElementById("loader-animation");
 	help = document.getElementById("help");
+	edit_ori = document.getElementById("edit-ori");
+	edit_tl = document.getElementById("edit-tl");
+	tl_string_length = document.getElementById("string-length");
 	// request the project list
 	postAPI("/api/main", project_list);
 }
@@ -717,8 +723,13 @@ function project_menu(data = null)
 				postAPI("/api/backups", backup_list, null, {name:prjname});
 			}}).innerHTML = '<img src="assets/images/copy.png">String Backups';
 			addTo(fragment, "div", {cls:["interact"], onclick:function(){
+				set_loading_text("Select an old RPGMTL strings file.");
 				postAPI("/api/import", project_menu, null, {name:prjname});
-			}}).innerHTML = '<img src="assets/images/import.png">Import Strings from older RPGMTL';
+			}}).innerHTML = '<img src="assets/images/import.png">Import Strings from RPGMTL v1/v2';
+			addTo(fragment, "div", {cls:["interact"], onclick:function(){
+				set_loading_text("Select a RPGMAKERTRANSPATCH file.");
+				postAPI("/api/import_rpgmtrans", project_menu, null, {name:prjname});
+			}}).innerHTML = '<img src="assets/images/import.png">Import Strings from RPGMakerTrans v3';
 			addTo(fragment, "div", {cls:["spacer"]});
 		}
 		updateMain(fragment);
@@ -1332,11 +1343,19 @@ function open_file(data)
 		}
 		// add translate this file button
 		addTo(fragment, "div", {cls:["interact"], onclick:function() {
-			set_loading_text("Translating this file...")
-			postAPI("/api/translate_file", update_string_list, function(){
-				bottom.style.display = "none";
-				postAPI("/api/browse", browse_files, null, {name:prjname, path:returnpath});
-			}, {name:prjname, path:lastfileopened, version:prjversion});
+			if(this.classList.contains("selected") || window.event.ctrlKey) // confirmation / shortcut to insta confirm
+			{
+				set_loading_text("Translating this file...")
+				postAPI("/api/translate_file", update_string_list, function(){
+					bottom.style.display = "none";
+					postAPI("/api/browse", browse_files, null, {name:prjname, path:returnpath});
+				}, {name:prjname, path:lastfileopened, version:prjversion});
+			}
+			else
+			{
+				this.classList.add("selected");
+				pushPopup("Press again to confirm.");
+			}
 		}}).innerHTML = '<img src="assets/images/translate.png">Translate the File';
 		
 		// list strings

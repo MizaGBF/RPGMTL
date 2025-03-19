@@ -17,6 +17,7 @@ Small Tool to create Translation Patches for RPG Maker games (from XP to MZ) and
 RPGMTL is a tool, written in Python, allowing you to extract, translate and patch strings from your Games.  
 It works via a small web server, and the UI uses your own web browser.  
 This system allows multiple people to work at the same time on the same project.  
+Some operations are blocking on purpose (for example, during string extraction), in case multiple users are working at the same time.  
   
 ### What's new?  
 This 3rd version of RPGMTL is an entire rewrite.  
@@ -49,7 +50,7 @@ Then you can access it with your favorite web browser.
 `localhost:8000` should be the default address.  
   
 To stop it, use the *Shutdown* button on the top left of the Home Page, or press `CTRL+C` on the server console.  
-An Autosave is ran on shutdown, and also every minute otherwise.  
+An Autosave is ran on shutdown, and also every 5 minutes otherwise.  
   
 > [!WARNING]  
 > Don't close the console to shut it down! The abrupt stop might result in data losses or corruption.  
@@ -178,8 +179,16 @@ helper.modified = True # raise modified flag to True
   
 The `PatcherHelper` is defined at the start of `rpgmtl.py`, if you wish to take a closer look at it.  
   
-### Import Strings from older RPGMTL
-This button allow you to import `strings.json` and `strings.py` files from older RPGMTL versions.  
+### Import Strings from RPGMTL v1/v2
+This button allows you to import `strings.json` and `strings.py` files from older RPGMTL versions.  
+Custom patches won't be imported, as they relied on different codes.  
+Be aware it's a convenience feature and far from perfect.  
+  
+### Import Strings from RPGMakerTrans v3
+This button allows you to import content from RPGMaker Trans Patch files.  
+Select the location of a `RPGMKTRANSPATCH` file, and it will read the content of the patch folder.  
+If the RM Marshal plugin is present, the `rm_marshal_multiline` setting of the project will be used to decide how to split the strings with new lines or not.  
+For the best results, you might want it to be **enabled**.  
 Be aware it's a convenience feature and far from perfect.  
   
 ## Plugins  
@@ -359,6 +368,12 @@ Return in data: project 'name', project 'config'
   
 ```
 /api/import
+Payload: project 'name'
+Return in data: project 'name', project 'config'
+```
+  
+```
+/api/import_rpgmtrans
 Payload: project 'name'
 Return in data: project 'name', project 'config'
 ```

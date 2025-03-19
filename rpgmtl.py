@@ -59,7 +59,7 @@ class PatcherHelper():
 ######################################################
 class RPGMTL():
     # constant
-    VERSION = "3.5"
+    VERSION = "3.6"
     def __init__(self : RPGMTL) -> None:
         # Setting up logging
         handler = RotatingFileHandler(filename="rpgmtl.log", encoding='utf-8', mode='w', maxBytes=51200, backupCount=3)
@@ -99,6 +99,7 @@ class RPGMTL():
                 web.post('/api/open_patch', self.edit_patch), # Open specific Fix/Patch
                 web.post('/api/update_patch', self.update_patch), # Update specific Fix/Patch
                 web.post('/api/import', self.import_old), # Import Old RPGMTL data
+                web.post('/api/import_rpgmtrans', self.import_rpgmtrans), # Import RPG Maker Trans data
                 web.post('/api/backups', self.backup_list), # Open list of strings.json backups
                 web.post('/api/load_backup', self.load_backup), # Load strings.json backup
                 web.post('/api/browse', self.open_folder), # Browse Folders/Files
@@ -1012,8 +1013,93 @@ class RPGMTL():
             for k, v in self.strings[name]["strings"].items():
                 if v[1] is None and isinstance(ref.get(v[0], None), str):
                     self.strings[name]["strings"][k][1] = ref[v[0]]
-                    self.modified[name] = True
                     count += 1
+            if count > 0:
+                # increase project version
+                self.projects[name]["version"] = self.projects[name].get("version", -1) + 1
+                self.modified[name] = True
+                # start computing completion
+                asyncio.create_task(self.compute_translated(name, self.projects[name]["version"]))
+            return 1, count
+        except:
+            return -1, count
+
+    # Function to import strings from RPGMaker Trans formats (version 3)
+    # Return value is a tuple of state (-1 = error occured, 0 = nothing, 1 = success) and the imported string count
+    def import_rpgmtrans_data(self : RPGMTL, name : str) -> tuple[int, int]:
+        try:
+            count : int = 0
+            self.load_strings(name)
+            multiline_ruby = (self.settings | self.projects[name]["settings"]).get("rm_marshal_multiline", False)
+            # create Tkinter context
+            root = Tk.Tk()
+            root.title('RPGMTL Dialog')
+            root.geometry('1x1')
+            root.iconify()
+            file_path = filedialog.askopenfilename(title="Select a RPGMKTRANSPATCH file", filetypes=[("", "RPGMKTRANSPATCH")], parent=root).replace("\\", "/") # change windows backslash to forward slash
+            root.destroy()
+            if file_path == "" or file_path is None:
+                return 0, 0
+            # backup project strings.json
+            self.backup_strings_file(name)
+            file_path = "/".join(file_path.split("/")[:-1]) 
+            patch_path : str = file_path + "/patch"
+            table = {}
+            for d in os.walk(file_path):
+                if d[0].replace("\\", "/") == patch_path:
+                    for p in d[2]:
+                        with open(d[0] + '/' + p, mode="r", encoding="utf-8") as f:
+                            content : str = f.read()
+                            lines : list[str] = content.split("\r\n") if content.find("\r\n") != -1 else content.split("\n")
+                            content = None
+                        if not lines[0].startswith("> RPGMAKER TRANS PATCH FILE VERSION 3"):
+                            self.log.error("Invalid identifier for expected RPGMaker Trans File " + p + ", skipping...")
+                            continue
+                        i : int = 1
+                        while i < len(lines):
+                            if lines[i] == "> BEGIN STRING":
+                                original : list[str] = []
+                                translation : list[str] = []
+                                i += 1
+                                while i < len(lines) and not lines[i].startswith("> CONTEXT: "):
+                                    original.append(lines[i])
+                                    i += 1
+                                if lines[i].endswith(" < UNTRANSLATED"):
+                                    continue
+                                while i < len(lines) and lines[i].startswith("> CONTEXT: "):
+                                    i += 1
+                                while i < len(lines) and lines[i] != "> END STRING":
+                                    translation.append(lines[i])
+                                    i += 1
+                                i += 1
+                                if multiline_ruby:
+                                    jori : str = "\n".join(original)
+                                    if jori in table:
+                                        self.log.warning("A string in " + p + "couldn't be imported because it's a duplicate in that same file")
+                                    else:
+                                        table[jori] = "\n".join(translation)
+                                else:
+                                    # put array to same size
+                                    if len(translation) > len(original):
+                                        translation[len(original)-1] = "\n".join(translation[len(original)-1:])
+                                    while len(translation) < len(original):
+                                        translation.append("")
+                                    for j in range(len(original)):
+                                        if original[j] not in table:
+                                            table[original[j]] = translation[j]
+                            else:
+                                i += 1
+                    break
+            for sid, gl in self.strings[name]["strings"].items():
+                if gl[1] is None and gl[0] in table:
+                    self.strings[name]["strings"][sid][1] = table[gl[0]]
+                    count += 1
+            if count > 0:
+                # increase project version
+                self.projects[name]["version"] = self.projects[name].get("version", -1) + 1
+                self.modified[name] = True
+                # start computing completion
+                asyncio.create_task(self.compute_translated(name, self.projects[name]["version"]))
             return 1, count
         except:
             return -1, count
@@ -1328,6 +1414,22 @@ class RPGMTL():
             return web.json_response({"result":"bad", "message":"Bad request, missing 'name' parameter"}, status=400)
         else:
             state, count = self.import_old_data(name)
+            match state:
+                case 1:
+                    return web.json_response({"result":"ok", "data":{"name":name, "config":self.projects[name]}, "message":"Imported {} string(s) with success".format(count)})
+                case -1:
+                    return web.json_response({"result":"ok", "data":{"name":name, "config":self.projects[name]}, "message":"Imported {} string(s), but an error occured".format(count)})
+                case _:
+                    return web.json_response({"result":"ok", "data":{"name":name, "config":self.projects[name]}})
+        
+    # /api/import_rpgmtrans
+    async def import_rpgmtrans(self : RPGMTL, request : web.Request) -> web.Response:
+        payload = await request.json()
+        name = payload.get('name', None)
+        if name is None:
+            return web.json_response({"result":"bad", "message":"Bad request, missing 'name' parameter"}, status=400)
+        else:
+            state, count = self.import_rpgmtrans_data(name)
             match state:
                 case 1:
                     return web.json_response({"result":"ok", "data":{"name":name, "config":self.projects[name]}, "message":"Imported {} string(s) with success".format(count)})
