@@ -51,21 +51,23 @@ class Javascript(Plugin):
         group = [""]
         string_table : list[tuple] = []
         regex_possible : bool = False
-        while i < len(js):
+        jslen : int = len(js)
+        c : str = ""
+        while i < jslen:
             c = js[i]
             if c == '/':
                 # Handle comments.
-                if i + 1 < len(js):
+                if i + 1 < jslen:
                     if js[i+1] == '/':
                         # single-line comment: skip until newline
                         i += 2
-                        while i < len(js) and js[i] != '\n':
+                        while i < jslen and js[i] != '\n':
                             i += 1
                         continue
                     elif js[i+1] == '*':
                         # multi-line comment: skip until closing */
                         i += 2
-                        while i + 1 < len(js) and not (js[i] == '*' and js[i+1] == '/'):
+                        while i + 1 < jslen and not (js[i] == '*' and js[i+1] == '/'):
                             i += 1
                         i += 2
                         continue
@@ -74,7 +76,7 @@ class Javascript(Plugin):
                 i += 1
                 quote = c
                 start = i
-                while i < len(js):
+                while i < jslen:
                     c = js[i]
                     if c == '\\':  # skip escaped char
                         i += 2
@@ -165,7 +167,7 @@ class Javascript(Plugin):
         start = js.find('plugins =') + len('plugins =')
         if start == -1:
             raise Exception("Not the expected RPGMK plugins.js file")
-        end = len(js) - 1
+        end = jslen - 1
         while js[end] != ';':
             end -= 1
             if end <= start:

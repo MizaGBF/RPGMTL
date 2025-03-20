@@ -49,29 +49,30 @@ class Ruby(Plugin):
         func_pos = [None, None]
         group = [""]
         string_table : list[tuple] = []
+        scriptlen : int = len(script)
         c : str = ""
-        while i < len(script):
+        while i < scriptlen:
             prev : str = c
             c = script[i]
             if c == '#': # Single Line Comment
                 i += 1
-                while i < len(script) and script[i] != "\n":
+                while i < scriptlen and script[i] != "\n":
                     i += 1
                 prev = None
                 continue
-            elif c == "\n" and i + 6 < len(script) and script[i:i+7] == "\n=begin": # Multi Line Comment
+            elif c == "\n" and i + 6 < scriptlen and script.startswith("\n=begin", i): # Multi Line Comment
                 i += 6
-                while i < len(script) and script[i] != "d" and script[i-4:i+1] != "\n=end":
+                while i < scriptlen and script[i] != "d" and script.startswith("\n=end", i-4):
                     i += 1
                 prev = None
                 continue
             if c == '"' and prev != '$':
                 i += 1
                 start = i
-                while i < len(script):
+                while i < scriptlen:
                     c = script[i]
                     if c == '\\':  # skip escaped char
-                        i += 2
+                        i += 1
                         continue
                     if c == '"':
                         literal = script[start:i]
