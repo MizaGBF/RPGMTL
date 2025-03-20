@@ -5,7 +5,7 @@ class Ruby(Plugin):
     def __init__(self : Ruby) -> None:
         super().__init__()
         self.name : str = "Ruby"
-        self.description : str = " v1.1\nHandle Ruby files"
+        self.description : str = " v1.2\nHandle Ruby files"
 
     def file_extension(self : Ruby) -> list[str]:
         return ["rb"]
@@ -21,7 +21,10 @@ class Ruby(Plugin):
         data = self.decode(content)
         helper : WalkHelper = WalkHelper(file_path, strings)
         data = self._write_walk(data, helper)
-        return self.encode(data), helper.modified
+        if helper.modified:
+            return self.encode(data), True
+        else:
+            return content, False
 
     # Standard ruby
     def _read_walk(self : Ruby, js : str) -> list[list[str]]:

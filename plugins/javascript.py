@@ -6,7 +6,7 @@ class Javascript(Plugin):
     def __init__(self : Javascript) -> None:
         super().__init__()
         self.name : str = "Javascript"
-        self.description : str = " v1.1\nHandle Javascript files, including the plugins.js file from RPG Maker MV/MZ"
+        self.description : str = " v1.2\nHandle Javascript files, including the plugins.js file from RPG Maker MV/MZ"
 
     def file_extension(self : Javascript) -> list[str]:
         return ["js"]
@@ -28,7 +28,10 @@ class Javascript(Plugin):
             data = self._write_walk_plugins(data, helper)
         else:
             data = self._write_walk(data, helper)
-        return self.encode(data), helper.modified
+        if helper.modified:
+            return self.encode(data), True
+        else:
+            return content, False
 
     # Standard javascript
     def _read_walk(self : Javascript, js : str) -> list[list[str]]:

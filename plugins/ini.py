@@ -5,7 +5,7 @@ class INI(Plugin):
     def __init__(self : INI) -> None:
         super().__init__()
         self.name : str = "INI"
-        self.description : str = " v1.0\nHandle INI files"
+        self.description : str = " v1.1\nHandle INI files"
 
     def file_extension(self : INI) -> list[str]:
         return ["ini"]
@@ -43,4 +43,7 @@ class INI(Plugin):
         for i in range(len(lines)):
             if isinstance(lines[i], list) and lines[i][1] != "":
                 lines[i][1] = helper.apply_string(lines[i][1], lines[i][0])
-        return self.dump(lines), helper.modified
+        if helper.modified:
+            return self.dump(lines), True
+        else:
+            return content, False

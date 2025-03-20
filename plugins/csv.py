@@ -7,7 +7,7 @@ class CSV(Plugin):
     def __init__(self : CSV) -> None:
         super().__init__()
         self.name : str = "CSV"
-        self.description : str = " v1.1\nHandle CSV files, including externMessage files from RPG Maker MV/MZ"
+        self.description : str = " v1.2\nHandle CSV files, including externMessage files from RPG Maker MV/MZ"
 
     def file_extension(self : CSV) -> list[str]:
         return ["csv"]
@@ -39,4 +39,7 @@ class CSV(Plugin):
                             content[i][j] = helper.apply_string(content[i][j], "Cell {}x{}".format(i,j))
                     writer.writerow(content[i])
                 sout.seek(0)
-                return self.encode(sout.read()), helper.modified
+                if helper.modified:
+                    return self.encode(sout.read()), True
+                else:
+                    return content, False

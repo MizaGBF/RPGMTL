@@ -130,7 +130,7 @@ class JSON(Plugin):
     def __init__(self : JSON) -> None:
         super().__init__()
         self.name : str = "JSON"
-        self.description : str = "v1.5\nHandle JSON files, including ones from RPG Maker MV/MZ"
+        self.description : str = "v1.6\nHandle JSON files, including ones from RPG Maker MV/MZ"
 
     def get_setting_infos(self : Plugin) -> dict[str, list]:
         return {
@@ -176,7 +176,10 @@ class JSON(Plugin):
                 self._write_walk_data(data, helper)
             else:
                 self._write_walk(data, helper)
-        return self.encode(json.dumps(data)), helper.modified
+        if helper.modified:
+            return self.encode(json.dumps(data)), True
+        else:
+            return content, False
     
     def format(self : JSON, file_path : str, content : bytes) -> bytes:
         # Format in different way depending on what kind of file it is
