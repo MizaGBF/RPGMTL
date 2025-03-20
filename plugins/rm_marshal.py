@@ -860,7 +860,7 @@ class MC(): # for Marshal Container
             return 0
         if 5 < length < 128:
             return length - 5
-        elif -129 < length < -5:    
+        elif -129 < length < -5:
             return length + 5
         result = 0
         data = handle.read(abs(length))
