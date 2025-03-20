@@ -247,10 +247,10 @@ class WalkHelper():
             if glbal[0] != string:
                 raise Exception("[WalkHelper] Invalid string match at (" + str(loc[0]) + "," + str(loc[1]) + ")")
             if local[2]:
-                if local[1] is not None:
+                if local[1] is not None and local[1] != string: # patch if exists ANd different from original
                     self.str_store = local[1]
                     self.str_modified = True
-            elif glbal[1] is not None and glbal[1] != "":
+            elif glbal[1] is not None and glbal[1] != string: # patch if exists ANd different from original
                 self.str_store = glbal[1]
                 self.str_modified = True
 
