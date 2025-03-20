@@ -167,7 +167,7 @@ class Javascript(Plugin):
         start = js.find('plugins =') + len('plugins =')
         if start == -1:
             raise Exception("Not the expected RPGMK plugins.js file")
-        end = jslen - 1
+        end = len(js) - 1
         while js[end] != ';':
             end -= 1
             if end <= start:

@@ -72,7 +72,7 @@ class Ruby(Plugin):
                 while i < scriptlen:
                     c = script[i]
                     if c == '\\':  # skip escaped char
-                        i += 1
+                        i += 2
                         continue
                     if c == '"':
                         literal = script[start:i]
