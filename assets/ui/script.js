@@ -364,7 +364,7 @@ function setting_menu(data)
 					pushPopup("The Project Settings have been reset to Global Settings.");
 					project_menu();
 				}, null, {name:prjname});
-			}}).innerHTML = '<img src="assets/images/trash.png">Reset All Settings';
+			}}).innerHTML = '<img src="assets/images/trash.png">Reset All Settings to Global';
 		}
 		
 		let count = 0;
