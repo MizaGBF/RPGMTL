@@ -283,9 +283,8 @@ class RPGMTL():
                 if len(d) > 0:
                     last_key : str = list(d.keys())[-1]
                     for k, v in d.items():
-                        parts.append('"')
-                        parts.append(k)
-                        parts.append('":')
+                        parts.append(json.dumps(k, separators=(',', ':'), ensure_ascii=False))
+                        parts.append(':')
                         parts.extend(self.serialize_format_json(v, level+1))
                         if k != last_key: parts.append(',')
                         parts.append('\n')
@@ -1029,6 +1028,7 @@ class RPGMTL():
 
     # Function to import strings from RPGMaker Trans formats (version 3)
     # Return value is a tuple of state (-1 = error occured, 0 = nothing, 1 = success) and the imported string count
+    # Documentation: https://rpgmakertrans.bitbucket.io/patchformatv3.html
     def import_rpgmtrans_data(self : RPGMTL, name : str) -> tuple[int, int]:
         try:
             count : int = 0
@@ -1051,35 +1051,55 @@ class RPGMTL():
             for d in os.walk(file_path):
                 if d[0].replace("\\", "/") == patch_path:
                     for p in d[2]:
+                        # open file
                         with open(d[0] + '/' + p, mode="r", encoding="utf-8") as f:
                             lines : list[str] = f.read().splitlines()
+                        # check first line according to documentation
                         if not lines[0].startswith("> RPGMAKER TRANS PATCH FILE VERSION 3"):
                             self.log.error("Invalid identifier for expected RPGMaker Trans File " + p + ", skipping...")
                             continue
                         i : int = 1
-                        while i < len(lines):
-                            if lines[i] == "> BEGIN STRING":
+                        while i < len(lines): # go over check line
+                            if lines[i] == "> BEGIN STRING": # look for this string
+                                # containers for string lines
                                 original : list[str] = []
                                 translation : list[str] = []
                                 i += 1
-                                while i < len(lines) and not lines[i].startswith("> CONTEXT: "):
+                                while i < len(lines) and not lines[i].startswith("> CONTEXT: "): # append to original until we meet context
                                     original.append(lines[i])
                                     i += 1
-                                if lines[i].endswith(" < UNTRANSLATED"):
+                                if i >= len(lines) or lines[i].endswith(" < UNTRANSLATED"): # if untranslated, skip the rest
                                     continue
-                                while i < len(lines) and lines[i].startswith("> CONTEXT: "):
+                                is_inline_script : bool = False
+                                if i < len(lines) and "InlineScript" in lines[i]: # detect RPG Maker inline scripts (see below)
+                                    is_inline_script = True
+                                while i < len(lines) and lines[i].startswith("> CONTEXT: "): # ignore further context strings
                                     i += 1
-                                while i < len(lines) and lines[i] != "> END STRING":
+                                while i < len(lines) and (lines[i] != "> END STRING" and not lines[i].startswith("> CONTEXT: ")): # append to translation until we meet END or CONTEXT (multi context translations aren't supported)
                                     translation.append(lines[i])
                                     i += 1
+                                if p == "Scripts.txt" or is_inline_script: # exception for Script strings and inline script
+                                    for j in range(len(original)):
+                                        if original[j].startswith('"') and original[j].endswith('"'): # remove quotes around the string
+                                            original[j] = original[j][1:-1]
+                                    for j in range(len(translation)):
+                                        if translation[j].startswith('"') and translation[j].endswith('"'):
+                                            translation[j] = translation[j][1:-1]
+                                # Remove double escape and escape #
+                                for j in range(len(original)):
+                                    original[j] = original[j].replace("\\#", "#").replace("\\\\", "\\")
+                                for j in range(len(translation)):
+                                    translation[j] = translation[j].replace("\\#", "#").replace("\\\\", "\\")
                                 i += 1
-                                if multiline_ruby:
+                                # Add to the table
+                                # Behavior changes according to the RM Marshal plugin project setting
+                                if multiline_ruby: # in this one, we join together into a single string
                                     jori : str = "\n".join(original)
                                     if jori in table:
-                                        self.log.warning("A string in " + p + "couldn't be imported because it's a duplicate in that same file")
+                                        continue # skip
                                     else:
                                         table[jori] = "\n".join(translation)
-                                else:
+                                else: # else we treat each line as a separate string
                                     # put array to same size
                                     if len(translation) > len(original):
                                         translation[len(original)-1] = "\n".join(translation[len(original)-1:])
@@ -1088,13 +1108,30 @@ class RPGMTL():
                                     for j in range(len(original)):
                                         if original[j] not in table:
                                             table[original[j]] = translation[j]
-                            else:
+                            else: # else go to next line
                                 i += 1
                     break
-            for sid, gl in self.strings[name]["strings"].items():
-                if gl[1] is None and gl[0] in table:
-                    self.strings[name]["strings"][sid][1] = table[gl[0]]
-                    count += 1
+            checked = set()
+            for f in self.strings[name]["files"]:
+                for g, group in enumerate(self.strings[name]["files"][f]):
+                    for i in range(1, len(group)):
+                        sid = group[i][0]
+                        if sid not in checked:
+                            checked.add(sid)
+                            if self.strings[name]["strings"][sid][1] is None:
+                                if self.strings[name]["strings"][sid][0] in table:
+                                    self.strings[name]["strings"][sid][1] = table[self.strings[name]["strings"][sid][0]]
+                                    count += 1
+                                elif group[0] == "Command: Script": # inline Script
+                                    s : list[str] = self.strings[name]["strings"][sid][0].split('"')
+                                    changed : bool = False
+                                    for j in range(1, len(s), 2):
+                                        if s[j] in table:
+                                            s[j] = table[s[j]]
+                                            changed = True
+                                    if changed:
+                                        self.strings[name]["strings"][sid][1] = '"'.join(s)
+                                        count += 1
             if count > 0:
                 # increase project version
                 self.projects[name]["version"] = self.projects[name].get("version", -1) + 1
@@ -1102,7 +1139,8 @@ class RPGMTL():
                 # start computing completion
                 asyncio.create_task(self.compute_translated(name, self.projects[name]["version"]))
             return 1, count
-        except:
+        except Exception as e:
+            self.log.error("The following exception occured in import_rpgmtrans_data():\n" + self.trbk(e))
             return -1, count
 
     # Return the file list and folder list inside a project folder
