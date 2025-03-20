@@ -288,7 +288,10 @@ class RM_Marshal(Plugin):
                 self._write_walk(mc.root, helper)
         else:
             self._write_walk(mc.root, helper)
-        return mc.dump(), helper.modified
+        if helper.modified:
+            return mc.dump(), helper.modified
+        else:
+            return content, helper.modified
     
     # Return None if invalid element token
     def _util_read_string(self : RM_Marshal, me : ME) -> str|None:
@@ -857,15 +860,13 @@ class MC(): # for Marshal Container
             return 0
         if 5 < length < 128:
             return length - 5
-        elif -129 < length < -5:
+        elif -129 < length < -5:    
             return length + 5
         result = 0
-        factor = 1
-        for s in range(abs(length)):
-            result += struct.unpack("B", handle.read(1))[0] * factor
-            factor *= 256
+        data = handle.read(abs(length))
+        result = int.from_bytes(data, byteorder="little", signed=False)
         if length < 0:
-            result = result - factor
+            result -= (1 << (8 * abs(length)))
         return result
 
     def util_write_fixnum(self : MC, value : int) -> bytes:
@@ -883,15 +884,12 @@ class MC(): # for Marshal Container
             factor = 256 ** size
             if value < 0 and value == -factor:
                 size -= 1
-                value += factor / 256
+                value += factor // 256  # adjust by one byte's factor
             elif value < 0:
                 value += factor
             sign = int(math.copysign(size, back))
-            output = struct.pack("b", sign)
-            for i in range(size):
-                output += struct.pack("B", value % 256)
-                value = value >> 8
-            return output
+            return struct.pack("b", sign) + value.to_bytes(size, byteorder='little', signed=False)
+
 
     def _read_nil(self : MC, token : bytes, handle : io.BytesIO) -> ME:
         return ME(self, token, None)
@@ -948,9 +946,7 @@ class MC(): # for Marshal Container
     def _read_bignum(self : MC, token : bytes, handle : io.BytesIO) -> ME:
         sign = handle.read(1)
         size = self.util_read_fixnum(handle)
-        b = b""
-        for i in range(size):
-            b += handle.read(2)
+        b = b"" if size == 0 else handle.read(2*size)
         return ME(self, token, (sign, b))
 
     def _read_regex(self : MC, token : bytes, handle : io.BytesIO) -> ME:
