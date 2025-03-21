@@ -716,6 +716,7 @@ function project_menu(data = null)
 		if(prj.files)
 		{
 			addTo(fragment, "div", {cls:["interact"], onclick:function(){
+				set_loading_text("The patch is being generated in the release folder...");
 				postAPI("/api/release", project_menu, null, {name:prjname});
 			}}).innerHTML = '<img src="assets/images/release.png">Release a Patch';
 			addTo(fragment, "div", {cls:["spacer"]});
