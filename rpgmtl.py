@@ -892,7 +892,7 @@ class RPGMTL():
             return positions
 
     # release game patch
-    async def create_release(self : RPGMTL, name : str) -> tuple[int, int]:
+    def create_release(self : RPGMTL, name : str) -> tuple[int, int]:
         err : int = 0
         # clean existing folder
         release_folder : PurePath = PurePath('projects', name, 'release')
@@ -1393,7 +1393,7 @@ class RPGMTL():
         if name is None:
             return web.json_response({"result":"bad", "message":"Bad request, missing 'name' parameter"}, status=400)
         else:
-            patch_count, err = await self.create_release(name)
+            patch_count, err = self.create_release(name)
             if patch_count > 0:
                 message = "Patch generated in projects/{}/release, but {} error(s) occured.".format(name, err) if err > 0 else "Patch generated in projects/{}/release with success.".format(name)
             else:
