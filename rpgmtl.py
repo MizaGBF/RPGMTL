@@ -11,7 +11,7 @@ import logging
 from logging.handlers import RotatingFileHandler
 import json
 import difflib
-from pathlib import Path
+from pathlib import Path, PurePath
 from tkinter import filedialog
 import tkinter as Tk
 import argparse
@@ -59,7 +59,7 @@ class PatcherHelper():
 ######################################################
 class RPGMTL():
     # constant
-    VERSION = "3.6"
+    VERSION = "3.7"
     def __init__(self : RPGMTL) -> None:
         # Setting up logging
         handler = RotatingFileHandler(filename="rpgmtl.log", encoding='utf-8', mode='w', maxBytes=51200, backupCount=3)
@@ -332,8 +332,9 @@ class RPGMTL():
             dirs : list[str] = []
             for d in os.walk('projects'): # walk inside
                 try:
-                    if os.path.isfile(d[0] + '/config.json'): # take note of folders with a config.json inside
-                        dirs.append(d[0].replace('projects/', '').replace('projects\\', ''))
+                    p = PurePath(d[0])
+                    if os.path.isfile(p / 'config.json'): # take note of folders with a config.json inside
+                        dirs.append(Path(*p.parts[1:]).as_posix())
                 except:
                     pass
             return dirs
@@ -356,9 +357,9 @@ class RPGMTL():
             if file_path == "" or file_path is None: # empty, user cancelled
                 return None
             else:
-                file_path = "/".join(file_path.split('/')[:-1]) # get the foler path from it
+                file_path = PurePath(file_path).parent.as_posix() # get the foler path from it
                 if name is not None: # if updating existing location, we set it
-                    self.projects[name]["path"] = file_path + "/"
+                    self.projects[name]["path"] = file_path
                     self.modified[name] = True
                     self.log.info("Project " + name + " path is updated to " + file_path)
                 return file_path # return the path
@@ -369,43 +370,40 @@ class RPGMTL():
     # Backup game files matching the plugin extensions for the given project name
     def backup_game_files(self : RPGMTL, pname : str) -> None:
         self.log.info("Copying game files for project " + pname + "...")
-        dir_path : str = "projects/" + pname + "/originals/"
+        backup_path : PurePath = PurePath("projects", pname, "originals") # project backup path
         # delete existing backup
-        if os.path.isdir(dir_path):
-            shutil.rmtree(dir_path)
+        if os.path.isdir(backup_path):
+            shutil.rmtree(backup_path)
         update_file_dict : dict[str, dict] = {}
-        encountered_path : set[str] = set()
         # walk into the game folder
-        for path, subdirs, files in os.walk(self.projects[pname]["path"]):
+        game_path : PurePath = PurePath(self.projects[pname]["path"])
+        for path, subdirs, files in os.walk(game_path):
             for name in files:
                 if name.split('.')[-1] in self.extensions: # file has a supported extension
                     # get the:
-                    fp = os.path.join(path, name).replace('\\', '/') # full file path
-                    fpr = fp.replace(self.projects[pname]["path"], '') # relative file path
-                    target_dir = '/'.join(fpr.split('/')[:-1]) + '/' # relative directory containing the file
-                    if target_dir == '/':
-                        target_dir = ""
-                    if target_dir not in encountered_path and not os.path.isdir(target_dir): # create directory if not found
-                        encountered_path.add(target_dir)
+                    fp : PurePath = PurePath(path, name) # full file path
+                    fpr : PurePath = fp.relative_to(game_path) # relative target file path
+                    target_dir = backup_path / fpr.parent # directory containing the file
+                    if not os.path.isdir(target_dir): # create directory if not found
                         try:
                             # create dir if needed
-                            os.makedirs(os.path.dirname(dir_path + target_dir), exist_ok=True)
+                            os.makedirs(target_dir.as_posix(), exist_ok=True)
                         except Exception as e:
-                            self.log.error("Couldn't create the following folder:" + dir_path + target_dir + "\n" + self.trbk(e))
+                            self.log.error("Couldn't create the following folder:" + target_dir.as_posix() + "\n" + self.trbk(e))
                     # backup
                     try:
                         # file copy to project folder
-                        shutil.copy(fp, dir_path + fpr)
+                        shutil.copy(fp, backup_path / fpr)
                         # add to config.json
-                        update_file_dict[fpr] = {
+                        update_file_dict[fpr.as_posix()] = {
                             "ignored":False,
                             "strings":0,
                             "translated":0,
                             "disabled_strings":0
                         }
-                        self.log.info(fpr + " has been copied to project folder " + pname)
+                        self.log.info(fpr.as_posix() + " has been copied to project folder " + pname)
                     except Exception as e:
-                        self.log.error("Couldn't copy the following file:" + fp + " to project folder " + pname + "\n" + self.trbk(e))
+                        self.log.error("Couldn't copy the following file:" + fp.as_posix() + " to project folder " + pname + "\n" + self.trbk(e))
         # keep file setting if it exists
         for k, v in self.projects[pname].get("files", {}).items():
             if k in update_file_dict:
@@ -893,20 +891,17 @@ class RPGMTL():
                     pos += 1
             return positions
 
-    # create the folder(s) needed for given path
-    def mkdir_path_folder(self : RPGMTL, fn : str) -> None:
-        Path('/'.join(fn.split('/')[:-1])).mkdir(parents=True, exist_ok=True)
-
     # release game patch
-    def create_release(self : RPGMTL, name : str) -> tuple[int, int]:
+    async def create_release(self : RPGMTL, name : str) -> tuple[int, int]:
         err : int = 0
         # clean existing folder
-        if os.path.isdir('projects/' + name + '/release'):
+        release_folder : PurePath = PurePath('projects', name, 'release')
+        if os.path.isdir(release_folder):
             try:
-                shutil.rmtree('projects/' + name + '/release')
-                self.log.info("Cleaned up projects/" + name + "/release")
+                shutil.rmtree(release_folder)
+                self.log.info("Cleaned up " + release_folder.as_posix())
             except Exception as e:
-                self.log.error("Failed to properly clean projects/" + name + "/release\n" + self.trbk(e))
+                self.log.error("Failed to properly clean " + release_folder.as_posix() + "\n" + self.trbk(e))
                 err += 1
         # load strings if not loaded
         self.load_strings(name)
@@ -930,25 +925,28 @@ class RPGMTL():
                         # write file if modified
                         if modified:
                             content = p.format(f, content)
-                            self.mkdir_path_folder('projects/' + name + '/release/' + f) # create folder first
-                            with open('projects/' + name + '/release/' + f, mode="wb") as iofile:
-                                iofile.write(content)
+                            output : Path = Path(release_folder, f)
+                            output.parent.mkdir(parents=True, exist_ok=True)
+                            output.write_bytes(content)
                             patch_count += 1
                 except Exception as e:
                     self.log.error("Failed to patch strings in " + f + " for project " + name + " using the plugin " + p.name + "\n" + self.trbk(e))
                     err += 1
         # Copy edit content
-        if os.path.isdir('projects/' + name + '/edit'):
+        edit_folder : PurePath = PurePath('projects', name, 'edit')
+        if os.path.isdir(edit_folder):
             try:
                 self.log.info("Copying the content of the edit folder for project " + name + "...")
-                for path, subdirs, files in os.walk('projects/' + name + '/edit'):
+                for path, subdirs, files in os.walk(edit_folder):
                     for f in files:
-                        fn = os.path.join(path, f)
-                        Path(path.replace('projects/' + name + '/edit', 'projects/' + name + '/release')).mkdir(parents=True, exist_ok=True)
-                        shutil.copyfile(fn, fn.replace('projects/' + name + '/edit', 'projects/' + name + '/release'))
+                        origin : PurePath = PurePath(os.path.join(path, f))
+                        target : PurePath = release_folder / origin.relative_to(edit_folder)
+                        os.makedirs(target.parent, exist_ok=False)
+                        shutil.copyfile(origin, target)
                         self.log.info("Copied edit/" + f + " for project " + name + "...")
             except:
                 self.log.warning("Failed to copy the content of the edit folder for project " + name)
+                err += 1
         if patch_count > 0:
             self.log.info("Patched {} files for project {} available in the release folder".format(patch_count, name))
         else:
@@ -1045,72 +1043,68 @@ class RPGMTL():
                 return 0, 0
             # backup project strings.json
             self.backup_strings_file(name)
-            file_path = "/".join(file_path.split("/")[:-1]) 
-            patch_path : str = file_path + "/patch"
+            patch_path : PurePath = PurePath(file_path).parent / "patch"
             table = {}
-            for d in os.walk(file_path):
-                if d[0].replace("\\", "/") == patch_path:
-                    for p in d[2]:
-                        # open file
-                        with open(d[0] + '/' + p, mode="r", encoding="utf-8") as f:
-                            lines : list[str] = f.read().splitlines()
-                        # check first line according to documentation
-                        if not lines[0].startswith("> RPGMAKER TRANS PATCH FILE VERSION 3"):
-                            self.log.error("Invalid identifier for expected RPGMaker Trans File " + p + ", skipping...")
+            for p in os.walk(patch_path)[-1]:
+                # open file
+                with open((file_path / p).as_posix(), mode="r", encoding="utf-8") as f:
+                    lines : list[str] = f.read().splitlines()
+                # check first line according to documentation
+                if not lines[0].startswith("> RPGMAKER TRANS PATCH FILE VERSION 3"):
+                    self.log.error("Invalid identifier for expected RPGMaker Trans File " + p + ", skipping...")
+                    continue
+                i : int = 1
+                while i < len(lines): # go over check line
+                    if lines[i] == "> BEGIN STRING": # look for this string
+                        # containers for string lines
+                        original : list[str] = []
+                        translation : list[str] = []
+                        i += 1
+                        while i < len(lines) and not lines[i].startswith("> CONTEXT: "): # append to original until we meet context
+                            original.append(lines[i])
+                            i += 1
+                        if i >= len(lines) or lines[i].endswith(" < UNTRANSLATED"): # if untranslated, skip the rest
                             continue
-                        i : int = 1
-                        while i < len(lines): # go over check line
-                            if lines[i] == "> BEGIN STRING": # look for this string
-                                # containers for string lines
-                                original : list[str] = []
-                                translation : list[str] = []
-                                i += 1
-                                while i < len(lines) and not lines[i].startswith("> CONTEXT: "): # append to original until we meet context
-                                    original.append(lines[i])
-                                    i += 1
-                                if i >= len(lines) or lines[i].endswith(" < UNTRANSLATED"): # if untranslated, skip the rest
-                                    continue
-                                is_inline_script : bool = False
-                                if i < len(lines) and "InlineScript" in lines[i]: # detect RPG Maker inline scripts (see below)
-                                    is_inline_script = True
-                                while i < len(lines) and lines[i].startswith("> CONTEXT: "): # ignore further context strings
-                                    i += 1
-                                while i < len(lines) and (lines[i] != "> END STRING" and not lines[i].startswith("> CONTEXT: ")): # append to translation until we meet END or CONTEXT (multi context translations aren't supported)
-                                    translation.append(lines[i])
-                                    i += 1
-                                if p == "Scripts.txt" or is_inline_script: # exception for Script strings and inline script
-                                    for j in range(len(original)):
-                                        if original[j].startswith('"') and original[j].endswith('"'): # remove quotes around the string
-                                            original[j] = original[j][1:-1]
-                                    for j in range(len(translation)):
-                                        if translation[j].startswith('"') and translation[j].endswith('"'):
-                                            translation[j] = translation[j][1:-1]
-                                # Remove double escape and escape #
-                                for j in range(len(original)):
-                                    original[j] = original[j].replace("\\#", "#").replace("\\\\", "\\")
-                                for j in range(len(translation)):
-                                    translation[j] = translation[j].replace("\\#", "#").replace("\\\\", "\\")
-                                i += 1
-                                # Add to the table
-                                # Behavior changes according to the RM Marshal plugin project setting
-                                if multiline_ruby: # in this one, we join together into a single string
-                                    jori : str = "\n".join(original)
-                                    if jori in table:
-                                        continue # skip
-                                    else:
-                                        table[jori] = "\n".join(translation)
-                                else: # else we treat each line as a separate string
-                                    # put array to same size
-                                    if len(translation) > len(original):
-                                        translation[len(original)-1] = "\n".join(translation[len(original)-1:])
-                                    while len(translation) < len(original):
-                                        translation.append("")
-                                    for j in range(len(original)):
-                                        if original[j] not in table:
-                                            table[original[j]] = translation[j]
-                            else: # else go to next line
-                                i += 1
-                    break
+                        is_inline_script : bool = False
+                        if i < len(lines) and "InlineScript" in lines[i]: # detect RPG Maker inline scripts (see below)
+                            is_inline_script = True
+                        while i < len(lines) and lines[i].startswith("> CONTEXT: "): # ignore further context strings
+                            i += 1
+                        while i < len(lines) and (lines[i] != "> END STRING" and not lines[i].startswith("> CONTEXT: ")): # append to translation until we meet END or CONTEXT (multi context translations aren't supported)
+                            translation.append(lines[i])
+                            i += 1
+                        if p == "Scripts.txt" or is_inline_script: # exception for Script strings and inline script
+                            for j in range(len(original)):
+                                if original[j].startswith('"') and original[j].endswith('"'): # remove quotes around the string
+                                    original[j] = original[j][1:-1]
+                            for j in range(len(translation)):
+                                if translation[j].startswith('"') and translation[j].endswith('"'):
+                                    translation[j] = translation[j][1:-1]
+                        # Remove double escape and escape #
+                        for j in range(len(original)):
+                            original[j] = original[j].replace("\\#", "#").replace("\\\\", "\\")
+                        for j in range(len(translation)):
+                            translation[j] = translation[j].replace("\\#", "#").replace("\\\\", "\\")
+                        i += 1
+                        # Add to the table
+                        # Behavior changes according to the RM Marshal plugin project setting
+                        if multiline_ruby: # in this one, we join together into a single string
+                            jori : str = "\n".join(original)
+                            if jori in table:
+                                continue # skip
+                            else:
+                                table[jori] = "\n".join(translation)
+                        else: # else we treat each line as a separate string
+                            # put array to same size
+                            if len(translation) > len(original):
+                                translation[len(original)-1] = "\n".join(translation[len(original)-1:])
+                            while len(translation) < len(original):
+                                translation.append("")
+                            for j in range(len(original)):
+                                if original[j] not in table:
+                                    table[original[j]] = translation[j]
+                    else: # else go to next line
+                        i += 1
             checked = set()
             for f in self.strings[name]["files"]:
                 for g, group in enumerate(self.strings[name]["files"][f]):
@@ -1149,14 +1143,16 @@ class RPGMTL():
         folders : list[str] = []
         if path != "":
             folders.append("..")
-        lp : int = len(path)
+        folder : PurePath = PurePath(path)
         self.load_strings(name)
         for f in self.strings[name]["files"]:
-            if f.startswith(path):
-                if '/' not in f[lp:]:
+            pf : PurePath = PurePath(f)
+            if pf.is_relative_to(folder):
+                relative = pf.relative_to(folder)
+                if len(relative.parts) == 1:
                     files[f] = self.projects[name]["files"][f]["ignored"] if f in self.projects[name]["files"] else False
                 else:
-                    d : str = (path + f[lp:].split('/')[0] if path != "" else f[lp:].split('/')[0]) + "/"
+                    d : str = (folder / relative.parts[0]).as_posix() + "/"
                     if d not in folders:
                         folders.append(d)
         files_keys = list(files.keys())
@@ -1396,7 +1392,7 @@ class RPGMTL():
         if name is None:
             return web.json_response({"result":"bad", "message":"Bad request, missing 'name' parameter"}, status=400)
         else:
-            patch_count, err = self.create_release(name)
+            patch_count, err = await self.create_release(name)
             if patch_count > 0:
                 message = "Patch generated in projects/{}/release, but {} error(s) occured.".format(name, err) if err > 0 else "Patch generated in projects/{}/release with success.".format(name)
             else:
