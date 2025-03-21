@@ -1,5 +1,3 @@
-
-var intervals = []; // on screen notifications
 // main parts
 var bar = null;
 var main = null;
@@ -171,15 +169,13 @@ function pushPopup(string)
 	div.className = 'popup';
 	div.innerHTML = string;
 	document.body.appendChild(div);
-	intervals.push(setInterval(rmPopup, 4000, div));
+	setTimeout(rmPopup, 4000, div);
 }
 
 // remove a popup
 function rmPopup(popup)
 {
 	popup.parentNode.removeChild(popup);
-	clearInterval(intervals[0]);
-	intervals.shift();
 }
 
 // clear the main area
