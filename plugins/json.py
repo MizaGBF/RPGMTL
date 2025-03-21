@@ -2,10 +2,11 @@ from __future__ import annotations
 from . import Plugin, WalkHelper
 import json
 import io
+from pathlib import PurePath
 from typing import Any
 
 class JSON(Plugin):
-    DEFAULT_RPGMK_DATA_FILE : set[str] = set(["data/Actors.json", "data/Animations.json", "data/Armors.json", "data/Classes.json", "data/Enemies.json", "data/Items.json", "data/MapInfos.json", "data/Skills.json", "data/States.json", "data/Tilesets.json", "data/Weapons.json"])
+    DEFAULT_RPGMK_DATA_FILE : set[str] = set(["data/actors.json", "data/animations.json", "data/armors.json", "data/classes.json", "data/enemies.json", "data/items.json", "data/mapInfos.json", "data/skills.json", "data/states.json", "data/tilesets.json", "data/weapons.json"])
     RPGMVMZ_CODE_TABLE = {
         101: "Show Text",
         102: "Choices",
@@ -130,7 +131,7 @@ class JSON(Plugin):
     def __init__(self : JSON) -> None:
         super().__init__()
         self.name : str = "JSON"
-        self.description : str = "v1.6\nHandle JSON files, including ones from RPG Maker MV/MZ"
+        self.description : str = "v1.7\nHandle JSON files, including ones from RPG Maker MV/MZ"
 
     def get_setting_infos(self : Plugin) -> dict[str, list]:
         return {
@@ -145,16 +146,19 @@ class JSON(Plugin):
 
     def read(self : JSON, file_path : str, content : bytes) -> list[list[str]]:
         data = json.loads(self.decode(content))
-        if file_path.endswith("data/System.json"): # System file of RPGMV/MZ
+        p : PurePath = PurePath(file_path) # path object equivalent
+        dp : str = p.relative_to(p.parent.parent) # path one folder up (to detect Data folder)
+        s : str = dp.as_posix().lower() # as lowercase posix string
+        if s == "data/system.json": # System file of RPGMV/MZ
             return self._read_walk_system(data)
-        elif len(file_path) >= 16 and file_path[-16:-8] == "data/Map": # Map file of RPGMV/MZ
-            return self._read_walk_map(data)
-        elif file_path.endswith("data/CommonEvents.json"): # CommonEvents file of RPGMV/MZ
+        elif s == "data/commonevents.json": # CommonEvents file of RPGMV/MZ
             return self._read_walk_common(data)
-        elif file_path.endswith("data/Troops.json"): # Troops.json file of RPGMV/MZ
+        elif s == "data/troops.json": # Troops.json file of RPGMV/MZ
             return self._read_walk_troops(data)
-        elif '/' in file_path and '/'.join(file_path.split('/')[-2:]) in self.DEFAULT_RPGMK_DATA_FILE:
+        elif s in self.DEFAULT_RPGMK_DATA_FILE:
             return self._read_walk_data(data)
+        elif s.startswith("data/map"): # Map file of RPGMV/MZ (Note: Make sure it's after mapinfos or it'll be caught by it)
+            return self._read_walk_map(data)
         else:
             return self._read_walk(data)
 
@@ -164,16 +168,19 @@ class JSON(Plugin):
         if isinstance(data, str):
             data = helper.apply_string(data)
         else:
-            if file_path.endswith("data/System.json"): # System file of RPGMV/MZ
+            p : PurePath = PurePath(file_path) # path object equivalent
+            dp : str = p.relative_to(p.parent.parent) # path one folder up (to detect Data folder)
+            s : str = dp.as_posix().lower() # as lowercase posix string
+            if s == "data/system.json": # System file of RPGMV/MZ
                 self._write_walk_system(data, helper)
-            elif len(file_path) >= 16 and file_path[-16:-8] == "data/Map": # Map file of RPGMV/MZ
-                self._write_walk_map(data, helper)
-            elif file_path.endswith("data/CommonEvents.json"): # CommonEvents file of RPGMV/MZ
+            elif s == "data/commonevents.json": # CommonEvents file of RPGMV/MZ
                 self._write_walk_common(data, helper)
-            elif file_path.endswith("data/Troops.json"): # Troops.json file of RPGMV/MZ
+            elif s == "data/troops.json": # Troops.json file of RPGMV/MZ
                 self._write_walk_troops(data, helper)
-            elif '/' in file_path and '/'.join(file_path.split('/')[-2:]) in self.DEFAULT_RPGMK_DATA_FILE:
+            elif s in self.DEFAULT_RPGMK_DATA_FILE:
                 self._write_walk_data(data, helper)
+            elif s.startswith("data/map"): # Map file of RPGMV/MZ (Note: Make sure it's after mapinfos or it'll be caught by it)
+                self._write_walk_map(data, helper)
             else:
                 self._write_walk(data, helper)
         if helper.modified:
