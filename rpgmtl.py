@@ -1045,66 +1045,67 @@ class RPGMTL():
             self.backup_strings_file(name)
             patch_path : PurePath = PurePath(file_path).parent / "patch"
             table = {}
-            for p in os.walk(patch_path)[-1]:
-                # open file
-                with open((file_path / p).as_posix(), mode="r", encoding="utf-8") as f:
-                    lines : list[str] = f.read().splitlines()
-                # check first line according to documentation
-                if not lines[0].startswith("> RPGMAKER TRANS PATCH FILE VERSION 3"):
-                    self.log.error("Invalid identifier for expected RPGMaker Trans File " + p + ", skipping...")
-                    continue
-                i : int = 1
-                while i < len(lines): # go over check line
-                    if lines[i] == "> BEGIN STRING": # look for this string
-                        # containers for string lines
-                        original : list[str] = []
-                        translation : list[str] = []
-                        i += 1
-                        while i < len(lines) and not lines[i].startswith("> CONTEXT: "): # append to original until we meet context
-                            original.append(lines[i])
+            for d in os.walk(patch_path):
+                for p in d[-1]:
+                    # open file
+                    with open((patch_path / p).as_posix(), mode="r", encoding="utf-8") as f:
+                        lines : list[str] = f.read().splitlines()
+                    # check first line according to documentation
+                    if not lines[0].startswith("> RPGMAKER TRANS PATCH FILE VERSION 3"):
+                        self.log.error("Invalid identifier for expected RPGMaker Trans File " + p + ", skipping...")
+                        continue
+                    i : int = 1
+                    while i < len(lines): # go over check line
+                        if lines[i] == "> BEGIN STRING": # look for this string
+                            # containers for string lines
+                            original : list[str] = []
+                            translation : list[str] = []
                             i += 1
-                        if i >= len(lines) or lines[i].endswith(" < UNTRANSLATED"): # if untranslated, skip the rest
-                            continue
-                        is_inline_script : bool = False
-                        if i < len(lines) and "InlineScript" in lines[i]: # detect RPG Maker inline scripts (see below)
-                            is_inline_script = True
-                        while i < len(lines) and lines[i].startswith("> CONTEXT: "): # ignore further context strings
-                            i += 1
-                        while i < len(lines) and (lines[i] != "> END STRING" and not lines[i].startswith("> CONTEXT: ")): # append to translation until we meet END or CONTEXT (multi context translations aren't supported)
-                            translation.append(lines[i])
-                            i += 1
-                        if p == "Scripts.txt" or is_inline_script: # exception for Script strings and inline script
+                            while i < len(lines) and not lines[i].startswith("> CONTEXT: "): # append to original until we meet context
+                                original.append(lines[i])
+                                i += 1
+                            if i >= len(lines) or lines[i].endswith(" < UNTRANSLATED"): # if untranslated, skip the rest
+                                continue
+                            is_inline_script : bool = False
+                            if i < len(lines) and "InlineScript" in lines[i]: # detect RPG Maker inline scripts (see below)
+                                is_inline_script = True
+                            while i < len(lines) and lines[i].startswith("> CONTEXT: "): # ignore further context strings
+                                i += 1
+                            while i < len(lines) and (lines[i] != "> END STRING" and not lines[i].startswith("> CONTEXT: ")): # append to translation until we meet END or CONTEXT (multi context translations aren't supported)
+                                translation.append(lines[i])
+                                i += 1
+                            if p == "Scripts.txt" or is_inline_script: # exception for Script strings and inline script
+                                for j in range(len(original)):
+                                    if original[j].startswith('"') and original[j].endswith('"'): # remove quotes around the string
+                                        original[j] = original[j][1:-1]
+                                for j in range(len(translation)):
+                                    if translation[j].startswith('"') and translation[j].endswith('"'):
+                                        translation[j] = translation[j][1:-1]
+                            # Remove double escape and escape #
                             for j in range(len(original)):
-                                if original[j].startswith('"') and original[j].endswith('"'): # remove quotes around the string
-                                    original[j] = original[j][1:-1]
+                                original[j] = original[j].replace("\\#", "#").replace("\\\\", "\\")
                             for j in range(len(translation)):
-                                if translation[j].startswith('"') and translation[j].endswith('"'):
-                                    translation[j] = translation[j][1:-1]
-                        # Remove double escape and escape #
-                        for j in range(len(original)):
-                            original[j] = original[j].replace("\\#", "#").replace("\\\\", "\\")
-                        for j in range(len(translation)):
-                            translation[j] = translation[j].replace("\\#", "#").replace("\\\\", "\\")
-                        i += 1
-                        # Add to the table
-                        # Behavior changes according to the RM Marshal plugin project setting
-                        if multiline_ruby: # in this one, we join together into a single string
-                            jori : str = "\n".join(original)
-                            if jori in table:
-                                continue # skip
-                            else:
-                                table[jori] = "\n".join(translation)
-                        else: # else we treat each line as a separate string
-                            # put array to same size
-                            if len(translation) > len(original):
-                                translation[len(original)-1] = "\n".join(translation[len(original)-1:])
-                            while len(translation) < len(original):
-                                translation.append("")
-                            for j in range(len(original)):
-                                if original[j] not in table:
-                                    table[original[j]] = translation[j]
-                    else: # else go to next line
-                        i += 1
+                                translation[j] = translation[j].replace("\\#", "#").replace("\\\\", "\\")
+                            i += 1
+                            # Add to the table
+                            # Behavior changes according to the RM Marshal plugin project setting
+                            if multiline_ruby: # in this one, we join together into a single string
+                                jori : str = "\n".join(original)
+                                if jori in table:
+                                    continue # skip
+                                else:
+                                    table[jori] = "\n".join(translation)
+                            else: # else we treat each line as a separate string
+                                # put array to same size
+                                if len(translation) > len(original):
+                                    translation[len(original)-1] = "\n".join(translation[len(original)-1:])
+                                while len(translation) < len(original):
+                                    translation.append("")
+                                for j in range(len(original)):
+                                    if original[j] not in table:
+                                        table[original[j]] = translation[j]
+                        else: # else go to next line
+                            i += 1
             checked = set()
             for f in self.strings[name]["files"]:
                 for g, group in enumerate(self.strings[name]["files"][f]):
