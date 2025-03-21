@@ -281,6 +281,10 @@ function project_list(data)
 	// add version
 	addTo(fragment, "div", {cls:["inline"], br:false}).innerHTML = 'RPGMTL v' + data["verstring"];
 	addTo(fragment, "div", {cls:["barfill"], br:false});
+	// github
+	addTo(fragment, "div", {cls:["interact", "button"], br:false, onclick:function(){
+		window.open("https://github.com/MizaGBF/RPGMTL", "_blank")
+	}}).innerHTML = '<img src="assets/images/github.png">';
 	// help
 	addTo(fragment, "div", {cls:["interact", "button"], br:false, onclick:function(){
 		help.innerHTML = "<ul>\
