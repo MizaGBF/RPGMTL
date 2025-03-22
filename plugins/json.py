@@ -6,7 +6,7 @@ from pathlib import PurePath
 from typing import Any
 
 class JSON(Plugin):
-    DEFAULT_RPGMK_DATA_FILE : set[str] = set(["data/actors.json", "data/animations.json", "data/armors.json", "data/classes.json", "data/enemies.json", "data/items.json", "data/mapInfos.json", "data/skills.json", "data/states.json", "data/tilesets.json", "data/weapons.json"])
+    DEFAULT_RPGMK_DATA_FILE : set[str] = set(["data/actors.json", "data/animations.json", "data/armors.json", "data/classes.json", "data/enemies.json", "data/items.json", "data/mapinfos.json", "data/skills.json", "data/states.json", "data/tilesets.json", "data/weapons.json"])
     RPGMVMZ_CODE_TABLE = {
         101: "Show Text",
         102: "Choices",
