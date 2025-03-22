@@ -3,7 +3,6 @@ from . import Plugin, WalkHelper
 import io
 import struct
 import math
-import os
 from pathlib import Path, PurePath
 from typing import Any
 from dataclasses import dataclass
@@ -12,7 +11,10 @@ import json
 
 # RPG Maker XP/VX/VX Ace data files are based on the Ruby Marshal format
 # The following documentation for this plugin:
-# https://docs.ruby-lang.org/en/2.1.0/marshal_rdoc.html
+# https://docs.ruby-lang.org/en/2.6.0/marshal_rdoc.html
+# https://ruby-doc.org/core-2.6.8/Marshal.html
+# https://github.com/ruby/ruby/blob/master/marshal.c
+# Test file: https://rubygems.org/latest_specs.4.8.gz
 class RM_Marshal(Plugin):
     DEFAULT_RPGMK_DATA_FILE = ["data/actors", "data/animations", "data/armors", "data/classes", "data/enemies", "data/items", "data/skills", "data/states", "data/tilesets", "data/weapons"]
     EXTENSIONS : list[str] = ["rxdata", "rvdata", "rvdata2"]
@@ -127,7 +129,7 @@ class RM_Marshal(Plugin):
     def __init__(self : RM_Marshal) -> None:
         super().__init__()
         self.name : str = "RPG Maker Marshal"
-        self.description : str = "v1.8\nHandle files from RPG Maker XP, VX and VX Ace"
+        self.description : str = "v2.0\nHandle files from RPG Maker XP, VX and VX Ace"
         self.allow_ruby_plugin : bool = True # Leave it on by default
 
     def get_setting_infos(self : RM_Marshal) -> dict[str, list]:
@@ -144,13 +146,13 @@ class RM_Marshal(Plugin):
     def _deserialize(self : RM_Marshal, name : str, file_path : str, settings : dict[str, Any] = {}) -> str:
         try:
             with open("projects/" + name + "/originals/" + file_path, mode="rb") as f:
-                mc = MC(file_path.endswith('rvdata2'))
-                mc.load(f.read())
+                mc : MC = MC.load(f.read())
             is_script : bool = file_path.endswith("Scripts.rxdata") or file_path.endswith("Scripts.rvdata") or file_path.endswith("Scripts.rvdata2")
             output_path : str = "projects/" + name + "/rm_marshal_export/" + file_path + ".json"
             Path(output_path).parent.mkdir(parents=True, exist_ok=True)
             with open(output_path, mode="w", encoding="utf-8") as f:
                 mc.root.deserialize(f, is_script)
+                f.write("\n")
             return "File deserialized to " + output_path
         except Exception as e:
             self.owner.log.error("[RPG Maker Marshal] Action 'rm_marshal_export' failed with error:\n" + self.owner.trbk(e))
@@ -188,89 +190,50 @@ class RM_Marshal(Plugin):
     def match(self : RM_Marshal, file_path : str, is_for_action : bool) -> bool:
         return '.' in file_path and file_path.split('.')[-1] in self.EXTENSIONS
 
-    def load_content(self : RM_Marshal, content : bytes, is_rv2 : bool) -> MC:
-        mc : MC = MC(is_rv2)
-        mc.load(content)
-        return mc
-
     def read(self : RM_Marshal, file_path : str, content : bytes) -> list[list[str]]:
         p : PurePath = PurePath(file_path) # path object equivalent
         dp : str = p.relative_to(p.parent.parent) # path one folder up (to detect Data folder)
         dp = dp.parent / dp.stem # remove extension
-        suffix : str = p.suffix # extension
         s : str = dp.as_posix().lower() # as lowercase posix string
-        mc : MC = self.load_content(content, suffix == ".rvdata2")
-        match suffix:
-            case ".rxdata"|".rvdata": # For now, those two relies on the same logic
-                if s == "data/commonevents":
-                    return self._read_walk_common(mc.root)
-                elif s == "data/scripts":
-                    return self._read_walk_script(mc.root)
-                elif s == "data/mapinfos":
-                    return self._read_walk_mapinfo(mc.root)
-                elif s == "data/troops":
-                    return self._read_walk_troops(mc.root)
-                elif s in self.DEFAULT_RPGMK_DATA_FILE:
-                    return self._read_walk_data(mc.root)
-                elif s.startswith("data/map"): # Map file (Must be after mapinfos check)
-                    return self._read_walk_map(mc.root)
-                else:
-                    return self._read_walk(mc.root)
-            case ".rvdata2":
-                if s == "data/commonevents":
-                    return self._read_walk_common(mc.root)
-                elif s == "data/scripts":
-                    return self._read_walk_script_rv2(mc.root)
-                elif s == "data/mapinfos":
-                    return self._read_walk_mapinfo_rv2(mc.root)
-                elif s in self.DEFAULT_RPGMK_DATA_FILE:
-                    return self._read_walk_data(mc.root)
-                elif s.startswith("data/map"): # Map file (Must be after mapinfos check)
-                    return self._read_walk_map_rv2(mc.root)
-                else:
-                    return self._read_walk(mc.root)
-            case _:
-                return self._read_walk(mc.root)
+        mc : MC = MC.load(content)
+        entries : list[list[str]] = []
+        if s == "data/commonevents":
+            entries.extend(self._read_walk_common(mc.root))
+        elif s == "data/scripts":
+            entries.extend(self._read_walk_script(mc.root))
+        elif s == "data/mapinfos":
+            entries.extend(self._read_walk_mapinfo(mc.root))
+        elif s == "data/troops":
+            entries.extend(self._read_walk_troops(mc.root))
+        elif s in self.DEFAULT_RPGMK_DATA_FILE:
+            entries.extend(self._read_walk_data(mc.root))
+        elif s.startswith("data/map"): # Map file (Must be after mapinfos check)
+            entries.extend(self._read_walk_map(mc.root))
+        else:
+            entries.extend(self._read_walk(mc.root))
+        return entries
 
     def write(self : RM_Marshal, file_path : str, content : bytes, strings : dict) -> tuple[bytes, bool]:
         p : PurePath = PurePath(file_path) # path object equivalent
         dp : str = p.relative_to(p.parent.parent) # path one folder up (to detect Data folder)
         dp = dp.parent / dp.stem # remove extension
-        suffix : str = p.suffix # extension
         s : str = dp.as_posix().lower() # as lowercase posix string
-        mc : MC = self.load_content(content, suffix == ".rvdata2")
+        mc : MC = MC.load(content)
         helper : WalkHelper = WalkHelper(file_path, strings)
-        match suffix:
-            case ".rxdata"|".rvdata": # For now, those two relies on the same logic
-                if s == "data/commonevents":
-                    self._write_walk_common(mc.root, helper)
-                elif s == "data/scripts":
-                    self._write_walk_script(mc.root, helper)
-                elif s == "data/mapinfos":
-                    self._write_walk_mapinfo(mc.root, helper)
-                elif s == "data/troops":
-                    self._write_walk_troops(mc.root, helper)
-                elif s in self.DEFAULT_RPGMK_DATA_FILE:
-                    self._write_walk_data(mc.root, helper)
-                elif s.startswith("data/map"): # Map file (Must be after mapinfos check)
-                    self._write_walk_map(mc.root, helper)
-                else:
-                    self._write_walk(mc.root, helper)
-            case ".rvdata2":
-                if s == "data/commonevents":
-                    self._write_walk_common(mc.root, helper)
-                elif s == "data/scripts":
-                    self._write_walk_script_rv2(mc.root, helper)
-                elif s == "data/mapinfos":
-                    self._write_walk_mapinfo_rv2(mc.root, helper)
-                elif s in self.DEFAULT_RPGMK_DATA_FILE:
-                    self._write_walk_data(mc.root, helper)
-                elif s.startswith("data/map"): # Map file (Must be after mapinfos check)
-                    self._write_walk_map_rv2(mc.root, helper)
-                else:
-                    self._write_walk(mc.root, helper)
-            case _:
-                self._write_walk(mc.root, helper)
+        if s == "data/commonevents":
+            self._write_walk_common(mc.root, helper)
+        elif s == "data/scripts":
+            self._write_walk_script(mc.root, helper)
+        elif s == "data/mapinfos":
+            self._write_walk_mapinfo(mc.root, helper)
+        elif s == "data/troops":
+            self._write_walk_troops(mc.root, helper)
+        elif s in self.DEFAULT_RPGMK_DATA_FILE:
+            self._write_walk_data(mc.root, helper)
+        elif s.startswith("data/map"): # Map file (Must be after mapinfos check)
+            self._write_walk_map(mc.root, helper)
+        else:
+            self._write_walk(mc.root, helper)
         if helper.modified:
             return mc.dump(), True
         else:
@@ -282,7 +245,7 @@ class RM_Marshal(Plugin):
             case b'"':
                 return me.data.decode('utf-8')
             case b'I':
-                return self._util_read_string(me.data)
+                return self._util_read_string(me.data[0])
             case _:
                 return None
 
@@ -296,7 +259,7 @@ class RM_Marshal(Plugin):
                         me.data = tmp.encode('utf-8')
                 return True
             case b'I':
-                return self._util_write_string(helper, me.data)
+                return self._util_write_string(helper, me.data[0], group)
             case _:
                 return False
 
@@ -363,14 +326,26 @@ class RM_Marshal(Plugin):
                         self._write_walk(me.data[i], helper)
             case b'{':
                 for i in range(len(me.data)):
-                    key : str = self._util_read_string(me.data[i][0].at())
+                    ch : ME = me.data[i][0].at()
+                    if ch.token in (b'"', b"I"):
+                        key = self._util_read_string(ch)
+                    elif ch.token == b':': # rvdata2
+                        key = ch.data.decode('utf-8')
+                    else:
+                        key = ""
                     if ignore_key is not None and ignore_key == key:
                         continue
                     if not self._util_write_string(helper, me.data[i][1], key):
                         self._write_walk(me.data[i][1], helper)
             case b'o':
                 for i in range(len(me.data[1])):
-                    key : str = self._util_read_string(me.data[1][i][0].at())
+                    ch : ME = me.data[1][i][0].at()
+                    if ch.token in (b'"', b"I"):
+                        key = self._util_read_string(ch)
+                    elif ch.token == b':': # rvdata2
+                        key = ch.data.decode('utf-8')
+                    else:
+                        key = ""
                     if ignore_key is not None and ignore_key == key:
                         continue
                     if not self._util_write_string(helper, me.data[1][i][1], key):
@@ -386,10 +361,10 @@ class RM_Marshal(Plugin):
             for ev in evlist[0].data:
                 r = ev[1].searchHash(b"@name")
                 strings : list[list[str]] = []
-                if len(r) == 0 or r[0].data == b"":
+                if len(r) == 0:
                     strings.append([""])
                 else:
-                    strings.append([r[0].data.decode('utf-8')])
+                    strings.append([self._util_read_string(r[0])])
                 r = ev[1].searchHash(b"@pages")
                 if len(r) > 0:
                     for i, p in enumerate(r[0].data):
@@ -413,44 +388,6 @@ class RM_Marshal(Plugin):
                         r2 = p.searchHash(b"@list")
                         if len(r2) > 0:
                             self._write_walk_event(r2[0], helper)
-
-    # RPGMK Map files processing (VX Ace version)
-    def _read_walk_map_rv2(self : RM_Marshal, me : ME) -> list[list[str]]:
-        entries : list[list[str]] = []
-        evlist = me.searchHash(b"@events")
-        if len(evlist) > 0:
-            name = ""
-            for i in range(len(evlist[0].data)):
-                match evlist[0].data[i][0].at().token:
-                    case b'i':
-                        # reset
-                        name = ""
-                        # set id and name
-                        r = evlist[0].data[i][1].searchHash(b"@name")
-                        if len(r) > 0:
-                            name = r[0].data.data.decode("utf-8")
-                    case b':':
-                        if evlist[0].data[i][0].at().data == b"@pages":
-                            strings : list[str] = [[name]]
-                            for p in evlist[0].data[i][1].data:
-                                if p.token == b'o':
-                                    r = p.searchHash(b"@list")
-                                    if len(r) > 0:
-                                        strings.extend(self._read_walk_event(r[0]))
-                            if len(strings) > 1:
-                                entries.extend(strings)
-        return entries
-
-    def _write_walk_map_rv2(self : RM_Marshal, me : ME, helper : WalkHelper) -> None:
-        evlist = me.searchHash(b"@events")
-        if len(evlist) > 0:
-            for i in range(len(evlist[0].data)):
-                if evlist[0].data[i][0].at().token == b':' and evlist[0].data[i][0].at().data == b"@pages":
-                    for p in evlist[0].data[i][1].data:
-                        if p.token == b'o':
-                            r = p.searchHash(b"@list")
-                            if len(r) > 0:
-                                self._write_walk_event(r[0], helper)
 
     # RPGMK CommonEvents processing
     def _read_walk_common(self : RM_Marshal, me : ME) -> list[list[str]]:
@@ -489,10 +426,9 @@ class RM_Marshal(Plugin):
         while i < len(cmds) and (cmds[i].token != b'o' or cmds[i].searchHash(b"@code")[0].data == code):
             if cmds[i].token == b'o':
                 parameters = cmds[i].searchHash(b"@parameters")[0].data
-                if parameters[0].token == b'"' and parameters[0].data != b"": # XP, VX
-                    text.append(parameters[0].data.decode('utf-8'))
-                elif parameters[0].token == b'I' and parameters[0].data.token == b'"' and parameters[0].data.data != b"": # VX Ace
-                    text.append(parameters[0].data.data.decode('utf-8'))
+                tmp : str = self._util_read_string(parameters[0])
+                if tmp != "":
+                    text.append(tmp)
             i += 1
         i -= 1
         return i, text
@@ -605,8 +541,8 @@ class RM_Marshal(Plugin):
                                 if parameters[0].token == b'"' and parameters[0].data != b"": # XP, VX
                                     parameters[0].data = text[h].encode("utf-8")
                                     h += 1
-                                elif parameters[0].token == b'I' and parameters[0].data.token == b'"' and parameters[0].data.data != b"": # VX Ace
-                                    parameters[0].data.data = text[h].encode("utf-8")
+                                elif parameters[0].token == b'I' and parameters[0].data[0].token == b'"' and parameters[0].data[0].data != b"": # VX Ace
+                                    parameters[0].data[0].data = text[h].encode("utf-8")
                                     h += 1
                 case 355: # Show Text commands
                     tmp = self._util_read_string(parameters[0])
@@ -658,10 +594,13 @@ class RM_Marshal(Plugin):
         entries : list[list[str]] = []
         for e in me.data:
             group : list[str] = ["Script"]
-            if e.data[1].data != b"":
-                group[0] = "Script: " + e.data[1].data.decode('utf-8')
-            if e.data[2].data != b"":
-                script = zlib.decompressobj().decompress(e.data[2].data).decode('utf-8')
+            tmp = self._util_read_string(e.data[1])
+            if tmp != b"":
+                group[0] = "Script: " + tmp
+            if e.data[2].token == b'"': tmp = e.data[2].data
+            elif e.data[2].token == b'I': tmp = e.data[2].data[0].data
+            if tmp != b"":
+                script = zlib.decompressobj().decompress(tmp).decode('utf-8')
                 if self.allow_ruby_plugin and "Ruby" in self.owner.plugins:
                     self.owner.plugins["Ruby"].reset()
                     strings = self.owner.plugins["Ruby"]._parse_strings(script, None, len(entries))[0]
@@ -678,88 +617,24 @@ class RM_Marshal(Plugin):
     def _write_walk_script(self : RM_Marshal, me : ME, helper : WalkHelper) -> None:
         for e in me.data:
             group : str = "Script"
-            if e.data[1].data != b"":
-                s = e.data[1].data.decode('utf-8')
-                group = "Script: " + s
-            if e.data[2].data != b"":
-                script = zlib.decompressobj().decompress(e.data[2].data).decode('utf-8')
+            tmp = self._util_read_string(e.data[1])
+            if tmp != b"":
+                group = "Script: " + tmp
+            if e.data[2].token == b'"': sub = e.data[2]
+            elif e.data[2].token == b'I': sub = e.data[2].data[0]
+            if sub.data != b"":
+                script = zlib.decompressobj().decompress(sub.data).decode('utf-8')
                 if self.allow_ruby_plugin and "Ruby" in self.owner.plugins:
                     self.owner.plugins["Ruby"].reset()
                     newscript = self.owner.plugins["Ruby"]._parse_strings(script, helper)[1]
                     if newscript != script:
                         compressor = zlib.compressobj()
-                        e.data[2].data = compressor.compress(newscript.encode('utf-8')) + compressor.flush()
+                        sub.data = compressor.compress(newscript.encode('utf-8')) + compressor.flush()
                 else:
                     tmp : str = helper.apply_string(script, group)
                     if helper.str_modified:
                         compressor = zlib.compressobj()
-                        e.data[2].data = compressor.compress(tmp.encode('utf-8')) + compressor.flush()
-
-    # RPGMK Scripts processing (VX Ace version)
-    def _read_walk_script_rv2(self : RM_Marshal, me : ME) -> list[list[str]]:
-        entries : list[list[str]] = []
-        name : str = "Script"
-        for e in me.data:
-            if e.token in (b'"', b'I'):
-                if e.token == b'I':
-                    if e.data.token == b'"':
-                        target = e.data
-                    else:
-                        continue
-                else:
-                    target = e
-                try:
-                    tmp = target.data.decode('utf-8')
-                    if name == "":
-                        name = "Script"
-                    else:
-                        name = "Script: " + tmp
-                except:
-                    if target.data != b"":
-                        script = zlib.decompressobj().decompress(target.data).decode('utf-8')
-                        if self.allow_ruby_plugin and "Ruby" in self.owner.plugins:
-                            self.owner.plugins["Ruby"].reset()
-                            strings = self.owner.plugins["Ruby"]._parse_strings(script, None, len(entries))[0]
-                            if len(strings) > 0:
-                                entries.append([name])
-                                entries.extend(strings)
-                        else:
-                            entries.append([name, script])
-                        name = ""
-        return entries
-
-    def _write_walk_script_rv2(self : RM_Marshal, me : ME, helper : WalkHelper) -> None:
-        name : str = "Script"
-        for e in me.data:
-            if e.token in (b'"', b'I'):
-                if e.token == b'I':
-                    if e.data.token == b'"':
-                        target = e.data
-                    else:
-                        continue
-                else:
-                    target = e
-                try:
-                    tmp = target.data.decode('utf-8')
-                    if name == "":
-                        name = "Script"
-                    else:
-                        name = "Script: " + tmp
-                except:
-                    if target.data != b"":
-                        script = zlib.decompressobj().decompress(target.data).decode('utf-8')
-                        if self.allow_ruby_plugin and "Ruby" in self.owner.plugins:
-                            self.owner.plugins["Ruby"].reset()
-                            newscript = self.owner.plugins["Ruby"]._parse_strings(script, helper)[1]
-                            if newscript != script:
-                                compressor = zlib.compressobj()
-                                target.data = compressor.compress(newscript.encode('utf-8')) + compressor.flush()
-                        else:
-                            tmp : str = helper.apply_string(script, name)
-                            if helper.str_modified:
-                                compressor = zlib.compressobj()
-                                target.data = compressor.compress(tmp.encode('utf-8')) + compressor.flush()
-                        name = ""
+                        sub.data = compressor.compress(tmp.encode('utf-8')) + compressor.flush()
 
     # RPGMK MapInfos processing
     def _read_walk_mapinfo(self : RM_Marshal, me : ME) -> list[list[str]]:
@@ -768,7 +643,7 @@ class RM_Marshal(Plugin):
             if e[1].token == b'o':
                 r : list[ME] = e[1].searchHash(b"@name")
                 if len(r) > 0:
-                    entries.append(["Map " + str(e[0]), r[0].data.decode('utf-8')])
+                    entries.append(["Map " + str(e[0]), self._util_read_string(r[0])])
         return entries
 
     def _write_walk_mapinfo(self : RM_Marshal, me : ME, helper : WalkHelper) -> None:
@@ -776,28 +651,7 @@ class RM_Marshal(Plugin):
             if e[1].token == b'o':
                 r : list[ME] = e[1].searchHash(b"@name")
                 if len(r) > 0:
-                    tmp : str = helper.apply_string(r[0].data.decode('utf-8'), "Map " + str(e[0]))
-                    if helper.str_modified:
-                        r[0].data = tmp.encode('utf-8')
-
-    # RPGMK MapInfos processing (VX Ace version)
-    def _read_walk_mapinfo_rv2(self : RM_Marshal, me : ME) -> list[list[str]]:
-        entries : list[list[str]] = []
-        for e in me.data:
-            if e[1].token == b'o':
-                r : list[ME] = e[1].searchHash(b"@name")
-                if len(r) > 0:
-                    entries.append(["Map " + str(e[0]), r[0].data.data.decode('utf-8')])
-        return entries
-
-    def _write_walk_mapinfo_rv2(self : RM_Marshal, me : ME, helper : WalkHelper) -> None:
-        for e in me.data:
-            if e[1].token == b'o':
-                r : list[ME] = e[1].searchHash(b"@name")
-                if len(r) > 0:
-                    tmp : str = helper.apply_string(r[0].data.data.decode('utf-8'), "Map " + str(e[0]))
-                    if helper.str_modified:
-                        r[0].data.data = tmp.encode('utf-8')
+                    self._util_write_string(helper, r[0], "Map " + str(e[0]))
 
     # RPGMK Troops processing
     def _read_walk_troops(self : RM_Marshal, me : ME) -> list[list[str]]:
@@ -860,21 +714,25 @@ class MC(): # for Marshal Container
     root : ME|None
     symtable : list[ME]
     objtable : list[ME]
-    is_rv2 : bool
 
-    def __init__(self : MC, is_rv2 : bool = False) -> None:
+    def __init__(self : MC) -> None:
         self.root = None
         self.symtable = []
         self.objtable = [None]
-        self.is_rv2 = is_rv2
 
-    def load(self : MC, binary : bytes) -> None:
-        if self.root is not None:
-            raise Exception("[RM_Marshal] This Marshal Container is already initialized")
+    def load(binary : bytes) -> list[MC]:
         with io.BytesIO(binary) as handle:
             if handle.read(1) != b"\x04" or handle.read(1) != b"\x08":
-                raise Exception("[RM_Marshal] Invalid Magic Number in binary")
-            self.root = self._process_token(handle)
+                raise Exception("[RM_Marshal] Unsupported Ruby Marshal version or invalid file")
+            mc : MC = MC()
+            mc.root = mc._process_token(handle)
+            return mc
+    
+    def dump(self : MC) -> bytes:
+        with io.BytesIO() as handle:
+            handle.write(b"\x04\x08")
+            self.root.dump(handle)
+            return handle.getvalue()
 
     def _token_unimplemented(self : MC, token : bytes, handle : io.BytesIO) -> None:
         raise Exception("[RM_Marshal] Token " + str(token) + " isn't implemented")
@@ -901,15 +759,16 @@ class MC(): # for Marshal Container
         length = struct.unpack("b", handle.read(1))[0]
         if length == 0:
             return 0
-        if 5 < length < 128:
+        if 4 < length < 128:
             return length - 5
-        elif -129 < length < -5:
+        elif -129 < length < -4:
             return length + 5
         result = 0
-        data = handle.read(abs(length))
+        alen = abs(length)
+        data = handle.read(alen)
         result = int.from_bytes(data, byteorder="little", signed=False)
         if length < 0:
-            result -= (1 << (8 * abs(length)))
+            result -= (1 << (8 * alen))
         return result
 
     def util_write_fixnum(self : MC, value : int) -> bytes:
@@ -944,17 +803,13 @@ class MC(): # for Marshal Container
         return ME(self, token, False)
 
     def _read_instancevariable(self : MC, token : bytes, handle : io.BytesIO) -> ME:
-        return ME(self, token, self._process_token(handle))
+        sub : ME = self._process_token(handle)
+        attributes : ME = self._read_hashtable(b"{", handle)
+        attributes.silent_token = True
+        return ME(self, token, (sub, attributes))
 
     def _read_string(self : MC, token : bytes, handle : io.BytesIO) -> ME:
-        me : ME = ME(self, token, handle.read(self.util_read_fixnum(handle)))
-        if self.is_rv2:
-            b : bytes = handle.read(1) # To read extra 0x06 byte
-            if b != b"\x06":
-                handle.seek(-1, os.SEEK_CUR)
-            else:
-                me._b06_ = True
-        return me
+        return ME(self, token, handle.read(self.util_read_fixnum(handle)))
 
     def _read_symbol(self : MC, token : bytes, handle : io.BytesIO) -> ME:
         me : ME = ME(self, token, handle.read(self.util_read_fixnum(handle)))
@@ -1037,27 +892,19 @@ class MC(): # for Marshal Container
         b"c":_read_classmodule,
         b"M":_read_classmodule
     }
-    
-    def dump(self : MC) -> bytes:
-        if self.root is None:
-            raise Exception("[RM_Marshal] Marshal Container is uninitialized, use load() first")
-        with io.BytesIO() as handle:
-            handle.write(b"\x04\x08")
-            self.root.dump(handle)
-            return handle.getvalue()
 
 @dataclass(slots=True)
 class ME(): # for Marshal Element
     owner : MC
     token : bytes
     data : Any
-    _b06_ : bool
+    silent_token : bool
     
     def __init__(self : ME, owner : MC, token : bytes, data : Any = None) -> None:
         self.owner = owner
         self.token = token
         self.data = data
-        self._b06_ = False
+        self.silent_token = False
 
     def __repr__(self : ME) -> str:
         return self.token.decode() + ":" + repr(self.data)
@@ -1091,17 +938,17 @@ class ME(): # for Marshal Element
         return results
 
     def dump(self : ME, handle : io.BytesIO) -> None:
-        handle.write(self.token)
+        if not self.silent_token:
+            handle.write(self.token)
         match self.token:
             case b"0"|b"T"|b"F":
                 pass
             case b"I":
-                self.data.dump(handle)
+                self.data[0].dump(handle)
+                self.data[1].dump(handle)
             case b'"'|b":"|b"f"|b"/"|b"m"|b"c"|b"M":
                 handle.write(self.owner.util_write_fixnum(len(self.data)))
                 handle.write(self.data)
-                if self.token == b'"' and self._b06_: # Writing extra 0x06 byte of this file version
-                    handle.write(b"\x06")
             case b"i":
                 handle.write(self.owner.util_write_fixnum(self.data))
             case b"[":
@@ -1115,7 +962,7 @@ class ME(): # for Marshal Element
                     e[1].dump(handle)
             case b"l":
                 handle.write(self.data[0])
-                handle.write(self.owner.util_write_fixnum(len(self.data[1])))
+                handle.write(self.owner.util_write_fixnum(len(self.data[1])//2))
                 handle.write(self.data[1])
             case b"U":
                 self.data[0].dump(handle)
@@ -1150,7 +997,9 @@ class ME(): # for Marshal Element
                 handle.write('false')
             case b"I":
                 handle.write('[ "#InsVar", ')
-                self.data.deserialize(handle, is_script, -(level+1))
+                self.data[0].deserialize(handle, is_script, -(level+1))
+                handle.write(',')
+                self.data[1].deserialize(handle, is_script, -(level+1))
                 handle.write(' ]')
             case b'"':
                 try:
@@ -1203,7 +1052,10 @@ class ME(): # for Marshal Element
                 handle.write(json.dumps(str(self.data)))
                 handle.write(' ]')
             case b"U":
-                return ["type:U",self.data[0].deserialize(is_script),self.data[1].deserialize(is_script)]
+                handle.write('[ "#UserMarshal", ')
+                self.data[0].deserialize(handle, is_script, -(level+1))
+                self.data[1].deserialize(handle, is_script, level+1)
+                handle.write(' ]')
             case b";":
                 handle.write('[ "#SymbolLink", ')
                 handle.write(json.dumps(str(self.data)))
@@ -1213,12 +1065,13 @@ class ME(): # for Marshal Element
                 handle.write(json.dumps(str(self.data)))
                 handle.write(' ]')
             case b"u":
-                return ["type:u",str(self.data[0]), str(self.data[1])]
+                handle.write('[ "#UserDefined", ')
+                handle.write(json.dumps(str(self.data)))
+                handle.write(' ]')
             case b"m":
                 handle.write('[ "#Module", ')
                 handle.write(json.dumps(str(self.data)))
                 handle.write(' ]')
-                return ["type:m",str(self.data)]
             case b"o":
                 handle.write('[ "#Object:", ')
                 self.data[0].deserialize(handle, is_script, -(level+1))
@@ -1235,10 +1088,6 @@ class ME(): # for Marshal Element
                     handle.write('\t')
                 handle.write('}')
                 handle.write(' ]')
-            case b"d":
-                handle.write('[ "#Extended", ')
-                handle.write(json.dumps(str(self.data)))
-                handle.write(' ]')
             case b"c":
                 handle.write('[ "#Class", ')
                 handle.write(json.dumps(str(self.data)))
@@ -1248,4 +1097,4 @@ class ME(): # for Marshal Element
                 handle.write(json.dumps(str(self.data)))
                 handle.write(' ]')
             case _:
-                handle.write("#ERROR: Uinplemented token " + str(self.token))
+                handle.write('"#ERROR: Uinplemented token ' + str(self.token) + '"')
