@@ -59,7 +59,7 @@ class PatcherHelper():
 ######################################################
 class RPGMTL():
     # constant
-    VERSION = "3.7"
+    VERSION = "3.8"
     def __init__(self : RPGMTL) -> None:
         # Setting up logging
         handler = RotatingFileHandler(filename="rpgmtl.log", encoding='utf-8', mode='w', maxBytes=51200, backupCount=3)
@@ -941,7 +941,8 @@ class RPGMTL():
                     for f in files:
                         origin : PurePath = PurePath(os.path.join(path, f))
                         target : PurePath = release_folder / origin.relative_to(edit_folder)
-                        os.makedirs(target.parent, exist_ok=False)
+                        if not os.path.isdir(target.parent):
+                            os.makedirs(target.parent, exist_ok=False)
                         shutil.copyfile(origin, target)
                         self.log.info("Copied edit/" + f + " for project " + name + "...")
             except:
