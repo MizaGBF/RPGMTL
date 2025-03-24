@@ -4,7 +4,7 @@ import io
 import struct
 import math
 from pathlib import Path, PurePath
-from typing import Any, Callable
+from typing import Any, Iterator, Callable
 from dataclasses import dataclass
 import zlib
 import json
@@ -129,7 +129,7 @@ class RM_Marshal(Plugin):
     def __init__(self : RM_Marshal) -> None:
         super().__init__()
         self.name : str = "RPG Maker Marshal"
-        self.description : str = "v3.0\nHandle files from RPG Maker XP, VX and VX Ace"
+        self.description : str = "v3.1\nHandle files from RPG Maker XP, VX and VX Ace"
         self.allow_ruby_plugin : bool = True # Leave it on by default
 
     def get_setting_infos(self : RM_Marshal) -> dict[str, list]:
@@ -238,22 +238,6 @@ class RM_Marshal(Plugin):
             return mc.dump(), True
         else:
             return content, False
-    
-    # Return None if invalid element token
-    def _util_read_string(self : RM_Marshal, me : ME) -> str|None:
-        if me.token == b'"':
-            return me.data.decode('utf-8')
-        return None
-
-    # Return True if it encountered a string
-    def _util_write_string(self : RM_Marshal, helper : WalkHelper, me : ME, group : str|None = None) -> bool:
-        if me.token == b'"':
-            if me.data != b"":
-                tmp : str = helper.apply_string(me.data.decode('utf-8'), group)
-                if helper.str_modified:
-                    me.data = tmp.encode('utf-8')
-            return True
-        return False
 
     # Generic Ruby Marshal processing
     def _read_walk(self : RM_Marshal, me : ME, ignore_key : str|None = None) -> list[list[str]]:
@@ -263,10 +247,9 @@ class RM_Marshal(Plugin):
                 raise Exception("[RM_Marshal] Invalid code path")
             case b'[':
                 for i, e in enumerate(me):
-                    tmp = self._util_read_string(e)
-                    if tmp is not None:
-                        if tmp != "":
-                            entries.append([str(i), tmp])
+                    if e.token == b'"':
+                        if e.data:
+                            entries.append([str(i), e.data.decode('utf-8')])
                     else:
                         entries.extend(self._read_walk(e))
             case b'{'|b'o':
@@ -274,10 +257,9 @@ class RM_Marshal(Plugin):
                     key : str = k.decode('utf-8')
                     if ignore_key is not None and ignore_key == key:
                         continue
-                    tmp = self._util_read_string(v)
-                    if tmp is not None:
-                        if tmp != "":
-                            entries.append([key, tmp])
+                    if v.token == b'"':
+                        if v.data:
+                            entries.append([key, v.data.decode('utf-8')])
                     else:
                         entries.extend(self._read_walk(v))
             case _:
@@ -290,14 +272,24 @@ class RM_Marshal(Plugin):
                 raise Exception("[RM_Marshal] Invalid code path")
             case b'[':
                 for i, e in enumerate(me):
-                    if not self._util_write_string(helper, e, str(i)):
+                    if e.token == b'"':
+                        if e.data:
+                            tmp : str = helper.apply_string(e.data.decode('utf-8'), str(i))
+                            if helper.str_modified:
+                                e.data = tmp.encode('utf-8')
+                    else:
                         self._write_walk(e, helper)
             case b'{'|b'o':
                 for k, v in me:
                     key : str = k.decode('utf-8')
                     if ignore_key is not None and ignore_key == key:
                         continue
-                    if not self._util_write_string(helper, v, key):
+                    if v.token == b'"':
+                        if v.data:
+                            tmp : str = helper.apply_string(v.data.decode('utf-8'), key)
+                            if helper.str_modified:
+                                v.data = tmp.encode('utf-8')
+                    else:
                         self._write_walk(v, helper)
             case _:
                 pass
@@ -312,7 +304,7 @@ class RM_Marshal(Plugin):
                 if name is None:
                     strings = [[""]]
                 else:
-                    strings = [[self._util_read_string(name)]]
+                    strings = [[name.data.decode('utf-8')]]
                 pages : ME = ev.get(b"@pages")
                 if pages is not None:
                     for i, p in enumerate(pages):
@@ -353,7 +345,7 @@ class RM_Marshal(Plugin):
                         name += " " + str(eid.data)
                     n : ME = e.get(b"@name")
                     if n is not None:
-                        name += " " + str(self._util_read_string(n))
+                        name += " " + n.data.decode('utf-8')
                     entries.append([name])
                     entries.extend(strings)
         return entries
@@ -374,9 +366,8 @@ class RM_Marshal(Plugin):
         elements : list[ME] = []
         while i < len(cmds) and cmds[i].token == b'o' and cmds[i].get(b"@code").data == code:
             parameters = cmds[i].get(b"@parameters").data
-            tmp : str = self._util_read_string(parameters[0])
-            if tmp != "":
-                text.append(tmp)
+            if parameters[0].token == b'"' and parameters[0].data:
+                text.append(parameters[0].data.decode('utf-8'))
                 elements.append(parameters[0])
             i += 1
         return i, text, elements
@@ -400,34 +391,32 @@ class RM_Marshal(Plugin):
             match code:
                 case 101|355: # Show Text commands / Script Commands
                     follow_code : int = code + 300
-                    tmp = self._util_read_string(parameters[0])
+                    tmp = parameters[0].data.decode('utf-8')
                     i, text, _unused_ = self._walk_event_continuous_command(i+1, me.data, follow_code)
-                    if tmp != "" or len(text) > 0:
+                    i -= 1
+                    if tmp or len(text) > 0:
                         if self.settings.get("rm_marshal_multiline", False):
                             text.insert(0, tmp)
                             group.append("\n".join(text))
                         else:
-                            if tmp is not None and tmp != "":
+                            if tmp:
                                 group.append(tmp)
                             group.extend(text)
                 case 102:
                     for pm in parameters:
                         if pm.token == b'[':
                             for sub in pm:
-                                tmp = self._util_read_string(sub)
-                                if tmp is not None and tmp != "":
-                                    group.append(tmp)
+                                if sub.token == b'"' and sub.data:
+                                    group.append(sub.data.decode('utf-8'))
                         else:
-                            tmp = self._util_read_string(pm)
-                            if tmp is not None and tmp != "":
-                                group.append(tmp)
+                            if pm.token == b'"' and pm.data:
+                                group.append(pm.data.decode('utf-8'))
                 case 108|408: # Comment
                     pass
                 case _: # Default
                     for pm in parameters:
-                        tmp = self._util_read_string(pm)
-                        if tmp is not None and tmp != "":
-                            group.append(tmp)
+                        if pm.token == b'"' and pm.data:
+                            group.append(pm.data.decode('utf-8'))
             if len(group) > 1:
                 entries.append(group)
                 group = [""]
@@ -451,11 +440,12 @@ class RM_Marshal(Plugin):
             match code:
                 case 101|355: # Show Text commands / Script Commands
                     follow_code : int = code + 300
-                    tmp = self._util_read_string(parameters[0])
+                    tmp = parameters[0].data.decode('utf-8')
                     i, text, elements = self._walk_event_continuous_command(i+1, me.data, follow_code)
+                    i -= 1
                     text.insert(0, tmp)
                     elements.insert(0, parameters[0])
-                    if tmp != "" or len(text) > 1:
+                    if tmp or len(text) > 1:
                         if self.settings.get("rm_marshal_multiline", False):
                             # Multiline mode
                             combined : str = helper.apply_string("\n".join(text), group)
@@ -473,31 +463,41 @@ class RM_Marshal(Plugin):
                         for j in range(len(text)):
                             if elements[j].token == b'o':
                                 parameters = elements[j].get(b"@parameters").data
-                                if parameters[0].token == b'"' and parameters[0].data != b"": # XP, VX
+                                if parameters[0].token == b'"' and parameters[0].data: # XP, VX
                                     parameters[0].data = text[j].encode("utf-8")
                 case 102:
                     for pm in parameters:
                         if pm.token == b'[':
                             for sub in pm:
-                                self._util_write_string(helper, sub, group)
+                                if sub.token == b'"' and sub.data:
+                                    tmp : str = helper.apply_string(sub.data.decode('utf-8'), group)
+                                    if helper.str_modified:
+                                        sub.data = tmp.encode('utf-8')
                         else:
-                            self._util_write_string(helper, pm, group)
+                            if pm.token == b'"' and pm.data:
+                                tmp : str = helper.apply_string(pm.data.decode('utf-8'), group)
+                                if helper.str_modified:
+                                    pm.data = tmp.encode('utf-8')
                 case 108|408: # Comment
                     pass
                 case _: # Default
                     for pm in parameters:
-                        self._util_write_string(helper, pm, group)
+                        if pm.token == b'"' and pm.data:
+                            tmp : str = helper.apply_string(pm.data.decode('utf-8'), group)
+                            if helper.str_modified:
+                                pm.data = tmp.encode('utf-8')
             i += 1
 
     # RPGMK Scripts processing
     def _read_walk_script(self : RM_Marshal, me : ME) -> list[list[str]]:
         entries : list[list[str]] = []
         for e in me:
-            group : list[str] = ["Script"]
-            tmp = self._util_read_string(e.data[1])
-            if tmp is not None and tmp != "":
-                group[0] = "Script: " + tmp
-            if e.data[2].data != b"":
+            group : list[str] = [None]
+            if e.data[1].data:
+                group[0] = "Script: " + e.data[1].data.decode('utf-8')
+            else:
+                group[0] = "Script"
+            if e.data[2].data:
                 script = zlib.decompressobj().decompress(e.data[2].data).decode('utf-8')
                 if self.allow_ruby_plugin and "Ruby" in self.owner.plugins:
                     self.owner.plugins["Ruby"].reset()
@@ -514,11 +514,12 @@ class RM_Marshal(Plugin):
 
     def _write_walk_script(self : RM_Marshal, me : ME, helper : WalkHelper) -> None:
         for e in me:
-            group : str = "Script"
-            tmp = self._util_read_string(e.data[1])
-            if tmp is not None and tmp != "":
-                group = "Script: " + tmp
-            if e.data[2].data != b"":
+            group : str
+            if e.data[1].data:
+                group = "Script: " + e.data[1].data.decode('utf-8')
+            else:
+                group = "Script"
+            if e.data[2].data:
                 script = zlib.decompressobj().decompress(e.data[2].data).decode('utf-8')
                 if self.allow_ruby_plugin and "Ruby" in self.owner.plugins:
                     self.owner.plugins["Ruby"].reset()
@@ -539,15 +540,17 @@ class RM_Marshal(Plugin):
             if e[1].token == b'o':
                 r : ME = e[1].get(b"@name")
                 if r is not None:
-                    entries.append(["Map " + str(e[0]), self._util_read_string(r)])
+                    entries.append(["Map " + str(e[0]), r.data.decode('utf-8')])
         return entries
 
     def _write_walk_mapinfo(self : RM_Marshal, me : ME, helper : WalkHelper) -> None:
         for e in me:
             if e[1].token == b'o':
                 r : ME = e[1].get(b"@name")
-                if r is not None:
-                    self._util_write_string(helper, r, "Map " + str(e[0]))
+                if r is not None and r.token == b'"' and r.data:
+                    tmp : str = helper.apply_string(r.data.decode('utf-8'), "Map " + str(e[0]))
+                    if helper.str_modified:
+                        r.data = tmp.encode('utf-8')
 
     # RPGMK Troops processing
     def _read_walk_troops(self : RM_Marshal, me : ME) -> list[list[str]]:
@@ -805,6 +808,22 @@ class MC(): # for Marshal Container
         b"M":_read_classmodule
     }
 
+class HashTableIter: # Iterator to use for loop over Marshal HashTable
+    def __init__(self : HashTableIter, d: dict[str, tuple[ME, ME]]):
+        self._dict_ = d
+        self._keys = iter(self._dict_) # get an iterator over the keys
+
+    def __iter__(self : HashTableIter) -> Iterator[tuple[str, ME]]:
+        return self
+
+    def __next__(self : HashTableIter) -> tuple[str, ME]:
+        try:
+            key = next(self._keys)
+            value_tuple = self._dict_[key]
+            return key, value_tuple[1]
+        except StopIteration:
+            raise StopIteration
+
 @dataclass(slots=True)
 class ME(): # for Marshal Element
     owner : MC
@@ -831,18 +850,16 @@ class ME(): # for Marshal Element
     def __hash__(self : ME) -> int:
         return hash(self.data)
 
-    def __iter__(self : ME) -> Any: # for loops
+    def __iter__(self : ME) -> Iterator[Any]: # for loops
         match self.token:
             case b"[":
-                for me in self.data:
-                    yield me
+                return iter(self.data)
             case b"{":
-                for k, v in self.data.items():
-                    yield k, v[1]
+                return HashTableIter(self.data)
             case b"o":
-                yield from self.data[1].__iter__()
+                return self.data[1].__iter__()
             case b";"|b"@":
-                yield from self.at().__iter__()
+                return self.at().__iter__()
             case _:
                 raise Exception("[RM Marshal] This Marshal Element (" + str(self.token) + ") isn't iterable.")
 
@@ -977,7 +994,7 @@ class ME(): # for Marshal Element
         handle.write(json.dumps(str(self.data)))
         self._write_struct_end(handle, indent)
 
-    def deserialize(self : ME, handle : Any, is_script : bool, indent : int = 0, write_indent : bool = True) -> None:
+    def deserialize(self : ME, handle : Any, is_script : bool, *, indent : int = 0, write_indent : bool = True, parent : ME = None) -> None:
         if write_indent: self._write_indent(handle, indent)
         match self.token:
             case b"0":
@@ -995,7 +1012,7 @@ class ME(): # for Marshal Element
                             raise Exception()
                         handle.write(json.dumps(zlib.decompressobj().decompress(self.data).decode('utf-8'), ensure_ascii=False))
                     except:
-                        handle.write('<#ERROR>: String of unknown encoding')
+                        handle.write('"<#ERROR>: String of unknown encoding"')
             case b":":
                 handle.write(json.dumps(self.data.decode('utf-8'), ensure_ascii=False))
             case b'i':
@@ -1003,7 +1020,7 @@ class ME(): # for Marshal Element
             case b"[":
                 handle.write('[\n')
                 for i in range(len(self.data)):
-                    self.data[i].deserialize(handle, is_script, indent+1)
+                    self.data[i].deserialize(handle, is_script, indent=indent+1, parent=self)
                     if i != len(self.data)-1:
                         handle.write(',\n')
                 handle.write('\n')
@@ -1013,9 +1030,9 @@ class ME(): # for Marshal Element
                 handle.write('{\n')
                 l : int = len(self.data)
                 for k, v in self.data.items():
-                    v[0].deserialize(handle, is_script, indent+1)
+                    v[0].deserialize(handle, is_script, indent=indent+1, parent=self)
                     handle.write(': ')
-                    v[1].deserialize(handle, is_script, indent+1, False)
+                    v[1].deserialize(handle, is_script, indent=indent+1, write_indent=False, parent=self)
                     l -= 1
                     if l > 0:
                         handle.write(',\n')
@@ -1031,20 +1048,25 @@ class ME(): # for Marshal Element
             case b"U":
                 self._write_struct_start(handle, indent, "User Marshal")
                 handle.write('"symbol": ')
-                self.data[0].deserialize(handle, is_script, indent+1, False)
+                self.data[0].deserialize(handle, is_script, indent=indent+1, write_indent=False)
                 handle.write(',\n')
                 handle.write('"object": ')
-                self.data[1].deserialize(handle, is_script, indent+1, False)
+                self.data[1].deserialize(handle, is_script, indent=indent+1, write_indent=False)
                 self._write_struct_end(handle, indent)
             case b";"|b"@":
                 at : ME = self.at()
                 if at.token in (b";", b"@"):
                     raise Exception("[RM Marshal] Unexpected symbol/object link.")
-                at.deserialize(handle, is_script, indent, False)
+                elif at.token == b"I":
+                    handle.write('"<#ERROR>: Bad File, unexpected Instancied Variable"')
+                elif at is parent:
+                    handle.write('"<#ERROR>: Bad File, child is referencing parent"')
+                else:
+                    at.deserialize(handle, is_script, indent=indent, write_indent=False)
             case b"u":
                 self._write_struct_start(handle, indent, "User Defined")
                 handle.write('"symbol": ')
-                self.data[0].deserialize(handle, is_script, indent+1, False)
+                self.data[0].deserialize(handle, is_script, indent=indent+1, write_indent=False)
                 handle.write(',\n')
                 self._write_indent(handle, indent+1)
                 handle.write('"binary": ')
@@ -1055,11 +1077,11 @@ class ME(): # for Marshal Element
             case b"o":
                 self._write_struct_start(handle, indent, "Object")
                 handle.write('"reference": ')
-                self.data[0].deserialize(handle, is_script, indent+1, False)
+                self.data[0].deserialize(handle, is_script, indent=indent+1, write_indent=False)
                 handle.write(',\n')
                 self._write_indent(handle, indent+1)
                 handle.write('"table": ')
-                self.data[1].deserialize(handle, is_script, indent+1, False)
+                self.data[1].deserialize(handle, is_script, indent=indent+1, write_indent=False)
                 self._write_struct_end(handle, indent)
             case b"c":
                 self._write_generic(handle, indent, "Class")

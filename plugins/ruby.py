@@ -5,7 +5,7 @@ class Ruby(Plugin):
     def __init__(self : Ruby) -> None:
         super().__init__()
         self.name : str = "Ruby"
-        self.description : str = " v1.2\nHandle Ruby files"
+        self.description : str = " v1.3\nHandle Ruby files"
 
     def file_extension(self : Ruby) -> list[str]:
         return ["rb"]
@@ -50,38 +50,39 @@ class Ruby(Plugin):
         group = [""]
         string_table : list[tuple] = []
         scriptlen : int = len(script)
-        c : str = ""
         while i < scriptlen:
-            prev : str = c
-            c = script[i]
+            c : str = script[i]
             if c == '#': # Single Line Comment
+                i = script.find('\n', i + 1)
+                if i == -1:
+                    break
                 i += 1
-                while i < scriptlen and script[i] != "\n":
-                    i += 1
-                prev = None
                 continue
             elif c == "\n" and i + 6 < scriptlen and script.startswith("\n=begin", i): # Multi Line Comment
-                i += 6
-                while i < scriptlen and script[i] != "d" and script.startswith("\n=end", i-4):
-                    i += 1
-                prev = None
+                i = script.find("\n=end", i + 6)
+                if i == -1:
+                    break
+                i += 4
                 continue
-            if c == '"' and prev != '$':
-                i += 1
-                start = i
-                while i < scriptlen:
-                    c = script[i]
-                    if c == '\\':  # skip escaped char
-                        i += 2
-                        continue
-                    if c == '"':
-                        literal = script[start:i]
-                        if literal != "":
-                            string_table.append((start, i, len(entries), len(group), '"')) # position in file, position in entries, quote
-                            group.append(literal.replace('\\"', '"'))
-                        i += 1
+            elif c == '"' and (i == 0 or script[i-1] != '$'):
+                start = i + 1
+                end = start
+                while True:
+                    end = script.find('"', end)
+                    if end == -1:
+                        i = len(script)
                         break
-                    i += 1
+                    else:
+                        prev : str = script[end-1]
+                        if prev != "\\" or (prev == "\\" and script[end-2] == "\\"):
+                            if start != end:
+                                literal = script[start:end]
+                                string_table.append((start, end, len(entries), len(group), '"'))
+                                group.append(literal.replace('\\"', '"'))
+                            i = end + 1
+                            break
+                        else:
+                            end += 1
             else:
                 if c.isalnum():
                     # Function name detection
@@ -93,19 +94,14 @@ class Ruby(Plugin):
                     if func_pos[0] is not None:
                         funcs[-1] = script[func_pos[0]:func_pos[1]]
                         func_pos[0] = None
-                    shift_array : bool = False
                     if funcs[-1] != "" and funcs[-2] == "def":
                         if len(group) > 1:
                             entries.append(group)
                             group = [""]
                         group[0] = funcs[-1] + "()"
-                        shift_array = True
+                        funcs[0], funcs[1] = funcs[1], ""
                     else:
-                        shift_array = True
-                    # Shift funcs array
-                    if shift_array:
-                        funcs[0] = funcs[1]
-                        funcs[1] = ""
+                        funcs[0], funcs[1] = funcs[1], ""
                 i += 1
         if len(group) > 1:
             entries.append(group)

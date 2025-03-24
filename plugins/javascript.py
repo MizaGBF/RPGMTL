@@ -6,7 +6,7 @@ class Javascript(Plugin):
     def __init__(self : Javascript) -> None:
         super().__init__()
         self.name : str = "Javascript"
-        self.description : str = " v1.2\nHandle Javascript files, including the plugins.js file from RPG Maker MV/MZ"
+        self.description : str = " v1.3\nHandle Javascript files, including the plugins.js file from RPG Maker MV/MZ"
 
     def file_extension(self : Javascript) -> list[str]:
         return ["js"]
@@ -60,15 +60,16 @@ class Javascript(Plugin):
                 if i + 1 < jslen:
                     if js[i+1] == '/':
                         # single-line comment: skip until newline
-                        i += 2
-                        while i < jslen and js[i] != '\n':
-                            i += 1
+                        i = js.find('\n', i+2)
+                        if i == -1:
+                            break
+                        i += 1
                         continue
                     elif js[i+1] == '*':
                         # multi-line comment: skip until closing */
-                        i += 2
-                        while i + 1 < jslen and not (js[i] == '*' and js[i+1] == '/'):
-                            i += 1
+                        i = js.find('*/', i+2)
+                        if i == -1:
+                            break
                         i += 2
                         continue
             if c in ("'", '"', '`') or (c == '/' and regex_possible):
@@ -76,19 +77,23 @@ class Javascript(Plugin):
                 i += 1
                 quote = c
                 start = i
-                while i < jslen:
-                    c = js[i]
-                    if c == '\\':  # skip escaped char
-                        i += 2
-                        continue
-                    if c == quote:
-                        literal = js[start:i]
-                        if literal != "":
-                            string_table.append((start, i, len(entries), len(group), quote)) # position in file, position in entries, quote
-                            group.append(literal.replace('\\'+quote, quote))
-                        i += 1
+                end = start
+                while True:
+                    end = js.find(quote, end)
+                    if end == -1:
+                        i = jslen
                         break
-                    i += 1
+                    else:
+                        prev : str = js[end-1]
+                        if prev != "\\" or (prev == "\\" and js[end-2] == "\\"):
+                            if start != end:
+                                literal = js[start:end]
+                                string_table.append((start, end, len(entries), len(group), quote)) # position in file, position in entries, quote
+                                group.append(literal.replace('\\'+quote, quote))
+                            i = end + 1
+                            break
+                        else:
+                            end += 1
             else:
                 if c.isalnum():
                     # Function name detection
