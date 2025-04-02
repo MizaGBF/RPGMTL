@@ -1,7 +1,9 @@
 from __future__ import annotations
 from importlib import import_module
 import os
+import io
 import ast
+from pathlib import Path, PurePath
 from dataclasses import dataclass
 from typing import TYPE_CHECKING, Any
 if TYPE_CHECKING:
@@ -104,7 +106,13 @@ class Plugin:
         return []
 
     def match(self : Plugin, file_path : str, is_for_action : bool) -> bool:
-        # Return True if your plugin want to handle this file
+        # Return True if your plugin wants to handle this file
+        # The second parameter indicates if it's for a file action
+        return False
+
+    def is_streaming(self : Plugin, file_path : str, is_for_action : bool) -> bool:
+        # Return True if your plugin wants a stream handle instead of the file content
+        # If True is returned, you must implement read_stream and write_stream
         # The second parameter indicates if it's for a file action
         return False
 
@@ -117,9 +125,22 @@ class Plugin:
         # ]
         return []
 
+    def read_stream(self : Plugin, name : str, file_path : str, reader : io.BufferedReader) -> list[list[str]]:
+        # Same as read
+        # Used if is_streaming is returning True
+        # name is the project name (useful if you want to access other plugins)
+        return []
+
     def write(self : Plugin, file_path : str, content : bytes, strings : dict) -> tuple[bytes, bool]:
         # Edit the file content with the translated strings and return it, plus a boolean indicating if it has been modified
         return (content, False)
+
+    def write_stream(self : Plugin, name : str, file_path : str, reader : io.BufferedReader, output_path : Path) -> tuple[int, int]:
+        # Similar as write but returns the number of patched files and errors in a tuple
+        # You must handle the writing and patching (check patch_game_file() in rpgmtl.py if needed)
+        # Used if is_streaming is returning True
+        # name is the project name (useful if you want to access other plugins)
+        return (0, 0)
 
     def format(self : Plugin, file_path : str, content : bytes) -> bytes:
         # Called last in the patching process

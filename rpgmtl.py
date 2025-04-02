@@ -59,7 +59,7 @@ class PatcherHelper():
 ######################################################
 class RPGMTL():
     # constant
-    VERSION = "3.8"
+    VERSION = "3.9"
     def __init__(self : RPGMTL) -> None:
         # Setting up logging
         handler = RotatingFileHandler(filename="rpgmtl.log", encoding='utf-8', mode='w', maxBytes=51200, backupCount=3)
@@ -731,6 +731,50 @@ class RPGMTL():
             except:
                 pass
 
+    # extract the strings from given file
+    def extract_game_file(self : RPGMTL, name : str, filename : str) -> tuple[bool, list[list[str]]]:
+        for p in self.plugins.values():
+            if p.match(filename, False): # this file match with the plugin
+                p.reset() # reset plugin state
+                p.set_settings(self.settings | self.projects[name]['settings']) # and set setting
+                # read the content
+                if p.is_streaming(filename, False):
+                    with open('projects/' + name + '/originals/' + filename, mode="rb") as infile:
+                        return True, p.read_stream(name, filename, infile)
+                else:
+                    with open('projects/' + name + '/originals/' + filename, mode="rb") as infile:
+                        content = infile.read()
+                return True, p.read(filename, content)
+        return False, []
+
+    # patch the strings from given file, and write to the release folder
+    # return value is a tuple of counts, for successfully patched files and errors
+    def patch_game_file(self : RPGMTL, name : str, filename : str, release_folder : PurePath) -> tuple[int, int]:
+        for p in self.plugins.values():
+            try:
+                if p.match(filename, False): # file matches the plugin
+                    p.reset()
+                    p.set_settings(self.settings | self.projects[name]['settings'])
+                    if p.is_streaming(filename, False):
+                        with open('projects/' + name + '/originals/' + filename, mode="rb") as iofile:
+                            return p.write_stream(name, filename, iofile, Path(release_folder, filename))
+                    else:
+                        with open('projects/' + name + '/originals/' + filename, mode="rb") as iofile:
+                            content = iofile.read()
+                        content, modified = p.write(filename, content, self.strings[name]) # write content
+                        content, modified = self.apply_fixes(name, filename, content, modified) # apply fixes
+                        # write file if modified
+                        if modified:
+                            content = p.format(filename, content)
+                            output : Path = Path(release_folder, filename)
+                            output.parent.mkdir(parents=True, exist_ok=True)
+                            output.write_bytes(content)
+                            return (1, 0)
+            except Exception as e:
+                self.log.error("Failed to patch strings in " + filename + " for project " + name + " using the plugin " + p.name + "\n" + self.trbk(e))
+                return (0, 1)
+        return (0, 0)
+
     # extract strings from backed up files
     def generate(self : RPGMTL, name : str) -> int:
         self.save() # save first!
@@ -768,31 +812,24 @@ class RPGMTL():
         for f in self.projects[name]['files']:
             try:
                 self.projects[name]['files'][f]["strings"] = 0
-                for p in self.plugins.values():
-                    if p.match(f, False): # this file match with the plugin
-                        p.reset() # reset plugin state
-                        p.set_settings(self.settings | self.projects[name]['settings']) # and set setting
-                        index["files"][f] = []
-                        # read the content
-                        with open('projects/' + name + '/originals/' + f, mode="rb") as infile:
-                            content = infile.read()
-                        # has the plugin read it
-                        for group in p.read(f, content):
-                            # process group content
-                            for i in range(1, len(group)):
-                                s : str = group[i]
-                                group[i] = [str(str_id), None, 0, 0, update_run_flag] # id, indiv_tl, unlinked, ignored, modified/new
-                                self.projects[name]['files'][f]["strings"] += 1
-                                # if string already occured
-                                if s in reverse_strings:
-                                    group[i][0] = reverse_strings[s] # get its id
-                                    index["strings"][reverse_strings[s]][2] += 1 # increase occurence count
-                                else:
-                                    reverse_strings[s] = str(str_id) # new id
-                                    index["strings"][str(str_id)] = [s, None, 1]
-                                    str_id += 1 # increase for next id
-                            index["files"][f].append(group)
-                        break
+                extracted, groups = self.extract_game_file(name, f)
+                if extracted:
+                    index["files"][f] = []
+                    for group in groups:
+                        # process group content
+                        for i in range(1, len(group)):
+                            s : str = group[i]
+                            group[i] = [str(str_id), None, 0, 0, update_run_flag] # id, indiv_tl, unlinked, ignored, modified/new
+                            self.projects[name]['files'][f]["strings"] += 1
+                            # if string already occured
+                            if s in reverse_strings:
+                                group[i][0] = reverse_strings[s] # get its id
+                                index["strings"][reverse_strings[s]][2] += 1 # increase occurence count
+                            else:
+                                reverse_strings[s] = str(str_id) # new id
+                                index["strings"][str(str_id)] = [s, None, 1]
+                                str_id += 1 # increase for next id
+                        index["files"][f].append(group)
             except Exception as e:
                 err += 1
                 self.log.error("Failed to extract strings from " + f + " for project " + name + "\n" + self.trbk(e))
@@ -909,29 +946,13 @@ class RPGMTL():
         # for each file
         patch_count : int = 0
         for f in self.projects[name]["files"]:
-            if self.projects[name]["files"][f]["ignored"]: # skip ignored
+            if self.projects[name]["files"][f]["ignored"] or len(self.strings[name]["files"][f]) == 0: # skip ignored or empty
                 continue
-            with open('projects/' + name + '/originals/' + f, mode="rb") as iofile:
-                content = iofile.read()
-            for p in self.plugins.values():
-                try:
-                    if len(self.strings[name]["files"][f]) == 0:
-                        continue
-                    if p.match(f, False): # file matches the plugin
-                        p.reset()
-                        p.set_settings(self.settings | self.projects[name]['settings'])
-                        content, modified = p.write(f, content, self.strings[name]) # write content
-                        content, modified = self.apply_fixes(name, f, content, modified) # apply fixes
-                        # write file if modified
-                        if modified:
-                            content = p.format(f, content)
-                            output : Path = Path(release_folder, f)
-                            output.parent.mkdir(parents=True, exist_ok=True)
-                            output.write_bytes(content)
-                            patch_count += 1
-                except Exception as e:
-                    self.log.error("Failed to patch strings in " + f + " for project " + name + " using the plugin " + p.name + "\n" + self.trbk(e))
-                    err += 1
+            r : tuple[int, int] = self.patch_game_file(name, f, release_folder)
+            if r[0] > 0:
+                patch_count += 1
+            if r[1] > 0:
+                err += 1
         # Copy edit content
         edit_folder : PurePath = PurePath('projects', name, 'edit')
         if os.path.isdir(edit_folder):

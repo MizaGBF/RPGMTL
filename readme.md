@@ -137,7 +137,7 @@ Doing so will put the translation in the editing area, for you to modify.
 
 If you wish to translate a whole file, use the dedicated button on top of the string list.  
 Be aware rate limits and the like might cause you issues if you plan to translate a lot of files this way in a short time span.  
-Please refer to the [Plugins](plugins) section if you wish to extend RPGMTL capabilities in that regard.  
+Please refer to the [Plugins](#plugins) section if you wish to extend RPGMTL capabilities in that regard.  
   
 ## Advanced Usage  
   
