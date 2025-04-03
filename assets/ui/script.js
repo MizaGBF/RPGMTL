@@ -1494,6 +1494,9 @@ function translate_string()
 	postAPI("/api/translate_string", function(data) {
 		set_loading(false);
 		if(data["translation"] != null)
+		{
 			edit_tl.value = data["translation"];
+			tl_string_length.innerHTML = edittl.value.length;
+		}
 	}, function() {}, {name:prjname, string:edit_ori.textContent});
 }
