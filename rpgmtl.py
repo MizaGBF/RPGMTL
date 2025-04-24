@@ -12,8 +12,7 @@ from logging.handlers import RotatingFileHandler
 import json
 import difflib
 from pathlib import Path, PurePath
-from tkinter import filedialog
-import tkinter as Tk
+import string
 import argparse
 import ssl
 
@@ -59,7 +58,7 @@ class PatcherHelper():
 ######################################################
 class RPGMTL():
     # constant
-    VERSION = "3.9"
+    VERSION = "3.10"
     def __init__(self : RPGMTL) -> None:
         # Setting up logging
         handler = RotatingFileHandler(filename="rpgmtl.log", encoding='utf-8', mode='w', maxBytes=51200, backupCount=3)
@@ -109,10 +108,12 @@ class RPGMTL():
                 web.post('/api/update_string', self.edit_string), # Edit string values
                 web.post('/api/translate_string', self.translate_string), # Translate a string
                 web.post('/api/translate_file', self.translate_file), # Translate a file
-                web.post('/api/search_string', self.search_string), # Search a file
+                web.post('/api/search_string', self.search_string), # Search a string
+                web.post('/api/local_path', self.local_path), # Browse local files
         ])
-        
         # data containers
+        self.last_directory = os.getcwd() # used for file browsing
+        self.is_posix = os.name != 'nt' # set to True if OS isn't windows
         self.projects : dict[str, Any] = {} # store loaded config.json
         self.strings : dict[str, Any] = {} # store loaded string.json
         self.modified : dict[str, bool] = {} # store flag indicating if config.json or string.json has pending changes waiting to be saved
@@ -343,16 +344,8 @@ class RPGMTL():
 
     # function to search a game executable
     # name is the project name and is only in use in case we're updating the exe location
-    def select_exe(self : RPGMTL, name : str|None = None) -> None|str:
+    def select_exe(self : RPGMTL, file_path : str, name : str|None = None) -> None|str:
         try:
-            # create a Tkinter context for the dialog (make it as invisible as possible)
-            root = Tk.Tk()
-            root.title('RPGMTL Dialog')
-            root.geometry('1x1')
-            root.iconify()
-            self.log.info("Opening executable selection dialog...")
-            file_path = filedialog.askopenfilename(title="Select a Game Executable", filetypes=[("", ".exe")], parent=root).replace("\\", "/") # format windows backslash to forward slash
-            root.destroy() # clear the window
             self.log.info("Dialog output is: " + file_path)
             if file_path == "" or file_path is None: # empty, user cancelled
                 return None
@@ -994,17 +987,10 @@ class RPGMTL():
 
     # Function to import strings from old RPGMTL formats (version 1 and 2)
     # Return value is a tuple of state (-1 = error occured, 0 = nothing, 1 = success) and the imported string count
-    def import_old_data(self : RPGMTL, name : str) -> tuple[int, int]:
+    def import_old_data(self : RPGMTL, name : str, file_path : str) -> tuple[int, int]:
         try:
             count : int = 0
             self.load_strings(name)
-            # create Tkinter context
-            root = Tk.Tk()
-            root.title('RPGMTL Dialog')
-            root.geometry('1x1')
-            root.iconify()
-            file_path = filedialog.askopenfilename(title="Select an old RPGMTL strings file", filetypes=[("strings", ".json"), ("strings", ".py")], parent=root).replace("\\", "/") # change windows backslash to forward slash
-            root.destroy()
             if file_path == "" or file_path is None:
                 return 0, 0
             # backup project strings.json
@@ -1049,18 +1035,11 @@ class RPGMTL():
     # Function to import strings from RPGMaker Trans formats (version 3)
     # Return value is a tuple of state (-1 = error occured, 0 = nothing, 1 = success) and the imported string count
     # Documentation: https://rpgmakertrans.bitbucket.io/patchformatv3.html
-    def import_rpgmtrans_data(self : RPGMTL, name : str) -> tuple[int, int]:
+    def import_rpgmtrans_data(self : RPGMTL, name : str, file_path : str) -> tuple[int, int]:
         try:
             count : int = 0
             self.load_strings(name)
             multiline_ruby = (self.settings | self.projects[name]["settings"]).get("rm_marshal_multiline", False)
-            # create Tkinter context
-            root = Tk.Tk()
-            root.title('RPGMTL Dialog')
-            root.geometry('1x1')
-            root.iconify()
-            file_path = filedialog.askopenfilename(title="Select a RPGMKTRANSPATCH file", filetypes=[("", "RPGMKTRANSPATCH")], parent=root).replace("\\", "/") # change windows backslash to forward slash
-            root.destroy()
             if file_path == "" or file_path is None:
                 return 0, 0
             # backup project strings.json
@@ -1265,12 +1244,10 @@ class RPGMTL():
 
     # /api/update_location
     async def select_project_exe(self : RPGMTL, request : web.Request) -> web.Response:
-        try:
-            payload = await request.json()
-        except:
-            payload = {}
+        payload = await request.json()
         name = payload.get('name', None)
-        file_path = self.select_exe(name)
+        path = payload.get('path', None)
+        file_path = self.select_exe(path, name)
         if name is None: # new project
             return web.json_response({"result":"ok", "data":{"path":file_path}, "message":"Please select a project name."})
         else: # update existing project
@@ -1468,10 +1445,11 @@ class RPGMTL():
     async def import_old(self : RPGMTL, request : web.Request) -> web.Response:
         payload = await request.json()
         name = payload.get('name', None)
+        path = payload.get('path', None)
         if name is None:
             return web.json_response({"result":"bad", "message":"Bad request, missing 'name' parameter"}, status=400)
         else:
-            state, count = self.import_old_data(name)
+            state, count = self.import_old_data(name, path)
             match state:
                 case 1:
                     return web.json_response({"result":"ok", "data":{"name":name, "config":self.projects[name]}, "message":"Imported {} string(s) with success".format(count)})
@@ -1484,10 +1462,11 @@ class RPGMTL():
     async def import_rpgmtrans(self : RPGMTL, request : web.Request) -> web.Response:
         payload = await request.json()
         name = payload.get('name', None)
+        path = payload.get('path', None)
         if name is None:
             return web.json_response({"result":"bad", "message":"Bad request, missing 'name' parameter"}, status=400)
         else:
-            state, count = self.import_rpgmtrans_data(name)
+            state, count = self.import_rpgmtrans_data(name, path)
             match state:
                 case 1:
                     return web.json_response({"result":"ok", "data":{"name":name, "config":self.projects[name]}, "message":"Imported {} string(s) with success".format(count)})
@@ -1798,6 +1777,51 @@ class RPGMTL():
             for f in keys:
                 result[f] = self.projects[name]["files"].get(f, {}).get("ignored", False)
             return web.json_response({"result":"ok", "data":{"config":self.projects[name], "name":name, "path":path, "search":search, "files":result}, "message":"Found in {} files".format(len(files))})
+
+    # /api/local_path
+    async def local_path(self : RPGMTL, request : web.Request) -> web.Response:
+        payload = await request.json()
+        spath = payload.get('path', None)
+        mode = payload.get('mode', None)
+        if spath is None:
+            return web.json_response({"result":"bad", "message":"Bad request, missing 'path' parameter"}, status=400)
+        elif mode is None:
+            return web.json_response({"result":"bad", "message":"Bad request, missing 'mode' parameter"}, status=400)
+        else:
+            if not self.is_posix and len(spath) == 2 and spath.endswith(":"):
+                # special exceptions to list Windows drive letters
+                if spath.startswith(":"):
+                    dirs : list[str] = []
+                    for letter in string.ascii_uppercase:
+                        drive_path : Path = Path(letter + ":/") 
+                        if drive_path.exists():
+                            dirs.append(drive_path.as_posix()[:-1])
+                    return web.json_response({"result":"ok", "data":{"path":"", "folders":dirs, "files":[]}})
+                else:
+                    spath += "/"
+            path : Path = Path(self.last_directory) if spath == "" else Path(spath)
+            if not path.is_dir():
+                path = Path(os.getcwd())
+            self.last_directory = path.as_posix()
+            files : list[str] = []
+            dirs : list[str] = [".."]
+            for item in path.iterdir():
+                if item.is_dir():
+                    dirs.append(item.as_posix())
+                elif item.is_file():
+                    match mode:
+                        case 0|1:
+                            if item.suffix == ".exe":
+                                files.append(item.as_posix())
+                        case 2:
+                            if item.suffix in (".json", ".py"):
+                                files.append(item.as_posix())
+                        case 3:
+                            if item.name == "RPGMKTRANSPATCH":
+                                files.append(item.as_posix())
+                        case _:
+                            return web.json_response({"result":"bad", "message":"Bad request, invalid 'mode' parameter"}, status=400)
+            return web.json_response({"result":"ok", "data":{"path":path.as_posix(), "folders":dirs, "files":files}})
 
 if __name__ == "__main__":
     RPGMTL().run()

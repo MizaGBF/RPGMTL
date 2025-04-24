@@ -141,6 +141,7 @@ html, body {
 	margin: 5px;
 	text-align: center;
 	position: relative;
+	word-wrap: break-word;
 }
 
 .static {
@@ -151,6 +152,10 @@ html, body {
 	position: relative;
 	vertical-align: top;
 	display:inline-block;
+}
+
+#folder_container, #file_container {
+	max-width: 100%;
 }
 
 .interact-group {

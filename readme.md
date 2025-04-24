@@ -81,7 +81,7 @@ RPGMTL will *forget* these file locations.
   
 ### Creation  
 On the Home Page, click on `New Project`.  
-A window will open. Select the location of the executable, of the game you wish to translate.  
+Select the location of the executable, of the game you wish to translate.  
 You'll then be asked a project name. This name will be the one used for the project folder and in the Web UI.
 Once done, hit `Create`.  
   
@@ -90,7 +90,6 @@ Once done, hit `Create`.
   
 > [!IMPORTANT]  
 > The game you wish to translate must be on the same machine as RPGMTL.  
-> It also means, if you access RPGMTL remotely, this function will softlock RPGMTL until someone select the game.  
   
 ### Project Structure  
 If you go into the `projects` folder and into your project folder, you'll see:  
@@ -252,12 +251,13 @@ Return in data: array of project names, version string
   
 ```
 /api/update_location
+Payload: selected 'path'
 Return in data: game 'path' string
 ```
   
 ```
 /api/update_location
-Payload: project 'name'
+Payload: project 'name', selected 'path'
 Return in data: project 'name', project 'config'
 name config
 ```
@@ -368,13 +368,13 @@ Return in data: project 'name', project 'config'
   
 ```
 /api/import
-Payload: project 'name'
+Payload: project 'name', file 'path'
 Return in data: project 'name', project 'config'
 ```
   
 ```
 /api/import_rpgmtrans
-Payload: project 'name'
+Payload: project 'name', file 'path'
 Return in data: project 'name', project 'config'
 ```
   
@@ -436,4 +436,10 @@ Return in data: project 'name', project 'config', file 'path', project 'strings'
 /api/search_string
 Payload:  project 'name', file 'path', 'search' string
 Return in data: project 'name', project 'config', 'search' string, matched 'files'
+```
+
+```
+/api/local_path
+Payload: directory 'path' (Empty string equals the last used directory), 'mode' (0 and 1 for exe, 2 for JSON, 3 for RPGMAKERTRANSPATCH)
+Return in data: 'path', list of 'folders', list of matching 'files'
 ```

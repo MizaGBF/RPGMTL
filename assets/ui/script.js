@@ -23,6 +23,7 @@ var strtablecache = [];
 var lastfileopened = null;
 var laststringsearch = null;
 var laststringinteracted = 0;
+var filebrowsingmode = 0;
 
 // entry point
 function init()
@@ -311,8 +312,7 @@ function project_list(data)
 	addTo(fragment, "div", {cls:["spacer"]});
 	// add buttons
 	addTo(fragment, "div", {cls:["interact"], onclick:function(){
-		set_loading_text("Select the Game in the opened dialog.");
-		postAPI("/api/update_location", project_creation);
+		local_browse("Create a project", "Select a Game executable.", 0);
 	}}).innerHTML = '<img src="assets/images/new.png">New Project';
 	addTo(fragment, "div", {cls:["interact"], onclick:function(){
 		postAPI("/api/settings", setting_menu);
@@ -706,8 +706,7 @@ function project_menu(data = null)
 		}}).innerHTML = '<img src="assets/images/translate.png">Project Translator';
 		addTo(fragment, "div", {cls:["spacer"]});
 		addTo(fragment, "div", {cls:["interact"], onclick:function(){
-			set_loading_text("Select the Game in the opened dialog to update the project files.");
-			postAPI("/api/update_location", project_menu, project_fail, {name:prjname});
+			local_browse("Update project files", "Select the Game executable.", 1);
 		}}).innerHTML = '<img src="assets/images/update.png">Update the Game Files';
 		addTo(fragment, "div", {cls:["interact"], onclick:function(){
 			set_loading_text("Extracting, be patient...");
@@ -724,12 +723,10 @@ function project_menu(data = null)
 				postAPI("/api/backups", backup_list, null, {name:prjname});
 			}}).innerHTML = '<img src="assets/images/copy.png">String Backups';
 			addTo(fragment, "div", {cls:["interact"], onclick:function(){
-				set_loading_text("Select an old RPGMTL strings file.");
-				postAPI("/api/import", project_menu, null, {name:prjname});
+				local_browse("Import RPGMTL", "Select an old RPGMTL strings file.", 2);
 			}}).innerHTML = '<img src="assets/images/import.png">Import Strings from RPGMTL v1/v2';
 			addTo(fragment, "div", {cls:["interact"], onclick:function(){
-				set_loading_text("Select a RPGMAKERTRANSPATCH file.");
-				postAPI("/api/import_rpgmtrans", project_menu, null, {name:prjname});
+				local_browse("Import RPGMAKERTRANSPATCH", "Select a RPGMAKERTRANSPATCH file.", 3);
 			}}).innerHTML = '<img src="assets/images/import.png">Import Strings from RPGMakerTrans v3';
 			addTo(fragment, "div", {cls:["spacer"]});
 		}
@@ -1267,7 +1264,7 @@ function prepareGroupOn(node, i)
 						edittl.value = prjstring[ss[0]][1];
 					else
 						edittl.value = prjstring[ss[0]][0]; // default to original if not translated
-					// update string-lenght indicator
+					// update string-length indicator
 					tl_string_length.innerHTML = edittl.value.length;
 					// make element visible
 					bottom.style.display = "";
@@ -1499,4 +1496,109 @@ function translate_string()
 			tl_string_length.innerHTML = edittl.value.length;
 		}
 	}, function() {}, {name:prjname, string:edit_ori.textContent});
+}
+
+// base for file browsing via /api/local_path
+function local_browse(title, explanation, mode)
+{
+	try
+	{
+		filebrowsingmode = mode;
+		
+		// top bar
+		let fragment = clearBar();
+		// back button
+		addTo(fragment, "div", {cls:["interact", "button"], br:false, onclick:function(){
+			switch(filebrowsingmode)
+			{
+				case 0:
+					postAPI("/api/main", project_list);
+					break;
+				case 1:
+				case 2:
+				case 3:
+					project_menu();
+					break;
+				default:
+					// TODO
+					break;
+			}
+		}}).innerHTML = '<img src="assets/images/back.png">';
+		addTo(fragment, "div", {cls:["inline"], br:false}).innerHTML = title;
+		addTo(fragment, "div", {cls:["barfill"], br:false});
+		updateBar(fragment);
+	
+		// main part
+		fragment = clearMain();
+		addTo(fragment, "div", {cls:["title"]}).innerHTML = explanation;
+		addTo(fragment, "div", {cls:["title"], id:"current_path"});
+		addTo(fragment, "div", {cls:["left", "title"]}).innerHTML = "Folders";
+		addTo(fragment, "div", {id:"folder_container"});
+		addTo(fragment, "div", {cls:["left", "title"]}).innerHTML = "Files";
+		addTo(fragment, "div", {id:"file_container"});
+		updateMain(fragment);
+		postAPI("/api/local_path", update_local_browse, null, {"path":"", "mode":filebrowsingmode});
+	}
+	catch(err)
+	{
+		keypressenabled = false;
+		console.error("Exception thrown", err.stack);
+		pushPopup("An unexpected error occured.");
+		bottom.style.display = "none";
+		project_menu();
+	}
+}
+
+function update_local_browse(data)
+{
+	document.getElementById("current_path").innerText = data["path"];
+	let container = document.getElementById("folder_container");
+	container.innerHTML = "";
+	for(let i = 0; i < data["folders"].length; ++i)
+	{
+		const t = data["folders"][i];
+		addTo(container, "div", {cls:["interact"], onclick:function(){
+			if(t == "..")
+			{
+				if(data["path"].length == 3 && data["path"].endsWith(":/"))
+				{
+					// special windows case
+					postAPI("/api/local_path", update_local_browse, null, {"path":"::", "mode":filebrowsingmode});
+				}
+				else
+				{
+					// parent directory
+					postAPI("/api/local_path", update_local_browse, null, {"path":data["path"].split('/').slice(0, data["path"].split('/').length-1).join('/'), "mode":filebrowsingmode});
+				}
+			}
+			else
+			{
+				postAPI("/api/local_path", update_local_browse, null, {"path":t, "mode":filebrowsingmode});
+			}
+		}}).innerHTML = t.split("/")[t.split("/").length-1];
+	}
+	
+	container = document.getElementById("file_container");
+	container.innerHTML = "";
+	for(let i = 0; i < data["files"].length; ++i)
+	{
+		const t = data["files"][i];
+		addTo(container, "div", {cls:["interact"], onclick:function(){
+			switch(filebrowsingmode)
+			{
+				case 0:
+					postAPI("/api/update_location", project_creation, null, {"path":t});
+				case 1:
+					postAPI("/api/update_location", project_creation, null, {"name":prjname, "path":t});
+				case 2:
+					postAPI("/api/import", project_menu, null, {name:prjname, path:t});
+				case 3:
+					postAPI("/api/import_rpgmtrans", project_menu, null, {name:prjname, path:t});
+				default:
+					break;
+			}
+		}}).innerHTML = t.split("/")[t.split("/").length-1];
+	}
+	
+	set_loading(false);
 }
