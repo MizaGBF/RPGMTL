@@ -1804,7 +1804,9 @@ class RPGMTL():
                 path = Path(os.getcwd())
             self.last_directory = path.as_posix()
             files : list[str] = []
-            dirs : list[str] = [".."]
+            dirs : list[str] = []
+            if not self.is_posix or (self.is_posix and path != "/"):
+                dirs.append("..")
             for item in path.iterdir():
                 if item.is_dir():
                     dirs.append(item.as_posix())
