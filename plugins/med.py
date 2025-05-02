@@ -2,6 +2,8 @@ from __future__ import annotations
 from . import Plugin, WalkHelper
 import io
 
+# Based on some script I got from someone.
+# The original author is unknown, feel free to hit me up so I can credit them if you know.
 class MED(Plugin):
     CIPHER : bytes = b'\x00\x23\x52\x55\x4C\x45\x5F\x56\x49\x45\x57\x45\x52\x00\x3A\x56\x49\x45\x57\x5F\x30\x00\x7B\x00'
     

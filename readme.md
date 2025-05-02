@@ -1,9 +1,22 @@
 # RPGMTL  
   
-Small Tool to create Translation Patches for RPG Maker games (from XP to MZ) and more.  
+Flexible Tool written in Python to create Translation Patches for games.  
 The interface runs in your Web Browser.  
   
-![image](https://raw.githubusercontent.com/MizaGBF/RPGMTL/main/assets/github/1.png "Screenshot taken on v3.11")
+The list of supported files is currently:  
+- JSON (for RPG Maker MV, MZ and other games)  
+- Javascript (for RPG Maker MV, MZ and other games)  
+- CSV (for RPG Maker MV, MZ and other games)    
+- Ruby Marshal (.rxdata, .rvdata, .rvdata2 for RPG Maker XP to VX Ace)  
+- MED (md_scr.med archives in particular, used by Triangle and Lusterise games) (EXPERIMENTAL)  
+- NSA (arc.nsa archives from NScripter engine) (EXPERIMENTAL)  
+  
+Eventually planned (No ETA):  
+- KiriKiri Engine files  
+- YU-RIS Engine files  
+- And more as I see fit.  
+  
+![image](https://raw.githubusercontent.com/MizaGBF/RPGMTL/main/assets/github/1.png)
   
 ## Table of contents  
   
@@ -76,7 +89,7 @@ Before starting anything, you can tinker with the various settings.
 Global settings will affect every new projects.  
 They can be overrided individually for each project, if needed.  
   
-![image](https://raw.githubusercontent.com/MizaGBF/RPGMTL/main/assets/github/4.png "Screenshot taken on v3.11")
+![image](https://raw.githubusercontent.com/MizaGBF/RPGMTL/main/assets/github/4.png)
   
 ### HTTPS
   
@@ -94,7 +107,10 @@ If you wish to revert this setting, run **once**:
 ```console
 python rpgmtl.py --http
 ```  
-RPGMTL will *forget* these file locations.
+RPGMTL will *forget* these file locations.  
+  
+> [!NOTE]  
+> There are currently no plans to add some sort of authentification system for remote uses.  
   
 ## Project Management  
   
@@ -103,7 +119,7 @@ RPGMTL will *forget* these file locations.
 On the Home Page, click on `New Project`.  
 Select the location of the executable, of the game you wish to translate.  
   
-![image](https://raw.githubusercontent.com/MizaGBF/RPGMTL/main/assets/github/2.png "Screenshot taken on v3.11")
+![image](https://raw.githubusercontent.com/MizaGBF/RPGMTL/main/assets/github/2.png)
   
 You'll then be asked a project name. This name will be the one used for the project folder and in the Web UI.
 Once done, hit `Create`.  

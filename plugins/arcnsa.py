@@ -5,6 +5,7 @@ import struct
 from typing import Any
 from pathlib import Path
 
+# Note to future self: Check https://07th-mod.github.io/ponscripter-fork/api/ for possible improvements to parsing strings
 class ArcNSA(Plugin):
     COMPRESSION_TYPES = {
         0: "None",
