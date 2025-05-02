@@ -267,12 +267,15 @@ function project_list(data)
 	// shutdown button
 	addTo(fragment, "div", {cls:["interact", "button"], br:false, onclick:function(){
 		if(this.classList.contains("selected") || window.event.ctrlKey)
+		{
+			this.classList.remove("selected");
 			postAPI("/api/shutdown", function(_unused_) {
 				clearBar();
 				let fragment = clearMain();
 				addTo(fragment, "div", {cls:["title"]}).innerHTML = "RPGMTL has been shutdown";
 				updateMain(fragment);
 			});
+		}
 		else
 		{
 			this.classList.add("selected");
@@ -1125,7 +1128,10 @@ function backup_list(data)
 			// add button to load it
 			addTo(fragment, "div", {cls:["interact", "text-button", "inline"], br:false, onclick:function(){
 				if(this.classList.contains("selected") || window.event.ctrlKey) // confirmation / shortcut to insta confirm
+				{
+					this.classList.remove("selected");
 					postAPI("/api/load_backup", project_menu, null, {name:prjname, file:elem[0]});
+				}
 				else
 				{
 					this.classList.add("selected");
@@ -1352,7 +1358,8 @@ function open_file(data)
 		addTo(fragment, "div", {cls:["interact"], onclick:function() {
 			if(this.classList.contains("selected") || window.event.ctrlKey) // confirmation / shortcut to insta confirm
 			{
-				set_loading_text("Translating this file...")
+				this.classList.remove("selected");
+				set_loading_text("Translating this file...");
 				postAPI("/api/translate_file", update_string_list, function(){
 					bottom.style.display = "none";
 					postAPI("/api/browse", browse_files, null, {name:prjname, path:returnpath});
