@@ -837,6 +837,7 @@ function browse_files(data)
 			else if(prj["files"][t.slice(0, -1)] != undefined) // for archive type files
 			{
 				div.innerHTML = '<img src="assets/images/archive.png">' + t;
+				div.classList.add("archive");
 			}
 			else
 			{
@@ -1372,13 +1373,16 @@ function open_file(data)
 				addTo(fragment, "div", {cls:["interact"], onclick:function() {
 					postAPI("/api/browse", browse_files, null, {name:prjname, path:lastfileopened + "/"});
 				}}).innerHTML = '<img src="assets/images/archive.png">Access Files contained inside';
+				addTo(fragment, "div", {cls:["title", "left", "smalltext"]}).innerText = "This file has been divided into multiple files.";
 				break;
 			case 2: // VIRTUAL
 				addTo(fragment, "div", {cls:["interact"], onclick:function() {
 					postAPI("/api/file", open_file, null, {name:prjname, path:prj["files"][lastfileopened]["parent"]});
 				}}).innerHTML = '<img src="assets/images/archive.png">Open Parent File';
+				addTo(fragment, "div", {cls:["title", "left", "smalltext"]}).innerText = "This file is part of a bigger file.";
 				break;
 			case 3: // VIRTUAL_UNDEFINED
+				addTo(fragment, "div", {cls:["title", "left", "smalltext"]}).innerText = "If you see this, something went wrong.";
 				break;
 			default:
 				break;

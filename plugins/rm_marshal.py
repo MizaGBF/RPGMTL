@@ -129,7 +129,7 @@ class RM_Marshal(Plugin):
     def __init__(self : RM_Marshal) -> None:
         super().__init__()
         self.name : str = "RPG Maker Marshal"
-        self.description : str = "v3.2\nHandle files from RPG Maker XP, VX and VX Ace"
+        self.description : str = "v3.3\nHandle files from RPG Maker XP, VX and VX Ace"
         self.allow_ruby_plugin : bool = True # Leave it on by default
 
     def get_setting_infos(self : RM_Marshal) -> dict[str, list]:
@@ -222,11 +222,12 @@ class RM_Marshal(Plugin):
         if s == "data/scripts":
             if self._write_walk_script(name, file_path, self.owner.strings[name], mc.root):
                 return mc.dump(), True
+        elif s== "data/commonevents":
+            if self._write_walk_common(name, file_path, self.owner.strings[name], mc.root):
+                return mc.dump(), True
         else:
             helper : WalkHelper = WalkHelper(file_path, self.owner.strings[name])
-            if s == "data/commonevents":
-                self._write_walk_common(mc.root, helper)
-            elif s == "data/mapinfos":
+            if s == "data/mapinfos":
                 self._write_walk_mapinfo(mc.root, helper)
             elif s == "data/troops":
                 self._write_walk_troops(mc.root, helper)
@@ -340,24 +341,33 @@ class RM_Marshal(Plugin):
             if cmds is not None:
                 strings = self._read_walk_event(cmds)
                 if len(strings) > 0:
-                    name = "Common Event"
                     eid : ME = e.get(b"@id")
-                    if eid is not None:
-                        name += " " + str(eid.data)
+                    evname : str = self.owner.CHILDREN_FILE_ID + "{:04}".format(eid.data)
                     n : ME = e.get(b"@name")
                     if n is not None:
-                        name += " " + n.data.decode('utf-8')
-                    entries.append([name])
+                        evname += " " + n.data.decode('utf-8')
+                    entries.append([evname])
                     entries.extend(strings)
         return entries
 
-    def _write_walk_common(self : RM_Marshal, me : ME, helper : WalkHelper) -> None:
+    def _write_walk_common(self : RM_Marshal, name : str, file_path : str, strings : dict, me : ME) -> bool:
+        modified : bool = False
         for e in me:
             if e.token == b"0":
                 continue
             cmds : ME = e.get(b"@list")
             if cmds is not None:
-                self._write_walk_event(cmds, helper)
+                eid : ME = e.get(b"@id")
+                evname : str = file_path + "/{:04}".format(eid.data)
+                n : ME = e.get(b"@name")
+                if n is not None:
+                    evname += " " + n.data.decode('utf-8')
+                if evname in strings["files"] and not self.owner.projects[name]["files"][evname]["ignored"]:
+                    helper : WalkHelper = WalkHelper(evname, strings)
+                    self._write_walk_event(cmds, helper)
+                    if helper.modified:
+                        modified = True
+        return modified
 
     # RPGMK Events processing (used by Map and CommonEvents)
     # Used by both Map and CommonEvents
@@ -518,8 +528,8 @@ class RM_Marshal(Plugin):
             scriptname = file_path + "/{:04}".format(count)
             if e.data[1].data:
                 scriptname += " " + e.data[1].data.decode('utf-8').replace("/", " ").replace("\\", " ")
-            if scriptname in strings["files"] and not self.owner.projects[name]["files"][scriptname]["ignored"]:
-                if e.data[2].data:
+            if e.data[2].data:
+                if scriptname in strings["files"] and not self.owner.projects[name]["files"][scriptname]["ignored"]:
                     helper : WalkHelper = WalkHelper(scriptname, strings)
                     script = zlib.decompressobj().decompress(e.data[2].data).decode('utf-8')
                     if self.allow_ruby_plugin and "Ruby" in self.owner.plugins:

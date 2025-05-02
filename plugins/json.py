@@ -131,7 +131,7 @@ class JSON(Plugin):
     def __init__(self : JSON) -> None:
         super().__init__()
         self.name : str = "JSON"
-        self.description : str = "v1.8\nHandle JSON files, including ones from RPG Maker MV/MZ"
+        self.description : str = "v1.9\nHandle JSON files, including ones from RPG Maker MV/MZ"
 
     def get_setting_infos(self : Plugin) -> dict[str, list]:
         return {
@@ -164,39 +164,43 @@ class JSON(Plugin):
 
     def write(self : JSON, name : str, file_path : str, content : bytes) -> tuple[bytes, bool]:
         data = json.loads(self.decode(content))
-        helper : WalkHelper = WalkHelper(file_path, self.owner.strings[name])
+        modified : bool = False
         format_mode : int = -1
         if isinstance(data, str):
+            helper : WalkHelper = WalkHelper(file_path, self.owner.strings[name])
             data = helper.apply_string(data)
+            modified = helper.modified
         else:
             p : PurePath = PurePath(file_path) # path object equivalent
             dp : str = p.relative_to(p.parent.parent) # path one folder up (to detect Data folder)
             s : str = dp.as_posix().lower() # as lowercase posix string
-            if s == "data/system.json": # System file of RPGMV/MZ
-                self._write_walk_system(data, helper)
-                format_mode = 2
-            elif s == "data/commonevents.json": # CommonEvents file of RPGMV/MZ
-                self._write_walk_common(data, helper)
+            if s == "data/commonevents.json": # CommonEvents file of RPGMV/MZ
+                modified = self._write_walk_common(name, file_path, self.owner.strings[name], data)
                 format_mode = 0
-            elif s == "data/troops.json": # Troops.json file of RPGMV/MZ
-                self._write_walk_troops(data, helper)
-                format_mode = 0
-            elif s in self.DEFAULT_RPGMK_DATA_FILE:
-                self._write_walk_data(data, helper)
-                format_mode = 0
-            elif s.startswith("data/map"): # Map file of RPGMV/MZ (Note: Make sure it's after mapinfos or it'll be caught by it)
-                self._write_walk_map(data, helper)
-                format_mode = 1
             else:
-                self._write_walk(data, helper)
-        if helper.modified:
+                helper : WalkHelper = WalkHelper(file_path, self.owner.strings[name])
+                if s == "data/system.json": # System file of RPGMV/MZ
+                    self._write_walk_system(data, helper)
+                    format_mode = 2
+                elif s == "data/troops.json": # Troops.json file of RPGMV/MZ
+                    self._write_walk_troops(data, helper)
+                    format_mode = 0
+                elif s in self.DEFAULT_RPGMK_DATA_FILE:
+                    self._write_walk_data(data, helper)
+                    format_mode = 0
+                elif s.startswith("data/map"): # Map file of RPGMV/MZ (Note: Make sure it's after mapinfos or it'll be caught by it)
+                    self._write_walk_map(data, helper)
+                    format_mode = 1
+                else:
+                    self._write_walk(data, helper)
+                modified = helper.modified
+        if modified:
             return self.format_json(data, format_mode), True
         else:
             return content, False
     
     def format_json(self : JSON, data : any, mode : int) -> bytes:
         # Format in different way depending on what kind of file it is
-        print(mode)
         match mode:
             case 0: # default rpg maker files
                 # For these files, we try to keep the formatting as close as standard RPGMV/MZ as possible
@@ -409,15 +413,22 @@ class JSON(Plugin):
                 continue
             strings = self._read_walk_event(ev["list"])
             if len(strings) > 0:
-                entries.append(["Common Event " + str(ev["id"]) + " " + ev["name"]])
+                entries.append([self.owner.CHILDREN_FILE_ID + "{:04}".format(ev["id"]) + " " + ev["name"]])
                 entries.extend(strings)
         return entries
 
-    def _write_walk_common(self : JSON, obj : Any, helper : WalkHelper) -> None:
+    def _write_walk_common(self : JSON, name : str, file_path : str, strings : dict, obj : Any) -> bool:
+        modified : bool = False
         for i in range(len(obj)):
             if obj[i] is None:
                 continue
-            self._write_walk_event(obj[i]["list"], helper)
+            evname : str = file_path + "/{:04}".format(obj[i]["id"]) + " " + obj[i]["name"]
+            if evname in strings["files"] and not self.owner.projects[name]["files"][evname]["ignored"]:
+                helper : WalkHelper = WalkHelper(evname, strings)
+                self._write_walk_event(obj[i]["list"], helper)
+                if helper.modified:
+                    modified = True
+        return modified
 
     # RPGMV/MZ Events processing
     # Used by both Map and CommonEvents

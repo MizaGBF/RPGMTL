@@ -348,6 +348,10 @@ html, body {
 	width: 50%;
 }
 
+.archive {
+	background: #333d3d;
+}
+
 .red {
 	background: #c42323;
 }
