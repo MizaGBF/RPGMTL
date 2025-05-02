@@ -1068,8 +1068,12 @@ class RPGMTL():
                 data = f.read()
             if file_path.endswith(".json"): # old format 1
                 data = json.loads(data.decode("utf-8"))
-                if len(data) == 2 and "strings" in data: # very old format
-                    ref = data["strings"]
+                flag : bool = "strings" in data
+                if flag:
+                    if "files" in data: # current v3 format
+                        ref = {v[0]:v[1] for k, v in data["strings"].items() if v[1] is not None}
+                    elif len(data) == 2: # very old format
+                        ref = data["strings"]
                 else:
                     ref = data
             elif file_path.endswith(".py"): # old format 2

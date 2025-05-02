@@ -676,7 +676,7 @@ function project_menu(data = null)
 				<li><b>Release a Patch</b> to create a copy of Game files with your translated strings. They will be found in the <b>release</b> folder.</li>\
 			</ul>\
 			<ul>\
-				<li><b>Import Strings from older RPGMTL</b> to import strings from an older RPGMTL file format.</li>\
+				<li><b>Import RPGMTL</b> to import strings from RPGMTL projects from any version.</li>\
 				<li><b>Strings Backups</b> to open the list of backups if you need to revert the project data to an earlier state.</li>\
 			</ul>";
 			help.style.display = "";
