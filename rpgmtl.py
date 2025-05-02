@@ -408,6 +408,7 @@ class RPGMTL():
                             self.log.info(fpr.as_posix() + " has been copied to project folder " + pname)
                         except Exception as e:
                             self.log.error("Couldn't copy the following file:" + fp.as_posix() + " to project folder " + pname + "\n" + self.trbk(e))
+                        break
         # keep file setting if it exists
         for k, v in self.projects[pname].get("files", {}).items():
             if k in update_file_dict:
