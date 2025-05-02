@@ -68,7 +68,7 @@ class PatcherHelper():
 ######################################################
 class RPGMTL():
     # constant
-    VERSION = "3.12"
+    VERSION = "3.13"
     CHILDREN_FILE_ID = "@__children_file__@:"
     def __init__(self : RPGMTL) -> None:
         # Setting up logging
@@ -139,8 +139,6 @@ class RPGMTL():
         # loaded plugins
         self.plugins : dict[str, plugins.Plugin] = {}
         self.translators : dict[str, plugins.TranslatorPlugin] = {}
-        # extensions supported by plugins
-        self.extensions : set[str] = set()
         # load settings.json
         self.load_settings()
         # load the plugins (see plugins/__init__.py )
@@ -383,32 +381,33 @@ class RPGMTL():
         game_path : PurePath = PurePath(self.projects[pname]["path"])
         for path, subdirs, files in os.walk(game_path):
             for name in files:
-                if name.split('.')[-1] in self.extensions: # file has a supported extension
-                    # get the:
-                    fp : PurePath = PurePath(path, name) # full file path
-                    fpr : PurePath = fp.relative_to(game_path) # relative target file path
-                    target_dir = backup_path / fpr.parent # directory containing the file
-                    if not os.path.isdir(target_dir): # create directory if not found
+                for p in self.plugins.values():
+                    if p.match(name, False):
+                        # file is supported by an extension
+                        fp : PurePath = PurePath(path, name) # full file path
+                        fpr : PurePath = fp.relative_to(game_path) # relative target file path
+                        target_dir = backup_path / fpr.parent # directory containing the file
+                        if not os.path.isdir(target_dir): # create directory if not found
+                            try:
+                                # create dir if needed
+                                os.makedirs(target_dir.as_posix(), exist_ok=True)
+                            except Exception as e:
+                                self.log.error("Couldn't create the following folder:" + target_dir.as_posix() + "\n" + self.trbk(e))
+                        # backup
                         try:
-                            # create dir if needed
-                            os.makedirs(target_dir.as_posix(), exist_ok=True)
+                            # file copy to project folder
+                            shutil.copy(fp, backup_path / fpr)
+                            # add to config.json
+                            update_file_dict[fpr.as_posix()] = {
+                                "file_type":FileType.NORMAL,
+                                "ignored":False,
+                                "strings":0,
+                                "translated":0,
+                                "disabled_strings":0,
+                            }
+                            self.log.info(fpr.as_posix() + " has been copied to project folder " + pname)
                         except Exception as e:
-                            self.log.error("Couldn't create the following folder:" + target_dir.as_posix() + "\n" + self.trbk(e))
-                    # backup
-                    try:
-                        # file copy to project folder
-                        shutil.copy(fp, backup_path / fpr)
-                        # add to config.json
-                        update_file_dict[fpr.as_posix()] = {
-                            "file_type":FileType.NORMAL,
-                            "ignored":False,
-                            "strings":0,
-                            "translated":0,
-                            "disabled_strings":0,
-                        }
-                        self.log.info(fpr.as_posix() + " has been copied to project folder " + pname)
-                    except Exception as e:
-                        self.log.error("Couldn't copy the following file:" + fp.as_posix() + " to project folder " + pname + "\n" + self.trbk(e))
+                            self.log.error("Couldn't copy the following file:" + fp.as_posix() + " to project folder " + pname + "\n" + self.trbk(e))
         # keep file setting if it exists
         for k, v in self.projects[pname].get("files", {}).items():
             if k in update_file_dict:

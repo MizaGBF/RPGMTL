@@ -5,10 +5,7 @@ class INI(Plugin):
     def __init__(self : INI) -> None:
         super().__init__()
         self.name : str = "INI"
-        self.description : str = " v1.2\nHandle INI files"
-
-    def file_extension(self : INI) -> list[str]:
-        return ["ini"]
+        self.description : str = " v1.3\nHandle INI files"
 
     def match(self : INI, file_path : str, is_for_action : bool) -> bool:
         return file_path.endswith(".ini")

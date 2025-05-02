@@ -43,9 +43,6 @@ class ArcNSA(Plugin):
             self.owner.log.error("[ArcNSA] Action 'arcnsa_export' failed with error:\n" + self.owner.trbk(e))
             return "An error occured, the file might be badly formatted."
 
-    def file_extension(self : ArcNSA) -> list[str]:
-        return ["nsa"]
-
     def match(self : ArcNSA, file_path : str, is_for_action : bool) -> bool:
         return file_path.endswith(".nsa")
 

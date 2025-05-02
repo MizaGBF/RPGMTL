@@ -67,8 +67,6 @@ class Plugin:
     def connect(self : Plugin, rpgmtl : RPGMTL) -> None:
         # No ned to reimplement this one
         self.owner = rpgmtl
-        for ex in self.file_extension():
-            self.owner.extensions.add(ex)
         self.owner.log.info("Plugin " + self.name + " has been loaded")
 
     def get_setting_infos(self : Plugin) -> dict[str, list]:
@@ -100,10 +98,6 @@ class Plugin:
 
     def set_settings(self : Plugin, settings : dict[str, Any]) -> None:
         self.settings = settings
-
-    def file_extension(self : Plugin) -> list[str]:
-        # A list of file extensions, without the dot
-        return []
 
     def match(self : Plugin, file_path : str, is_for_action : bool) -> bool:
         # Return True if your plugin wants to handle this file

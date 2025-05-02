@@ -5,10 +5,7 @@ class Ruby(Plugin):
     def __init__(self : Ruby) -> None:
         super().__init__()
         self.name : str = "Ruby"
-        self.description : str = " v1.4\nHandle Ruby files"
-
-    def file_extension(self : Ruby) -> list[str]:
-        return ["rb"]
+        self.description : str = " v1.5\nHandle Ruby files"
 
     def match(self : Ruby, file_path : str, is_for_action : bool) -> bool:
         return file_path.endswith(".rb")

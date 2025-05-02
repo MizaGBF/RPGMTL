@@ -138,9 +138,6 @@ class JSON(Plugin):
             "json_rpgm_multiline": ["Merge multiline commands into one (Require re-extract)", "bool", False, None]
         }
 
-    def file_extension(self : JSON) -> list[str]:
-        return ["json"]
-
     def match(self : JSON, file_path : str, is_for_action : bool) -> bool:
         return file_path.endswith(".json")
 

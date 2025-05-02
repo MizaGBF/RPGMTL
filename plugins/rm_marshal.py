@@ -129,7 +129,7 @@ class RM_Marshal(Plugin):
     def __init__(self : RM_Marshal) -> None:
         super().__init__()
         self.name : str = "RPG Maker Marshal"
-        self.description : str = "v3.3\nHandle files from RPG Maker XP, VX and VX Ace"
+        self.description : str = "v3.4\nHandle files from RPG Maker XP, VX and VX Ace"
         self.allow_ruby_plugin : bool = True # Leave it on by default
 
     def get_setting_infos(self : RM_Marshal) -> dict[str, list]:
@@ -183,9 +183,6 @@ class RM_Marshal(Plugin):
             self.allow_ruby_plugin = True
             self.owner.log.error("[RPG Maker Marshal] Action 'rm_marshal_script_export' failed with error:\n" + self.owner.trbk(e))
             return "An error occured, the file might be badly formatted."
-
-    def file_extension(self : RM_Marshal) -> list[str]:
-        return self.EXTENSIONS
 
     def match(self : RM_Marshal, file_path : str, is_for_action : bool) -> bool:
         return '.' in file_path and file_path.split('.')[-1] in self.EXTENSIONS
