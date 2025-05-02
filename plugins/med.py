@@ -10,7 +10,7 @@ class MED(Plugin):
     def __init__(self : MED) -> None:
         super().__init__()
         self.name : str = "MED"
-        self.description : str = "v0.2\nHandle md_scr.med MED files (Experimental)"
+        self.description : str = "v0.3\nHandle md_scr.med MED files (Experimental)"
 
     def match(self : MED, file_path : str, is_for_action : bool) -> bool:
         return file_path.endswith("md_scr.med")
@@ -203,7 +203,7 @@ class MED(Plugin):
                     while f[p] != "_": # ???
                         p -= 1
                     name : bytes = f[:p].encode()
-                    handle.write(b'\x00'*(enlen - len(name) - 12))
+                    name += b'\x00' * (enlen - len(name) - 12)
                     unk = int.to_bytes(int(f[p+1:]), 4, byteorder='little')
                     
                     encrypted : bytearray = self.encrypt(data, key)
