@@ -1588,12 +1588,16 @@ function update_local_browse(data)
 			{
 				case 0:
 					postAPI("/api/update_location", project_creation, null, {"path":t});
+					break;
 				case 1:
 					postAPI("/api/update_location", project_creation, null, {"name":prjname, "path":t});
+					break;
 				case 2:
 					postAPI("/api/import", project_menu, null, {name:prjname, path:t});
+					break;
 				case 3:
 					postAPI("/api/import_rpgmtrans", project_menu, null, {name:prjname, path:t});
+					break;
 				default:
 					break;
 			}
