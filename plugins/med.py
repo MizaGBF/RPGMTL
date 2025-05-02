@@ -1,0 +1,220 @@
+from __future__ import annotations
+from . import Plugin, WalkHelper
+import io
+
+class MED(Plugin):
+    CIPHER : bytes = b'\x00\x23\x52\x55\x4C\x45\x5F\x56\x49\x45\x57\x45\x52\x00\x3A\x56\x49\x45\x57\x5F\x30\x00\x7B\x00'
+    
+    def __init__(self : MED) -> None:
+        super().__init__()
+        self.name : str = "MED"
+        self.description : str = "v0.1\nHandle md_scr.med MED files (Experimental)"
+
+    def file_extension(self : MED) -> list[str]:
+        return ["med"]
+
+    def match(self : MED, file_path : str, is_for_action : bool) -> bool:
+        return file_path.endswith("md_scr.med")
+
+    def read(self : MED, file_path : str, content : bytes) -> list[list[str]]:
+        files : dict[str, bytearray] = self.unpack(content)
+        if files is not None:
+            return self.extract_strings(files)
+        else:
+            return [[]]
+
+    def write(self : MED, name : str, file_path : str, content : bytes) -> tuple[bytes, bool]:
+        files : dict[str, bytearray] = self.unpack(content)
+        if files is not None:
+            return self.patch_strings(name, file_path, self.owner.strings[name], content, files)
+        else:
+            return content, False
+
+    def remove_dupes(self : MED, key):
+        for i in range(2, len(key)+1):
+            cnt = int(len(key) / i + 1)
+            tmp = key[:i]
+            ans = bytearray(tmp)
+            tmp *= cnt
+            tmp = tmp[:len(key)]
+            if tmp == key:
+                return ans
+        return None
+
+    def decrypt(self : MED, data : bytes, key : bytearray) -> bytearray:
+        content = bytearray(data)
+        for i in range(0x10, len(content)):
+            content[i] = (content[i]+key[(i - 0x10) % len(key)]) & 0xff
+        return content
+
+    def encrypt(self : MED, data: bytearray, key : bytearray) -> bytearray:
+        for i in range(0x10, len(data)):
+            data[i] = (data[i] - key[(i - 0x10) % len(key)]) & 0xff
+        return data
+
+    def unpack(self : MED, data : bytes) -> dict[str, bytearray]:
+        if data[:4] != b'MDE0':
+            raise Exception("[MED] Invalid Magic Number")
+        enlen = int.from_bytes(data[4:6], byteorder='little')
+        en_count = int.from_bytes(data[6:8], byteorder='little')
+
+        files : dict[str, bytes] = {}
+        secret : list[int]|None = None
+        for i in range(en_count):
+            entry : bytes = data[16 + i * enlen:16 + (i + 1) * enlen]
+            offset : int = int.from_bytes(entry[-4:], byteorder='little')
+            length : int = int.from_bytes(entry[-8:-4], byteorder='little')
+            unk : int = int.from_bytes(entry[-12:-8], byteorder='little')
+            name : str = ""
+            for i in entry:
+                if not i:
+                    break
+                else:
+                    name += chr(i)
+            filename = f'{name}_{unk}'
+            files[filename] = data[offset:offset+length]
+            
+            if filename.startswith('_VIEW'):
+                raw = files[filename][0x10:0x28]
+                secret = []
+                for i in range(24):
+                    t = raw[i] - self.CIPHER[i]
+                    t = - t
+                    if t < 0:
+                        t += 256
+                    secret.append(t)
+
+        if secret:
+            key : bytearray = bytearray(map(lambda x: x & 0xff, secret))
+            key = self.remove_dupes(key)
+            for f, data in files.items():
+                files[f] = self.decrypt(data, key)
+            return files
+        else:
+            raise Exception("[MED] Failed to unpack file")
+
+    def _has_jp(self : MED, line: str) -> bool:
+        for ch in line:
+            if ('\u0800' <= ch and ch <= '\u9fa5') or ('\uff01' <= ch <= '\uff5e'):
+                return True
+        return False
+
+    def extract_strings(self : MED, files : dict[str, bytearray]) -> list[list[str]]:
+        entries : list[list[str]] = []
+        count = 0
+        for f, data in files.items():
+            offset : int = int.from_bytes(data[4:8], byteorder='little') + 0x10
+            content : bytearray = data[offset:]
+            file_content : bytes = b''
+            strings : list[str] = [""]
+            for i in content:
+                if i:
+                    file_content += int.to_bytes(i, 1, byteorder='little')
+                else:
+                    try:
+                        decoded : str = file_content.decode('cp932', errors='ignore')
+                        if self._has_jp(decoded) and decoded[0] not in ';#':
+                            strings.append(decoded)
+                    except Exception as e:
+                        self.owner.log.warning("[MED] Error in 'extract_med':\n" + self.owner.trbk(e))
+                    file_content = b''
+            if len(strings) > 1:
+                entries.append([self.owner.CHILDREN_FILE_ID + "{:05}_".format(count) + f])
+                entries.append(strings)
+            count += 1
+        return entries
+
+    def patch_strings(self : MED, pname : str, file_path : str, strings : dict, content : bytes, files : dict[str, bytearray]) -> tuple[bytes, bool]:
+        modified : bool = False
+        count = 0
+        for f in files:
+            fname : str = file_path + "/{:05}_".format(count) + f.replace("/", " ").replace("\\", " ")
+            if fname in strings["files"] and not self.owner.projects[pname]["files"][fname]["ignored"]:
+                helper : WalkHelper = WalkHelper(fname, strings)
+                data : bytearray = files[f]
+                offset : int = int.from_bytes(data[4:8], byteorder='little') + 0x10
+                buffer : bytes = b''
+                while offset < len(data):
+                    if data[offset]:
+                        buffer += data[offset:offset+1]
+                    else:
+                        decoded : str = buffer.decode('cp932', errors='ignore')
+                        if not self._has_jp(decoded) or decoded[0] in ';#':
+                            offset += 1
+                            buffer = b''
+                            continue
+                        tmp : str = helper.apply_string(decoded)
+                        if helper.str_modified:
+                            offset -= len(buffer)
+                            encoded = tmp.encode('cp932')
+                            data[offset:offset+len(buffer)] = encoded
+                            offset += len(encoded)
+                            modified = True
+                        buffer = b''
+                    offset += 1
+                data[:4] = int.to_bytes(len(data)-0x10, 4, byteorder='little')
+            count += 1
+        if modified:
+            # header
+            enlen = int.from_bytes(content[4:6], byteorder='little')
+            en_count = int.from_bytes(content[6:8], byteorder='little')
+            
+            # get secret
+            secret : list[int]|None = None
+            for i in range(en_count):
+                entry : bytes = content[16 + i * enlen:16 + (i + 1) * enlen]
+                offset : int = int.from_bytes(entry[-4:], byteorder='little')
+                length : int = int.from_bytes(entry[-8:-4], byteorder='little')
+                unk : int = int.from_bytes(entry[-12:-8], byteorder='little')
+                name : str = ""
+                for i in entry:
+                    if not i:
+                        break
+                    else:
+                        name += chr(i)
+                f = f'{name}_{unk}'
+                if f.startswith('_VIEW'):
+                    view_data = content[offset:offset+length]
+                    raw = view_data[0x10:0x28]
+                    secret = []
+                    for i in range(24):
+                        t = raw[i] - self.CIPHER[i]
+                        t = - t
+                        if t < 0:
+                            t += 256
+                        secret.append(t)
+                    key : bytearray = bytearray(map(lambda x: x & 0xff, secret))
+                    key = self.remove_dupes(key)
+                    break
+
+            # write
+            with io.BytesIO() as handle:
+                # header
+                handle.write(b'MDE0')
+                handle.write(int.to_bytes(enlen, 1, byteorder='little'))
+                handle.write(b'\x00')
+                handle.write(int.to_bytes(en_count, 2, byteorder='little'))
+                handle.write(b'\x00' * 8)
+                
+                offset = 0x10 + en_count * enlen
+                
+                file_data = []
+                for f, data in files.items():
+                    p = len(f) - 1
+                    while f[p] != "_": # ???
+                        p -= 1
+                    name : bytes = f[:p].encode()
+                    handle.write(b'\x00'*(enlen - len(name) - 12))
+                    unk = int.to_bytes(int(f[p+1:]), 4, byteorder='little')
+                    
+                    encrypted : bytearray = self.encrypt(data, key)
+                    handle.write(name)
+                    handle.write(unk)
+                    handle.write(int.to_bytes(len(encrypted), 4, byteorder='little'))
+                    handle.write(int.to_bytes(offset, 4, byteorder='little'))
+                    offset += len(encrypted)
+                    file_data.append(encrypted)
+                handle.write(b''.join(file_data))
+                return handle.getvalue(), True
+        else:
+            return content, False

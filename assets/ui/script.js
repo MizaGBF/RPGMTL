@@ -831,9 +831,17 @@ function browse_files(data)
 			const t = data["folders"][i];
 			let div = addTo(fragment, "div", {cls:["interact"]});
 			if(t == "..") // special one indicating we aren't on the root level
+			{
 				div.innerHTML = '<img src="assets/images/back.png">..';
+			}
+			else if(prj["files"][t.slice(0, -1)] != undefined) // for archive type files
+			{
+				div.innerHTML = '<img src="assets/images/archive.png">' + t;
+			}
 			else
+			{
 				div.innerHTML = '<img src="assets/images/folder.png">' + t;
+			}
 			div.onclick = function() // add callback
 			{
 				if(t == "..") // used for the "parent folder" button
@@ -1356,6 +1364,26 @@ function open_file(data)
 			}
 		}}).innerHTML = '<img src="assets/images/translate.png">Translate the File';
 		
+		switch(prj["files"][lastfileopened]["file_type"])
+		{
+			case 0: // NORMAL
+				break;
+			case 1: // ARCHIVE
+				addTo(fragment, "div", {cls:["interact"], onclick:function() {
+					postAPI("/api/browse", browse_files, null, {name:prjname, path:lastfileopened + "/"});
+				}}).innerHTML = '<img src="assets/images/archive.png">Access Files contained inside';
+				break;
+			case 2: // VIRTUAL
+				addTo(fragment, "div", {cls:["interact"], onclick:function() {
+					postAPI("/api/file", open_file, null, {name:prjname, path:prj["files"][lastfileopened]["parent"]});
+				}}).innerHTML = '<img src="assets/images/archive.png">Open Parent File';
+				break;
+			case 3: // VIRTUAL_UNDEFINED
+				break;
+			default:
+				break;
+		};
+		
 		// list strings
 		strtablecache = [];
 		for(let i = 0; i < prjlist.length; ++i)
@@ -1590,7 +1618,7 @@ function update_local_browse(data)
 					postAPI("/api/update_location", project_creation, null, {"path":t});
 					break;
 				case 1:
-					postAPI("/api/update_location", project_creation, null, {"name":prjname, "path":t});
+					postAPI("/api/update_location", project_menu, null, {"name":prjname, "path":t});
 					break;
 				case 2:
 					postAPI("/api/import", project_menu, null, {name:prjname, path:t});

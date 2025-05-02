@@ -7,7 +7,7 @@ class CSV(Plugin):
     def __init__(self : CSV) -> None:
         super().__init__()
         self.name : str = "CSV"
-        self.description : str = " v1.2\nHandle CSV files, including externMessage files from RPG Maker MV/MZ"
+        self.description : str = " v1.3\nHandle CSV files, including externMessage files from RPG Maker MV/MZ"
 
     def file_extension(self : CSV) -> list[str]:
         return ["csv"]
@@ -26,8 +26,8 @@ class CSV(Plugin):
                     entries.append(["Cell {}x{}".format(i,j), cell])
         return entries
 
-    def write(self : CSV, file_path : str, content : bytes, strings : dict) -> tuple[bytes, bool]:
-        helper : WalkHelper = WalkHelper(file_path, strings)
+    def write(self : CSV, name : str, file_path : str, content : bytes) -> tuple[bytes, bool]:
+        helper : WalkHelper = WalkHelper(file_path, self.owner.strings[name])
         with io.StringIO(self.decode(content)) as sin:
             reader = csv.reader(sin)
             content = [row for row in reader]

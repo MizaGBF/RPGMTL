@@ -5,7 +5,7 @@ class INI(Plugin):
     def __init__(self : INI) -> None:
         super().__init__()
         self.name : str = "INI"
-        self.description : str = " v1.1\nHandle INI files"
+        self.description : str = " v1.2\nHandle INI files"
 
     def file_extension(self : INI) -> list[str]:
         return ["ini"]
@@ -37,8 +37,8 @@ class INI(Plugin):
                 entries.append(lines[i])
         return entries
 
-    def write(self : INI, file_path : str, content : bytes, strings : dict) -> tuple[bytes, bool]:
-        helper : WalkHelper = WalkHelper(file_path, strings)
+    def write(self : INI, name : str, file_path : str, content : bytes) -> tuple[bytes, bool]:
+        helper : WalkHelper = WalkHelper(file_path, self.owner.strings[name])
         lines = self.load(content)
         for i in range(len(lines)):
             if isinstance(lines[i], list) and lines[i][1] != "":

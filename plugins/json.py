@@ -131,7 +131,7 @@ class JSON(Plugin):
     def __init__(self : JSON) -> None:
         super().__init__()
         self.name : str = "JSON"
-        self.description : str = "v1.7\nHandle JSON files, including ones from RPG Maker MV/MZ"
+        self.description : str = "v1.8\nHandle JSON files, including ones from RPG Maker MV/MZ"
 
     def get_setting_infos(self : Plugin) -> dict[str, list]:
         return {
@@ -162,9 +162,10 @@ class JSON(Plugin):
         else:
             return self._read_walk(data)
 
-    def write(self : JSON, file_path : str, content : bytes, strings : dict) -> tuple[bytes, bool]:
+    def write(self : JSON, name : str, file_path : str, content : bytes) -> tuple[bytes, bool]:
         data = json.loads(self.decode(content))
-        helper : WalkHelper = WalkHelper(file_path, strings)
+        helper : WalkHelper = WalkHelper(file_path, self.owner.strings[name])
+        format_mode : int = -1
         if isinstance(data, str):
             data = helper.apply_string(data)
         else:
@@ -173,64 +174,70 @@ class JSON(Plugin):
             s : str = dp.as_posix().lower() # as lowercase posix string
             if s == "data/system.json": # System file of RPGMV/MZ
                 self._write_walk_system(data, helper)
+                format_mode = 2
             elif s == "data/commonevents.json": # CommonEvents file of RPGMV/MZ
                 self._write_walk_common(data, helper)
+                format_mode = 0
             elif s == "data/troops.json": # Troops.json file of RPGMV/MZ
                 self._write_walk_troops(data, helper)
+                format_mode = 0
             elif s in self.DEFAULT_RPGMK_DATA_FILE:
                 self._write_walk_data(data, helper)
+                format_mode = 0
             elif s.startswith("data/map"): # Map file of RPGMV/MZ (Note: Make sure it's after mapinfos or it'll be caught by it)
                 self._write_walk_map(data, helper)
+                format_mode = 1
             else:
                 self._write_walk(data, helper)
         if helper.modified:
-            return self.encode(json.dumps(data)), True
+            return self.format_json(data, format_mode), True
         else:
             return content, False
     
-    def format(self : JSON, file_path : str, content : bytes) -> bytes:
+    def format_json(self : JSON, data : any, mode : int) -> bytes:
         # Format in different way depending on what kind of file it is
-        if '/' in file_path and '/'.join(file_path.split('/')[-2:]) in self.DEFAULT_RPGMK_DATA_FILE:
-            # For these files, we try to keep the formatting as close as standard RPGMV/MZ as possible
-            data = json.loads(self.decode(content))
-            with io.StringIO() as f:
-                self._format_element(f, data)
-                return self.encode(f.getvalue())
-        elif len(file_path) >= 16 and file_path[-16:-8] == "data/Map":
-            # Keep the standard format of Map files
-            data = json.loads(self.decode(content))
-            with io.StringIO() as f:
-                keys = list(data.keys())
-                f.write("{\n")
-                for k, v in data.items():
-                    match k:
-                        case "data":
-                            f.write("\n")
-                            f.write("\"{}\":".format(k))
-                            json.dump(v, f, ensure_ascii=False, separators=(',', ':'))
-                            if k != keys[-1]:
-                                f.write(",")
-                        case "events":
-                            f.write("\n")
-                            f.write("\"{}\":".format(k))
-                            self._format_element(f, v)
-                            if k != keys[-1]:
-                                f.write(",")
-                            f.write("\n")
-                        case _:
-                            f.write("\"{}\":".format(k))
-                            json.dump(v, f, ensure_ascii=False, separators=(',', ':'))
-                            if k != keys[-1]:
-                                f.write(",")
-                f.write("}")
-                return self.encode(f.getvalue())
-        elif file_path.endswith("data/System.json"):
-            # Keep the standard format of System.json
-            data = json.loads(self.decode(content))
-            with io.StringIO() as f:
-                json.dump(data, f, ensure_ascii=False, separators=(',', ':'))
-                return self.encode(f.getvalue())
-        return content
+        print(mode)
+        match mode:
+            case 0: # default rpg maker files
+                # For these files, we try to keep the formatting as close as standard RPGMV/MZ as possible
+                with io.StringIO() as f:
+                    self._format_element(f, data)
+                    return self.encode(f.getvalue())
+            case 1: # Map files
+                # Keep the standard format of Map files
+                with io.StringIO() as f:
+                    keys = list(data.keys())
+                    f.write("{\n")
+                    for k, v in data.items():
+                        match k:
+                            case "data":
+                                f.write("\n")
+                                f.write("\"{}\":".format(k))
+                                json.dump(v, f, ensure_ascii=False, separators=(',', ':'))
+                                if k != keys[-1]:
+                                    f.write(",")
+                            case "events":
+                                f.write("\n")
+                                f.write("\"{}\":".format(k))
+                                self._format_element(f, v)
+                                if k != keys[-1]:
+                                    f.write(",")
+                                f.write("\n")
+                            case _:
+                                f.write("\"{}\":".format(k))
+                                json.dump(v, f, ensure_ascii=False, separators=(',', ':'))
+                                if k != keys[-1]:
+                                    f.write(",")
+                    f.write("}")
+                    return self.encode(f.getvalue())
+            case 2: # System file
+                # Keep the standard format of System.json
+                with io.StringIO() as f:
+                    json.dump(data, f, ensure_ascii=False, separators=(',', ':'))
+                    return self.encode(f.getvalue())
+            case _:
+                # Other json files
+                return self.encode(json.dumps(data))
     
     # Used by format
     # Just JSON formatting mess

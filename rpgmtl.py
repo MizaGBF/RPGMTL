@@ -12,11 +12,21 @@ from logging.handlers import RotatingFileHandler
 import json
 import difflib
 from pathlib import Path, PurePath
+from enum import IntEnum
 import string
 import argparse
 import ssl
 
 import plugins
+
+######################################################
+# An enum used for project files
+######################################################
+class FileType(IntEnum):
+    NORMAL = 0 # any file
+    ARCHIVE = 1 # file containing other files
+    VIRTUAL = 2 # file contained in an archive
+    VIRTUAL_UNDEFINED = 3 # virtual but existence remains to be checked
 
 ######################################################
 # A simple helper class for the patch system
@@ -58,7 +68,8 @@ class PatcherHelper():
 ######################################################
 class RPGMTL():
     # constant
-    VERSION = "3.10"
+    VERSION = "3.11"
+    CHILDREN_FILE_ID = "@__children_file__@:"
     def __init__(self : RPGMTL) -> None:
         # Setting up logging
         handler = RotatingFileHandler(filename="rpgmtl.log", encoding='utf-8', mode='w', maxBytes=51200, backupCount=3)
@@ -389,10 +400,11 @@ class RPGMTL():
                         shutil.copy(fp, backup_path / fpr)
                         # add to config.json
                         update_file_dict[fpr.as_posix()] = {
+                            "file_type":FileType.NORMAL,
                             "ignored":False,
                             "strings":0,
                             "translated":0,
-                            "disabled_strings":0
+                            "disabled_strings":0,
                         }
                         self.log.info(fpr.as_posix() + " has been copied to project folder " + pname)
                     except Exception as e:
@@ -400,6 +412,8 @@ class RPGMTL():
         # keep file setting if it exists
         for k, v in self.projects[pname].get("files", {}).items():
             if k in update_file_dict:
+                update_file_dict[k] = v
+            elif v["file_type"] in (FileType.VIRTUAL, FileType.VIRTUAL_UNDEFINED):
                 update_file_dict[k] = v
         # update and save
         self.projects[pname]["files"] = update_file_dict
@@ -647,16 +661,16 @@ class RPGMTL():
                 self.strings[name]["strings"][s][1] = default_tl[self.strings[name]["strings"][s][0]]
                 self.modified[name] = True
         # Disabling common unrelated files by default
-        ignored_starts = [
-            "data/Animations.json", "data/MapInfos.json", "data/Tilesets.json", "package.json", "js/plugins/", "js/libs/", "js/main.js", "js/rpg_core.js", "js/rpg_managers.js", "js/rpg_objects.js", "js/rpg_scenes.js", "js/rpg_sprites.js", "js/rpg_windows.js", "js/rmmz_core.js", "js/rmmz_managers.js", "js/rmmz_objects.js", "js/rmmz_scenes.js", "js/rmmz_sprites.js", "js/rmmz_windows.js",
-            "www/data/Animations.json", "www/data/MapInfos.json", "www/data/Tilesets.json", "www/package.json", "www/js/plugins/", "www/js/libs/", "www/js/main.js", "www/js/rpg_core.js", "www/js/rpg_managers.js", "www/js/rpg_objects.js", "www/js/rpg_scenes.js", "www/js/rpg_sprites.js", "www/js/rpg_windows.js", "www/js/rmmz_core.www/js", "www/js/rmmz_managers.www/js", "www/js/rmmz_objects.www/js", "www/js/rmmz_scenes.www/js", "www/js/rmmz_sprites.www/js", "www/js/rmmz_windows.www/js",
-            "Data/Animations.rxdata", "Data/MapInfos.rxdata", "Data/Tilesets.rxdata",
-            "Data/Animations.rvdata", "Data/MapInfos.rvdata", "Data/Tilesets.rvdata",
-            "Data/Animations.rvdata2", "Data/MapInfos.rvdata2", "Data/Tilesets.rvdata2",
+        ignored_files = [
+            "data/Animations.json", "data/MapInfos.json", "data/Tilesets.json", "package.json", "js/plugins/", "js/libs/", "js/main.js", "js/rpg_core.js", "js/rpg_managers.js", "js/rpg_objects.js", "js/rpg_scenes.js", "js/rpg_sprites.js", "js/rpg_windows.js", "js/rmmz_core.js", "js/rmmz_managers.js", "js/rmmz_objects.js", "js/rmmz_scenes.js", "js/rmmz_sprites.js", "js/rmmz_windows.js", "js/plugins.js",
+            "www/data/Animations.json", "www/data/MapInfos.json", "www/data/Tilesets.json", "www/package.json", "www/js/plugins/", "www/js/libs/", "www/js/main.js", "www/js/rpg_core.js", "www/js/rpg_managers.js", "www/js/rpg_objects.js", "www/js/rpg_scenes.js", "www/js/rpg_sprites.js", "www/js/rpg_windows.js", "www/js/rmmz_core.www/js", "www/js/rmmz_managers.www/js", "www/js/rmmz_objects.www/js", "www/js/rmmz_scenes.www/js", "www/js/rmmz_sprites.www/js", "www/js/rmmz_windows.www/js", "www/js/plugins.js",
+            "Data/Animations.rxdata", "Data/MapInfos.rxdata", "Data/Tilesets.rxdata", "Data/Scripts.rxdata",
+            "Data/Animations.rvdata", "Data/MapInfos.rvdata", "Data/Tilesets.rvdata", "Data/Scripts.rvdata",
+            "Data/Animations.rvdata2", "Data/MapInfos.rvdata2", "Data/Tilesets.rvdata2", "Data/Scripts.rvdata2"
         ]
         for f in self.projects[name]["files"]:
-            for i in ignored_starts:
-                if f.startswith(i):
+            for i in ignored_files:
+                if i in f:
                     self.projects[name]["files"][f]["ignored"] = True
                     self.modified[name] = True
                     break
@@ -700,10 +714,19 @@ class RPGMTL():
         try:
             if name not in self.projects:
                 with open('projects/' + name + '/config.json', mode='r', encoding='utf-8') as f:
-                    self.projects[name] = json.load(f)
+                    self.projects[name] = self.update_project_config_format(json.load(f))
             return self.projects[name]
         except:
             return None
+
+    # Update the content of config.json to later formats
+    def update_project_config_format(self : RPGMTL, data : dict[str, Any]) -> dict[str, Any]:
+        ver = data.get("config_version", 0)
+        if ver < 1: # Version 1, added file_type
+            for f in data["files"]:
+                data["files"][f]["file_type"] = FileType.NORMAL
+        data["config_version"] = 1
+        return data
 
     # load a project strings.json file
     def load_strings(self : RPGMTL, name : str) -> dict[str, Any]:
@@ -754,7 +777,7 @@ class RPGMTL():
                     else:
                         with open('projects/' + name + '/originals/' + filename, mode="rb") as iofile:
                             content = iofile.read()
-                        content, modified = p.write(filename, content, self.strings[name]) # write content
+                        content, modified = p.write(name, filename, content) # write content
                         content, modified = self.apply_fixes(name, filename, content, modified) # apply fixes
                         # write file if modified
                         if modified:
@@ -800,20 +823,56 @@ class RPGMTL():
             reverse_strings = {}
             str_id = 0
             self.log.info("projects/" + name + "/strings.json will be generated from scratch")
+        
         # go over each files
+        # ... first to set virtual as undefined
+        for f in list(self.projects[name]['files'].keys()):
+            if self.projects[name]['files'][f]["file_type"] == FileType.VIRTUAL:
+                self.projects[name]['files'][f]["file_type"] = FileType.VIRTUAL_UNDEFINED
+        # ... next to extract the strings
         err : int = 0
-        for f in self.projects[name]['files']:
+        for f in list(self.projects[name]['files'].keys()):
             try:
-                self.projects[name]['files'][f]["strings"] = 0
+                # references
+                file_info : dict[str, Any] = self.projects[name]['files'][f]
+                if file_info["file_type"] not in (FileType.NORMAL, FileType.ARCHIVE):
+                    continue
+                file_info["file_type"] = FileType.NORMAL # reset to normal for now
+                target : dict[str, Any] = file_info # reference for children files
+                target_file : str = f
+                # reset string
+                target["strings"] = 0
+                # extract strings
                 extracted, groups = self.extract_game_file(name, f)
                 if extracted:
-                    index["files"][f] = []
+                    index["files"][target_file] = []
                     for group in groups:
+                        if len(group) == 1 and group[0].startswith(self.CHILDREN_FILE_ID):
+                            # special group identifying a sub file
+                            target_file = f + "/" + group[0][len(self.CHILDREN_FILE_ID):].replace("/", "").replace("/", "\\")
+                            file_info["file_type"] = FileType.ARCHIVE
+                            if target_file in self.projects[name]['files']: # confirm file as virtual
+                                self.projects[name]['files'][target_file]["file_type"] = FileType.VIRTUAL
+                            else: # else create it
+                                self.projects[name]['files'][target_file] = {
+                                    "file_type":FileType.VIRTUAL,
+                                    "ignored":False,
+                                    "strings":0,
+                                    "translated":0,
+                                    "disabled_strings":0,
+                                }
+                            self.projects[name]['files'][target_file]["parent"] = f
+                            if target_file not in index["files"]: # add to index too
+                                index["files"][target_file] = []
+                            target = self.projects[name]['files'][target_file] # set as target
+                            target["strings"] = 0 # reset to 0 (if needed)
+                            continue
+                        # normal string processing
                         # process group content
                         for i in range(1, len(group)):
                             s : str = group[i]
                             group[i] = [str(str_id), None, 0, 0, update_run_flag] # id, indiv_tl, unlinked, ignored, modified/new
-                            self.projects[name]['files'][f]["strings"] += 1
+                            target["strings"] += 1
                             # if string already occured
                             if s in reverse_strings:
                                 group[i][0] = reverse_strings[s] # get its id
@@ -822,13 +881,18 @@ class RPGMTL():
                                 reverse_strings[s] = str(str_id) # new id
                                 index["strings"][str(str_id)] = [s, None, 1]
                                 str_id += 1 # increase for next id
-                        index["files"][f].append(group)
+                        index["files"][target_file].append(group)
             except Exception as e:
                 err += 1
                 self.log.error("Failed to extract strings from " + f + " for project " + name + "\n" + self.trbk(e))
         if update_run_flag:
-            self.log.info("Matching with the previous strings of " + name + "...")
+            # cleanup virtual files still undefined
+            self.log.info("Cleaning config.json of " + name + "...")
+            for f in list(self.projects[name]['files'].keys()):
+                if self.projects[name]['files'][f]["file_type"] == FileType.VIRTUAL_UNDEFINED:
+                    self.projects[name]['files'].pop(f)
             # check old file and retrieve old strings
+            self.log.info("Matching with the previous strings of " + name + "...")
             for k in index["files"]:
                 if len(index["files"][k]) == 0:
                     continue
@@ -939,7 +1003,11 @@ class RPGMTL():
         # for each file
         patch_count : int = 0
         for f in self.projects[name]["files"]:
-            if self.projects[name]["files"][f]["ignored"] or len(self.strings[name]["files"][f]) == 0: # skip ignored or empty
+            ftype : int = self.projects[name]["files"][f]["file_type"]
+            if (self.projects[name]["files"][f]["ignored"]
+                    or (ftype == FileType.NORMAL and len(self.strings[name]["files"][f]) == 0)
+                    or ftype in (FileType.VIRTUAL, FileType.VIRTUAL_UNDEFINED)):
+                # skip ignored files, virtual files or empty normal files
                 continue
             r : tuple[int, int] = self.patch_game_file(name, f, release_folder)
             if r[0] > 0:
@@ -1153,7 +1221,7 @@ class RPGMTL():
                 relative = pf.relative_to(folder)
                 if len(relative.parts) == 1:
                     files[f] = self.projects[name]["files"][f]["ignored"] if f in self.projects[name]["files"] else False
-                else:
+                elif len(relative.parts) > 1:
                     d : str = (folder / relative.parts[0]).as_posix() + "/"
                     if d not in folders:
                         folders.append(d)
@@ -1170,7 +1238,12 @@ class RPGMTL():
         command = parser.add_argument_group('command', 'Optional commands')
         command.add_argument('-s', '--https', help="provide paths to your SSL certificate and key", nargs=2, default=None)
         command.add_argument('-n', '--http', help="clear SSL certificate settings and force HTTP", action='store_const', const=True, default=False, metavar='')
+        command.add_argument('-d', '--debug', help="remove some strings from the standard output for clarity", action='store_const', const=True, default=False, metavar='')
         args : argparse.Namespace = parser.parse_args()
+        
+        # Remove aiohttp.access
+        if args.debug:
+            self.loggers['aiohttp.access'].propagate = False
         
         # Check HTTPS/SSL
         ssl_context = None

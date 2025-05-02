@@ -3,7 +3,7 @@ from importlib import import_module
 import os
 import io
 import ast
-from pathlib import Path, PurePath
+from pathlib import Path
 from dataclasses import dataclass
 from typing import TYPE_CHECKING, Any
 if TYPE_CHECKING:
@@ -125,13 +125,13 @@ class Plugin:
         # ]
         return []
 
-    def read_stream(self : Plugin, name : str, file_path : str, reader : io.BufferedReader) -> list[list[str]]:
+    def read_stream(self : Plugin, file_path : str, reader : io.BufferedReader) -> list[list[str]]:
         # Same as read
         # Used if is_streaming is returning True
         # name is the project name (useful if you want to access other plugins)
         return []
 
-    def write(self : Plugin, file_path : str, content : bytes, strings : dict) -> tuple[bytes, bool]:
+    def write(self : Plugin, name : str, file_path : str, content : bytes) -> tuple[bytes, bool]:
         # Edit the file content with the translated strings and return it, plus a boolean indicating if it has been modified
         return (content, False)
 
@@ -219,8 +219,8 @@ class WalkHelper():
     modified : bool
     str_store : str
     str_modified : bool
-    file_path : str
     strings : dict[str, Any]
+    groups : list[list[str]]
 
     def __init__(self : WalkHelper, file_path : str, project_strings : dict[str, Any]) -> None:
         self.group = 0
@@ -228,8 +228,8 @@ class WalkHelper():
         self.modified = False
         self.str_store = ""
         self.str_modified = False
-        self.file_path = file_path
-        self.strings = project_strings
+        self.strings = project_strings["strings"]
+        self.groups = project_strings["files"][file_path]
         self._goNext()
 
     # Reset walker state
@@ -241,12 +241,12 @@ class WalkHelper():
     # Internal function to go to the next string
     def _goNext(self : WalkHelper) -> None:
         self.index += 1
-        if self.group >= len(self.strings["files"][self.file_path]):
+        if self.group >= len(self.groups):
             raise Exception("[WalkHelper] Reached the end of known strings") 
-        while self.index >= len(self.strings["files"][self.file_path][self.group]):
+        while self.index >= len(self.groups[self.group]):
             self.group += 1
             self.index = 1
-            if self.group >= len(self.strings["files"][self.file_path]):
+            if self.group >= len(self.groups):
                 return
 
     # Check if the given string (and optional group) matches the current one and, if a translation is available, set it in self.str_store and set its str_modified state
@@ -258,14 +258,15 @@ class WalkHelper():
         else:
             self.group = loc[0]
             self.index = loc[1]
-        if group is not None and group != self.strings["files"][self.file_path][self.group][0]:
+        if group is not None and group != self.groups[self.group][0]:
             raise Exception("[WalkHelper] Invalid group match at (" + str(loc[0]) + "," + str(loc[1]) + ")")
-        local = self.strings["files"][self.file_path][self.group][self.index]
+        local = self.groups[self.group][self.index]
         if auto_go_next:
             self._goNext()
         if not local[3]:
-            glbal = self.strings["strings"][local[0]]
+            glbal = self.strings[local[0]]
             if glbal[0] != string:
+                print(glbal[0], string)
                 raise Exception("[WalkHelper] Invalid string match at (" + str(loc[0]) + "," + str(loc[1]) + ")")
             if local[2]:
                 if local[1] is not None and local[1] != string: # patch if exists ANd different from original

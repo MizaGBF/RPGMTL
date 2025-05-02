@@ -129,7 +129,7 @@ class RM_Marshal(Plugin):
     def __init__(self : RM_Marshal) -> None:
         super().__init__()
         self.name : str = "RPG Maker Marshal"
-        self.description : str = "v3.1\nHandle files from RPG Maker XP, VX and VX Ace"
+        self.description : str = "v3.2\nHandle files from RPG Maker XP, VX and VX Ace"
         self.allow_ruby_plugin : bool = True # Leave it on by default
 
     def get_setting_infos(self : RM_Marshal) -> dict[str, list]:
@@ -213,31 +213,32 @@ class RM_Marshal(Plugin):
             entries.extend(self._read_walk(mc.root))
         return entries
 
-    def write(self : RM_Marshal, file_path : str, content : bytes, strings : dict) -> tuple[bytes, bool]:
+    def write(self : RM_Marshal, name : str, file_path : str, content : bytes) -> tuple[bytes, bool]:
         p : PurePath = PurePath(file_path) # path object equivalent
         dp : str = p.relative_to(p.parent.parent) # path one folder up (to detect Data folder)
         dp = dp.parent / dp.stem # remove extension
         s : str = dp.as_posix().lower() # as lowercase posix string
         mc : MC = MC.load(content)
-        helper : WalkHelper = WalkHelper(file_path, strings)
-        if s == "data/commonevents":
-            self._write_walk_common(mc.root, helper)
-        elif s == "data/scripts":
-            self._write_walk_script(mc.root, helper)
-        elif s == "data/mapinfos":
-            self._write_walk_mapinfo(mc.root, helper)
-        elif s == "data/troops":
-            self._write_walk_troops(mc.root, helper)
-        elif s in self.DEFAULT_RPGMK_DATA_FILE:
-            self._write_walk_data(mc.root, helper)
-        elif s.startswith("data/map"): # Map file (Must be after mapinfos check)
-            self._write_walk_map(mc.root, helper)
+        if s == "data/scripts":
+            if self._write_walk_script(name, file_path, self.owner.strings[name], mc.root):
+                return mc.dump(), True
         else:
-            self._write_walk(mc.root, helper)
-        if helper.modified:
-            return mc.dump(), True
-        else:
-            return content, False
+            helper : WalkHelper = WalkHelper(file_path, self.owner.strings[name])
+            if s == "data/commonevents":
+                self._write_walk_common(mc.root, helper)
+            elif s == "data/mapinfos":
+                self._write_walk_mapinfo(mc.root, helper)
+            elif s == "data/troops":
+                self._write_walk_troops(mc.root, helper)
+            elif s in self.DEFAULT_RPGMK_DATA_FILE:
+                self._write_walk_data(mc.root, helper)
+            elif s.startswith("data/map"): # Map file (Must be after mapinfos check)
+                self._write_walk_map(mc.root, helper)
+            else:
+                self._write_walk(mc.root, helper)
+            if helper.modified:
+                return mc.dump(), True
+        return content, False
 
     # Generic Ruby Marshal processing
     def _read_walk(self : RM_Marshal, me : ME, ignore_key : str|None = None) -> list[list[str]]:
@@ -491,47 +492,51 @@ class RM_Marshal(Plugin):
     # RPGMK Scripts processing
     def _read_walk_script(self : RM_Marshal, me : ME) -> list[list[str]]:
         entries : list[list[str]] = []
+        count = 0
         for e in me:
-            group : list[str] = [None]
+            scriptname = self.owner.CHILDREN_FILE_ID + "{:04}".format(count)
             if e.data[1].data:
-                group[0] = "Script: " + e.data[1].data.decode('utf-8')
-            else:
-                group[0] = "Script"
+                scriptname += " " + e.data[1].data.decode('utf-8')
             if e.data[2].data:
                 script = zlib.decompressobj().decompress(e.data[2].data).decode('utf-8')
                 if self.allow_ruby_plugin and "Ruby" in self.owner.plugins:
                     self.owner.plugins["Ruby"].reset()
                     strings = self.owner.plugins["Ruby"]._parse_strings(script, None, len(entries))[0]
                     if len(strings) > 0:
-                        entries.append(group)
+                        entries.append([scriptname])
                         entries.extend(strings)
-                        group = [""]
                 else:
-                    group.append(script)
-            if len(group) >1:
-                entries.append(group)
+                    entries.append([scriptname])
+                    entries.append([script])
+            count += 1
         return entries
 
-    def _write_walk_script(self : RM_Marshal, me : ME, helper : WalkHelper) -> None:
+    def _write_walk_script(self : RM_Marshal, name : str, file_path : str, strings : dict, me : ME) -> bool:
+        modified : bool = False
+        count = 0
         for e in me:
-            group : str
+            scriptname = file_path + "/{:04}".format(count)
             if e.data[1].data:
-                group = "Script: " + e.data[1].data.decode('utf-8')
-            else:
-                group = "Script"
-            if e.data[2].data:
-                script = zlib.decompressobj().decompress(e.data[2].data).decode('utf-8')
-                if self.allow_ruby_plugin and "Ruby" in self.owner.plugins:
-                    self.owner.plugins["Ruby"].reset()
-                    newscript = self.owner.plugins["Ruby"]._parse_strings(script, helper)[1]
-                    if newscript != script:
-                        compressor = zlib.compressobj()
-                        e.data[2].data = compressor.compress(newscript.encode('utf-8')) + compressor.flush()
-                else:
-                    tmp : str = helper.apply_string(script, group)
-                    if helper.str_modified:
-                        compressor = zlib.compressobj()
-                        e.data[2].data = compressor.compress(tmp.encode('utf-8')) + compressor.flush()
+                scriptname += " " + e.data[1].data.decode('utf-8').replace("/", " ").replace("\\", " ")
+            if scriptname in strings["files"] and not self.owner.projects[name]["files"][scriptname]["ignored"]:
+                if e.data[2].data:
+                    helper : WalkHelper = WalkHelper(scriptname, strings)
+                    script = zlib.decompressobj().decompress(e.data[2].data).decode('utf-8')
+                    if self.allow_ruby_plugin and "Ruby" in self.owner.plugins:
+                        self.owner.plugins["Ruby"].reset()
+                        newscript = self.owner.plugins["Ruby"]._parse_strings(script, helper)[1]
+                        if newscript != script:
+                            compressor = zlib.compressobj()
+                            e.data[2].data = compressor.compress(newscript.encode('utf-8')) + compressor.flush()
+                            modified = True
+                    else:
+                        tmp : str = helper.apply_string(script)
+                        if helper.str_modified:
+                            compressor = zlib.compressobj()
+                            e.data[2].data = compressor.compress(tmp.encode('utf-8')) + compressor.flush()
+                            modified = True
+            count += 1
+        return modified
 
     # RPGMK MapInfos processing
     def _read_walk_mapinfo(self : RM_Marshal, me : ME) -> list[list[str]]:

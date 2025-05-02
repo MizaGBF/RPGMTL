@@ -1,7 +1,12 @@
 # RPGMTL  
+  
 Small Tool to create Translation Patches for RPG Maker games (from XP to MZ) and more.  
+The interface runs in your Web Browser.  
+  
+![image](https://raw.githubusercontent.com/MizaGBF/RPGMTL/main/assets/github/1.png "Screenshot taken on v3.11")
   
 ## Table of contents  
+  
 * [Introduction](#introduction)  
 * [Installation](#installation)  
 * [Usage](#usage)  
@@ -14,20 +19,23 @@ Small Tool to create Translation Patches for RPG Maker games (from XP to MZ) and
 ## Introduction  
   
 ### What is it?  
+  
 RPGMTL is a tool, written in Python, allowing you to extract, translate and patch strings from your Games.  
 It works via a small web server, and the UI uses your own web browser.  
 This system allows multiple people to work at the same time on the same project.  
 Some operations are blocking on purpose (for example, during string extraction), in case multiple users are working at the same time.  
   
 ### What's new?  
+  
 This 3rd version of RPGMTL is an entire rewrite.  
 It's now more robust, and more flexible with a Plugin system.  
 All your Translation Projects are managed in the same folder.  
   
 ## Installation  
+  
 Start by getting a copy of this repository.  
 Either git clone:
-```
+```console
 git clone git@github.com:MizaGBF/RPGMTL.git
 ```  
 or use the **Green** Code button on top and download as ZIP (Don't forget to unzip).  
@@ -37,42 +45,53 @@ An older version might work, but isn't supported.
   
 Finally, install the [requirements](https://github.com/MizaGBF/RPGMTL/blob/master/requirements.txt).  
 Run the following command, in the same folder:  
-```
+```console
 python -m pip install -r requirements.txt
 ```  
   
 ## Usage  
   
 ### Quickstart
+  
 Simply run `rpgmtl.py` to start a small web server.  
+Either with in a terminal:  
+```console
+python rpgmtl.py
+```  
+  
+Or by double clicking the file and starting it with Python.  
   
 Then you can access it with your favorite web browser.  
 `localhost:8000` should be the default address.  
   
-To stop it, use the *Shutdown* button on the top left of the Home Page, or press `CTRL+C` on the server console.  
+**To stop it**, use the *Shutdown* button on the top left of the Home Page, or press `CTRL+C` on the server console.  
 An Autosave is ran on shutdown, and also every 5 minutes otherwise.  
   
 > [!WARNING]  
 > Don't close the console to shut it down! The abrupt stop might result in data losses or corruption.  
   
 ### Settings
+  
 Before starting anything, you can tinker with the various settings.  
 Global settings will affect every new projects.  
-They can be overrided individually for each project, if needed.
+They can be overrided individually for each project, if needed.  
+  
+![image](https://raw.githubusercontent.com/MizaGBF/RPGMTL/main/assets/github/4.png "Screenshot taken on v3.11")
   
 ### HTTPS
+  
 The project is intended to be used on a local network.  
 If you wish to access it remotely, it's **recommended** to enable HTTPS.  
 You'll need to have a valid certificate and key.  
 Place them in the folder and run **once**:  
-```
+```console
 python rpgmtl.py --https name_of_your_cert name_of_your_set
 ```  
 If everything goes well, `SSL is enabled` should appear in the log.  
 The certificate and key locations will be saved for the next use.  
   
 If you wish to revert this setting, run **once**:  
-```
+```console
 python rpgmtl.py --http
 ```  
 RPGMTL will *forget* these file locations.
@@ -80,8 +99,12 @@ RPGMTL will *forget* these file locations.
 ## Project Management  
   
 ### Creation  
+  
 On the Home Page, click on `New Project`.  
 Select the location of the executable, of the game you wish to translate.  
+  
+![image](https://raw.githubusercontent.com/MizaGBF/RPGMTL/main/assets/github/2.png "Screenshot taken on v3.11")
+  
 You'll then be asked a project name. This name will be the one used for the project folder and in the Web UI.
 Once done, hit `Create`.  
   
@@ -91,7 +114,10 @@ Once done, hit `Create`.
 > [!IMPORTANT]  
 > The game you wish to translate must be on the same machine as RPGMTL.  
   
+![image](https://raw.githubusercontent.com/MizaGBF/RPGMTL/main/assets/github/3.png "Screenshots taken on v3.11")
+  
 ### Project Structure  
+  
 If you go into the `projects` folder and into your project folder, you'll see:  
 * `edit`: This is where you can add additional files to put in the final patches. Such as translated images, etc... The inside must mirror the game folder structure.  
 * `originals`: This is where RPGMTL keeps a copy of the targeted game files. Although it's recommended to keep a clean copy of your game, you'll find original files here, if needed.  
@@ -103,27 +129,34 @@ More files and folders might appear.
 For a general use, you only need to care about the `edit` and `release` folders.  
   
 ### Deletion  
+  
 * Make sure RPGMTL isn't running.  
 * Go into the `projects` folder and delete the project you wish to remove.  
   
 ## Translation  
   
 ### Browsing Game Files  
+  
 On your project page, click on `Browse Files`.  
+  
+![image](https://raw.githubusercontent.com/MizaGBF/RPGMTL/main/assets/github/5.png "Screenshots taken on v3.11")  
+  
 Here you'll be able to go through the detected files.  
 You can set a file to be **ignored** by pressing `CTRL+Left Click` on it. It'll then appear red.  
 Some RPG Maker MV/MZ files are set to be ignored by default.  
   
 ### Modifying Strings  
+  
 Click on a file to open the list of strings found inside.  
 Strings are listed in groups, and the group name, if it exists, is show on the top left. It's mostly here for context and as a visual aid.  
+![image](https://raw.githubusercontent.com/MizaGBF/RPGMTL/main/assets/github/6.png "Screenshots taken on v3.11")
   
 The list shows, on the left, original strings and, on the right, translations.  
 You can click on one to open the editing box.  
 All occurences of a string are, by default, linked. So, **if you translate a string**, all occurence of that string will have this translation.  
 You can **change** this behavior by pressing `Shift+Left Click` on a string you wish to unlink. Its box will become green.
 You can also set a string to be ignored, as for files, by pressing `CTRL+Left Click`. It'll be skipped during the patching process.  
-Finally, to delete a translation, click on it and on the *Trashbin* button.
+Finally, to delete a translation, click on it and on the *Trashbin* button.  
   
 > [!NOTE]  
 > By default, the little golden/yellow mark appearing on the left of a string line means the string has been modified or added in a previous string extraction.  
@@ -140,6 +173,15 @@ Please refer to the [Plugins](#plugins) section if you wish to extend RPGMTL cap
   
 ## Advanced Usage  
   
+### Archive System  
+  
+Some files might be Archive files, i.e. might contain other files.  
+RPGMTL has a system to separate those files into virtual sub folders, for clarity sake.  
+The base file will still appear in the list, likely empty, while the files found inside will appear in a folder of the same name as their parent file.  
+  
+For example, Scripts file from RPG Maker XP/VX/VX Ace contains a long list of compressed Ruby Script files.  
+After processing by RPGMTL, they will appear as separate entities in a `Scripts.r*data` folder.  
+  
 ### Game Updates  
 If you're translating a recently released game, you can easily update your project to the latest version.  
 Click on `Update the Game Files` and select where this new version is. Fresh files will be fetched.  
@@ -149,11 +191,16 @@ A backup of `strings.json` will be created beforehand, just in case (be aware it
 When browsing your updated string list, you might spot some with a yellow rectangle on the left: It indicates which strings got added in this new version.  
   
 ### Custom Patches  
-You might want to automate the patching of the some part of the game.  
+  
+> [!NOTE]  
+> They're called Fix in RPGMTL.  
+  
+Custom Patches are used to automate the patching of the some part of the game.  
 This can be done via the `Add a Fix` menu.  
 Inside, you can set small Python code snippets, which will run during the patching process (after everything else, to be exact).  
   
-To do so, create one and set what filename this code targets. For example, to target all the RPG Maker MV/MZ map files, you can set `data/Map`. Or to target a specific file, set its whole path (for example `data/Map001.json`).
+To do so, create one and set what filename this code targets. For example, to target all the RPG Maker MV/MZ map files, you can set `data/Map`. Or to target a specific file, set its whole path (for example `data/Map001.json`).  
+For files contained into archives, you merely need to match the archive name.  
   
 In the `Fix Code` text box, you can put the Python code to run.  
 You have access to a variable called `helper` to help you with your modifications.  
@@ -176,7 +223,12 @@ helper.from_json(d, separators=(',',':')) # convert it back to bytes
 helper.modified = True # raise modified flag to True
 ```  
   
+The complexity will grow for other file formats.  
 The `PatcherHelper` is defined at the start of `rpgmtl.py`, if you wish to take a closer look at it.  
+  
+> [!IMPORTANT]  
+> Be careful of downloading and running a translation project made by someone else, as running the Custom Patches can technically execute anything.  
+> Make sure to at least check the list of patches first.  
   
 ### Import Strings from RPGMTL v1/v2
 This button allows you to import `strings.json` and `strings.py` files from older RPGMTL versions.  

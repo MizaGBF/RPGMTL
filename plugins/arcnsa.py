@@ -15,7 +15,7 @@ class ArcNSA(Plugin):
     def __init__(self : ArcNSA) -> None:
         super().__init__()
         self.name : str = "ArcNSA"
-        self.description : str = " v0.1\nHandle arc.nsa archive files (Experimental)"
+        self.description : str = " v0.2\nHandle arc.nsa archive files (Experimental)"
 
     def get_setting_infos(self : ArcNSA) -> dict[str, list]:
         return {
@@ -160,15 +160,14 @@ class ArcNSA(Plugin):
             else:
                 writer.write(entry['modified_content'])
 
-    def read_stream(self : ArcNSA, name : str, file_path : str, reader : io.BufferedReader) -> list[list[str]]:
+    def read_stream(self : ArcNSA, file_path : str, reader : io.BufferedReader) -> list[list[str]]:
         entries : list[dict] = self.read_archive_metadata(reader)
         encoding : str = self.settings.get("arcnsa_default_encoding", "auto")
         groups : list[list[str]] = []
         for entry in entries:
             if entry["name"].endswith(".txt"):
-                group : list[str] = []
                 if entry["compression"] == "None":
-                    group.append(entry["name"])
+                    group : list[str] = [""]
                     reader.seek(entry["offset"])
                     data : bytes = reader.read(entry["size"])
                     lines : list[str]
@@ -186,15 +185,16 @@ class ArcNSA(Plugin):
                                 group.append(line[:-1])
                             else:
                                 group.append(line)
+                    if len(group) > 1:
+                        groups.append([self.owner.CHILDREN_FILE_ID + entry["name"]])
+                        groups.append(group)
                 else:
-                    group.append(entry["name"] + " (Unsupported compression)")
-                groups.append(group)
+                    self.owner.log.warning("[ArcNSA] Unsupported Compression for:" + entry["name"])
         return groups
 
     def write_stream(self : Plugin, name : str, file_path : str, reader : io.BufferedReader, output_path : Path) -> tuple[int, int]:
         entries : list[dict] = self.read_archive_metadata(reader)
         encoding : str = self.settings.get("arcnsa_default_encoding", "auto")
-        helper : WalkHelper = WalkHelper(file_path, self.owner.strings[name])
         modified : bool = False
         for entry in entries:
             if entry["name"].endswith(".txt"):
@@ -216,33 +216,36 @@ class ArcNSA(Plugin):
                         self.reset() # reset encoding
                         details["content"] = self.decode(data).split('\n')
                         details["encoding"] = self.FILE_ENCODINGS[self._enc_cur_]
-                    # update string
-                    for i, s in enumerate(details["content"]):
-                        if s.strip() != "":
-                            if s.endswith('\r'):
-                                tmp : str = helper.apply_string(s[:-1], entry["name"])
-                                if helper.str_modified:
-                                    details["content"][i] = tmp + '\r'
-                                    details["content"][i] = details["content"][i].encode(details["encoding"])
-                                    modified = True
+                    fname : str = file_path + "/" + entry["name"].replace("/", " ").replace("\\", " ")
+                    if fname in self.owner.strings[name]["files"] and not self.owner.projects[name]["files"][fname]["ignored"]:
+                        helper : WalkHelper = WalkHelper(fname, self.owner.strings[name])
+                        # update string
+                        for i, s in enumerate(details["content"]):
+                            if s.strip() != "":
+                                if s.endswith('\r'):
+                                    tmp : str = helper.apply_string(s[:-1])
+                                    if helper.str_modified:
+                                        details["content"][i] = tmp + '\r'
+                                        details["content"][i] = details["content"][i].encode(details["encoding"])
+                                        modified = True
+                                    else:
+                                        details["content"][i] = details["original"][i]
                                 else:
-                                    details["content"][i] = details["original"][i]
+                                    tmp : str = helper.apply_string(s)
+                                    if helper.str_modified:
+                                        details["content"][i] = tmp.encode(details["encoding"])
+                                        modified = True
+                                    else:
+                                        details["content"][i] = details["original"][i]
                             else:
-                                tmp : str = helper.apply_string(s, entry["name"])
-                                if helper.str_modified:
-                                    details["content"][i] = tmp.encode(details["encoding"])
-                                    modified = True
-                                else:
-                                    details["content"][i] = details["original"][i]
-                        else:
-                            details["content"][i] = details["original"][i]
-                    details["content"] = b"\n".join(details["content"])
-                    content, changed = self.owner.apply_fixes(name, file_path, details["content"], False)
-                    if changed:
-                        details["content"] = content
-                    entry["modified_content"] = details["content"]
-                    entry["size"] = len(details["content"])
-                    entry["unpacked_size"] = entry["size"]
+                                details["content"][i] = details["original"][i]
+                        details["content"] = b"\n".join(details["content"])
+                        content, changed = self.owner.apply_fixes(name, file_path, details["content"], False)
+                        if changed:
+                            details["content"] = content
+                        entry["modified_content"] = details["content"]
+                        entry["size"] = len(details["content"])
+                        entry["unpacked_size"] = entry["size"]
         if modified:
             output_path.parent.mkdir(parents=True, exist_ok=True)
             with open(output_path, mode="wb") as writer:

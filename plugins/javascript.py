@@ -6,7 +6,7 @@ class Javascript(Plugin):
     def __init__(self : Javascript) -> None:
         super().__init__()
         self.name : str = "Javascript"
-        self.description : str = " v1.3\nHandle Javascript files, including the plugins.js file from RPG Maker MV/MZ"
+        self.description : str = " v1.4\nHandle Javascript files, including the plugins.js file from RPG Maker MV/MZ"
 
     def file_extension(self : Javascript) -> list[str]:
         return ["js"]
@@ -21,14 +21,18 @@ class Javascript(Plugin):
         else:
             return self._read_walk(data)
 
-    def write(self : Javascript, file_path : str, content : bytes, strings : dict) -> tuple[bytes, bool]:
+    def write(self : Javascript, name : str, file_path : str, content : bytes) -> tuple[bytes, bool]:
         data = self.decode(content)
-        helper : WalkHelper = WalkHelper(file_path, strings)
-        if file_path.endswith('js/plugins.js'):
-            data = self._write_walk_plugins(data, helper)
-        else:
+        modified : bool = False
+        try:
+            if not file_path.endswith('js/plugins.js'):
+                raise Exception()
+            data, modified = self._write_walk_plugins(name, file_path, self.owner.strings[name], data)
+        except:
+            helper : WalkHelper = WalkHelper(file_path, self.owner.strings[name])
             data = self._write_walk(data, helper)
-        if helper.modified:
+            modified = helper.modified
+        if modified:
             return self.encode(data), True
         else:
             return content, False
@@ -147,7 +151,32 @@ class Javascript(Plugin):
     # RPGMK MZ/MV plugins.js
     def _read_walk_plugins(self : Javascript, js : str) -> list[list[str]]:
         try:
-            return self._parse_plugins(js, None)[0]
+            plugins = self._parse_plugins(js)
+            entries : list[list[str]] = []
+            for i in range(len(plugins)):
+                p = plugins[i]
+                if p is None:
+                    continue
+                pluginname : str = self.owner.CHILDREN_FILE_ID + p.get("name", "")
+                group : list[str] = [""]
+                if 'parameters' in p:
+                    for k, v in p['parameters'].items():
+                        match v:
+                            case str():
+                                if v != "" and not v.isdigit():
+                                    group.append(v)
+                            case list():
+                                for j in range(len(v)):
+                                    if isinstance(v[j], str) and v[j] != "" and not v[j].isdigit():
+                                        group.append(v[j])
+                            case dict():
+                                for elk, el in v.items():
+                                    if isinstance(el, str) and el != "" and not el.isdigit():
+                                        group.append(el)
+                if len(group) > 1:
+                    entries.append([pluginname])
+                    entries.append(group)
+            return entries
         except Exception as e:
             if str(e) == "Not the expected RPGMK plugins.js file":
                 self.owner.log.warning("[Javascript] Failed to parse plugins.js, falling back to normal parsing...")
@@ -155,20 +184,50 @@ class Javascript(Plugin):
             else:
                 raise e
 
-    def _write_walk_plugins(self : Javascript, js : str, helper : WalkHelper) -> str:
-        try:
-            return self._parse_plugins(js, helper)[1]
-        except Exception as e:
-            if str(e) == "Not the expected RPGMK plugins.js file":
-                self.owner.log.warning("[Javascript] Failed to parse plugins.js, falling back to normal parsing...")
-                return self._write_walk(js, helper)
-            else:
-                raise e
+    def _write_walk_plugins(self : Javascript, name : str, file_path : str, strings : dict, js : str) -> tuple[str, bool]:
+        plugins = self._parse_plugins(js)
+        modified : bool = False
+        for i in range(len(plugins)):
+            p = plugins[i]
+            if p is None:
+                continue
+            pluginname : str = file_path + "/" + p.get("name", "")
+            if pluginname in strings["files"] and not self.owner.projects[name]["files"][pluginname]["ignored"]:
+                helper : WalkHelper = WalkHelper(pluginname, strings)
+                group : list[str] = [""]
+                if 'parameters' in p:
+                    for k, v in p['parameters'].items():
+                        match v:
+                            case str():
+                                if v != "" and not v.isdigit():
+                                    plugins[i]['parameters'][k] = helper.apply_string(plugins[i]['parameters'][k], group[0])
+                                    modified = True
+                            case list():
+                                for j in range(len(v)):
+                                    if isinstance(v[j], str) and v[j] != "" and not v[j].isdigit():
+                                        plugins[i]['parameters'][k][j] = helper.apply_string(plugins[i]['parameters'][k][j], group[0])
+                                        modified = True
+                            case dict():
+                                for elk, el in v.items():
+                                    if isinstance(el, str) and el != "" and not el.isdigit():
+                                        plugins[i]['parameters'][k][elk] = helper.apply_string(plugins[i]['parameters'][k][elk], group[0])
+                                        modified = True
+        if modified:
+            start = js.find('plugins =') + len('plugins =')
+            end = len(js) - 1
+            content = "\n[\n"
+            for i in range(len(plugins)):
+                content += json.dumps(plugins[i], ensure_ascii=False, separators=(',', ':'))
+                if i != len(plugins)-1:
+                    content += ",\n"
+            content += "\n]"
+            js = js[:start] + content + js[end:]
+            return js, True
+        else:
+            return js, False
 
-    # Works the same as _parse_strings
-    # entries isn't populated in write mode (i.e. when helper is not None)
-    def _parse_plugins(self : Javascript, js : str, helper : WalkHelper|None) -> tuple[list[list[str]], str]:
-        entries = []
+    # read the content of standard RPGMV/MZ plugins.js file
+    def _parse_plugins(self : Javascript, js : str) -> dict:
         start = js.find('plugins =') + len('plugins =')
         if start == -1:
             raise Exception("Not the expected RPGMK plugins.js file")
@@ -177,44 +236,4 @@ class Javascript(Plugin):
             end -= 1
             if end <= start:
                 raise Exception("Not the expected RPGMK plugins.js file")
-        plugins = json.loads(js[start:end])
-        for i in range(len(plugins)):
-            p = plugins[i]
-            if p is None:
-                continue
-            group = [p.get("name", "")]
-            if 'parameters' in p:
-                for k, v in p['parameters'].items():
-                    match v:
-                        case str():
-                            if v != "" and not v.isdigit():
-                                if helper is not None:
-                                    plugins[i]['parameters'][k] = helper.apply_string(plugins[i]['parameters'][k], group[0])
-                                else:
-                                    group.append(v)
-                        case list():
-                            for j in range(len(v)):
-                                if isinstance(v[j], str) and v[j] != "" and not v[j].isdigit():
-                                    if helper is not None:
-                                        plugins[i]['parameters'][k][j] = helper.apply_string(plugins[i]['parameters'][k][j], group[0])
-                                    else:
-                                        group.append(v[j])
-                        case dict():
-                            for elk, el in v.items():
-                                if isinstance(el, str) and el != "" and not el.isdigit():
-                                    if helper is not None:
-                                        plugins[i]['parameters'][k][elk] = helper.apply_string(plugins[i]['parameters'][k][elk], group[0])
-                                    else:
-                                        group.append(el)
-            if helper is None and len(group) > 1:
-                entries.append(group)
-        # write mode
-        if helper is not None:
-            content = "\n[\n"
-            for i in range(len(plugins)):
-                content += json.dumps(plugins[i], ensure_ascii=False, separators=(',', ':'))
-                if i != len(plugins)-1:
-                    content += ",\n"
-            content += "\n]"
-            js = js[:start] + content + js[end:]
-        return entries, js
+        return json.loads(js[start:end])
