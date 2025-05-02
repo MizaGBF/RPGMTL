@@ -266,7 +266,6 @@ class WalkHelper():
         if not local[3]:
             glbal = self.strings[local[0]]
             if glbal[0] != string:
-                print(glbal[0], string)
                 raise Exception("[WalkHelper] Invalid string match at (" + str(loc[0]) + "," + str(loc[1]) + ")")
             if local[2]:
                 if local[1] is not None and local[1] != string: # patch if exists ANd different from original
