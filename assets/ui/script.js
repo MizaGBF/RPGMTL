@@ -679,7 +679,7 @@ function project_menu(data = null)
 				<li><b>Release a Patch</b> to create a copy of Game files with your translated strings. They will be found in the <b>release</b> folder.</li>\
 			</ul>\
 			<ul>\
-				<li><b>Import RPGMTL</b> to import strings from RPGMTL projects from any version.</li>\
+				<li><b>Import Strings from RPGMTL</b> to import strings from RPGMTL projects from any version.</li>\
 				<li><b>Strings Backups</b> to open the list of backups if you need to revert the project data to an earlier state.</li>\
 			</ul>";
 			help.style.display = "";
@@ -727,7 +727,7 @@ function project_menu(data = null)
 			}}).innerHTML = '<img src="assets/images/copy.png">String Backups';
 			addTo(fragment, "div", {cls:["interact"], onclick:function(){
 				local_browse("Import RPGMTL", "Select an old RPGMTL strings file.", 2);
-			}}).innerHTML = '<img src="assets/images/import.png">Import Strings from RPGMTL v1/v2';
+			}}).innerHTML = '<img src="assets/images/import.png">Import Strings from RPGMTL';
 			addTo(fragment, "div", {cls:["interact"], onclick:function(){
 				local_browse("Import RPGMAKERTRANSPATCH", "Select a RPGMAKERTRANSPATCH file.", 3);
 			}}).innerHTML = '<img src="assets/images/import.png">Import Strings from RPGMakerTrans v3';
