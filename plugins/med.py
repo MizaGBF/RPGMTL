@@ -21,7 +21,7 @@ class MED(Plugin):
 
     def get_setting_infos(self : MED) -> dict[str, list]:
         return {
-            "med_char_per_line": ["Character Limit (0 or less means None)", "num", 0, None]
+            "med_char_per_line": ["Character Limit (0 or less means None)", "num", 64, None]
         }
 
     def get_action_infos(self : MED) -> dict[str, list]:
