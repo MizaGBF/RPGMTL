@@ -1,6 +1,7 @@
 from __future__ import annotations
 from . import Plugin, WalkHelper
 import io
+import textwrap
 
 # Based on some script I got from someone.
 # The original author is unknown, feel free to hit me up so I can credit them if you know.
@@ -10,10 +11,62 @@ class MED(Plugin):
     def __init__(self : MED) -> None:
         super().__init__()
         self.name : str = "MED"
-        self.description : str = "v0.4\nHandle md_scr.med MED files (Experimental)"
+        self.description : str = "v0.5\nHandle md_scr.med MED files (Experimental)"
 
     def match(self : MED, file_path : str, is_for_action : bool) -> bool:
-        return file_path.endswith("md_scr.med")
+        if is_for_action:
+            return "md_scr.med" in file_path
+        else:
+            return file_path.endswith("md_scr.med")
+
+    def get_setting_infos(self : MED) -> dict[str, list]:
+        return {
+            "med_char_per_line": ["Character Limit (0 or less means None)", "num", 0, None]
+        }
+
+    def get_action_infos(self : MED) -> dict[str, list]:
+        return {
+            "med_adjust_line": ["Adjust New Line", self.adjust_new_line],
+        }
+
+    def adjust_new_line(self : MED, name : str, file_path : str, settings : dict[str, Any] = {}) -> str:
+        try:
+            limit : int = int(settings.get("med_char_per_line", 0))
+            if limit <= 0:
+                return "Please set a positive limit in this plugin settings"
+            count : int = 0
+            for g, group in enumerate(self.owner.strings[name]["files"][file_path]):
+                for i in range(1, len(group)):
+                    lc = group[i]
+                    gl = self.owner.strings[name]["strings"][lc[0]]
+                    is_local : bool = False
+                    if lc[2] and lc[1] is not None:
+                        s = lc[1]
+                        is_local = True
+                    elif gl[1] is not None:
+                        s = gl[1]
+                    else:
+                        continue
+                    if len(s) > limit:
+                        r : list[str] = textwrap.wrap(s, width=limit)
+                        for j in range(len(r) - 1):
+                            r[j] = r[j].ljust(limit)
+                        n : str = "".join(r)
+                        if s != n:
+                            count += 1
+                            if is_local:
+                                self.owner.strings[name]["files"][file_path][g][i][2] = n
+                            else:
+                                self.owner.strings[name]["strings"][lc[0]][1] = n
+                            self.owner.strings[name]["files"][file_path][g][i][4] = 1 # Modified set to true
+                            self.owner.modified[name] = True
+            if count > 0:
+                return "{} strings have been updated".format(count)
+            else:
+                return "No strings have been modified"
+        except Exception as e:
+            self.owner.log.error("[MED] Action 'med_adjust_line' failed with error:\n" + self.owner.trbk(e))
+            return "An error occured."
 
     def read(self : MED, file_path : str, content : bytes) -> list[list[str]]:
         files : dict[str, bytearray] = self.unpack(content)
