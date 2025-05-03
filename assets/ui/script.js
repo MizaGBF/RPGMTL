@@ -1266,25 +1266,24 @@ function prepareGroupOn(node, i)
 					// update bottom part
 					// set original string text
 					edit_ori.textContent = prjstring[ss[0]][0];
-					let edittl = edit_tl;
 					// set textarea with current translation
 					if(ss[2]) // local/unlinked
 					{
 						if(ss[1] != null)
-							edittl.value = ss[1];
+							edit_tl.value = ss[1];
 						else
-							edittl.value = prjstring[ss[0]][0]; // default to original if not translated
+							edit_tl.value = prjstring[ss[0]][0]; // default to original if not translated
 					}
 					else if(prjstring[ss[0]][1] != null) // global
-						edittl.value = prjstring[ss[0]][1];
+						edit_tl.value = prjstring[ss[0]][1];
 					else
-						edittl.value = prjstring[ss[0]][0]; // default to original if not translated
+						edit_tl.value = prjstring[ss[0]][0]; // default to original if not translated
 					// update string-length indicator
-					tl_string_length.innerHTML = edittl.value.length;
+					tl_string_length.innerHTML = edit_tl.value.length;
 					// make element visible
 					bottom.style.display = "";
 					// focus
-					edittl.focus();
+					edit_tl.focus();
 					// set this span element as the current string being edited
 					currentstr = span;
 				}
@@ -1538,7 +1537,7 @@ function translate_string()
 		if(data["translation"] != null)
 		{
 			edit_tl.value = data["translation"];
-			tl_string_length.innerHTML = edittl.value.length;
+			tl_string_length.innerHTML = edit_tl.value.length;
 		}
 	}, function() {}, {name:prjname, string:edit_ori.textContent});
 }
