@@ -62,6 +62,11 @@ Run the following command, in the same folder:
 python -m pip install -r requirements.txt
 ```  
   
+> [!INFO]  
+> To update, repeat this process.  
+> Make sure to keep `settings.json` file and your `projects` folder.  
+> If a plugin's implementation changed, you might need to Extract the strings again in your project.  
+  
 ## Usage  
   
 ### Quickstart
