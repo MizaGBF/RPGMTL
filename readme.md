@@ -53,6 +53,8 @@ git clone git@github.com:MizaGBF/RPGMTL.git
 ```  
 or use the **Green** Code button on top and download as ZIP (Don't forget to unzip).  
   
+or under the [Release](https://github.com/MizaGBF/RPGMTL/releases) tab.  
+  
 Next, you need Python 3.13 installed.
 An older version might work, but isn't supported.  
   
