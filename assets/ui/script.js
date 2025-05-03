@@ -1349,9 +1349,15 @@ function open_file(data)
 		for(const [key, value] of Object.entries(data["actions"]))
 		{
 			addTo(fragment, "div", {cls:["interact"], onclick:function() {
-				postAPI("/api/file_action", null, function() {
-					postAPI("/api/browse", browse_files, null, {name:prjname, path:returnpath});
-				}, {name:prjname, path:lastfileopened, version:prjversion, key:key});
+				postAPI("/api/file_action",
+					function() {
+						postAPI("/api/file", open_file, null, {name:prjname, path:lastfileopened});
+					},
+					function() {
+						postAPI("/api/browse", browse_files, null, {name:prjname, path:returnpath});
+					},
+					{name:prjname, path:lastfileopened, version:prjversion, key:key}
+				);
 			}}).innerHTML = '<img src="assets/images/setting.png">' + value;
 		}
 		// add translate this file button
