@@ -46,28 +46,40 @@ All your Translation Projects are managed in the same folder.
   
 ## Installation  
   
-Start by getting a copy of this repository.  
+### Install Python  
+  
+You need a system supporting [Python 3.13 or higher](https://www.python.org/downloads/).  
+Make sure to have it installed.  
+An older version might work, but isn't supported.  
+  
+### Install RPGMTL  
+  
+Grab a copy of this repository.  
+**For the latest builds:**  
 Either git clone:
 ```console
 git clone git@github.com:MizaGBF/RPGMTL.git
 ```  
 or use the **Green** Code button on top and download as ZIP (Don't forget to unzip).  
   
-or under the [Release](https://github.com/MizaGBF/RPGMTL/releases) tab.  
+**For the stable builds:**  
+Go under the [Release](https://github.com/MizaGBF/RPGMTL/releases) tab.  
   
-Next, you need Python 3.13 installed.
-An older version might work, but isn't supported.  
+### Install Requirements  
   
-Finally, install the [requirements](https://github.com/MizaGBF/RPGMTL/blob/master/requirements.txt).  
+Install the [requirements](https://github.com/MizaGBF/RPGMTL/blob/master/requirements.txt).  
 Run the following command, in the same folder:  
 ```console
 python -m pip install -r requirements.txt
 ```  
   
-> [!INFO]  
-> To update, repeat this process.  
-> Make sure to keep `settings.json` file and your `projects` folder.  
-> If a plugin's implementation changed, you might need to Extract the strings again in your project.  
+On Windows, if Python isn't in your `PATH`, replace `python` with the full path to its executable (for example `C:\python3\python.exe -m pip install -r requirements.txt`).  
+  
+### Update  
+  
+Simply repeat the installation process.  
+Make sure to keep `settings.json` file and your `projects` folder.  
+If a plugin's implementation changed, you might need to Extract the strings again in your project.  
   
 ## Usage  
   
