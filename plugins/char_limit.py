@@ -6,7 +6,7 @@ class CharaLimit(Plugin):
     def __init__(self : CharaLimit) -> None:
         super().__init__()
         self.name : str = "Character Limit"
-        self.description : str = "v1.1\nAllow you to automatically set new lines when a string goes above a certain character threshold."
+        self.description : str = "v1.2\nAllow you to automatically set new lines when a string goes above a certain character threshold."
 
     def get_setting_infos(self : CharaLimit) -> dict[str, list]:
         return {
@@ -42,7 +42,6 @@ class CharaLimit(Plugin):
                             continue
                         if max([len(line) for line in s.split('\n')]) > limit:
                             count += 1
-                            lc[4] = 1
                             self.owner.strings[name]["files"][file_path][g][i][4] = 1
                             self.owner.modified[name] = True
             if count > 0:
