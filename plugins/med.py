@@ -48,7 +48,7 @@ class MED(Plugin):
                     else:
                         continue
                     if len(s) > limit:
-                        r : list[str] = textwrap.wrap(s, width=limit)
+                        r : list[str] = textwrap.wrap(s, width=limit, break_on_hyphens=False)
                         for j in range(len(r) - 1):
                             r[j] = r[j].ljust(limit)
                         n : str = "".join(r)
