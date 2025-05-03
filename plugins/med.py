@@ -10,7 +10,7 @@ class MED(Plugin):
     def __init__(self : MED) -> None:
         super().__init__()
         self.name : str = "MED"
-        self.description : str = "v0.3\nHandle md_scr.med MED files (Experimental)"
+        self.description : str = "v0.4\nHandle md_scr.med MED files (Experimental)"
 
     def match(self : MED, file_path : str, is_for_action : bool) -> bool:
         return file_path.endswith("md_scr.med")
@@ -145,7 +145,7 @@ class MED(Plugin):
                         tmp : str = helper.apply_string(decoded)
                         if helper.str_modified:
                             offset -= len(buffer)
-                            encoded = tmp.encode('cp932')
+                            encoded = tmp.encode('cp932', errors='ignore')
                             data[offset:offset+len(buffer)] = encoded
                             offset += len(encoded)
                             modified = True
