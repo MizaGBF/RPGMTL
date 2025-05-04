@@ -1476,13 +1476,10 @@ function update_string_list(data)
 		// update list in memory with received data
 		prjstring = data["strings"];
 		prjlist = data["list"];
-		let updated = "updated" in data ? data["updated"] : null; // list of updated strings (if provided)
 		let lcstringsearch = laststringsearch != null ? laststringsearch.toLowerCase() : ""; // last searched string (lowercase)
 		// iterate over ALL strings
 		for(let i = 0; i < strtablecache.length; ++i)
 		{
-			if(updated != null && !updated.includes(i)) // if present in the updated string list OR if no updated strings provided, we update
-				continue; // else continue
 			const elems = strtablecache[i];
 			// retrieve string details
 			const s = prjlist[elems[0].group][elems[0].string];

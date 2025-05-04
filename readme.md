@@ -177,8 +177,11 @@ On your project page, click on `Browse Files`.
 ![image](https://raw.githubusercontent.com/MizaGBF/RPGMTL/main/assets/github/5.png "Screenshots taken on v3.11")  
   
 Here you'll be able to go through the detected files.  
-You can set a file to be **ignored** by pressing `CTRL+Left Click` on it. It'll then appear red.  
+You can set a file to be **ignored** by pressing `CTRL+Left Click` on it. It'll then appear **red**.  
+A file with no remaining strings to translate will appear **green**.  
 Some RPG Maker MV/MZ files are set to be ignored by default.  
+  
+Additionally, folders containing virtual file (See the [Archive System](#archive-system) section below) will appear with a light grey background.  
   
 ### Modifying Strings  
   
@@ -193,9 +196,15 @@ You can **change** this behavior by pressing `Shift+Left Click` on a string you 
 You can also set a string to be ignored, as for files, by pressing `CTRL+Left Click`. It'll be skipped during the patching process.  
 Finally, to delete a translation, click on it and on the *Trashbin* button.  
   
+Click the help button on the top right corner for more shortcuts and details.  
+  
 > [!NOTE]  
 > By default, the little golden/yellow mark appearing on the left of a string line means the string has been modified or added in a previous string extraction.  
 > This marker can also be used by plugins however, such as the Character Limit one.  
+  
+> [!IMPORTANT]  
+> If you're using multiple tabs or multiple people are working on the same RPGMTL instance, it's not recommended to work on the same file at once.  
+> The string list is only updated when you make a change to it or click the refresh button. So you might not see another change right away.  
   
 ### Machine Translation  
   
@@ -216,6 +225,20 @@ The base file will still appear in the list, likely empty, while the files found
   
 For example, Scripts file from RPG Maker XP/VX/VX Ace contains a long list of compressed Ruby Script files.  
 After processing by RPGMTL, they will appear as separate entities in a `Scripts.r*data` folder.  
+  
+Additionally, for convenience, some files are still processed by this system even though they don't contain multiple files.  
+For example, CommonEvents files from RPG Maker games.  
+As they can be very large due to their nature, they are broken down in multiple virtual files.  
+  
+If you're developping your own plugin and wish to tags strings as being part of a virtual file, simply add an empty string group named as such:  
+```python
+["@__children_file__@:NAME_OF_YOUR_FILE"] # NAME_OF_YOUR_FILE is the name of the virtual file
+# OR
+[self.owner.CHILDREN_FILE_ID + "NAME_OF_YOUR_FILE"]
+```  
+  
+Check existing plugins to see how it's implemented.  
+
   
 ### Game Updates  
 If you're translating a recently released game, you can easily update your project to the latest version.  
@@ -498,13 +521,13 @@ Return in data: project 'name', project 'config'
 ```
 /api/update_string (Edit Translation)
 Payload:  project 'name', file 'path', project 'version', 'group' index, string 'index', 'string' translation
-Return in data: project 'name', project 'config', file 'path', project 'strings', 'list' of strings in file, 'updated' string indexes
+Return in data: project 'name', project 'config', file 'path', project 'strings', 'list' of strings in file
 ```
 
 ```
 /api/update_string (Toggle Unlink/Ignore)
 Payload:  project 'name', file 'path', project 'version', 'group' index, string 'index', toggle 'setting' (0 for unlink, 1 for ignore, 2 for ignore all occurence in file)
-Return in data: project 'name', project 'config', file 'path', project 'strings', 'list' of strings in file, 'updated' string indexes
+Return in data: project 'name', project 'config', file 'path', project 'strings', 'list' of strings in file
 ```
 
 ```
