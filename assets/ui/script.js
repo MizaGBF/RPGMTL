@@ -805,6 +805,10 @@ function browse_files(data)
 		}}).innerHTML = '<img src="assets/images/back.png">';
 		addTo(fragment, "div", {cls:["inline"], br:false}).innerHTML = "Path: " + bp;
 		addTo(fragment, "div", {cls:["barfill"], br:false});
+		// refresh button
+		addTo(fragment, "div", {cls:["interact", "button"], br:false, onclick:function(){
+			postAPI("/api/browse", browse_files, null, {name:prjname, path:bp});
+		}}).innerHTML = '<img src="assets/images/update.png">';
 		// help button
 		addTo(fragment, "div", {cls:["interact", "button"], br:false, onclick:function(){
 			help.innerHTML = "<ul>\
@@ -1319,6 +1323,11 @@ function open_file(data)
 		}}).innerHTML = '<img src="assets/images/back.png">';
 		addTo(fragment, "div", {cls:["inline"], br:false}).innerHTML = "File: " + lastfileopened;
 		addTo(fragment, "div", {cls:["barfill"], br:false});
+		// refresh button
+		addTo(fragment, "div", {cls:["interact", "button"], br:false, onclick:function(){
+			bottom.style.display = "none";
+			postAPI("/api/file", open_file, null, {name:prjname, path:lastfileopened});
+		}}).innerHTML = '<img src="assets/images/update.png">';
 		// help button
 		addTo(fragment, "div", {cls:["interact", "button"], br:false, onclick:function(){
 			help.innerHTML = "<ul>\
