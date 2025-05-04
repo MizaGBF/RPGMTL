@@ -671,6 +671,7 @@ function project_menu(data = null)
 			help.innerHTML = "<ul>\
 				<li><b>Browse Files</b> to browse and translate strings.</li>\
 				<li><b>Add a Fix</b> to add Python patches to apply during the release process (Check the README for details).</li>\
+				<li><b>Replace Strings in batch</b> open a menu to replace parts of strings by others, in your existing translations.</li>\
 				<li>Set your <b>Settings before<b/> extracting the strings.</li>\
 			</ul>\
 			<ul>\
