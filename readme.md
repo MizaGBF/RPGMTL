@@ -520,31 +520,31 @@ Return in data: project 'name', project 'config'
 
 ```
 /api/update_string (Edit Translation)
-Payload:  project 'name', file 'path', project 'version', 'group' index, string 'index', 'string' translation
+Payload: project 'name', file 'path', project 'version', 'group' index, string 'index', 'string' translation
 Return in data: project 'name', project 'config', file 'path', project 'strings', 'list' of strings in file
 ```
 
 ```
 /api/update_string (Toggle Unlink/Ignore)
-Payload:  project 'name', file 'path', project 'version', 'group' index, string 'index', toggle 'setting' (0 for unlink, 1 for ignore, 2 for ignore all occurence in file)
+Payload: project 'name', file 'path', project 'version', 'group' index, string 'index', toggle 'setting' (0 for unlink, 1 for ignore, 2 for ignore all occurence in file)
 Return in data: project 'name', project 'config', file 'path', project 'strings', 'list' of strings in file
 ```
 
 ```
 /api/translate_string
-Payload:  project 'name', 'string' to translate
+Payload: project 'name', 'string' to translate
 Return in data: string 'translation'
 ```
 
 ```
 /api/translate_file
-Payload:  project 'name', file 'path', project 'version'
+Payload: project 'name', file 'path', project 'version'
 Return in data: project 'name', project 'config', file 'path', project 'strings', 'list' of strings in file
 ```
 
 ```
 /api/search_string
-Payload:  project 'name', file 'path', 'search' string
+Payload: project 'name', file 'path', 'search' string
 Return in data: project 'name', project 'config', 'search' string, matched 'files'
 ```
 
@@ -552,4 +552,10 @@ Return in data: project 'name', project 'config', 'search' string, matched 'file
 /api/local_path
 Payload: directory 'path' (Empty string equals the last used directory), 'mode' (0 and 1 for exe, 2 for JSON, 3 for RPGMAKERTRANSPATCH)
 Return in data: 'path', list of 'folders', list of matching 'files'
+```
+
+```
+/api/replace_strings
+Payload: project 'name', 'src' string to replace, 'dst' string to replace with
+Return in data: project 'name', project 'config', 'count' modified strings
 ```

@@ -121,6 +121,7 @@ class RPGMTL():
                 web.post('/api/translate_file', self.translate_file), # Translate a file
                 web.post('/api/search_string', self.search_string), # Search a string
                 web.post('/api/local_path', self.local_path), # Browse local files
+                web.post('/api/replace_strings', self.replace_strings), # Browse local files
         ])
         # data containers
         self.last_directory = os.getcwd() # used for file browsing
@@ -1876,6 +1877,45 @@ class RPGMTL():
                         case _:
                             return web.json_response({"result":"bad", "message":"Bad request, invalid 'mode' parameter"}, status=400)
             return web.json_response({"result":"ok", "data":{"path":path.as_posix(), "folders":dirs, "files":files}})
+
+    # /api/replace_strings
+    async def replace_strings(self : RPGMTL, request : web.Request) -> web.Response:
+        payload = await request.json()
+        name = payload.get('name', None)
+        src = payload.get('src', None)
+        dst = payload.get('dst', None)
+        if name is None:
+            return web.json_response({"result":"bad", "message":"Bad request, missing 'name' parameter"}, status=400)
+        elif src is None:
+            return web.json_response({"result":"bad", "message":"Bad request, missing 'src' parameter"}, status=400)
+        elif dst is None:
+            return web.json_response({"result":"bad", "message":"Bad request, missing 'dst' parameter"}, status=400)
+        else:
+            self.save() # save first!
+            self.backup_strings_file(name) # backup strings.json
+            self.load_strings(name) # load strings.json
+            count : int = 0
+            modified : set[str] = set()
+            for k, v in self.strings[name]["strings"].items():
+                if v[1] is not None:
+                    s : str = v[1].replace(src, dst)
+                    if s != v[1]:
+                        modified.add(k)
+                        self.strings[name]["strings"][k][1] = s
+            for f, data in self.strings[name]["files"].items():
+                for g in range(len(data)):
+                    for i in range(1, len(data[g])):
+                        if data[g][i][1] is not None:
+                            s : str = data[g][i][1].replace(src, dst)
+                            if s != data[g][i][1]:
+                                data[g][i][4] = 1
+                                count += 1
+                        elif data[g][i][0] in modified:
+                            data[g][i][4] = 1
+                            count += 1
+            if count > 0:
+                self.modified[name] = True
+            return web.json_response({"result":"ok", "data":{"config":self.projects[name], "name":name, "count":count}, "message":"{} strings have been modified".format(count)})
 
 if __name__ == "__main__":
     RPGMTL().run()

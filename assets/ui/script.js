@@ -700,6 +700,9 @@ function project_menu(data = null)
 			addTo(fragment, "div", {cls:["interact"], onclick:function(){
 				postAPI("/api/patches", browse_patches, null, {name:prjname});
 			}}).innerHTML = '<img src="assets/images/bandaid.png">Add a Fix';
+			addTo(fragment, "div", {cls:["interact"], onclick:function(){
+				replace_page();
+			}}).innerHTML = '<img src="assets/images/copy.png">Replace Strings in batch';
 		}
 		addTo(fragment, "div", {cls:["interact"], onclick:function(){
 			postAPI("/api/settings", setting_menu, null, {name:prjname});
@@ -1655,4 +1658,56 @@ function update_local_browse(data)
 	}
 	
 	set_loading(false);
+}
+
+function replace_page()
+{
+	try
+	{
+		// top bar
+		let fragment = clearBar();
+		// back button
+		addTo(fragment, "div", {cls:["interact", "button"], br:false, onclick:function(){
+			project_menu();
+		}}).innerHTML = '<img src="assets/images/back.png">';
+		addTo(fragment, "div", {cls:["inline"], br:false}).innerHTML = "Replace strings";
+		addTo(fragment, "div", {cls:["barfill"], br:false});
+		updateBar(fragment);
+	
+		// main part
+		fragment = clearMain();
+		addTo(fragment, "div", {cls:["title", "left"]}).innerText = "Replace strings by others (Case Sensitive)";
+		addTo(fragment, "div", {cls:["title", "left", "smalltext"]}).innerText = "Only translations are affected";
+		
+		const input = addTo(fragment, "input", {cls:["input", "smallinput"]});
+		input.placeholder = "String to replace";
+		const output = addTo(fragment, "input", {cls:["input", "smallinput"]});
+		output.placeholder = "Replace by";
+		addTo(fragment, "div", {cls:["interact", "text-button"], br:false, onclick:function(){
+			if(input.value == "")
+			{
+				this.classList.remove("selected");
+				pushPopup("The input is empty.");
+			}
+			else if(this.classList.contains("selected") || window.event.ctrlKey)
+			{
+				this.classList.remove("selected");
+				postAPI("/api/replace_strings", null, null, {name:prjname, src:input.value, dst:output.value});
+			}
+			else
+			{
+				this.classList.add("selected");
+				pushPopup("Press again to confirm.");
+			}
+		}}).innerHTML = '<img src="assets/images/copy.png"> Replace';
+		updateMain(fragment);
+	}
+	catch(err)
+	{
+		keypressenabled = false;
+		console.error("Exception thrown", err.stack);
+		pushPopup("An unexpected error occured.");
+		bottom.style.display = "none";
+		project_menu();
+	}
 }
