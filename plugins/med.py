@@ -11,7 +11,7 @@ class MED(Plugin):
     def __init__(self : MED) -> None:
         super().__init__()
         self.name : str = "MED"
-        self.description : str = "v0.5\nHandle md_scr.med MED files (Experimental)"
+        self.description : str = "v0.6\nHandle md_scr.med MED files (Experimental)"
 
     def match(self : MED, file_path : str, is_for_action : bool) -> bool:
         if is_for_action:
@@ -159,6 +159,7 @@ class MED(Plugin):
             content : bytearray = data[offset:]
             file_content : bytes = b''
             strings : list[str] = [""]
+            file_entries : list[list[str]] = [[self.owner.CHILDREN_FILE_ID + "{:05}_".format(count) + f]]
             for i in content:
                 if i:
                     file_content += int.to_bytes(i, 1, byteorder='little')
@@ -167,12 +168,18 @@ class MED(Plugin):
                         decoded : str = file_content.decode('cp932', errors='ignore')
                         if self._has_jp(decoded) and decoded[0] not in ';#':
                             strings.append(decoded)
+                        else:
+                            if len(strings) > 1:
+                                file_entries.append(strings)
+                                strings = [""]
+                            strings[0] = decoded
                     except Exception as e:
                         self.owner.log.warning("[MED] Error in 'extract_med':\n" + self.owner.trbk(e))
                     file_content = b''
             if len(strings) > 1:
-                entries.append([self.owner.CHILDREN_FILE_ID + "{:05}_".format(count) + f])
-                entries.append(strings)
+                file_entries.append(strings)
+            if len(file_entries) > 1:
+                entries.extend(file_entries)
             count += 1
         return entries
 
@@ -181,6 +188,7 @@ class MED(Plugin):
         count = 0
         for f in files:
             fname : str = file_path + "/{:05}_".format(count) + f.replace("/", " ").replace("\\", " ")
+            group : str = ""
             if fname in strings["files"] and not self.owner.projects[pname]["files"][fname]["ignored"]:
                 helper : WalkHelper = WalkHelper(fname, strings)
                 data : bytearray = files[f]
@@ -192,10 +200,11 @@ class MED(Plugin):
                     else:
                         decoded : str = buffer.decode('cp932', errors='ignore')
                         if not self._has_jp(decoded) or decoded[0] in ';#':
+                            group = decoded
                             offset += 1
                             buffer = b''
                             continue
-                        tmp : str = helper.apply_string(decoded)
+                        tmp : str = helper.apply_string(decoded, group)
                         if helper.str_modified:
                             offset -= len(buffer)
                             encoded = tmp.encode('cp932', errors='ignore')
