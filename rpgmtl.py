@@ -88,6 +88,7 @@ class RPGMTL():
         self.app.on_cleanup.append(self.stop_autosave)
         # HTTP Routes
         self.app.router.add_static('/assets/images', path='./assets/images', name='assets')
+        self.app.router.add_static('/assets/plugins', path='./assets/plugins', name='plugins_assets')
         self.app.add_routes([
                 web.get('/', self.page),
                 web.get('/script.js', self.script),
@@ -183,16 +184,19 @@ class RPGMTL():
             # Add default value (if missing) to settings.json
             if k not in self.settings:
                 self.settings[k] = v[2]
-        
+
         # Process plugin actions
         for k, v in plugin.get_action_infos().items(): # same principle
-            if len(v) != 2: # check the format
-                raise Exception("[{}] Expected 2 values for action key {}".format(plugin.name, k))
+            if len(v) not in (2, 3): # check the format
+                raise Exception("[{}] Expected 2 or 3 values for action key {}".format(plugin.name, k))
             if k in self.action_key_set: # check if key is already set
                 raise Exception("[{}] Action key {} is already in use by another Plugin".format(plugin.name, k))
             self.action_key_set.add(k)
             # add action
-            self.actions[k] = [plugin.name, v[0], v[1]] # plugin name (for reverse lookup), UI text and callback
+            if len(v) == 2: # old format without icon
+                self.actions[k] = [plugin.name, None, v[0], v[1]] # plugin name (for reverse lookup), UI text, no icon and callback
+            else:
+                self.actions[k] = [plugin.name, v[0], v[1], v[2]] # plugin name (for reverse lookup), UI text, icon path and callback
 
     # Add a plugin to RPGMTL
     def add_plugin(self : RPGMTL, plugin : plugins.Plugin) -> None:
@@ -1627,7 +1631,7 @@ class RPGMTL():
             if path not in self.strings[name]["files"]:
                 return web.json_response({"result":"bad", "message":"Bad request, invalid 'path' parameter."}, status=400)
             else:
-                actions = {k : v[1] for k, v in self.actions.items() if self.plugins[v[0]].match(path, True)}
+                actions = {k : [v[1], v[2]] for k, v in self.actions.items() if self.plugins[v[0]].match(path, True)}
                 return web.json_response({"result":"ok", "data":{"config":self.projects[name], "name":name, "path":path, "strings":self.strings[name]["strings"], "list":self.strings[name]["files"][path], "actions":actions}})
 
     # /api/file_action

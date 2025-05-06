@@ -16,7 +16,7 @@ class ArcNSA(Plugin):
     def __init__(self : ArcNSA) -> None:
         super().__init__()
         self.name : str = "ArcNSA"
-        self.description : str = " v0.2\nHandle arc.nsa archive files (Experimental)"
+        self.description : str = " v0.3\nHandle arc.nsa archive files (Experimental)"
 
     def get_setting_infos(self : ArcNSA) -> dict[str, list]:
         return {
@@ -25,7 +25,7 @@ class ArcNSA(Plugin):
 
     def get_action_infos(self : ArcNSA) -> dict[str, list]:
         return {
-            "arcnsa_export": ["Export Script Files", self._export]
+            "arcnsa_export": ["assets/plugins/arcnsa_export.png", "Export Script Files", self._export]
         }
 
     def _export(self : ArcNSA, name : str, file_path : str, settings : dict[str, Any] = {}) -> str:

@@ -129,7 +129,7 @@ class RM_Marshal(Plugin):
     def __init__(self : RM_Marshal) -> None:
         super().__init__()
         self.name : str = "RPG Maker Marshal"
-        self.description : str = "v3.4\nHandle files from RPG Maker XP, VX and VX Ace"
+        self.description : str = "v3.5\nHandle files from RPG Maker XP, VX and VX Ace"
         self.allow_ruby_plugin : bool = True # Leave it on by default
 
     def get_setting_infos(self : RM_Marshal) -> dict[str, list]:
@@ -139,8 +139,8 @@ class RM_Marshal(Plugin):
 
     def get_action_infos(self : RM_Marshal) -> dict[str, list]:
         return {
-            "rm_marshal_export": ["Deserialize File Content", self._deserialize],
-            "rm_marshal_script_export": ["Dump Ruby Scripts", self._export_script],
+            "rm_marshal_export": ["assets/plugins/rm_marshal_export.png", "Deserialize File Content", self._deserialize],
+            "rm_marshal_script_export": ["assets/plugins/rm_marshal_script_export.png", "Dump Ruby Scripts", self._export_script],
         }
 
     def _deserialize(self : RM_Marshal, name : str, file_path : str, settings : dict[str, Any] = {}) -> str:

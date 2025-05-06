@@ -26,7 +26,7 @@ class MED(Plugin):
 
     def get_action_infos(self : MED) -> dict[str, list]:
         return {
-            "med_adjust_line": ["Adjust New Line", self.adjust_new_line],
+            "med_adjust_line": ["assets/plugins/med_adjust_line.png", "Adjust New Line", self.adjust_new_line],
         }
 
     def adjust_new_line(self : MED, name : str, file_path : str, settings : dict[str, Any] = {}) -> str:

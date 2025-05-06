@@ -88,10 +88,11 @@ class Plugin:
         # Return them here
         # Formatting Example
         # return {
-        #    "action_key": ["text_to_display", self.callback]
+        #    "action_key": ["path_to_icon", "text_to_display", self.callback]
         #    ...
         # }
         # action_key: must be unique among other plugin, use some unique ientifier
+        # path_to_icon: A string to indicate the path to the action icon. The file must be in assets/images or assets/plugins. Can be set to None.
         # text_to_display: A string to be displayed on the UI
         # callback: A function of your callback. It must take as a parameter the project name (str), the file path (str) and a (dict) of the plugin settings. The return parameter is a string (a message to display, can be empty)
         return {}

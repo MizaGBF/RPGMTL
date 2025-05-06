@@ -6,7 +6,7 @@ class CharaLimit(Plugin):
     def __init__(self : CharaLimit) -> None:
         super().__init__()
         self.name : str = "Character Limit"
-        self.description : str = "v1.2\nAllow you to automatically set new lines when a string goes above a certain character threshold."
+        self.description : str = "v1.3\nAllow you to automatically set new lines when a string goes above a certain character threshold."
 
     def get_setting_infos(self : CharaLimit) -> dict[str, list]:
         return {
@@ -16,7 +16,7 @@ class CharaLimit(Plugin):
 
     def get_action_infos(self : CharaLimit) -> dict[str, list]:
         return {
-            "char_limit_check": ["Check the Character Limit", self.check_limit],
+            "char_limit_check": ["assets/plugins/char_limit_check.png", "Check the Character Limit", self.check_limit],
         }
 
     def match(self : CharaLimit, file_path : str, is_for_action : bool) -> bool:
