@@ -1672,7 +1672,7 @@ class RPGMTL():
         else:
             if version != self.projects[name]["version"]:
                 return web.json_response({"result":"bad", "message":"The project has been updated, redirecting..."})
-            message = self.actions[key][2](name, path, self.settings | self.projects[name].get("settings", {}))
+            message = self.actions[key][3](name, path, self.settings | self.projects[name].get("settings", {}))
             if message != "":
                 return web.json_response({"result":"ok", "data":{}, "message":message})
             else:
