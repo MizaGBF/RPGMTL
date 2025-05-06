@@ -194,6 +194,7 @@ class RPGMTL():
             self.action_key_set.add(k)
             # add action
             if len(v) == 2: # old format without icon
+                self.log.warning("Format of action {} in plugin {} is deprecated. Icon is missing.".format(k, plugin.name))
                 self.actions[k] = [plugin.name, None, v[0], v[1]] # plugin name (for reverse lookup), UI text, no icon and callback
             else:
                 self.actions[k] = [plugin.name, v[0], v[1], v[2]] # plugin name (for reverse lookup), UI text, icon path and callback
