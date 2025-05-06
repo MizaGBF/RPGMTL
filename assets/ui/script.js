@@ -327,7 +327,7 @@ function project_list(data)
 	// quick links
 	if(data["history"].length > 0) // list last browsed Files
 	{
-		addTo(fragment, "div", {cls:["title", "left"], br:false}).innerHTML = "Last Edited Files";
+		addTo(fragment, "div", {cls:["title", "left"], br:false}).innerHTML = "Last Accessed Files";
 		for(let i = 0; i < data["history"].length; ++i)
 		{
 			const c_entry = data["history"][i];
