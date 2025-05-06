@@ -254,7 +254,13 @@ class RPGMTL():
     def load_settings(self : RPGMTL) -> None:
         try:
             with open('settings.json', mode='r', encoding='utf-8') as f:
-                self.settings = json.load(f)
+                data = json.load(f)
+                ver = data.get("version", 0)
+                if ver < 1:
+                    self.settings = data
+                elif ver >= 1:
+                    self.settings = data["settings"]
+                    self.history = data["history"]
         except Exception as e:
             self.log.warning("Failed to load settings.json, default value will be used:\n" + self.trbk(e))
 
@@ -287,7 +293,7 @@ class RPGMTL():
             try:
                 self.settings_modified = False
                 with open('settings.json', mode='w', encoding='utf-8') as f:
-                    f.write(self.serialize_format_json(self.settings))
+                    json.dump({"version":1, "settings":self.settings, "history":self.history}, f, ensure_ascii=False, indent=0, separators=(',', ':'))
                 self.log.info("Updated settings.json")
             except Exception as e:
                 self.log.error("Failed to update settings.json:\n" + self.trbk(e))
@@ -1639,6 +1645,7 @@ class RPGMTL():
             self.history.insert(0, history_entry)
             if len(self.history) > self.HISTORY_LIMIT:
                 self.history = self.history[:self.HISTORY_LIMIT]
+            self.settings_modified = True
             if path not in self.strings[name]["files"]:
                 return web.json_response({"result":"bad", "message":"Bad request, invalid 'path' parameter."}, status=400)
             else:
