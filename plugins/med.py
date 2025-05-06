@@ -11,7 +11,7 @@ class MED(Plugin):
     def __init__(self : MED) -> None:
         super().__init__()
         self.name : str = "MED"
-        self.description : str = "v0.6\nHandle md_scr.med MED files (Experimental)"
+        self.description : str = "v0.7\nHandle md_scr.med MED files (Experimental)"
 
     def match(self : MED, file_path : str, is_for_action : bool) -> bool:
         if is_for_action:
