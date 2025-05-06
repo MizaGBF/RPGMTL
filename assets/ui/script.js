@@ -7,6 +7,7 @@ var loadertext = null;
 var loaderanim = null;
 var help = null;
 var edit_ori = null;
+var edit_times = null;
 var edit_tl = null;
 var tl_string_length = null;
 // global variables
@@ -37,6 +38,7 @@ function init()
 	loaderanim = document.getElementById("loader-animation");
 	help = document.getElementById("help");
 	edit_ori = document.getElementById("edit-ori");
+	edit_times = document.getElementById("edit-times");
 	edit_tl = document.getElementById("edit-tl");
 	tl_string_length = document.getElementById("string-length");
 	// request the project list
@@ -1220,6 +1222,7 @@ function prepareGroupOn(node, i)
 		original.group = i;
 		original.string = j;
 		original.textContent = prjstring[prjlist[i][j][0]][0];
+		const occurence = prjstring[prjlist[i][j][0]][2];
 		
 		let translation = addTo(span, "pre", {cls:["title", "inline", "smalltext", "translation"], br:false}); // translated string
 		translation.group = i;
@@ -1285,6 +1288,11 @@ function prepareGroupOn(node, i)
 					// string from project data
 					let ss = prjlist[span.group][span.string];
 					// update bottom part
+					// set occurence count
+					if(occurence > 1)
+						edit_times.textContent = occurence + " occurences of this string in the game";
+					else
+						edit_times.textContent = "";
 					// set original string text
 					edit_ori.textContent = prjstring[ss[0]][0];
 					// set textarea with current translation

@@ -17,8 +17,9 @@ Future (possible) improvements are noted here:
   
 - [ ] Add a built-in note system.  
 - [ ] A comment system for each line could be nice too.  
-- [ ] Add the occurence count of an original string when selected.  
   
 ## Testing Stage  
   
-None.
+### UI / QoL  
+  
+- [x] Add the occurence count of an original string when selected, if greater than 1.  

@@ -207,6 +207,7 @@ html, body {
 #edit-ori {
 	width: 95%;
 	font-size: 20px;
+    white-space: pre-wrap;
 }
 
 #edit-tl {
@@ -219,6 +220,13 @@ html, body {
 	background-color: #eeeeee;
 	outline: none;
 	font-size: 20px;
+}
+
+#edit-times {
+	width: 95%;
+	font-size: 15px;
+	text-align: left;
+	margin-bottom: 3px;
 }
 
 .settingtext {
