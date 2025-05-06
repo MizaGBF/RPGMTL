@@ -353,7 +353,7 @@ The ones without parameters don't need to be sent a payload.
   
 ```
 /api/main
-Return in data: array of project names, version string
+Return in data: 'list' of project names, 'version' string, file 'history'
 ```
   
 ```

@@ -70,6 +70,7 @@ class RPGMTL():
     # constant
     VERSION = "3.15"
     CHILDREN_FILE_ID = "@__children_file__@:"
+    HISTORY_LIMIT = 10
     def __init__(self : RPGMTL) -> None:
         # Setting up logging
         handler = RotatingFileHandler(filename="rpgmtl.log", encoding='utf-8', mode='w', maxBytes=51200, backupCount=3)
@@ -138,6 +139,7 @@ class RPGMTL():
         self.setting_menu : dict[str, dict[str, list]] = {} # store info for setting menu, per plugin file
         self.plugin_descriptions : dict[str, str] = {} # store plugin descriptions
         self.actions : dict[str, list] = {} # store plugin actions
+        self.history : list[list[Any]] = [] # store link to last ten accessed files
         # loaded plugins
         self.plugins : dict[str, plugins.Plugin] = {}
         self.translators : dict[str, plugins.TranslatorPlugin] = {}
@@ -1298,7 +1300,7 @@ class RPGMTL():
     async def project_list(self : RPGMTL, request : web.Request) -> web.Response:
         l : list[str] = self.load_project_list()
         self.log.info("A list of " + str(len(l)) + " project(s) has been sent to an user")
-        return web.json_response({"result":"ok", "data":{"list":l, "verstring":self.VERSION}})
+        return web.json_response({"result":"ok", "data":{"list":l, "verstring":self.VERSION, "history":self.history}})
 
     # /api/shutdown
     async def shutdown(self : RPGMTL, request : web.Request) -> web.Response:
@@ -1628,7 +1630,15 @@ class RPGMTL():
         elif name is None:
             return web.json_response({"result":"bad", "message":"Bad request, missing 'name' parameter."}, status=400)
         else:
+            self.load_project(name)
             self.load_strings(name)
+            # add to history
+            history_entry : list[Any] = [name, path]
+            if history_entry in self.history:
+                self.history.pop(self.history.index(history_entry))
+            self.history.insert(0, history_entry)
+            if len(self.history) > self.HISTORY_LIMIT:
+                self.history = self.history[:self.HISTORY_LIMIT]
             if path not in self.strings[name]["files"]:
                 return web.json_response({"result":"bad", "message":"Bad request, invalid 'path' parameter."}, status=400)
             else:

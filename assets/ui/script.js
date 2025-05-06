@@ -323,6 +323,19 @@ function project_list(data)
 	addTo(fragment, "div", {cls:["interact"], onclick:function(){
 		postAPI("/api/translator", translator_menu);
 	}}).innerHTML = '<img src="assets/images/translate.png"> Default Translator';
+	addTo(fragment, "div", {cls:["spacer"]});
+	// quick links
+	if(data["history"].length > 0) // list last browsed Files
+	{
+		addTo(fragment, "div", {cls:["title", "left"], br:false}).innerHTML = "Last Edited Files";
+		for(let i = 0; i < data["history"].length; ++i)
+		{
+			const c_entry = data["history"][i];
+			addTo(fragment, "div", {cls:["interact"], onclick:function() {
+				postAPI("/api/file", open_file, null, {name:c_entry[0], path:c_entry[1]});
+			}}).innerHTML = c_entry[0] + ": " + c_entry[1];
+		}
+	}
 	updateMain(fragment);
 }
 
