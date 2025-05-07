@@ -131,7 +131,7 @@ class RPGMTL():
         self.projects : dict[str, Any] = {} # store loaded config.json
         self.strings : dict[str, Any] = {} # store loaded string.json
         self.modified : dict[str, bool] = {} # store flag indicating if config.json or string.json has pending changes waiting to be saved
-        self.computing : dict[str, int] = {} # store state for compute_translated
+        self.computing : dict[str, asyncio.Task] = {} # store state for compute_translated
         self.setting_key_set : set[str] = set(["rpgmtl_current_translator"]) # store existing setting keys
         self.action_key_set : set[str] = set() # store existing action keys
         self.settings : dict[str, Any] = {} # store global plugins setting
@@ -748,6 +748,7 @@ class RPGMTL():
             if name not in self.strings:
                 with open('projects/' + name + '/strings.json', mode='r', encoding='utf-8') as f:
                     self.strings[name] = json.load(f)
+                self.start_compute_translated(name) # force an up to date compute
             return self.strings[name]
         except:
             return None
@@ -937,48 +938,41 @@ class RPGMTL():
         # increase project version
         self.projects[name]["version"] = self.projects[name].get("version", -1) + 1
         # start computing completion
-        asyncio.create_task(self.compute_translated(name, self.projects[name]["version"]))
+        self.start_compute_translated(name)
         # set save flag
         self.modified[name] = True
         self.log.info("Strings extraction for project " + name + " completed")
         return err
 
+    def start_compute_translated(self : RPGMTL, name : str) -> None:
+        if name in self.computing:
+            self.computing[name].cancel()
+        self.computing[name] = asyncio.create_task(self.compute_translated(name))
+
     # calculate number of translated lines
-    async def compute_translated(self : RPGMTL, name : str, version : int) -> None:
-        if version <= self.computing.get(name, -1):
+    async def compute_translated(self : RPGMTL, name : str) -> None:
+        try:
+            tl_table : dict[str, bool] = {s : self.strings[name]["strings"][s][1] is not None for s in self.strings[name]["strings"]}
+            for f in self.strings[name]["files"]:
+                await asyncio.sleep(0.005) # i.e 5s for 1000 files
+                counts = [0, 0]
+                for g in self.strings[name]["files"][f]:
+                    for i in range(1, len(g)):
+                        if g[i][3]:
+                            counts[1] += 1 # disabled count
+                        elif (g[i][2] and g[i][1] is not None) or tl_table[g[i][0]]:
+                            counts[0] += 1 # translated count
+                if f not in self.projects[name]['files']:
+                    return
+                self.projects[name]['files'][f]["translated"] = counts[0]
+                self.projects[name]['files'][f]["disabled_strings"] = counts[1]
+            # Note: Not changing modified flag
+            # This function is already called after modifying something
+            # It's to avoid too much writes
+        except asyncio.CancelledError:
             return
-        self.computing[name] = version
-        self.log.info("Computing the translation completion for project " + name + "...")
-        mismatch_flag : bool = False
-        for f in self.strings[name]["files"]:
-            await asyncio.sleep(0.1)
-            # check if still valid
-            if version != self.projects[name]["version"]:
-                self.log.info("Aborting computing of the translation completion for project " + name + "...")
-                return
-            # check for inconsistency
-            if f not in self.projects[name]['files']:
-                mismatch_flag = True
-                continue
-            # reset
-            prev = self.projects[name]['files'][f]["translated"]
-            self.projects[name]['files'][f]["translated"] = 0
-            self.projects[name]['files'][f]["disabled_strings"] = 0
-            # go over each string in file
-            for g in self.strings[name]["files"][f]:
-                for i in range(1, len(g)):
-                    if g[i][3]:
-                        self.projects[name]['files'][f]["disabled_strings"] += 1
-                    elif (g[i][2] and g[i][1] is not None) or self.strings[name]["strings"][g[i][0]][1] is not None:
-                        self.projects[name]['files'][f]["translated"] += 1
-            if prev != self.projects[name]['files'][f]["translated"]:
-                self.modified[name] = True
-        if self.computing.get(name, -1) == version:
-            self.computing.pop(name, None)
-        if mismatch_flag:
-            self.log.warning("Mismatch detected between project " + name + " config and strings, extracting the strings again might fix this issue, the translation percentages won't be accurate")
-        else:
-            self.log.info("Computing the translation completion for project " + name + " is complete and up-to-date")
+        except Exception as e:
+            self.log.error("Unexpected error in compute_translated for project " + name + "\n" + self.trbk(e))
 
     # release game patch
     def create_release(self : RPGMTL, name : str) -> tuple[int, int]:
@@ -1094,7 +1088,7 @@ class RPGMTL():
                 self.projects[name]["version"] = self.projects[name].get("version", -1) + 1
                 self.modified[name] = True
                 # start computing completion
-                asyncio.create_task(self.compute_translated(name, self.projects[name]["version"]))
+                self.start_compute_translated(name)
             return 1, count
         except:
             return -1, count
@@ -1200,7 +1194,7 @@ class RPGMTL():
                 self.projects[name]["version"] = self.projects[name].get("version", -1) + 1
                 self.modified[name] = True
                 # start computing completion
-                asyncio.create_task(self.compute_translated(name, self.projects[name]["version"]))
+                self.start_compute_translated(name)
             return 1, count
         except Exception as e:
             self.log.error("The following exception occured in import_rpgmtrans_data():\n" + self.trbk(e))
@@ -1734,7 +1728,7 @@ class RPGMTL():
                 self.strings[name]["files"][path][group][index][4] = 0
                 self.modified[name] = True
                 # Start computation
-                asyncio.create_task(self.compute_translated(name, self.projects[name]["version"]))
+                self.start_compute_translated(name)
                 # Respond
                 return web.json_response({"result":"ok", "data":{"config":self.projects[name], "name":name, "path":path, "strings":self.strings[name]["strings"], "list":self.strings[name]["files"][path]}})
 
@@ -1827,7 +1821,7 @@ class RPGMTL():
             
             # Start computation
             if count > 0:
-                asyncio.create_task(self.compute_translated(name, self.projects[name]["version"]))
+                self.start_compute_translated(name)
             # Respond
             return web.json_response({"result":"ok", "data":{"config":self.projects[name], "name":name, "path":path, "strings":self.strings[name]["strings"], "list":self.strings[name]["files"][path]}, "message":"{} string(s) have been translated".format(count)})
 
