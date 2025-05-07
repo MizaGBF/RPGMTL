@@ -334,7 +334,9 @@ function project_list(data)
 		{
 			const c_entry = data["history"][i];
 			addTo(fragment, "div", {cls:["interact"], onclick:function() {
-				postAPI("/api/file", open_file, null, {name:c_entry[0], path:c_entry[1]});
+				postAPI("/api/file", open_file, function() {
+					postAPI("/api/main", project_list);
+				}, {name:c_entry[0], path:c_entry[1]});
 			}}).innerHTML = c_entry[0] + ": " + c_entry[1];
 		}
 	}

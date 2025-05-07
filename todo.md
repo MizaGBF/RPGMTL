@@ -1,5 +1,5 @@
 # RPGMTL  
-Future (possible) improvements are noted here:  
+Future (possible) improvements or bugs are noted here:  
   
 ## Planning Stage  
   
@@ -7,7 +7,7 @@ Future (possible) improvements are noted here:
 - [ ] Add some sort of authentification (with a Command line parameter to set a password?).  
 - [ ] Add support for URLSearchParams to bookmark specific pages and support a browse back/forward inputs.  
 - [ ] Add fallback when using main page "last accessed files" if the file or project has been deleted.  
-- [ ] Add "last accessed files" on project page. Perhaps increase the limit too.  
+- [ ] Opening a file after atring search not letting you go back to the search.  
   
 ### Logic  
   
@@ -17,9 +17,3 @@ Future (possible) improvements are noted here:
   
 - [ ] Add a built-in note system.  
 - [ ] A comment system for each line could be nice too.  
-  
-## Testing Stage  
-  
-### UI / QoL  
-  
-- [x] Add the occurence count of an original string when selected, if greater than 1.  
