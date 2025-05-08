@@ -1376,6 +1376,7 @@ class RPGMTL():
         if name is None:
             return web.json_response({"result":"ok", "data":{"list":translators, "current":current}})
         else:
+            self.load_project(name)
             return web.json_response({"result":"ok", "data":{"name":name, "config":self.projects[name], "list":translators, "current":current}})
 
     # /api/update_translator
@@ -1411,6 +1412,7 @@ class RPGMTL():
         if name is None:
             return web.json_response({"result":"ok", "data":{"layout":self.setting_menu, "settings":settings, "descriptions":self.plugin_descriptions}})
         else:
+            self.load_project(name)
             settings = settings | self.projects[name].get("settings", {})
             return web.json_response({"result":"ok", "data":{"name":name, "config":self.projects[name], "layout":self.setting_menu, "settings":settings, "descriptions":self.plugin_descriptions}})
         
@@ -1488,6 +1490,7 @@ class RPGMTL():
         if name is None:
             return web.json_response({"result":"bad", "message":"Bad request, missing 'name' parameter"}, status=400)
         else:
+            self.load_project(name)
             l : list[str] = list(self.projects[name]["patches"].keys())
             l.sort()
             return web.json_response({"result":"ok", "data":{"name":name, "config":self.projects[name]}})
@@ -1502,6 +1505,7 @@ class RPGMTL():
         elif key is None:
             return web.json_response({"result":"bad", "message":"Bad request, missing 'key' parameter"}, status=400)
         else:
+            self.load_project(name)
             return web.json_response({"result":"ok", "data":{"key":key, "name":name, "config":self.projects[name]}})
 
     # /api/update_patch
@@ -1564,6 +1568,7 @@ class RPGMTL():
         if name is None:
             return web.json_response({"result":"bad", "message":"Bad request, missing 'name' parameter"}, status=400)
         else:
+            self.load_project(name)
             targets : set[str] = set(["strings.bak-1.json", "strings.bak-2.json", "strings.bak-3.json", "strings.bak-4.json", "strings.bak-5.json"]) 
             l : list[list] = []
             with os.scandir("projects/" + name) as it:
@@ -1614,6 +1619,8 @@ class RPGMTL():
         elif name is None:
             return web.json_response({"result":"bad", "message":"Bad request, missing 'name' parameter."}, status=400)
         else:
+            self.load_project(name)
+            self.load_strings(name)
             files, folders = self.get_folder_content(name, path)
             return web.json_response({"result":"ok", "data":{"config":self.projects[name], "name":name, "path":path, "files":files, "folders":folders}})
 
@@ -1838,6 +1845,9 @@ class RPGMTL():
         elif name is None:
             return web.json_response({"result":"bad", "message":"Bad request, missing 'name' parameter"}, status=400)
         else:
+            self.load_project(name)
+            self.load_strings(name)
+
             lsearch = search.lower()
             id_matches : set[str] = ([k for k, s in self.strings[name]["strings"].items() if lsearch in s[0].lower() or (s[1] is not None and lsearch in s[1].lower())])
             files : set[str] = set()
@@ -1849,6 +1859,7 @@ class RPGMTL():
                         if g[i][0] in id_matches or (g[i][1] is not None and lsearch in g[i][1].lower()):
                             files.add(f)
                             break
+
             result : dict[str, bool] = {}
             keys : list[str] = list(files)
             keys.sort()

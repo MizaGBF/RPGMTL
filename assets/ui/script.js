@@ -41,8 +41,96 @@ function init()
 	edit_times = document.getElementById("edit-times");
 	edit_tl = document.getElementById("edit-tl");
 	tl_string_length = document.getElementById("string-length");
-	// request the project list
-	postAPI("/api/main", project_list);
+	// request the page
+	load_location();
+}
+
+// used once on startup
+// read search params and load a page accordingly
+function load_location()
+{
+	try
+	{
+		let urlparams = new URLSearchParams(window.location.search);
+		let page = urlparams.get("page");
+		switch(page)
+		{
+			case "menu":
+			{
+				postAPI("/api/open_project", project_menu, function() {
+					postAPI("/api/main", project_list);
+				}, {name:urlparams.get("name")});
+				break;
+			}
+			case "settings":
+			{
+				postAPI("/api/settings", setting_menu, function() {
+					postAPI("/api/main", project_list);
+				}, {name:urlparams.get("name")});
+				break;
+			}
+			case "translator":
+			{
+				postAPI("/api/translator", project_menu, function() {
+					postAPI("/api/main", project_list);
+				}, {name:urlparams.get("name")});
+				break;
+			}
+			case "browse":
+			{
+				postAPI("/api/browse", browse_files, function() {
+					postAPI("/api/main", project_list);
+				}, {name:urlparams.get("name"), path:JSON.parse(atob(urlparams.get("params")))});
+				break;
+			}
+			case "search_string":
+			{
+				let p = JSON.parse(atob(urlparams.get("params")));
+				postAPI("/api/search_string", string_search, function() {
+					postAPI("/api/main", project_list);
+				}, {name:urlparams.get("name"), path:p.path, search:p.search});
+				break;
+			}
+			case "patches":
+			{
+				postAPI("/api/patches", browse_patches, function() {
+					postAPI("/api/main", project_list);
+				}, {name:urlparams.get("name")});
+				break;
+			}
+			case "open_patch":
+			{
+				postAPI("/api/open_patch", edit_patch, function() {
+					postAPI("/api/main", project_list);
+				}, {name:urlparams.get("name"), key:JSON.parse(atob(urlparams.get("params")))});
+				break;
+			}
+			case "backups":
+			{
+				postAPI("/api/backups", backup_list, function() {
+					postAPI("/api/main", project_list);
+				}, {name:urlparams.get("name")});
+				break;
+			}
+			case "file":
+			{
+				postAPI("/api/file", open_file, function() {
+					postAPI("/api/main", project_list);
+				}, {name:urlparams.get("name"), path:JSON.parse(atob(urlparams.get("params")))});
+				break;
+			}
+			default:
+			{
+				postAPI("/api/main", project_list);
+				break;
+			}
+		};
+	}
+	catch(err)
+	{
+		console.log(err);
+		postAPI("/api/main", project_list);
+	}
 }
 
 // set data for the browser to memorize the current page
@@ -989,7 +1077,7 @@ function string_search(data)
 	try
 	{
 		const bp = data["path"];
-		upate_page_location("search_string", prjname, {"path:":bp, "search":data["search"]});
+		upate_page_location("search_string", prjname, {"path":bp, "search":data["search"]});
 		// top bar
 		let fragment = clearBar();
 		// back button (return to browse_files)
@@ -1106,7 +1194,8 @@ function edit_patch(data)
 	try
 	{
 		const key = data["key"]; // patch key. Note: CAN be null
-		upate_page_location("open_patch", prjname, key);
+		if(key != null)
+			upate_page_location("open_patch", prjname, key);
 		// top bar
 		let fragment = clearBar();
 		// back button
@@ -1132,12 +1221,20 @@ function edit_patch(data)
 		addTo(fragment, "div", {cls:["title"]}).innerHTML = prjname;
 		addTo(fragment, "div", {cls:["title", "left"]}).innerHTML = "Filename match";
 		addTo(fragment, "input", {cls:["input"], id:"filter"}).type = "text";
-		addTo(fragment, "div", {cls:["title", "left"]}).innerHTML = "Fix Code";
+		addTo(fragment, "div", {cls:["title", "left"]}).innerHTML = "Python Code";
 		addTo(fragment, "div", {cls:["input"], id:"fix"}).contentEditable = "plaintext-only";
 		// add confirm button
 		addTo(fragment, "div", {cls:["interact"], onclick:function(){
-			if(document.getElementById("fix").textContent.trim() != "")
-				postAPI("/api/update_patch", browse_patches, null, {name:prjname, key:key, newkey:document.getElementById("filter").value, code:document.getElementById("fix").textContent});
+			let newkey = document.getElementById("filter").value;
+			let code = document.getElementById("fix").textContent;
+			if(newkey.trim() != "" && code.trim() != "")
+			{
+				postAPI("/api/update_patch", browse_patches, null, {name:prjname, key:key, newkey:newkey, code:code});
+			}
+			else
+			{
+				pushPopup("At least one field is empty");
+			}
 		}}).innerHTML = '<img src="assets/images/confirm.png"> Confirm';
 		addTo(fragment, "div", {cls:["interact"], onclick:function(){
 			postAPI("/api/update_patch", browse_patches, null, {name:prjname, key:key});
