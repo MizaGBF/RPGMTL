@@ -8,7 +8,7 @@ Future (possible) improvements or bugs are noted here:
 - [X] Add support for URLSearchParams to bookmark specific pages and support a browse back/forward inputs.  
 - [x] Add fallback when using main page "last accessed files" if the file or project has been deleted.  
 - [X] Opening a file after a string search not letting you go back to the search.  
-- [ ] Open search results, using the search button in the translation area, in another tab (Will require better navigation first).  
+- [X] Open search results, using the search button in the translation area, in another tab (Will require better navigation first).  
   
 ### Logic  
   

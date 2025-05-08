@@ -128,7 +128,7 @@ function load_location()
 	}
 	catch(err)
 	{
-		console.log(err);
+		console.error(err);
 		postAPI("/api/main", project_list);
 	}
 }
@@ -943,7 +943,11 @@ function addSearchBar(node, bp, defaultVal = null)
 function search_this()
 {
 	bottom.style.display = "none";
-	postAPI("/api/search_string", string_search, null, {name:prjname, path:prjdata["path"], search:document.getElementById('edit-ori').textContent});
+	let urlparams = new URLSearchParams("");
+	urlparams.set("page", "search_string");
+	urlparams.set("name", prjname);
+	urlparams.set("params", stob64(JSON.stringify({name:prjname, path:prjdata["path"], search:document.getElementById('edit-ori').textContent})));
+	window.open(window.location.pathname + '?' + urlparams.toString();, '_blank').focus(); // open in another tab
 }
 
 // open folder /api/browse
