@@ -80,12 +80,12 @@ function load_location()
 			{
 				postAPI("/api/browse", browse_files, function() {
 					postAPI("/api/main", project_list);
-				}, {name:urlparams.get("name"), path:JSON.parse(atob(urlparams.get("params")))});
+				}, {name:urlparams.get("name"), path:JSON.parse(b64tos(urlparams.get("params")))});
 				break;
 			}
 			case "search_string":
 			{
-				let p = JSON.parse(atob(urlparams.get("params")));
+				let p = JSON.parse(b64tos(urlparams.get("params")));
 				postAPI("/api/search_string", string_search, function() {
 					postAPI("/api/main", project_list);
 				}, {name:urlparams.get("name"), path:p.path, search:p.search});
@@ -102,7 +102,7 @@ function load_location()
 			{
 				postAPI("/api/open_patch", edit_patch, function() {
 					postAPI("/api/main", project_list);
-				}, {name:urlparams.get("name"), key:JSON.parse(atob(urlparams.get("params")))});
+				}, {name:urlparams.get("name"), key:JSON.parse(b64tos(urlparams.get("params")))});
 				break;
 			}
 			case "backups":
@@ -116,7 +116,7 @@ function load_location()
 			{
 				postAPI("/api/file", open_file, function() {
 					postAPI("/api/main", project_list);
-				}, {name:urlparams.get("name"), path:JSON.parse(atob(urlparams.get("params")))});
+				}, {name:urlparams.get("name"), path:JSON.parse(b64tos(urlparams.get("params")))});
 				break;
 			}
 			default:
@@ -131,6 +131,25 @@ function load_location()
 		console.log(err);
 		postAPI("/api/main", project_list);
 	}
+}
+
+// utility functions to encode/decode unicode strings to b64
+function stob64(str) {
+	const uint8 = new TextEncoder().encode(str);
+	let binary = "";
+	for (let byte of uint8) {
+		binary += String.fromCharCode(byte);
+	}
+	return btoa(binary);
+}
+
+function b64tos(b64) {
+	const binary = atob(b64);
+	const uint8 = new Uint8Array(binary.length);
+	for (let i = 0; i < binary.length; i++) {
+		uint8[i] = binary.charCodeAt(i);
+	}
+	return new TextDecoder().decode(uint8);
 }
 
 // set data for the browser to memorize the current page
@@ -149,7 +168,7 @@ function upate_page_location(page, name, params)
 			urlparams.set("name", name);
 			if(params != null)
 			{
-				urlparams.set("params", btoa(JSON.stringify(params)));
+				urlparams.set("params", stob64(JSON.stringify(params)));
 			}
 		}
 		let newRelativePathQuery = window.location.pathname + '?' + urlparams.toString();
@@ -1122,6 +1141,8 @@ function string_search(data)
 			let total = prj["files"][key]["strings"] - prj["files"][key]["disabled_strings"];
 			let count = prj["files"][key]["translated"];
 			let percent = total > 0 ? ', ' + (Math.round(10000 * count / total) / 100) + '%)' : ')';
+			if(count == total)
+				button.classList.add("complete");
 			button.innerHTML = key + ' (' + total + " strings" + percent;
 		}
 		updateMain(fragment);
