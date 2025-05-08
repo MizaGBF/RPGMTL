@@ -1228,7 +1228,7 @@ class RPGMTL():
     def add_to_history(self : RPGMTL, name : str, path : str) -> None:
         i : int = 0
         while i < len(self.history):
-            if self.history[0] == name and self.history[1] == path:
+            if self.history[i][0] == name and self.history[i][1] == path:
                 if i == 0: # first place, don't do anything if it's already in the right spot
                     return
                 self.history.pop(i) # else delete
