@@ -45,6 +45,30 @@ function init()
 	postAPI("/api/main", project_list);
 }
 
+// set data for the browser to memorize the current page
+function upate_page_location(page, name, params)
+{
+	if(page == null)
+	{
+		history.pushState(null, '', window.location.pathname);
+	}
+	else
+	{
+		let urlparams = new URLSearchParams("");
+		urlparams.set("page", page);
+		if(name != null)
+		{
+			urlparams.set("name", name);
+			if(params != null)
+			{
+				urlparams.set("params", btoa(JSON.stringify(params)));
+			}
+		}
+		let newRelativePathQuery = window.location.pathname + '?' + urlparams.toString();
+		history.pushState(null, '', newRelativePathQuery);
+	}
+}
+
 // for keyboard Space shortcut detection during file editing
 document.onkeypress = function(e)
 {
@@ -250,6 +274,8 @@ function processAPI(success, failure)
 // handle result of /api/main
 function project_list(data)
 {
+	upate_page_location(null, null, null);
+	
 	// Reset major variables
 	keypressenabled = null;
 	path = null;
@@ -346,9 +372,13 @@ function project_list(data)
 // display settings for /api/settings
 function setting_menu(data)
 {
+	
 	try
 	{
 		const is_project = "config" in data;
+		
+		upate_page_location("settings", (is_project ? prjname : null), null);
+		
 		// top bar
 		let fragment = clearBar();
 		// back button
@@ -533,6 +563,9 @@ function translator_menu(data)
 	try
 	{
 		const is_project = "config" in data;
+		
+		upate_page_location("translator", (is_project ? prjname : null), null);
+		
 		// top bar
 		let fragment = clearBar();
 		// back button
@@ -614,6 +647,8 @@ function translator_menu(data)
 // project creation /api/update_location
 function project_creation(data)
 {
+	// don't update upate_page_location here
+	
 	if(data["path"] == "" || data["path"] == null)
 	{
 		postAPI("/api/main", project_list);
@@ -675,6 +710,8 @@ function project_menu(data = null)
 {
 	try
 	{
+		upate_page_location("menu", prjname, null);
+		
 		// top bar
 		let fragment = clearBar();
 		// back button
@@ -810,6 +847,7 @@ function browse_files(data)
 		keypressenabled = false;
 		laststringsearch = null;
 		const bp = data["path"];
+		upate_page_location("browse", prjname, bp);
 		// top bar
 		let fragment = clearBar();
 		// back button
@@ -951,6 +989,7 @@ function string_search(data)
 	try
 	{
 		const bp = data["path"];
+		upate_page_location("search_string", prjname, {"path:":bp, "search":data["search"]});
 		// top bar
 		let fragment = clearBar();
 		// back button (return to browse_files)
@@ -1007,11 +1046,12 @@ function string_search(data)
 	}
 }
 
-// open fix list
+// open fix list /api/patches
 function browse_patches(data)
 {
 	try
 	{
+		upate_page_location("patches", prjname, null);
 		// top part
 		let fragment = clearBar();
 		// back button
@@ -1066,6 +1106,7 @@ function edit_patch(data)
 	try
 	{
 		const key = data["key"]; // patch key. Note: CAN be null
+		upate_page_location("open_patch", prjname, key);
 		// top bar
 		let fragment = clearBar();
 		// back button
@@ -1122,6 +1163,7 @@ function backup_list(data)
 {
 	try
 	{
+		upate_page_location("backups", prjname, null);
 		// top part
 		let fragment = clearBar();
 		// back button
@@ -1335,6 +1377,8 @@ function open_file(data)
 		prjlist = data["list"];
 		prjdata = data;
 		lastfileopened = data["path"];
+		
+		upate_page_location("file", prjname, lastfileopened);
 		
 		// top bar
 		let fragment = clearBar();
@@ -1580,6 +1624,8 @@ function local_browse(title, explanation, mode)
 {
 	try
 	{
+		// don't update upate_page_location here
+		
 		filebrowsingmode = mode;
 		
 		// top bar
@@ -1684,6 +1730,7 @@ function update_local_browse(data)
 	set_loading(false);
 }
 
+// prompt for replacing strings
 function replace_page()
 {
 	try
