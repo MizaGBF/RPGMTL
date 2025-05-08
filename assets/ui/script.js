@@ -1101,7 +1101,14 @@ function string_search(data)
 		let fragment = clearBar();
 		// back button (return to browse_files)
 		addTo(fragment, "div", {cls:["interact", "button"], br:false, onclick:function() {
-			postAPI("/api/browse", browse_files, null, {name:prjname, path:data["path"]});
+			if(bp in data["files"])
+			{
+				postAPI("/api/file", open_file, null, {name:prjname, path:data["path"]});
+			}
+			else
+			{
+				postAPI("/api/browse", browse_files, null, {name:prjname, path:data["path"]});
+			}
 		}}).innerHTML = '<img src="assets/images/back.png">';
 		addTo(fragment, "div", {cls:["inline"], br:false}).innerHTML = "Search Results";
 		addTo(fragment, "div", {cls:["barfill"], br:false});
