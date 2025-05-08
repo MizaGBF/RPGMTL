@@ -959,7 +959,6 @@ function addSearchBar(node, bp, defaultVal = null)
 // search original button, used in index.html
 function search_this()
 {
-	bottom.style.display = "none";
 	let urlparams = new URLSearchParams("");
 	urlparams.set("page", "search_string");
 	urlparams.set("name", prjname);
