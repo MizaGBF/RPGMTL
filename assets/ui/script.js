@@ -378,6 +378,15 @@ function processAPI(success, failure)
 	}
 }
 
+// add home button
+// utility function to not repeat the code everywhere
+function addHomeTo(fragment)
+{
+	addTo(fragment, "div", {cls:["interact", "button"], br:false, onclick:function(){
+		postAPI("/api/main", project_list);
+	}}).innerHTML = '<img src="assets/images/home.png">';
+}
+
 // handle result of /api/main
 function project_list(data)
 {
@@ -495,6 +504,8 @@ function setting_menu(data)
 			else
 				postAPI("/api/main", project_list);
 		}}).innerHTML = '<img src="assets/images/back.png">';
+		// home button
+		addHomeTo(fragment);
 		// add project name or default string
 		addTo(fragment, "div", {cls:["inline"], br:false}).innerHTML = is_project ? prjname + " Settings" : "Default Settings";
 		addTo(fragment, "div", {cls:["barfill"], br:false});
@@ -682,6 +693,8 @@ function translator_menu(data)
 			else
 				postAPI("/api/main", project_list);
 		}}).innerHTML = '<img src="assets/images/back.png">';
+		// home button
+		addHomeTo(fragment);
 		// project name or default string
 		addTo(fragment, "div", {cls:["inline"], br:false}).innerHTML = is_project ? prjname + " Settings" : "Global Settings";
 		addTo(fragment, "div", {cls:["barfill"], br:false});
@@ -769,6 +782,8 @@ function project_creation(data)
 		addTo(fragment, "div", {cls:["interact", "button"], br:false, onclick:function(){
 			postAPI("/api/main", project_list);
 		}}).innerHTML = '<img src="assets/images/back.png">';
+		// home button
+		addHomeTo(fragment);
 		// set page title
 		addTo(fragment, "div", {cls:["inline"], br:false}).innerHTML = 'Create a new Project';
 		addTo(fragment, "div", {cls:["barfill"], br:false});
@@ -825,6 +840,8 @@ function project_menu(data = null)
 		addTo(fragment, "div", {cls:["interact", "button"], br:false, onclick:function(){
 			postAPI("/api/main", project_list);
 		}}).innerHTML = '<img src="assets/images/back.png">';
+		// home button
+		addHomeTo(fragment);
 		addTo(fragment, "div", {cls:["inline"], br:false}).innerHTML = prjname;
 		addTo(fragment, "div", {cls:["barfill"], br:false});
 		// help button
@@ -947,7 +964,7 @@ function search_this()
 	urlparams.set("page", "search_string");
 	urlparams.set("name", prjname);
 	urlparams.set("params", stob64(JSON.stringify({name:prjname, path:prjdata["path"], search:document.getElementById('edit-ori').textContent})));
-	window.open(window.location.pathname + '?' + urlparams.toString();, '_blank').focus(); // open in another tab
+	window.open(window.location.pathname + '?' + urlparams.toString(), '_blank').focus(); // open in another tab
 }
 
 // open folder /api/browse
@@ -973,6 +990,8 @@ function browse_files(data)
 				postAPI("/api/browse", browse_files, null, {name:prjname, path:returnpath});
 			}
 		}}).innerHTML = '<img src="assets/images/back.png">';
+		// home button
+		addHomeTo(fragment);
 		addTo(fragment, "div", {cls:["inline"], br:false}).innerHTML = "Path: " + bp;
 		addTo(fragment, "div", {cls:["barfill"], br:false});
 		// refresh button
@@ -1114,6 +1133,8 @@ function string_search(data)
 				postAPI("/api/browse", browse_files, null, {name:prjname, path:data["path"]});
 			}
 		}}).innerHTML = '<img src="assets/images/back.png">';
+		// home button
+		addHomeTo(fragment);
 		addTo(fragment, "div", {cls:["inline"], br:false}).innerHTML = "Search Results";
 		addTo(fragment, "div", {cls:["barfill"], br:false});
 		// help menu
@@ -1178,6 +1199,8 @@ function browse_patches(data)
 		addTo(fragment, "div", {cls:["interact", "button"], br:false, onclick:function(){
 			project_menu();
 		}}).innerHTML = '<img src="assets/images/back.png">';
+		// home button
+		addHomeTo(fragment);
 		addTo(fragment, "div", {cls:["inline"], br:false}).innerHTML = prjname;
 		addTo(fragment, "div", {cls:["barfill"], br:false});
 		// help button
@@ -1234,6 +1257,8 @@ function edit_patch(data)
 		addTo(fragment, "div", {cls:["interact", "button"], br:false, onclick:function(){
 			postAPI("/api/patches", browse_patches, null, {name:prjname});
 		}}).innerHTML = '<img src="assets/images/back.png">';
+		// home button
+		addHomeTo(fragment);
 		addTo(fragment, "div", {cls:["inline"], br:false}).innerHTML = "Create a Fix";
 		addTo(fragment, "div", {cls:["barfill"], br:false});
 		// help button
@@ -1299,6 +1324,8 @@ function backup_list(data)
 		addTo(fragment, "div", {cls:["interact", "button"], br:false, onclick:function(){
 			project_menu();
 		}}).innerHTML = '<img src="assets/images/back.png">';
+		// home button
+		addHomeTo(fragment);
 		addTo(fragment, "div", {cls:["inline"], br:false}).innerHTML = prjname;
 		addTo(fragment, "div", {cls:["barfill"], br:false});
 		// help button
@@ -1521,6 +1548,8 @@ function open_file(data)
 			else
 				postAPI("/api/browse", browse_files, null, {name:prjname, path:returnpath});
 		}}).innerHTML = '<img src="assets/images/back.png">';
+		// home button
+		addHomeTo(fragment);
 		addTo(fragment, "div", {cls:["inline"], br:false}).innerHTML = "File: " + lastfileopened;
 		addTo(fragment, "div", {cls:["barfill"], br:false});
 		// refresh button
@@ -1776,6 +1805,8 @@ function local_browse(title, explanation, mode)
 					break;
 			}
 		}}).innerHTML = '<img src="assets/images/back.png">';
+		// home button
+		addHomeTo(fragment);
 		addTo(fragment, "div", {cls:["inline"], br:false}).innerHTML = title;
 		addTo(fragment, "div", {cls:["barfill"], br:false});
 		updateBar(fragment);
@@ -1870,6 +1901,8 @@ function replace_page()
 		addTo(fragment, "div", {cls:["interact", "button"], br:false, onclick:function(){
 			project_menu();
 		}}).innerHTML = '<img src="assets/images/back.png">';
+		// home button
+		addHomeTo(fragment);
 		addTo(fragment, "div", {cls:["inline"], br:false}).innerHTML = "Replace strings";
 		addTo(fragment, "div", {cls:["barfill"], br:false});
 		updateBar(fragment);
