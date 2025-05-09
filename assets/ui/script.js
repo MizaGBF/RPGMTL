@@ -418,7 +418,7 @@ function project_list(data)
 	addTo(fragment, "div", {cls:["interact", "button"], br:false, onclick:function(){
 		if(this.classList.contains("shutdown") || window.event.ctrlKey)
 		{
-			this.classList.remove("shutdown");
+			this.classList.toggle("shutdown", false);
 			postAPI("/api/shutdown", function(_unused_) {
 				clearBar();
 				let fragment = clearMain();
@@ -428,7 +428,10 @@ function project_list(data)
 		}
 		else
 		{
-			this.classList.add("shutdown");
+			this.classList.toggle("shutdown", true);
+			setTimeout(function(node) {
+				node.classList.toggle("shutdown", false);
+			}, 2000, this);
 			pushPopup("Press again to confirm.");
 		}
 	}}).innerHTML = '<img src="assets/images/shutdown.png">';
