@@ -6,7 +6,8 @@ The interface runs in your Web Browser.
 The list of supported files is currently:  
 - JSON (for RPG Maker MV, MZ and other games)  
 - Javascript (for RPG Maker MV, MZ and other games)  
-- CSV (for RPG Maker MV, MZ and other games)    
+- CSV (for RPG Maker MV, MZ and other games)  
+- INI (for RPG Maker MV, MZ and other games)  
 - Ruby Marshal (.rxdata, .rvdata, .rvdata2 for RPG Maker XP to VX Ace)  
 - MED (md_scr.med archives in particular, used by Triangle and Lusterise games) (EXPERIMENTAL)  
 - NSA (arc.nsa archives from NScripter engine) (EXPERIMENTAL)  
@@ -306,15 +307,18 @@ Be aware it's a convenience feature and far from perfect.
 ### Existing Plugin  
   
 The following File Plugins are available:  
+* `ArcNSA`: For arc.nsa files.  
 * `CSV`: For CSV files.  
+* `General Actions`: Add simple actions on all files.  
+* `INI`: For INI Files.  
 * `Javascript`: For Javascript Files.  
 * `JSON`: For JSON files.  
     * It exposes one setting to merge RPG Maker Show Text/Script event commands as one string. You must re-extract the strings after changing it.
+* `MED`: For md_scr.med Files.  
 * `RM Marshal`: For Ruby Marshal files, such as RPG Maker rxdata, rvdata and rvdata2 files.  
     * It exposes one setting to merge RPG Maker Show Text/Script event commands as one string. You must re-extract the strings after changing it.
     * It exposes two File Actions to extract content and Ruby scripts, from those files.
 * `Ruby`: For Ruby scripts. It's also called by `RM Marshal` to patch RPG Maker XP/VX/VX Ace scripts.  
-* `Character Limit`: Add a simple action on all files to check whether a translated string is over a certain size limit.  
   
 The following Translator Plugins are available:  
 * `TL Google`: For Google Translations.  
