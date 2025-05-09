@@ -20,6 +20,7 @@ html, body {
 	align-items: center;
 	z-index: 50;
 	border: none;
+	overflow-x: hidden;
 }
 
 #main {
@@ -33,6 +34,7 @@ html, body {
 	z-index: 0;
 	overflow-y:auto;
 	max-height: calc(100vh - 50px);
+	overflow-x: hidden;
 }
 
 #bottom {
@@ -53,6 +55,7 @@ html, body {
 	border-color: #000000;
 	border-style: solid;
 	border-width: 1px;
+	overflow-x: hidden;
 }
 
 #loading {
@@ -132,6 +135,7 @@ html, body {
 .spacer {
 	padding: 10px 20px;
 	height: 50px;
+	width: 95%;
 }
 
 .title {
@@ -358,6 +362,13 @@ html, body {
 
 .smallinput {
 	width: 50%;
+}
+
+.text-wrapper {
+	direction: rtl;
+	text-overflow: ellipsis;
+	white-space: nowrap;
+	overflow: hidden; 
 }
 
 .archive {

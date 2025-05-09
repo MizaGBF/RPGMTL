@@ -436,7 +436,7 @@ function project_list(data)
 		}
 	}}).innerHTML = '<img src="assets/images/shutdown.png">';
 	// add version
-	addTo(fragment, "div", {cls:["inline"], br:false}).innerHTML = 'RPGMTL v' + data["verstring"];
+	addTo(fragment, "div", {cls:["inline", "text-wrapper"], br:false}).innerHTML = 'RPGMTL v' + data["verstring"];
 	addTo(fragment, "div", {cls:["barfill"], br:false});
 	// github
 	addTo(fragment, "div", {cls:["interact", "button"], br:false, onclick:function(){
@@ -484,7 +484,7 @@ function project_list(data)
 		for(let i = 0; i < data["history"].length; ++i)
 		{
 			const c_entry = data["history"][i];
-			addTo(fragment, "div", {cls:["interact"], onclick:function() {
+			addTo(fragment, "div", {cls:["interact", "text-wrapper"], onclick:function() {
 				postAPI("/api/file", open_file, function() {
 					postAPI("/api/main", project_list);
 				}, {name:c_entry[0], path:c_entry[1]});
@@ -516,7 +516,7 @@ function setting_menu(data)
 		// home button
 		addHomeTo(fragment);
 		// add project name or default string
-		addTo(fragment, "div", {cls:["inline"], br:false}).innerHTML = is_project ? prjname + " Settings" : "Default Settings";
+		addTo(fragment, "div", {cls:["inline", "text-wrapper"], br:false}).innerHTML = is_project ? prjname + " Settings" : "Default Settings";
 		addTo(fragment, "div", {cls:["barfill"], br:false});
 		// help button
 		addTo(fragment, "div", {cls:["interact", "button"], br:false, onclick:function(){
@@ -705,7 +705,7 @@ function translator_menu(data)
 		// home button
 		addHomeTo(fragment);
 		// project name or default string
-		addTo(fragment, "div", {cls:["inline"], br:false}).innerHTML = is_project ? prjname + " Settings" : "Global Settings";
+		addTo(fragment, "div", {cls:["inline", "text-wrapper"], br:false}).innerHTML = is_project ? prjname + " Settings" : "Global Settings";
 		addTo(fragment, "div", {cls:["barfill"], br:false});
 		// help button
 		addTo(fragment, "div", {cls:["interact", "button"], br:false, onclick:function(){
@@ -794,7 +794,7 @@ function project_creation(data)
 		// home button
 		addHomeTo(fragment);
 		// set page title
-		addTo(fragment, "div", {cls:["inline"], br:false}).innerHTML = 'Create a new Project';
+		addTo(fragment, "div", {cls:["inline", "text-wrapper"], br:false}).innerHTML = 'Create a new Project';
 		addTo(fragment, "div", {cls:["barfill"], br:false});
 		// help button
 		addTo(fragment, "div", {cls:["interact", "button"], br:false, onclick:function(){
@@ -851,7 +851,7 @@ function project_menu(data = null)
 		}}).innerHTML = '<img src="assets/images/back.png">';
 		// home button
 		addHomeTo(fragment);
-		addTo(fragment, "div", {cls:["inline"], br:false}).innerHTML = prjname;
+		addTo(fragment, "div", {cls:["inline", "text-wrapper"], br:false}).innerHTML = prjname;
 		addTo(fragment, "div", {cls:["barfill"], br:false});
 		// help button
 		addTo(fragment, "div", {cls:["interact", "button"], br:false, onclick:function(){
@@ -1000,7 +1000,7 @@ function browse_files(data)
 		}}).innerHTML = '<img src="assets/images/back.png">';
 		// home button
 		addHomeTo(fragment);
-		addTo(fragment, "div", {cls:["inline"], br:false}).innerHTML = "Path: " + bp;
+		addTo(fragment, "div", {cls:["inline", "text-wrapper"], br:false}).innerHTML = "Path: " + bp;
 		addTo(fragment, "div", {cls:["barfill"], br:false});
 		// refresh button
 		addTo(fragment, "div", {cls:["interact", "button"], br:false, onclick:function(){
@@ -1064,8 +1064,8 @@ function browse_files(data)
 		addTo(fragment, "div", {cls:["title", "left"]}).innerHTML = "List of Files";
 		// possible class sets
 		let cls = [
-			["interact"],
-			["interact", "disabled"]
+			["interact", "text-wrapper"],
+			["interact", "text-wrapper", "disabled"]
 		];
 		let scrollTo = null; // contains element to scroll to
 		for(const [key, value] of Object.entries(data["files"]))
@@ -1143,7 +1143,7 @@ function string_search(data)
 		}}).innerHTML = '<img src="assets/images/back.png">';
 		// home button
 		addHomeTo(fragment);
-		addTo(fragment, "div", {cls:["inline"], br:false}).innerHTML = "Search Results";
+		addTo(fragment, "div", {cls:["inline", "text-wrapper"], br:false}).innerHTML = "Search Results";
 		addTo(fragment, "div", {cls:["barfill"], br:false});
 		// help menu
 		addTo(fragment, "div", {cls:["interact", "button"], br:false, onclick:function(){
@@ -1161,8 +1161,8 @@ function string_search(data)
 		
 		addTo(fragment, "div", {cls:["title", "left"]}).innerHTML = "Search Results";
 		let cls = [
-			["interact"],
-			["interact", "disabled"]
+			["interact", "text-wrapper"],
+			["interact", "text-wrapper", "disabled"]
 		];
 		// list files
 		for(const [key, value] of Object.entries(data["files"]))
@@ -1209,7 +1209,7 @@ function browse_patches(data)
 		}}).innerHTML = '<img src="assets/images/back.png">';
 		// home button
 		addHomeTo(fragment);
-		addTo(fragment, "div", {cls:["inline"], br:false}).innerHTML = prjname;
+		addTo(fragment, "div", {cls:["inline", "text-wrapper"], br:false}).innerHTML = prjname;
 		addTo(fragment, "div", {cls:["barfill"], br:false});
 		// help button
 		addTo(fragment, "div", {cls:["interact", "button"], br:false, onclick:function(){
@@ -1267,7 +1267,7 @@ function edit_patch(data)
 		}}).innerHTML = '<img src="assets/images/back.png">';
 		// home button
 		addHomeTo(fragment);
-		addTo(fragment, "div", {cls:["inline"], br:false}).innerHTML = "Create a Fix";
+		addTo(fragment, "div", {cls:["inline", "text-wrapper"], br:false}).innerHTML = "Create a Fix";
 		addTo(fragment, "div", {cls:["barfill"], br:false});
 		// help button
 		addTo(fragment, "div", {cls:["interact", "button"], br:false, onclick:function(){
@@ -1334,7 +1334,7 @@ function backup_list(data)
 		}}).innerHTML = '<img src="assets/images/back.png">';
 		// home button
 		addHomeTo(fragment);
-		addTo(fragment, "div", {cls:["inline"], br:false}).innerHTML = prjname;
+		addTo(fragment, "div", {cls:["inline", "text-wrapper"], br:false}).innerHTML = prjname;
 		addTo(fragment, "div", {cls:["barfill"], br:false});
 		// help button
 		addTo(fragment, "div", {cls:["interact", "button"], br:false, onclick:function(){
@@ -1559,7 +1559,7 @@ function open_file(data)
 		}}).innerHTML = '<img src="assets/images/back.png">';
 		// home button
 		addHomeTo(fragment);
-		addTo(fragment, "div", {cls:["inline"], br:false}).innerHTML = "File: " + lastfileopened;
+		addTo(fragment, "div", {cls:["inline", "text-wrapper"], br:false}).innerHTML = "File: " + lastfileopened;
 		addTo(fragment, "div", {cls:["barfill"], br:false});
 		// refresh button
 		addTo(fragment, "div", {cls:["interact", "button"], br:false, onclick:function(){
@@ -1827,7 +1827,7 @@ function local_browse(title, explanation, mode)
 		}}).innerHTML = '<img src="assets/images/back.png">';
 		// home button
 		addHomeTo(fragment);
-		addTo(fragment, "div", {cls:["inline"], br:false}).innerHTML = title;
+		addTo(fragment, "div", {cls:["inline", "text-wrapper"], br:false}).innerHTML = title;
 		addTo(fragment, "div", {cls:["barfill"], br:false});
 		updateBar(fragment);
 	
@@ -1923,7 +1923,7 @@ function replace_page()
 		}}).innerHTML = '<img src="assets/images/back.png">';
 		// home button
 		addHomeTo(fragment);
-		addTo(fragment, "div", {cls:["inline"], br:false}).innerHTML = "Replace strings";
+		addTo(fragment, "div", {cls:["inline", "text-wrapper"], br:false}).innerHTML = "Replace strings";
 		addTo(fragment, "div", {cls:["barfill"], br:false});
 		updateBar(fragment);
 	
