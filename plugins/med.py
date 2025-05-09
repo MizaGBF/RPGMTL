@@ -1,5 +1,6 @@
 from __future__ import annotations
 from . import Plugin, WalkHelper
+from typing import Any
 import io
 import textwrap
 
@@ -36,6 +37,7 @@ class MED(Plugin):
                 return "Please set a positive limit in this plugin settings"
             count : int = 0
             ignored : int = 0
+            modifieds = set[str] = set()
             for g, group in enumerate(self.owner.strings[name]["files"][file_path]):
                 for i in range(1, len(group)):
                     lc = group[i]
@@ -62,8 +64,18 @@ class MED(Plugin):
                                 self.owner.strings[name]["files"][file_path][g][i][2] = n
                             else:
                                 self.owner.strings[name]["strings"][lc[0]][1] = n
+                                modifieds.add(lc[0])
                             self.owner.strings[name]["files"][file_path][g][i][4] = 1 # Modified set to true
                             self.owner.modified[name] = True
+            # set modified flag in other files for consistency
+            for f in self.owner.strings[name]["files"]:
+                if f != file_path:
+                    for g, group in enumerate(self.owner.strings[name]["files"][f]):
+                        for i in range(1, len(group)):
+                            lc = group[i]
+                            if lc[0] in modifieds and lc[1] is None: # not local and matching id
+                                self.owner.strings[name]["files"][f][g][i][4] = 1 # Modified set to true
+            # prepare return_msg
             return_msg : str
             if count > 0:
                 return_msg = "{} strings have been updated".format(count)
