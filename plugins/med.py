@@ -83,6 +83,7 @@ class MED(Plugin):
                 return_msg = "No strings have been modified"
             if ignored > 0:
                 return_msg += ", {} strings have been ignored".format(ignored)
+            return return_msg
         except Exception as e:
             self.owner.log.error("[MED] Action 'med_adjust_line' failed with error:\n" + self.owner.trbk(e))
             return "An error occured."
