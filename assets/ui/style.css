@@ -327,8 +327,12 @@ html, body {
 	color: #bbbbbb;
 }
 
-.selected {
+.shutdown {
 	background: #de0000;
+}
+
+.selected {
+	background: #b00000;
 }
 
 .control-spacer {

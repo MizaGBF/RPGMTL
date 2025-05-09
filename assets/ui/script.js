@@ -296,6 +296,12 @@ function reqAPI(type, url, success, failure, payload = null)
 	}
 }
 
+// Remove selected flag on a button
+function clearSelected(node)
+{
+	node.classList.toggle("selected", false);
+}
+
 // display a popup with the given string for 4s
 function pushPopup(string)
 {
@@ -410,9 +416,9 @@ function project_list(data)
 	let fragment = clearBar();
 	// shutdown button
 	addTo(fragment, "div", {cls:["interact", "button"], br:false, onclick:function(){
-		if(this.classList.contains("selected") || window.event.ctrlKey)
+		if(this.classList.contains("shutdown") || window.event.ctrlKey)
 		{
-			this.classList.remove("selected");
+			this.classList.remove("shutdown");
 			postAPI("/api/shutdown", function(_unused_) {
 				clearBar();
 				let fragment = clearMain();
@@ -422,7 +428,7 @@ function project_list(data)
 		}
 		else
 		{
-			this.classList.add("selected");
+			this.classList.add("shutdown");
 			pushPopup("Press again to confirm.");
 		}
 	}}).innerHTML = '<img src="assets/images/shutdown.png">';
@@ -1351,12 +1357,13 @@ function backup_list(data)
 			addTo(fragment, "div", {cls:["interact", "text-button", "inline"], br:false, onclick:function(){
 				if(this.classList.contains("selected") || window.event.ctrlKey) // confirmation / shortcut to insta confirm
 				{
-					this.classList.remove("selected");
+					this.classList.toggle("selected", false);
 					postAPI("/api/load_backup", project_menu, null, {name:prjname, file:elem[0]});
 				}
 				else
 				{
-					this.classList.add("selected");
+					this.classList.toggle("selected", true);
+					setTimeout(clearSelected, 2000, this);
 					pushPopup("Press again to confirm.");
 				}
 			}}).innerHTML = '<img src="assets/images/copy.png"> Use';
@@ -1585,22 +1592,32 @@ function open_file(data)
 		for(const [key, [icon, value]] of Object.entries(data["actions"]))
 		{
 			addTo(fragment, "div", {cls:["interact"], onclick:function() {
-				postAPI("/api/file_action",
-					function() {
-						postAPI("/api/file", open_file, null, {name:prjname, path:lastfileopened});
-					},
-					function() {
-						postAPI("/api/browse", browse_files, null, {name:prjname, path:returnpath});
-					},
-					{name:prjname, path:lastfileopened, version:prjversion, key:key}
-				);
+				if(this.classList.contains("selected") || window.event.ctrlKey) // confirmation / shortcut to insta confirm
+				{
+					this.classList.toggle("selected", false);
+					postAPI("/api/file_action",
+						function() {
+							postAPI("/api/file", open_file, null, {name:prjname, path:lastfileopened});
+						},
+						function() { // reload the file
+							postAPI("/api/browse", browse_files, null, {name:prjname, path:returnpath});
+						},
+						{name:prjname, path:lastfileopened, version:prjversion, key:key}
+					);
+				}
+				else
+				{
+					this.classList.toggle("selected", true);
+					setTimeout(clearSelected, 2000, this);
+					pushPopup("Press again to confirm.");
+				}
 			}}).innerHTML = '<img src="' + (icon == null ? "assets/images/setting.png" : icon) + '"> ' + value;
 		}
 		// add translate this file button
 		addTo(fragment, "div", {cls:["interact"], onclick:function() {
 			if(this.classList.contains("selected") || window.event.ctrlKey) // confirmation / shortcut to insta confirm
 			{
-				this.classList.remove("selected");
+				this.classList.toggle("selected", false);
 				set_loading_text("Translating this file...");
 				postAPI("/api/translate_file", update_string_list, function(){
 					bottom.style.display = "none";
@@ -1609,7 +1626,8 @@ function open_file(data)
 			}
 			else
 			{
-				this.classList.add("selected");
+				this.classList.toggle("selected", true);
+				setTimeout(clearSelected, 2000, this);
 				pushPopup("Press again to confirm.");
 			}
 		}}).innerHTML = '<img src="assets/images/translate.png"> Translate the File';
@@ -1918,17 +1936,18 @@ function replace_page()
 		addTo(fragment, "div", {cls:["interact", "text-button"], br:false, onclick:function(){
 			if(input.value == "")
 			{
-				this.classList.remove("selected");
+				this.classList.toggle("selected", false);
 				pushPopup("The input is empty.");
 			}
 			else if(this.classList.contains("selected") || window.event.ctrlKey)
 			{
-				this.classList.remove("selected");
+				this.classList.toggle("selected", false);
 				postAPI("/api/replace_strings", null, null, {name:prjname, src:input.value, dst:output.value});
 			}
 			else
 			{
-				this.classList.add("selected");
+				this.classList.toggle("selected", true);
+				setTimeout(clearSelected, 2000, this);
 				pushPopup("Press again to confirm.");
 			}
 		}}).innerHTML = '<img src="assets/images/copy.png"> Replace';
