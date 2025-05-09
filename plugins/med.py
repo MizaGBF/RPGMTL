@@ -11,7 +11,7 @@ class MED(Plugin):
     def __init__(self : MED) -> None:
         super().__init__()
         self.name : str = "MED"
-        self.description : str = "v0.7\nHandle md_scr.med MED files (Experimental)"
+        self.description : str = "v0.8\nHandle md_scr.med MED files (Experimental)"
 
     def match(self : MED, file_path : str, is_for_action : bool) -> bool:
         if is_for_action:
@@ -35,9 +35,13 @@ class MED(Plugin):
             if limit <= 0:
                 return "Please set a positive limit in this plugin settings"
             count : int = 0
+            ignored : int = 0
             for g, group in enumerate(self.owner.strings[name]["files"][file_path]):
                 for i in range(1, len(group)):
                     lc = group[i]
+                    if lc[4]: # ignore if modified flag is set because it had already been modified (most likely)
+                        ignored += 1
+                        continue
                     gl = self.owner.strings[name]["strings"][lc[0]]
                     is_local : bool = False
                     if lc[2] and lc[1] is not None:
@@ -60,10 +64,13 @@ class MED(Plugin):
                                 self.owner.strings[name]["strings"][lc[0]][1] = n
                             self.owner.strings[name]["files"][file_path][g][i][4] = 1 # Modified set to true
                             self.owner.modified[name] = True
+            return_msg : str
             if count > 0:
-                return "{} strings have been updated".format(count)
+                return_msg = "{} strings have been updated".format(count)
             else:
-                return "No strings have been modified"
+                return_msg = "No strings have been modified"
+            if ignored > 0:
+                return_msg += ", {} strings have been ignored".format(ignored)
         except Exception as e:
             self.owner.log.error("[MED] Action 'med_adjust_line' failed with error:\n" + self.owner.trbk(e))
             return "An error occured."
