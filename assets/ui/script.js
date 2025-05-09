@@ -133,6 +133,25 @@ function load_location()
 	}
 }
 
+// Reset major variables
+function clearVariables()
+{
+	keypressenabled = false;
+	path = null;
+	prjname = null;
+	prj = null;
+	prjdata = null;
+	prjversion = 0;
+	prjstring = null;
+	prjlist = null;
+	currentstr = null;
+	strtablecache = [];
+	lastfileopened = null;
+	laststringsearch = null;
+	laststringinteracted = 0;
+	filebrowsingmode = 0;
+}
+
 // utility functions to encode/decode unicode strings to b64
 function stob64(str) {
 	const uint8 = new TextEncoder().encode(str);
@@ -397,20 +416,7 @@ function addHomeTo(fragment)
 function project_list(data)
 {
 	upate_page_location(null, null, null);
-	
-	// Reset major variables
-	keypressenabled = null;
-	path = null;
-	prjname = null;
-	prj = null;
-	prjdata = null;
-	prjversion = 0;
-	prjstring = null;
-	prjlist = null;
-	currentstr = null;
-	trtablecache = null;
-	lastfileopened = null;
-	laststringsearch = null;
+	clearVariables(); // in case we got here from an error
 	
 	// top bar
 	let fragment = clearBar();
