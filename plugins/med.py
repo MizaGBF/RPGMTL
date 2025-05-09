@@ -31,6 +31,18 @@ class MED(Plugin):
         }
 
     def adjust_new_line(self : MED, name : str, file_path : str, settings : dict[str, Any] = {}) -> str:
+        """
+        Notes:
+            Games that I tested don't support new lines so the text wrap works as such:
+            - First, check if the string is bigger than N characters (64 in the ones I tested)
+            - Use textwrap with N characters, break_on_hyphens set to False (to avoid new lines on - for example)
+            - Pad the strings with space until size N
+            - Join the strings
+            
+            As such, the logic break is the function is ran again on an already processed line.
+            For now, the modified flag of the string is used to check if it must be modified but the solution isn't perfect.
+            Ideally, this function must be used after the project is completed.
+        """
         try:
             limit : int = int(settings.get("med_char_per_line", 0))
             if limit <= 0:
