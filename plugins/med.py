@@ -37,7 +37,7 @@ class MED(Plugin):
                 return "Please set a positive limit in this plugin settings"
             count : int = 0
             ignored : int = 0
-            modifieds = set[str] = set()
+            modifieds : set[str] = set()
             for g, group in enumerate(self.owner.strings[name]["files"][file_path]):
                 for i in range(1, len(group)):
                     lc = group[i]
