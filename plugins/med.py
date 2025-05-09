@@ -12,7 +12,7 @@ class MED(Plugin):
     def __init__(self : MED) -> None:
         super().__init__()
         self.name : str = "MED"
-        self.description : str = "v0.8\nHandle md_scr.med MED files (Experimental)"
+        self.description : str = "v0.9\nHandle md_scr.med MED files (Experimental)"
 
     def match(self : MED, file_path : str, is_for_action : bool) -> bool:
         if is_for_action:
@@ -40,8 +40,7 @@ class MED(Plugin):
             - Join the strings
             
             As such, the logic break is the function is ran again on an already processed line.
-            For now, the modified flag of the string is used to check if it must be modified but the solution isn't perfect.
-            Ideally, this function must be used after the project is completed.
+            To counter this, three spaces are added at the end, to be used as padding.
         """
         try:
             limit : int = int(settings.get("med_char_per_line", 0))
@@ -53,9 +52,6 @@ class MED(Plugin):
             for g, group in enumerate(self.owner.strings[name]["files"][file_path]):
                 for i in range(1, len(group)):
                     lc = group[i]
-                    if lc[4]: # ignore if modified flag is set because it had already been modified (most likely)
-                        ignored += 1
-                        continue
                     gl = self.owner.strings[name]["strings"][lc[0]]
                     is_local : bool = False
                     if lc[2] and lc[1] is not None:
@@ -65,11 +61,11 @@ class MED(Plugin):
                         s = gl[1]
                     else:
                         continue
-                    if len(s) > limit:
+                    if len(s) > limit or s.endswith("   "):
                         r : list[str] = textwrap.wrap(s, width=limit, break_on_hyphens=False)
                         for j in range(len(r) - 1):
                             r[j] = r[j].ljust(limit)
-                        n : str = "".join(r)
+                        n : str = "".join(r) + "   " # the ending spaces are used as a marker
                         if s != n:
                             count += 1
                             if is_local:
@@ -79,7 +75,7 @@ class MED(Plugin):
                                 modifieds.add(lc[0])
                             self.owner.strings[name]["files"][file_path][g][i][4] = 1 # Modified set to true
                             self.owner.modified[name] = True
-            # set modified flag in other files for consistency
+            # set modified flag in other files, for consistency
             for f in self.owner.strings[name]["files"]:
                 if f != file_path:
                     for g, group in enumerate(self.owner.strings[name]["files"][f]):
