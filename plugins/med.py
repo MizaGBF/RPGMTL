@@ -12,7 +12,7 @@ class MED(Plugin):
     def __init__(self : MED) -> None:
         super().__init__()
         self.name : str = "MED"
-        self.description : str = "v0.9\nHandle md_scr.med MED files (Experimental)"
+        self.description : str = "v1.0\nHandle md_scr.med MED files"
 
     def match(self : MED, file_path : str, is_for_action : bool) -> bool:
         if is_for_action:
@@ -65,8 +65,8 @@ class MED(Plugin):
                         r : list[str] = textwrap.wrap(s, width=limit, break_on_hyphens=False)
                         for j in range(len(r) - 1):
                             r[j] = r[j].ljust(limit)
-                        n : str = "".join(r) + "   " # the ending spaces are used as a marker
                         if s != n:
+                            n : str = "".join(r) + "   " # the ending spaces are used as a marker
                             count += 1
                             if is_local:
                                 self.owner.strings[name]["files"][file_path][g][i][2] = n
