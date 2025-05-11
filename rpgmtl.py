@@ -1941,11 +1941,12 @@ class RPGMTL():
             for f, data in self.strings[name]["files"].items():
                 for g in range(len(data)):
                     for i in range(1, len(data[g])):
-                        if data[g][i][1] is not None:
-                            s : str = data[g][i][1].replace(src, dst)
-                            if s != data[g][i][1]:
-                                data[g][i][4] = 1
-                                count += 1
+                        if data[g][i][2]: # is local
+                            if data[g][i][1] is not None:
+                                s : str = data[g][i][1].replace(src, dst)
+                                if s != data[g][i][1]:
+                                    data[g][i][4] = 1
+                                    count += 1
                         elif data[g][i][0] in modified:
                             data[g][i][4] = 1
                             count += 1
