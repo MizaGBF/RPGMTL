@@ -29,7 +29,7 @@ Eventually planned (No ETA):
 * [Translation](#translation)  
 * [Advanced Usage](#advanced-usage)  
   
-> [!INFO]  
+> [!NOTE]  
 > Looking for more informations? Check the [readme folder](https://github.com/MizaGBF/RPGMTL/tree/main/readme).  
   
 ## Introduction  
@@ -216,26 +216,8 @@ Please refer to the [Plugins](#plugins) section if you wish to extend RPGMTL cap
   
 ### Archive System  
   
-Some files might be Archive files, i.e. might contain other files.  
-RPGMTL has a system to separate those files into virtual sub folders, for clarity sake.  
-The base file will still appear in the list, likely empty, while the files found inside will appear in a folder of the same name as their parent file.  
-  
-For example, Scripts file from RPG Maker XP/VX/VX Ace contains a long list of compressed Ruby Script files.  
-After processing by RPGMTL, they will appear as separate entities in a `Scripts.r*data` folder.  
-  
-Additionally, for convenience, some files are still processed by this system even though they don't contain multiple files.  
-For example, CommonEvents files from RPG Maker games.  
-As they can be very large due to their nature, they are broken down in multiple virtual files.  
-  
-If you're developping your own plugin and wish to tags strings as being part of a virtual file, simply add an empty string group named as such:  
-```python
-["@__children_file__@:NAME_OF_YOUR_FILE"] # NAME_OF_YOUR_FILE is the name of the virtual file
-# OR
-[self.owner.CHILDREN_FILE_ID + "NAME_OF_YOUR_FILE"]
-```  
-  
-Check existing plugins to see how it's implemented.  
-
+> [!NOTE]  
+> If you're looking for informations on Plugins development or a specific Plugin, check the [readme folder](https://github.com/MizaGBF/RPGMTL/tree/main/readme).  
   
 ### Game Updates  
 If you're translating a recently released game, you can easily update your project to the latest version.  
