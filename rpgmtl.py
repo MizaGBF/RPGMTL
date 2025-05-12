@@ -1781,7 +1781,7 @@ class RPGMTL():
                 # Getting translator
                 current = self.get_current_translator(name)
                 if current[1] is None:
-                    return web.json_response({"result":"bad", "message":"No Translator currently set"})
+                    return web.json_response({"result":"bad", "message":"No Single Translator currently set"})
                 translation = await current[1].translate(string, self.settings | self.projects[name]['settings'])
                 if translation is not None and (translation.lower() == string.lower() or translation.strip() == ""):
                     translation = None
@@ -1805,7 +1805,7 @@ class RPGMTL():
             # Getting translator
             current = self.get_current_translator(name)
             if current[3] is None:
-                return web.json_response({"result":"bad", "message":"No Translator currently set"})
+                return web.json_response({"result":"bad", "message":"No Batch Translator currently set"})
             # Fetching strings in need of translation
             self.log.info("Starting batch translation for project " + name + "...")
             version = self.projects[name]["version"]
