@@ -18,6 +18,7 @@ import argparse
 import ssl
 
 import plugins
+from plugins import TranslatorPlugin, TranslatorBatchFormat
 
 ######################################################
 # An enum used for project files
@@ -1404,7 +1405,6 @@ class RPGMTL():
         if name is None:
             if index is None:
                 return web.json_response({"result":"bad", "message":"Bad request, missing 'index' parameter"}, status=400)
-            print(index)
             match index:
                 case 1:
                     self.settings["rpgmtl_current_batch_translator"] = value
@@ -1787,6 +1787,143 @@ class RPGMTL():
                     translation = None
             return web.json_response({"result":"ok", "data":{"translation":translation}})
 
+    # subroutine of translate_file() for TranslatorBatchFormat.DEFAULT
+    async def default_batch_translate_file(self : RPGMTL, name : str, path : str, plugin : TranslatorPlugin) -> web.Response:
+        version = self.projects[name]["version"]
+        file = self.strings[name]["files"][path]
+        revert_table = []
+        to_translate = []
+        global_ids = set()
+        for group in file:
+            await asyncio.sleep(0)
+            for j in range(1, len(group)):
+                lc = group[j]
+                gl = self.strings[name]["strings"][lc[0]]
+                if gl[0].strip() == "" or lc[3]:
+                    continue
+                if lc[2]:
+                    if lc[1] is not None:
+                        continue
+                    to_translate.append(gl[0])
+                    revert_table.append((group[j], group[j]))
+                else:
+                    if gl[1] is not None or lc[0] in global_ids:
+                        continue
+                    global_ids.add(lc[0])
+                    to_translate.append(gl[0])
+                    revert_table.append((group[j], self.strings[name]["strings"][lc[0]]))
+        count : int
+        if len(to_translate) > 0:
+            # Translating
+            self.log.info("Batch translating " + str(len(to_translate)) + " strings for project " + name + "...")
+            result = await plugin.translate_batch(to_translate, self.settings | self.projects[name]['settings'])
+            if len(result) != len(to_translate):
+                return web.json_response({"result":"bad", "message":"Batch translation failed"})
+            if version != self.projects[name]["version"]:
+                self.log.error("Batch translation for project " + name + " has been aborted because of a version update")
+                return web.json_response({"result":"bad", "message":"The Project has been updated, the translation has been cancelled."})
+            count = 0
+            for i in range(len(result)):
+                if result[i] is None or result[i].strip() == "" or result[i].lower() == to_translate[i].lower():
+                    continue
+                revert_table[i][1][1] = result[i]
+                revert_table[i][0][4] = 0
+                count += 1
+            self.log.info(str(count) + " strings have been translated for project " + name)
+        else:
+            count = 0
+        if count > 0:
+            self.modified[name] = True
+            self.start_compute_translated(name)
+        # Respond
+        return web.json_response({"result":"ok", "data":{"config":self.projects[name], "name":name, "path":path, "strings":self.strings[name]["strings"], "list":self.strings[name]["files"][path]}, "message":"{} string(s) have been translated".format(count)})
+
+    # subroutine of translate_file() for TranslatorBatchFormat.CONTEXT
+    async def context_batch_translate_file(self : RPGMTL, name : str, path : str, plugin : TranslatorPlugin) -> web.Response:
+        version = self.projects[name]["version"]
+        file = self.strings[name]["files"][path]
+        # list all strings and translations of the file
+        table : list[tuple[int, int, str, str|None]] = []
+        untranslated : int = 0
+        for i, group in enumerate(file):
+            for j in range(1, len(group)):
+                lc = group[j]
+                gl = self.strings[name]["strings"][lc[0]]
+                if gl[0].strip() == "" or lc[3]:
+                    continue
+                if lc[2]:
+                    table.append((i, j, gl[0], lc[1]))
+                else:
+                    table.append((i, j, gl[0], gl[1]))
+                if table[-1][3] is None:
+                    untranslated += 1
+        await asyncio.sleep(0)
+        count : int = 0
+        if untranslated > 0:
+            self.log.info("Batch translating file " + path + " for project " + name + "...")
+            # create batches
+            batches : list[dict[str, Any]] = []
+            batch : dict[str, Any] = {
+                "file":path,
+                "number":len(batches),
+                "strings":[]
+            }
+            token_estimation : int = 0
+            batch_has_untranslated : bool = False
+            for i, t in enumerate(table):
+                batch["strings"].append({
+                    "id":"{}-{}".format(t[0], t[1]),
+                    "parent":"Group {}{}{}".format(i, ": " if file[t[0]][0].strip() != "" else "", file[t[0]][0].strip()),
+                    "source":t[2]
+                })
+                if t[3] is not None:
+                    batch["strings"][-1]["translation"] = t[3]
+                else:
+                    batch_has_untranslated = True
+                token_estimation = len(str(batch["strings"][-1])) * 4
+                if token_estimation > 1900:
+                    if batch_has_untranslated:
+                        batches.append(batch)
+                    batch_has_untranslated = False
+                    batch = {
+                        "file":path,
+                        "id":len(batches),
+                        "strings":[]
+                    }
+            if batch_has_untranslated and len(batch["strings"]) > 0:
+                batches.append(batch)
+            # get translations
+            translated : dict[str, str] = {}
+            for batch in batches:
+                result = await plugin.translate_batch(batch, self.settings | self.projects[name]['settings'])
+                if result is not None:
+                    translated = translated | result
+            # check version
+            if version != self.projects[name]["version"]:
+                self.log.error("Batch translation for project " + name + " has been aborted because of a version update")
+                return web.json_response({"result":"bad", "message":"The Project has been updated, the translation has been cancelled."})
+            with open("test.json", mode="w", encoding="utf-8") as f:
+                json.dump(translated, f, indent=4, ensure_ascii=False)
+            # apply translated strings
+            for sid, tl in translated.items():
+                split_sid = sid.split("-")
+                i = int(split_sid[0])
+                j = int(split_sid[1])
+                lc = file[i][j]
+                gl = self.strings[name]["strings"][lc[0]]
+                if gl[1] is None:
+                    gl[1] = tl
+                else:
+                    lc[1] = tl
+                    lc[2] = 1
+                lc[4] = 0
+                count += 1
+        if count > 0:
+            self.modified[name] = True
+            self.start_compute_translated(name)
+        # Respond
+        return web.json_response({"result":"ok", "data":{"config":self.projects[name], "name":name, "path":path, "strings":self.strings[name]["strings"], "list":self.strings[name]["files"][path]}, "message":"{} string(s) have been translated".format(count)})
+
     # /api/translate_file
     async def translate_file(self : RPGMTL, request : web.Request) -> web.Response:
         payload = await request.json()
@@ -1803,60 +1940,15 @@ class RPGMTL():
             if version != self.projects[name]["version"]:
                 return web.json_response({"result":"bad", "message":"The project has been updated, redirecting..."})
             # Getting translator
-            current = self.get_current_translator(name)
-            if current[3] is None:
+            current = self.get_current_translator(name)[3]
+            if current is None:
                 return web.json_response({"result":"bad", "message":"No Batch Translator currently set"})
             # Fetching strings in need of translation
-            self.log.info("Starting batch translation for project " + name + "...")
-            version = self.projects[name]["version"]
-            file = self.strings[name]["files"][path]
-            revert_table = []
-            to_translate = []
-            global_ids = set()
-            for group in file:
-                await asyncio.sleep(0)
-                for j in range(1, len(group)):
-                    lc = group[j]
-                    gl = self.strings[name]["strings"][lc[0]]
-                    if gl[0].strip() == "" or lc[3]:
-                        continue
-                    if lc[2]:
-                        if lc[1] is not None:
-                            continue
-                        to_translate.append(gl[0])
-                        revert_table.append((group[j], group[j]))
-                    else:
-                        if gl[1] is not None or lc[0] in global_ids:
-                            continue
-                        global_ids.add(lc[0])
-                        to_translate.append(gl[0])
-                        revert_table.append((group[j], self.strings[name]["strings"][lc[0]]))
-            if len(to_translate) > 0:
-                # Translating
-                self.log.info("Batch translating " + str(len(to_translate)) + " strings for project " + name + "...")
-                result = await current[1].translate_batch(to_translate, self.settings | self.projects[name]['settings'])
-                if len(result) != len(to_translate):
-                    return web.json_response({"result":"bad", "message":"Batch translation failed"})
-                if version != self.projects[name]["version"]:
-                    self.log.error("Batch translation for project " + name + " has been aborted because of a version update")
-                    return web.json_response({"result":"bad", "message":"The Project has been updated, the translation has been cancelled."})
-                count = 0
-                for i in range(len(result)):
-                    if result[i] is None or result[i].strip() == "" or result[i].lower() == to_translate[i].lower():
-                        continue
-                    revert_table[i][1][1] = result[i]
-                    revert_table[i][0][4] = 0
-                    self.modified[name] = True
-                    count += 1
-                self.log.info(str(count) + " strings have been translated for project " + name)
-            else:
-                count = 0
-            
-            # Start computation
-            if count > 0:
-                self.start_compute_translated(name)
-            # Respond
-            return web.json_response({"result":"ok", "data":{"config":self.projects[name], "name":name, "path":path, "strings":self.strings[name]["strings"], "list":self.strings[name]["files"][path]}, "message":"{} string(s) have been translated".format(count)})
+            match current.get_format():
+                case TranslatorBatchFormat.CONTEXT:
+                    return await self.context_batch_translate_file(name, path, current)
+                case _:
+                    return await self.default_batch_translate_file(name, path, current)
 
     # /api/search_string
     async def search_string(self : RPGMTL, request : web.Request) -> web.Response:

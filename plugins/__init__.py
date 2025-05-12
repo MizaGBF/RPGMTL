@@ -5,6 +5,7 @@ import io
 import ast
 from pathlib import Path
 from dataclasses import dataclass
+from enum import IntEnum
 from typing import TYPE_CHECKING, Any
 if TYPE_CHECKING:
     from ..rpgmtl import RPGMTL
@@ -177,12 +178,42 @@ class Plugin:
                 if self._enc_cur_ >= len(self.FILE_ENCODINGS):
                     raise Exception("Couldn't determine encoding of file content")
 
+class TranslatorBatchFormat(IntEnum):
+    DEFAULT = 0 # string or list of string
+    CONTEXT = 1 # formatted for AI translation
+
+"""
+The TranslatorFormat will determine what input the translator plugin receives in translate_batch()
+    0 (DEFAULT):
+        - translate_batch(): A list of string
+    1 (CONTEXT):
+        - translate_batch(): The following structure will be given:
+            {
+                "file":"FILE",
+                "number":BATCH_NUMBER,
+                "strings":[
+                    {
+                        "id":"GROUPINDEX-STRINGINDEX",
+                        "parent":"Group INDEX: GROUP_NAME",
+                        "source":"ORIGINAL_STRING",
+                        "translation":"TRANSLATED_STRING"
+                    }
+                ]
+            }
+        "translation" key is optional.
+        
+        The function must return a dict[str, str] where keys are string id (like given above) and values are the translated strings.
+"""
+
 class TranslatorPlugin:
     def __init__(self : TranslatorPlugin) -> None:
         # Be sure to call super first, in your TranslatorPlugin
         self.owner : RPGMTL|None = None
         self.name : str = "__undefined__"
         self.description : str = "__undefined__"
+
+    def get_format(self : TranslatorPlugin) -> TranslatorBatchFormat:
+        return TranslatorBatchFormat.DEFAULT
 
     def connect(self : TranslatorPlugin, rpgmtl : RPGMTL) -> None:
         # No ned to reimplement this one
@@ -202,9 +233,10 @@ class TranslatorPlugin:
         # Return the translated String or None on error
         return None
 
-    async def translate_batch(self : TranslatorPlugin, strings : list[str], settings : dict[str, Any] = {}) -> list[str|None]:
+    async def translate_batch(self : TranslatorPlugin, batch : Any, settings : dict[str, Any] = {}) -> dict[str, str]|list[str|None]:
         # Translate a batch of string
         # Return the list of translated Strings or None if errors
+        # or a dictionary depending on TranslatorBatchFormat
         return []
 
 @dataclass(slots=True)
