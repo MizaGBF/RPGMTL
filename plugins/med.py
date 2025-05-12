@@ -12,7 +12,7 @@ class MED(Plugin):
     def __init__(self : MED) -> None:
         super().__init__()
         self.name : str = "MED"
-        self.description : str = "v1.0\nHandle md_scr.med MED files"
+        self.description : str = "v1.1\nHandle md_scr.med MED files"
 
     def match(self : MED, file_path : str, is_for_action : bool) -> bool:
         if is_for_action:
@@ -22,12 +22,13 @@ class MED(Plugin):
 
     def get_setting_infos(self : MED) -> dict[str, list]:
         return {
-            "med_char_per_line": ["Character Limit (0 or less means None)", "num", 64, None]
+            "med_char_per_line": ["Character Limit per line (0 or less means None)", "num", 64, None]
         }
 
     def get_action_infos(self : MED) -> dict[str, list]:
         return {
             "med_adjust_line": ["assets/plugins/med_adjust_line.png", "Adjust New Line", self.adjust_new_line],
+            "med_check_ascii": ["assets/plugins/med_ascii_check.png", "Look for non-ASCII characters", self.look_non_ascii]
         }
 
     def adjust_new_line(self : MED, name : str, file_path : str, settings : dict[str, Any] = {}) -> str:
@@ -94,6 +95,32 @@ class MED(Plugin):
             return return_msg
         except Exception as e:
             self.owner.log.error("[MED] Action 'med_adjust_line' failed with error:\n" + self.owner.trbk(e))
+            return "An error occured."
+
+    def look_non_ascii(self : MED, name : str, file_path : str, settings : dict[str, Any] = {}) -> str:
+        try:
+            count : int = 0
+            for g, group in enumerate(self.owner.strings[name]["files"][file_path]):
+                for i in range(1, len(group)):
+                    lc = group[i]
+                    gl = self.owner.strings[name]["strings"][lc[0]]
+                    if lc[2] and lc[1] is not None:
+                        if any(ord(ch) > 0x7F for ch in lc[1]): # check if has non-ASCII character
+                            count += 1
+                            self.owner.strings[name]["files"][file_path][g][i][4] = 1
+                    elif gl[1] is not None:
+                        if any(ord(ch) > 0x7F for ch in gl[1]): # check if has non-ASCII character
+                            count += 1
+                            self.owner.strings[name]["files"][file_path][g][i][4] = 1
+                    else:
+                        continue
+            if count > 0:
+                self.owner.modified[name] = True
+                return "{} strings contain non-ASCII characters in this file, and have been marked"
+            else:
+                return "No strings contain non-ASCII characters in this file"
+        except Exception as e:
+            self.owner.log.error("[MED] Action 'look_non_ascii' failed with error:\n" + self.owner.trbk(e))
             return "An error occured."
 
     def read(self : MED, file_path : str, content : bytes) -> list[list[str]]:
