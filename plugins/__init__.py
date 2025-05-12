@@ -202,9 +202,9 @@ class TranslatorPlugin:
         # Return the translated String or None on error
         return None
 
-    async def translate_back(self : TranslatorPlugin, strings : list[str], settings : dict[str, Any] = {}) -> list[str|None]:
-        # Translate a string
-        # Return the translated String or None on error
+    async def translate_batch(self : TranslatorPlugin, strings : list[str], settings : dict[str, Any] = {}) -> list[str|None]:
+        # Translate a batch of string
+        # Return the list of translated Strings or None if errors
         return []
 
 @dataclass(slots=True)
