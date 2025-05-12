@@ -1804,7 +1804,7 @@ class RPGMTL():
                 return web.json_response({"result":"bad", "message":"The project has been updated, redirecting..."})
             # Getting translator
             current = self.get_current_translator(name)
-            if current[1] is None:
+            if current[3] is None:
                 return web.json_response({"result":"bad", "message":"No Translator currently set"})
             # Fetching strings in need of translation
             self.log.info("Starting batch translation for project " + name + "...")
