@@ -48,24 +48,24 @@ name config
   
 ```
 /api/translator (Global)
-Return in data: 'list' of translator plugins, 'current' selected plugin
+Return in data: 'list' of translator plugins, 'current' selected plugin, current 'batch' selected plugin
 ```
   
 ```
 /api/translator (Project specific)
 Payload: project 'name'
-Return in data: project 'name', project 'config', 'list' of translator plugins, 'current' selected plugin
+Return in data: project 'name', project 'config', 'list' of translator plugins, 'current' selected plugin, current 'batch' selected plugin
 ```
   
 ```
 /api/update_translator (Global)
-Payload: 'value' to set the current translator
+Payload: 'value' to set the current translator, 'index' (0 (DEFAULT FALLBACK) for single string translator, 1 for batch)
 ```
   
 ```
 /api/update_translator (Project Specific)
 Payload: project 'name', 'value' to set the current translator
-Return in data: project 'name', project 'config'
+Return in data: project 'name', project 'config', 'index' (0 (DEFAULT FALLBACK) for single string translator, 1 for batch)
 ```
   
 ```

@@ -132,7 +132,7 @@ class RPGMTL():
         self.strings : dict[str, Any] = {} # store loaded string.json
         self.modified : dict[str, bool] = {} # store flag indicating if config.json or string.json has pending changes waiting to be saved
         self.computing : dict[str, asyncio.Task] = {} # store state for compute_translated
-        self.setting_key_set : set[str] = set(["rpgmtl_current_translator"]) # store existing setting keys
+        self.setting_key_set : set[str] = set(["rpgmtl_current_translator", "rpgmtl_current_batch_translator"]) # store existing setting keys
         self.action_key_set : set[str] = set() # store existing action keys
         self.settings : dict[str, Any] = {} # store global plugins setting
         self.settings_modified : bool = False
@@ -225,9 +225,10 @@ class RPGMTL():
         self.process_infos(plugin)
         # Add and connect plugin
         self.translators[plugin.name] = plugin
-        if "rpgmtl_current_translator" not in self.settings: # init translator setting if not set
-            self.settings["rpgmtl_current_translator"] = plugin.name
-            self.settings_modified = True
+        for key in ("rpgmtl_current_translator", "rpgmtl_current_batch_translator"): # init special settings if not set
+            if key not in self.settings: # init translator setting if not set
+                self.settings[key] = plugin.name
+                self.settings_modified = True
         plugin.connect(self)
         self.plugin_descriptions[plugin.name] = plugin.description
 
@@ -237,18 +238,31 @@ class RPGMTL():
 
     # return a tuple of the Translator-in-use name and instance
     # name is the project name (to check a specific project setting)
-    def get_current_translator(self : RPGMTL, name : str|None) -> tuple[str, plugins.TranslatorPlugin|None]:
+    def get_current_translator(self : RPGMTL, name : str|None) -> tuple[str, plugins.TranslatorPlugin|None, str, plugins.TranslatorPlugin|None]:
+        pname : str|None = None
+        bname : str|None = None
         if name is not None: # check project setting
-            if "rpgmtl_current_translator" in self.projects[name]["settings"]:
-                pname : str = self.projects[name]["settings"]["rpgmtl_current_translator"]
-                if pname in self.translators:
-                    return pname, self.translators[pname]
-        if "rpgmtl_current_translator" in self.settings: # check global setting
-            pname : str = self.settings["rpgmtl_current_translator"]
-            if pname in self.translators:
-                return pname, self.translators[pname]
-        # default, not found, result
-        return "", None
+            pname : str|None = self.projects[name]["settings"].get("rpgmtl_current_translator", None)
+            bname : str|None = self.projects[name]["settings"].get("rpgmtl_current_batch_translator", None)
+            if pname not in self.translators:
+                pname = None
+            if bname not in self.translators:
+                bname = None
+        # check global setting if needed
+        if pname is None and "rpgmtl_current_translator" in self.settings:
+            pname = self.settings["rpgmtl_current_translator"]
+        if bname is None and "rpgmtl_current_batch_translator" in self.settings:
+            bname = self.settings["rpgmtl_current_batch_translator"]
+        # return
+        if pname in self.translators:
+            if bname in self.translators:
+                return pname, self.translators[pname], bname, self.translators[bname]
+            else:
+                return pname, self.translators[pname], "", None
+        elif bname in self.translators:
+            return "", None, bname, self.translators[bname]
+        # default not found result
+        return "", None, "", None
 
     # load settings.json
     def load_settings(self : RPGMTL) -> None:
@@ -1369,35 +1383,47 @@ class RPGMTL():
         except:
             payload = {}
         name = payload.get('name', None)
-        current : str = self.get_current_translator(name)[0]
-        if "rpgmtl_current_translator" not in self.settings:
-            return web.json_response({"result":"bad", "message":"No Translator Plugins loaded"}, status=400)
+        current, _, batch, _ = self.get_current_translator(name)
         translators : list[str] = list(self.translators.keys())
         if name is None:
-            return web.json_response({"result":"ok", "data":{"list":translators, "current":current}})
+            return web.json_response({"result":"ok", "data":{"list":translators, "current":current, "batch":batch}})
         else:
             self.load_project(name)
-            return web.json_response({"result":"ok", "data":{"name":name, "config":self.projects[name], "list":translators, "current":current}})
+            return web.json_response({"result":"ok", "data":{"name":name, "config":self.projects[name], "list":translators, "current":current, "batch":batch}})
 
     # /api/update_translator
     async def update_translator(self : RPGMTL, request : web.Request) -> web.Response:
         payload = await request.json()
         name = payload.get('name', None)
         value = payload.get('value', None)
+        index = payload.get('index', None)
         if name is None and value is None:
             return web.json_response({"result":"bad", "message":"Bad request, missing 'value' parameter"}, status=400)
         elif value is not None and value not in self.translators:
             return web.json_response({"result":"bad", "message":"Bad request, invalid 'value' parameter"}, status=400)
         if name is None:
-            self.settings["rpgmtl_current_translator"] = value
+            if index is None:
+                return web.json_response({"result":"bad", "message":"Bad request, missing 'index' parameter"}, status=400)
+            print(index)
+            match index:
+                case 1:
+                    self.settings["rpgmtl_current_batch_translator"] = value
+                case _:
+                    self.settings["rpgmtl_current_translator"] = value
             self.settings_modified = True
             return web.json_response({"result":"ok", "data":{}})
         else:
             if value is None:
-                if "rpgmtl_current_translator" in self.projects[name]["settings"]:
-                    self.projects[name]["settings"].pop("rpgmtl_current_translator")
+                self.projects[name]["settings"].pop("rpgmtl_current_translator", None)
+                self.projects[name]["settings"].pop("rpgmtl_current_batch_translator", None)
             else:
-                self.projects[name]["settings"]["rpgmtl_current_translator"] = value
+                if index is None:
+                    return web.json_response({"result":"bad", "message":"Bad request, missing 'index' parameter"}, status=400)
+                match index:
+                    case 1:
+                        self.projects[name]["settings"]["rpgmtl_current_batch_translator"] = value
+                    case _:
+                        self.projects[name]["settings"]["rpgmtl_current_translator"] = value
             self.modified[name] = True
             return web.json_response({"result":"ok", "data":{"name":name, "config":self.projects[name]}})
 

@@ -71,9 +71,18 @@ function load_location()
 			}
 			case "translator":
 			{
-				postAPI("/api/translator", project_menu, function() {
-					postAPI("/api/main", project_list);
-				}, {name:urlparams.get("name")});
+				if(urlparams.has("name"))
+				{
+					postAPI("/api/translator", translator_menu, function() {
+						postAPI("/api/main", project_list);
+					}, {name:urlparams.get("name")});
+				}
+				else
+				{
+					postAPI("/api/translator", translator_menu, function() {
+						postAPI("/api/main", project_list);
+					});
+				}
 				break;
 			}
 			case "browse":
@@ -727,47 +736,52 @@ function translator_menu(data)
 		// main part
 		fragment = clearMain();
 		let list = data["list"]; // translator plugin list
-		let current = data["current"];
-		if(list.length == 0)
+		let possibles = ["current", "batch"];
+		let possibles_text = ["Single Translation Button", "Translate this File Button"];
+		for(let t = 0; t < possibles.length; ++t)
 		{
-			addTo(fragment, "div", {cls:["title", "left"]}).innerHTML = "No Translator Plugin available";
-		}
-		else
-		{
-			if(is_project) // add button to reset project setting
+			if(list.length == 0)
 			{
-				addTo(fragment, "div", {cls:["interact"], onclick:function(){
-					postAPI("/api/update_translator", function(result_data) {
-						pushPopup("The Project Translator have been reset to the default.");
-						project_menu();
-					}, null, {name:prjname});
-				}}).innerHTML = '<img src="assets/images/trash.png"> Use RPGMTL Default';
+				addTo(fragment, "div", {cls:["title", "left"]}).innerHTML = "No Translator Plugin available";
+				break;
 			}
-			
-			// add select and option elements
-			const sel = addTo(fragment, "select", {cls:["input", "smallinput"], br:false});
-			for(let i = 0; i < list.length; ++i)
+			else
 			{
-				let opt = addTo(sel, "option");
-				opt.value = list[i];
-				opt.textContent = list[i];
+				if(t == 0 && is_project) // add button to reset project setting (Only at the top)
+				{
+					addTo(fragment, "div", {cls:["interact"], onclick:function(){
+						postAPI("/api/update_translator", function(result_data) {
+							pushPopup("The Project Translator have been reset to the default.");
+							project_menu();
+						}, null, {name:prjname});
+					}}).innerHTML = '<img src="assets/images/trash.png"> Use RPGMTL Default';
+				}
+				// add text
+				addTo(fragment, "div", {cls:["title", "left"]}).innerHTML = possibles_text[t];
+				// add select and option elements
+				const sel = addTo(fragment, "select", {cls:["input", "smallinput"], br:false});
+				for(let i = 0; i < list.length; ++i)
+				{
+					let opt = addTo(sel, "option");
+					opt.value = list[i];
+					opt.textContent = list[i];
+				}
+				const tindex = t;
+				// and confirmation button
+				const elem = addTo(fragment, "div", {cls:["interact", "button"], onclick:function()
+				{
+					let callback = function(result_data) {
+						pushPopup("The setting has been updated.");
+						set_loading(false);
+					};
+					if(is_project)
+						postAPI("/api/update_translator", callback, null, {name:prjname, value:sel.value, index:tindex});
+					else
+						postAPI("/api/update_translator", callback, null, {value:sel.value, index:tindex});
+				}});
+				elem.innerHTML = '<img src="assets/images/confirm.png">';
+				sel.value = data[possibles[t]];
 			}
-			// and confirmation button
-			const elem = addTo(fragment, "div", {cls:["interact", "button"], onclick:function()
-			{
-				let callback = function(result_data) {
-					pushPopup("The setting has been updated.");
-					set_loading(false);
-					if(key in result_data["settings"])
-						set.value = result_data["settings"][key];
-				};
-				if(is_project)
-					postAPI("/api/update_translator", callback, null, {name:prjname, value:sel.value});
-				else
-					postAPI("/api/update_translator", callback, null, {value:sel.value});
-			}});
-			elem.innerHTML = '<img src="assets/images/confirm.png">';
-			sel.value = current;
 		}
 		updateMain(fragment);
 	}
