@@ -214,8 +214,6 @@ Please refer to the [Plugins](#plugins) section if you wish to extend RPGMTL cap
   
 ## Advanced Usage  
   
-### Archive System  
-  
 > [!NOTE]  
 > If you're looking for informations on Plugins development or a specific Plugin, check the [readme folder](https://github.com/MizaGBF/RPGMTL/tree/main/readme).  
   
