@@ -7,3 +7,6 @@ rpgmtl.lo*
 settings.json
 dev/*
 dev/
+test.JSON
+TEST/
+TEST/*
