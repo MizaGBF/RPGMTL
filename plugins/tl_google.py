@@ -31,8 +31,8 @@ class TLGoogle(TranslatorPlugin):
             self._init_translator(settings)
             return self.instance.translate(string)
         except Exception as e:
-             self.owner.log.error("[TL Google] Error in 'translate':\n" + self.owner.trbk(e))
-             return None
+            self.owner.log.error("[TL Google] Error in 'translate':\n" + self.owner.trbk(e))
+            return None
 
     async def translate_batch(self : TLGoogle, strings : list[str], settings : dict[str, Any] = {}) -> list[str|None]:
         try:
