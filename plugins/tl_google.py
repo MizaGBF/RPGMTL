@@ -4,6 +4,7 @@ try:
     from deep_translator import GoogleTranslator
 except:
     raise Exception("Failed to import deep-translator.\nMake sure it's installed using: pip install -U deep-translator")
+from typing import Any
 
 class TLGoogle(TranslatorPlugin):
     def __init__(self : TLGoogle) -> None:
