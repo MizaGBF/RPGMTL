@@ -66,8 +66,9 @@ class MED(Plugin):
                         r : list[str] = textwrap.wrap(s, width=limit, break_on_hyphens=False)
                         for j in range(len(r) - 1):
                             r[j] = r[j].ljust(limit)
+                        n = "".join(r)
                         if s != n:
-                            n : str = "".join(r) + "   " # the ending spaces are used as a marker
+                            n += "   " # the ending spaces are used as a marker
                             count += 1
                             if is_local:
                                 self.owner.strings[name]["files"][file_path][g][i][2] = n
