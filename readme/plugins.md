@@ -155,6 +155,43 @@ for file in my_archive:
             # ...
 ```  
   
+### Translator Plugin Batch Format
+  
+You can override a `TranslatorPlugin` `get_format` so that `translate_batch` will receive and return data in a different way.  
+If set with `TranslatorBatchFormat.DEFAULT`:  
+Input is a list of string to translate.  
+Output is a list, of same size, of translated strings (or None if one failed to translate). Indexes must correspond with the Input.  
+ 
+If set with `TranslatorBatchFormat.CONTEXT`:  
+Input format is the following:  
+```json
+{
+    "file":"FILE",
+    "number":BATCH_NUMBER,
+    "strings":[
+        {
+            "id":"STRING_ID",
+            "parent":"GROUP OF WHICH THIS STRING IS PART OF",
+            "source":"ORIGINAL_STRING",
+            "translation":"TRANSLATED_STRING"
+        },
+        {
+            "id":"STRING_ID",
+            "parent":"GROUP OF WHICH THIS STRING IS PART OF",
+            "source":"ORIGINAL_STRING"
+        }
+    ]
+}
+```  
+It contains even translated strings, for context.  
+  
+Output format is:  
+```json
+{
+    "STRING_ID":"TRANSLATION"
+}
+```  
+  
 ## Plugin Settings  
   
 Both Plugin types can provide a list of settings to RPGMTL.  
