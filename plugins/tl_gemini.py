@@ -67,7 +67,7 @@ class TLGemini(TranslatorPlugin):
     def __init__(self : TLGemini) -> None:
         super().__init__()
         self.name : str = "TL Gemini"
-        self.description : str = " v0.1\nWrapper around the google-genai module to prompt Gemini. (EXPERIMENTAL)"
+        self.description : str = " v0.2\nWrapper around the google-genai module to prompt Gemini. (EXPERIMENTAL)"
         self.instance = None
         self.key_in_use = None
 
@@ -103,16 +103,23 @@ class TLGemini(TranslatorPlugin):
             raise Exception("[TL Gemini] Error in 'parse_model_output', failed to find the end of the JSON")
         return json.loads(text[start:end+1])
 
+    async def ask_gemini(self : TLGemini, batch : dict[str, Any], settings : dict[str, Any] = {}) -> dict[str, str]:
+        self._init_translator(settings)
+        extra_context : str = ""
+        if settings["gemini_extra_context"].strip() != "":
+            extra_context = "  6. The User also specified the following: {}\n".format(settings["gemini_extra_context"])
+        response = self.instance.models.generate_content(
+            model=settings["gemini_model"], contents=PROMPT.replace("$TARGET$", settings["gemini_target_language"]).replace("$SOURCE$", settings["gemini_src_language"]).replace("$EXTRA$", extra_context).replace("$INPUT$", json.dumps(batch), 1)
+        )
+        return self.parse_model_output(response.text)
+
     async def translate(self : TLGemini, string : str, settings : dict[str, Any] = {}) -> str|None:
         try:
-            self._init_translator(settings)
-            extra_context : str = ""
-            if settings["gemini_extra_context"].strip() != "":
-                extra_context = "  6. The User also specified the following: {}\n".format(settings["gemini_extra_context"])
-            response = self.instance.models.generate_content(
-                model=settings["gemini_model"], contents=PROMPT.replace("$TARGET$", settings["gemini_target_language"]).replace("$SOURCE$", settings["gemini_src_language"]).replace("$EXTRA$", extra_context).replace("$INPUT$", json.dumps({"file":"string.json","number":0,"strings":[{"id":"0-0","parent":"Group 0","source":string}]}))
+            data = await self.ask_gemini({
+                    "file":"string.json","number":0,"strings":[{"id":"0-0","parent":"Group 0","source":string}]
+                },
+                settings
             )
-            data = self.parse_model_output(response.text)
             if len(data) == 1:
                 return data[list(data.keys())[0]]
             else:
@@ -124,14 +131,7 @@ class TLGemini(TranslatorPlugin):
 
     async def translate_batch(self : TLGemini, batch : dict[str, Any], settings : dict[str, Any] = {}) -> dict[str, str]:
         try:
-            self._init_translator(settings)
-            extra_context : str = ""
-            if settings["gemini_extra_context"].strip() != "":
-                extra_context = "  6. The User also specified the following: {}\n".format(settings["gemini_extra_context"])
-            response = self.instance.models.generate_content(
-                model=settings["gemini_model"], contents=PROMPT.replace("$TARGET$", settings["gemini_target_language"]).replace("$SOURCE$", settings["gemini_src_language"]).replace("$EXTRA$", extra_context).replace("$INPUT$", json.dumps(batch), 1)
-            )
-            return self.parse_model_output(response.text)
+            return await self.ask_gemini(batch, settings)
         except Exception as e:
             self.owner.log.error("[TL Gemini] Error in 'translate_batch':\n" + self.owner.trbk(e))
-            return []
+            return {}
