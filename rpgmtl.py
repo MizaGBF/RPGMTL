@@ -1843,7 +1843,8 @@ class RPGMTL():
         version = self.projects[name]["version"]
         file = self.strings[name]["files"][path]
         # list all strings and translations of the file
-        table : list[tuple[int, int, str, str|None]] = []
+        table : list[tuple[int, int, str, str|None]] = [] # table of string to translate with indexes and existing translation
+        check : set[str] = set() # contain indexes to access the string, to list the ones we can modify
         untranslated : int = 0
         for i, group in enumerate(file):
             for j in range(1, len(group)):
@@ -1857,6 +1858,7 @@ class RPGMTL():
                     table.append((i, j, gl[0], lc[1]))
                 else:
                     table.append((i, j, gl[0], gl[1]))
+                check.add("{}-{}".format(i, j))
                 if table[-1][3] is None:
                     untranslated += 1
         await asyncio.sleep(0)
@@ -1907,20 +1909,25 @@ class RPGMTL():
                 return web.json_response({"result":"bad", "message":"The Project has been updated, the translation has been cancelled."})
             # apply translated strings
             for sid, tl in translated.items():
-                split_sid = sid.split("-")
-                i = int(split_sid[0])
-                j = int(split_sid[1])
-                lc = file[i][j]
-                gl = self.strings[name]["strings"][lc[0]]
-                if gl[1] is None:
-                    gl[1] = tl
-                elif gl[1] == tl:
-                    continue
-                else:
-                    lc[1] = tl
-                    lc[2] = 1
-                lc[4] = 0
-                count += 1
+                try:
+                    if sid not in check: # Don't modify strings not part of our modifications
+                        continue
+                    split_sid = sid.split("-")
+                    i = int(split_sid[0])
+                    j = int(split_sid[1])
+                    lc = file[i][j]
+                    gl = self.strings[name]["strings"][lc[0]]
+                    if gl[1] is None:
+                        gl[1] = tl
+                    elif gl[1] == tl:
+                        continue
+                    else:
+                        lc[1] = tl
+                        lc[2] = 1
+                    lc[4] = 0
+                    count += 1
+                except:
+                    pass
         if count > 0:
             self.modified[name] = True
             self.start_compute_translated(name)
