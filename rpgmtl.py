@@ -1848,6 +1848,8 @@ class RPGMTL():
         for i, group in enumerate(file):
             for j in range(1, len(group)):
                 lc = group[j]
+                if lc[3]:
+                    continue
                 gl = self.strings[name]["strings"][lc[0]]
                 if gl[0].strip() == "" or lc[3]:
                     continue
