@@ -1912,6 +1912,8 @@ class RPGMTL():
                 gl = self.strings[name]["strings"][lc[0]]
                 if gl[1] is None:
                     gl[1] = tl
+                elif gl[1] == tl:
+                    continue
                 else:
                     lc[1] = tl
                     lc[2] = 1
