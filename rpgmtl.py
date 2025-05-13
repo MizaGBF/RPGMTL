@@ -1880,8 +1880,9 @@ class RPGMTL():
                     batch["strings"][-1]["translation"] = t[3]
                 else:
                     batch_has_untranslated = True
-                token_estimation = len(str(batch["strings"][-1])) * 4
+                token_estimation += len(str(batch["strings"][-1])) / 4
                 if token_estimation > 1900:
+                    token_estimation = 0
                     if batch_has_untranslated:
                         batches.append(batch)
                     batch_has_untranslated = False
