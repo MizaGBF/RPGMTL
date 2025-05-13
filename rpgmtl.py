@@ -1880,7 +1880,7 @@ class RPGMTL():
                 else:
                     batch_has_untranslated = True
                 token_estimation += len(str(batch["strings"][-1])) / 4
-                if token_estimation > 1900:
+                if token_estimation > 20000: # attempt to separate in multiple batches according to estimated token size
                     token_estimation = 0
                     if batch_has_untranslated:
                         batches.append(batch)
@@ -1903,8 +1903,6 @@ class RPGMTL():
             if version != self.projects[name]["version"]:
                 self.log.error("Batch translation for project " + name + " has been aborted because of a version update")
                 return web.json_response({"result":"bad", "message":"The Project has been updated, the translation has been cancelled."})
-            with open("test.json", mode="w", encoding="utf-8") as f:
-                json.dump(translated, f, indent=4, ensure_ascii=False)
             # apply translated strings
             for sid, tl in translated.items():
                 split_sid = sid.split("-")

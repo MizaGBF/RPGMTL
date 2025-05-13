@@ -29,7 +29,7 @@ Your task is to take a JSON object formatted in such manner:
 The strings are in order of occurence.
 
 To complete your task, you must absolutely do the following:
-  1. The User requires that you translate from $SOURCE$ to $TARGET$^.
+  1. The User requires that you translate from $SOURCE$ to $TARGET$.
   2. Don't translate strings with an existing translation.
   3. Preserve placeholders (e.g. {playerName}, %VAR%, <tag>), punctuation, and code syntax.
   4. Return a JSON object, containing the STRING_ID of the strings you translated, and the corresponding translation. It's not necessary to indent it.
