@@ -178,7 +178,7 @@ You can set a file to be **ignored** by pressing `CTRL+Left Click` on it. It'll 
 A file with no remaining strings to translate will appear **green**.  
 Some RPG Maker MV/MZ files are set to be ignored by default.  
   
-Additionally, folders containing virtual file (See the [Archive System](#archive-system) section below) will appear with a light grey background.  
+Additionally, folders containing virtual files will appear with a light grey background.  
   
 ### Modifying Strings  
   
@@ -210,7 +210,7 @@ Doing so will put the translation in the editing area, for you to modify.
 
 If you wish to translate a whole file, use the dedicated button on top of the string list.  
 Be aware rate limits and the like might cause you issues if you plan to translate a lot of files this way in a short time span.  
-Please refer to the [Plugins](#plugins) section if you wish to extend RPGMTL capabilities in that regard.  
+Please refer to [plugins.md](https://github.com/MizaGBF/RPGMTL/blob/main/readme/plugins.md) if you wish to extend RPGMTL capabilities in that regard.  
   
 ## Advanced Usage  
   
