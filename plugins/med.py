@@ -12,7 +12,7 @@ class MED(Plugin):
     def __init__(self : MED) -> None:
         super().__init__()
         self.name : str = "MED"
-        self.description : str = "v1.1\nHandle md_scr.med MED files"
+        self.description : str = "v1.2\nHandle md_scr.med MED files"
 
     def match(self : MED, file_path : str, is_for_action : bool) -> bool:
         if is_for_action:
@@ -62,7 +62,7 @@ class MED(Plugin):
                         s = gl[1]
                     else:
                         continue
-                    if len(s) > limit or s.endswith("   "):
+                    if len(s) > limit and not s.endswith("   "):
                         r : list[str] = textwrap.wrap(s, width=limit, break_on_hyphens=False)
                         for j in range(len(r) - 1):
                             r[j] = r[j].ljust(limit)
