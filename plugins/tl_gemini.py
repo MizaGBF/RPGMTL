@@ -6,6 +6,7 @@ except:
     raise Exception("Failed to import google-genai.\nMake sure it's installed using: pip install -U google-genai")
 from typing import Any
 import json
+import re
 
 PROMPT : str = """You are the World's best Video Game Translator.
 Your task is to take a JSON object formatted in such manner:
@@ -64,12 +65,13 @@ $INPUT$
 
 Now waiting your output.
 """
+JSON_SANITIZER = re.compile(r'(?P<key>"[^"]*"\s*:\s*)"(?P<content>.*?)"(?P<tail>(?=,|\}))', re.DOTALL)
 
 class TLGemini(TranslatorPlugin):
     def __init__(self : TLGemini) -> None:
         super().__init__()
         self.name : str = "TL Gemini"
-        self.description : str = " v0.2\nWrapper around the google-genai module to prompt Gemini. (EXPERIMENTAL)"
+        self.description : str = " v0.3\nWrapper around the google-genai module to prompt Gemini. (EXPERIMENTAL)"
         self.instance = None
         self.key_in_use = None
 
@@ -95,6 +97,15 @@ class TLGemini(TranslatorPlugin):
                 self.key_in_use = settings["gemini_api_key"]
         except Exception as e:
              self.owner.log.error("[TL Gemini] Error in '_init_translator':\n" + self.owner.trbk(e))
+
+    def _sanitize(self : TLGemini, text : str) -> str:
+        def _repl(m):
+            # re-escape the inner content properly
+            escaped = json.dumps(m.group('content'))
+            # json.dumps wraps it in quotes, so just drop the extra quotes
+            return "{}{}{}".format(m.group('key'), escaped, m.group('tail'))
+        # run the replacement globally
+        return JSON_SANITIZER.sub(_repl, bad)
 
     def parse_model_output(self : TLGemini, text : str) -> dict[str, str]:
         start = text.find("{")
