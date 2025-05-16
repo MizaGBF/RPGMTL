@@ -9,6 +9,22 @@ While the plugin is mature, it hasn't been tested on a lot of games.
   
 Each file contained inside are extracted as Virtual Files, for clarity sake.  
   
+## File Actions  
+  
+### Adjust New Line  
+  
+This engine doesn't support newline, so lines must be padded with spaces to wrap properly.  
+As this process can be quite destructive, it's not recommended to do it until your project is complete.  
+This action automatically does it for you.  
+The default is 64 characters per line and can be adjusted in the settings.  
+  
+### Look for invalid characters  
+  
+Non-ASCII characters (and some more) might break with text wrap above.  
+As such, unless you're making a translation in Chinese or Korean for example, you must make sure your text only contains ASCII characters.  
+This action will check and mark strings for you.  
+Do note that it also check for the character `♪[]`, the first one could cause the same issue, and the later two can make the text break in some games.  
+  
 ## Development References  
   
 Those files start with `MDE0` as the first 4 bytes.  
