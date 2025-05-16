@@ -71,7 +71,7 @@ class TLGemini(TranslatorPlugin):
     def __init__(self : TLGemini) -> None:
         super().__init__()
         self.name : str = "TL Gemini"
-        self.description : str = " v0.3\nWrapper around the google-genai module to prompt Gemini. (EXPERIMENTAL)"
+        self.description : str = " v0.4\nWrapper around the google-genai module to prompt Gemini. (EXPERIMENTAL)"
         self.instance = None
         self.key_in_use = None
 
@@ -101,7 +101,7 @@ class TLGemini(TranslatorPlugin):
     def _sanitize(self : TLGemini, text : str) -> str:
         def _repl(m):
             # re-escape the inner content properly
-            escaped = json.dumps(m.group('content'))
+            escaped = json.dumps(m.group('content'), ensure_ascii=False)
             # json.dumps wraps it in quotes, so just drop the extra quotes
             return "{}{}{}".format(m.group('key'), escaped, m.group('tail'))
         # run the replacement globally
