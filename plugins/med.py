@@ -12,7 +12,7 @@ class MED(Plugin):
     def __init__(self : MED) -> None:
         super().__init__()
         self.name : str = "MED"
-        self.description : str = "v1.3\nHandle md_scr.med MED files"
+        self.description : str = "v1.4\nHandle md_scr.med MED files"
 
     def match(self : MED, file_path : str, is_for_action : bool) -> bool:
         if is_for_action:
@@ -117,7 +117,7 @@ class MED(Plugin):
                         continue
             if count > 0:
                 self.owner.modified[name] = True
-                return "{} strings contain non-ASCII characters in this file, and have been marked"
+                return "{} strings contain non-ASCII characters in this file, and have been marked".format(count)
             else:
                 return "No strings contain non-ASCII characters in this file"
         except Exception as e:
