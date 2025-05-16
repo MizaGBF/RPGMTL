@@ -358,22 +358,18 @@ function clearMain()
 }
 
 // update the main area with a fragment
-function updateMain(fragment, defer = true)
+function updateMain(fragment)
 {
-	if(defer)
-	{
-		/*
-			use requestAnimationFrame to make sure the fragment is properly calculated,
-			to avoid weird flicker/wobble from the CSS kicking in
-		*/
-		requestAnimationFrame(() => {
+	/*
+		use requestAnimationFrame to make sure the fragment is properly calculated,
+		to avoid weird flicker/wobble from the CSS kicking in
+	*/
+    return new Promise((resolve, reject) => {
+        requestAnimationFrame(() => {
 			main.appendChild(fragment);
-		});
-	}
-	else // if waiting isn't an option
-	{
-		main.appendChild(fragment);
-	}
+            resolve(); 
+        });
+    });
 }
 
 // generitc function to process the result of requests
@@ -1321,9 +1317,10 @@ function browse_files(data)
 		// set folder completion indicator
 		let percent = ftotal > 0 ? ', ' + (Math.round(10000 * fcount / ftotal) / 100) + '%' : '';
 		completion.textContent = "Current Total: " + fstring + " strings" + percent;
-		updateMain(fragment);
-		if(scrollTo != null) // scroll to last opened file
-			scrollTo.scrollIntoView();
+		updateMain(fragment).then(() => {
+			if(scrollTo != null) // scroll to last opened file
+				scrollTo.scrollIntoView();
+		});
 		lastfileopened = null; // and clear it
 	}
 	catch(err)
@@ -1872,14 +1869,15 @@ function open_file(data)
 		addTo(fragment, "div", {cls:["spacer"]});
 		addTo(fragment, "div", {cls:["spacer"]});
 		addTo(fragment, "div", {cls:["spacer"]});
-		updateMain(fragment);
-		// update the string list with the data
-		let scrollTo = update_string_list(data);
-		// scroll to string (if set)
-		if(scrollTo)
-			scrollTo.scrollIntoView();
-		else
-			topsection.scrollIntoView();
+		updateMain(fragment).then(() => {
+			// update the string list with the data
+			let scrollTo = update_string_list(data);
+			// scroll to string (if set)
+			if(scrollTo)
+				scrollTo.scrollIntoView();
+			else
+				topsection.scrollIntoView();
+		});
 	}
 	catch(err)
 	{
@@ -2044,8 +2042,9 @@ function local_browse(title, explanation, mode)
 		addTo(fragment, "div", {id:"folder_container"});
 		addTo(fragment, "div", {cls:["left", "title"]}).innerHTML = "Files";
 		addTo(fragment, "div", {id:"file_container"});
-		updateMain(fragment, false);
-		postAPI("/api/local_path", update_local_browse, null, {"path":"", "mode":filebrowsingmode});
+		updateMain(fragment).then(() => {
+			postAPI("/api/local_path", update_local_browse, null, {"path":"", "mode":filebrowsingmode});
+		});
 	}
 	catch(err)
 	{
