@@ -299,23 +299,6 @@ html, body {
 	background: #ffbb00;
 }
 
-.original, .translation {
-	margin: 0px;
-	padding-top: 5px;
-	padding-bottom: 5px;
-	padding-left: 4px;
-	padding-right: 4px;
-	margin-top: 5px;
-	margin-bottom: 5px;
-	
-	text-overflow: clip;
-	width: 45%;
-	overflow: hidden;
-	border: 1px solid;
-	border-color: #000000;
-	min-height: 30px;
-}
-
 .complete {
 	background: #1d420b;
 	color: #bbbbbb;

@@ -2,6 +2,7 @@
 var bar = null;
 var main = null;
 var bottom = null;
+var tl_style = 1; // for the tl-style css switcher
 var loader = null;
 var loadertext = null;
 var loaderanim = null;
@@ -247,11 +248,12 @@ document.onkeypress = function(e)
 
 // create and add a new element to a node, and return it
 // support various parameters
-function addTo(node, tagName, {cls = [], id = null, onload = null, onclick = null, onerror = null, br = true}={})
+function addTo(node, tagName, {cls = [], id = null, title = null, onload = null, onclick = null, onerror = null, br = true}={})
 {
 	let tag = document.createElement(tagName);
 	for(let i = 0; i < cls.length; ++i)
 		tag.classList.add(cls[i]);
+	if(title) tag.title = title;
 	if(id) tag.id = id;
 	if(onload) tag.onload = onload;
 	if(onclick) tag.onclick = onclick;
@@ -416,7 +418,7 @@ function processAPI(success, failure)
 // utility function to not repeat the code everywhere
 function addHomeTo(fragment)
 {
-	addTo(fragment, "div", {cls:["interact", "button"], br:false, onclick:function(){
+	addTo(fragment, "div", {cls:["interact", "button"], title:"Project select", br:false, onclick:function(){
 		postAPI("/api/main", project_list);
 	}}).innerHTML = '<img src="assets/images/home.png">';
 }
@@ -430,7 +432,7 @@ function project_list(data)
 	// top bar
 	let fragment = clearBar();
 	// shutdown button
-	addTo(fragment, "div", {cls:["interact", "button"], br:false, onclick:function(){
+	addTo(fragment, "div", {cls:["interact", "button"], title:"Shutdown RPGMTL", br:false, onclick:function(){
 		if(this.classList.contains("shutdown") || window.event.ctrlKey)
 		{
 			this.classList.toggle("shutdown", false);
@@ -454,11 +456,11 @@ function project_list(data)
 	addTo(fragment, "div", {cls:["inline", "text-wrapper"], br:false}).innerHTML = 'RPGMTL v' + data["verstring"];
 	addTo(fragment, "div", {cls:["barfill"], br:false});
 	// github
-	addTo(fragment, "div", {cls:["interact", "button"], br:false, onclick:function(){
+	addTo(fragment, "div", {cls:["interact", "button"], title:"Github", br:false, onclick:function(){
 		window.open("https://github.com/MizaGBF/RPGMTL", "_blank")
 	}}).innerHTML = '<img src="assets/images/github.png">';
 	// help
-	addTo(fragment, "div", {cls:["interact", "button"], br:false, onclick:function(){
+	addTo(fragment, "div", {cls:["interact", "button"], title:"Help", br:false, onclick:function(){
 		help.innerHTML = "<ul>\
 			<li>Load an existing <b>Project</b> or create a new one.</li>\
 			<li>Click twice on the Shutdown button to stop RPGMTL remotely.</li>\
@@ -522,7 +524,7 @@ function setting_menu(data)
 		// top bar
 		let fragment = clearBar();
 		// back button
-		addTo(fragment, "div", {cls:["interact", "button"], br:false, onclick:function(){
+		addTo(fragment, "div", {cls:["interact", "button"], title:"Back", br:false, onclick:function(){
 			if(is_project)
 				project_menu();
 			else
@@ -534,7 +536,7 @@ function setting_menu(data)
 		addTo(fragment, "div", {cls:["inline", "text-wrapper"], br:false}).innerHTML = is_project ? prjname + " Settings" : "Default Settings";
 		addTo(fragment, "div", {cls:["barfill"], br:false});
 		// help button
-		addTo(fragment, "div", {cls:["interact", "button"], br:false, onclick:function(){
+		addTo(fragment, "div", {cls:["interact", "button"], title:"Help", br:false, onclick:function(){
 			help.innerHTML = "<ul>\
 				<li>Some settings might require you to extract your project strings again, be careful to not lose progress.</li>\
 				<li><b>Default</b> Settings are your projects defaults.</li>\
@@ -711,7 +713,7 @@ function translator_menu(data)
 		// top bar
 		let fragment = clearBar();
 		// back button
-		addTo(fragment, "div", {cls:["interact", "button"], br:false, onclick:function(){
+		addTo(fragment, "div", {cls:["interact", "button"], title:"Back", br:false, onclick:function(){
 			if(is_project)
 				project_menu();
 			else
@@ -723,7 +725,7 @@ function translator_menu(data)
 		addTo(fragment, "div", {cls:["inline", "text-wrapper"], br:false}).innerHTML = is_project ? prjname + " Settings" : "Global Settings";
 		addTo(fragment, "div", {cls:["barfill"], br:false});
 		// help button
-		addTo(fragment, "div", {cls:["interact", "button"], br:false, onclick:function(){
+		addTo(fragment, "div", {cls:["interact", "button"], title:"Help", br:false, onclick:function(){
 			help.innerHTML = "<ul>\
 				<li>Select the Translator Plugin to use.</li>\
 				<li><b>Default</b> Translator is used by default.</li>\
@@ -808,7 +810,7 @@ function project_creation(data)
 		// top bar
 		let fragment = clearBar();
 		// back button
-		addTo(fragment, "div", {cls:["interact", "button"], br:false, onclick:function(){
+		addTo(fragment, "div", {cls:["interact", "button"], title:"Back", br:false, onclick:function(){
 			postAPI("/api/main", project_list);
 		}}).innerHTML = '<img src="assets/images/back.png">';
 		// home button
@@ -817,7 +819,7 @@ function project_creation(data)
 		addTo(fragment, "div", {cls:["inline", "text-wrapper"], br:false}).innerHTML = 'Create a new Project';
 		addTo(fragment, "div", {cls:["barfill"], br:false});
 		// help button
-		addTo(fragment, "div", {cls:["interact", "button"], br:false, onclick:function(){
+		addTo(fragment, "div", {cls:["interact", "button"], title:"Help", br:false, onclick:function(){
 			help.innerHTML = "<ul>\
 				<li>The Project Name has little importance, just make sure you know what it refers to.</li>\
 				<li>If already taken, a number will be added after the name.</li>\
@@ -866,7 +868,7 @@ function project_menu(data = null)
 		// top bar
 		let fragment = clearBar();
 		// back button
-		addTo(fragment, "div", {cls:["interact", "button"], br:false, onclick:function(){
+		addTo(fragment, "div", {cls:["interact", "button"], title:"Back", br:false, onclick:function(){
 			postAPI("/api/main", project_list);
 		}}).innerHTML = '<img src="assets/images/back.png">';
 		// home button
@@ -874,7 +876,7 @@ function project_menu(data = null)
 		addTo(fragment, "div", {cls:["inline", "text-wrapper"], br:false}).innerHTML = prjname;
 		addTo(fragment, "div", {cls:["barfill"], br:false});
 		// help button
-		addTo(fragment, "div", {cls:["interact", "button"], br:false, onclick:function(){
+		addTo(fragment, "div", {cls:["interact", "button"], title:"Help", br:false, onclick:function(){
 			help.innerHTML = "<ul>\
 				<li><b>Browse Files</b> to browse and translate strings.</li>\
 				<li><b>Add a Fix</b> to add Python patches to apply during the release process (Check the README for details).</li>\
@@ -967,7 +969,7 @@ function addSearchBar(node, bp, defaultVal = null)
 	else
 		input.value = "";
 	// add confirm button
-	const button = addTo(node, "div", {cls:["interact", "button"], onclick:function(){
+	const button = addTo(node, "div", {cls:["interact", "button"], title:"Search", onclick:function(){
 		if(input.value != "")
 		{
 			laststringsearch = input.value;
@@ -1007,7 +1009,7 @@ function browse_files(data)
 		// top bar
 		let fragment = clearBar();
 		// back button
-		addTo(fragment, "div", {cls:["interact", "button"], br:false, onclick:function() {
+		addTo(fragment, "div", {cls:["interact", "button"], title:"Back", br:false, onclick:function() {
 			let returnpath = bp.includes('/') ? bp.split('/').slice(0, bp.split('/').length-2).join('/')+'/' : "";
 			// returnpath is the path of the parent folder
 			if(bp == "") // current folder is the root, so back to menu
@@ -1027,7 +1029,7 @@ function browse_files(data)
 			postAPI("/api/browse", browse_files, null, {name:prjname, path:bp});
 		}}).innerHTML = '<img src="assets/images/update.png">';
 		// help button
-		addTo(fragment, "div", {cls:["interact", "button"], br:false, onclick:function(){
+		addTo(fragment, "div", {cls:["interact", "button"], title:"Help", br:false, onclick:function(){
 			help.innerHTML = "<ul>\
 				<li>CTRL+Click on a file to <b>disable</b> it, it won't be patched during the release process.</li>\
 				<li>The string counts and completion percentages update slowly in the background, don't take them for granted.</li>\
@@ -1151,7 +1153,7 @@ function string_search(data)
 		// top bar
 		let fragment = clearBar();
 		// back button (return to browse_files)
-		addTo(fragment, "div", {cls:["interact", "button"], br:false, onclick:function() {
+		addTo(fragment, "div", {cls:["interact", "button"], title:"Back", br:false, onclick:function() {
 			if(bp in data["files"])
 			{
 				postAPI("/api/file", open_file, null, {name:prjname, path:data["path"]});
@@ -1166,7 +1168,7 @@ function string_search(data)
 		addTo(fragment, "div", {cls:["inline", "text-wrapper"], br:false}).innerHTML = "Search Results";
 		addTo(fragment, "div", {cls:["barfill"], br:false});
 		// help menu
-		addTo(fragment, "div", {cls:["interact", "button"], br:false, onclick:function(){
+		addTo(fragment, "div", {cls:["interact", "button"], title:"Help", br:false, onclick:function(){
 			help.innerHTML = "<ul>\
 				<li>Your search results are displayed here.</li>\
 			</ul>";
@@ -1224,7 +1226,7 @@ function browse_patches(data)
 		// top part
 		let fragment = clearBar();
 		// back button
-		addTo(fragment, "div", {cls:["interact", "button"], br:false, onclick:function(){
+		addTo(fragment, "div", {cls:["interact", "button"], title:"Back", br:false, onclick:function(){
 			project_menu();
 		}}).innerHTML = '<img src="assets/images/back.png">';
 		// home button
@@ -1232,7 +1234,7 @@ function browse_patches(data)
 		addTo(fragment, "div", {cls:["inline", "text-wrapper"], br:false}).innerHTML = prjname;
 		addTo(fragment, "div", {cls:["barfill"], br:false});
 		// help button
-		addTo(fragment, "div", {cls:["interact", "button"], br:false, onclick:function(){
+		addTo(fragment, "div", {cls:["interact", "button"], title:"Help", br:false, onclick:function(){
 			help.innerHTML = "<ul>\
 				<li>Select an existing patch/fix or create a new one.</li>\
 				<li>The patch/fix will be applied on all files whose name contains the patch/fix name.</li>\
@@ -1282,7 +1284,7 @@ function edit_patch(data)
 		// top bar
 		let fragment = clearBar();
 		// back button
-		addTo(fragment, "div", {cls:["interact", "button"], br:false, onclick:function(){
+		addTo(fragment, "div", {cls:["interact", "button"], title:"Back", br:false, onclick:function(){
 			postAPI("/api/patches", browse_patches, null, {name:prjname});
 		}}).innerHTML = '<img src="assets/images/back.png">';
 		// home button
@@ -1290,7 +1292,7 @@ function edit_patch(data)
 		addTo(fragment, "div", {cls:["inline", "text-wrapper"], br:false}).innerHTML = "Create a Fix";
 		addTo(fragment, "div", {cls:["barfill"], br:false});
 		// help button
-		addTo(fragment, "div", {cls:["interact", "button"], br:false, onclick:function(){
+		addTo(fragment, "div", {cls:["interact", "button"], title:"Help", br:false, onclick:function(){
 			help.innerHTML = "<ul>\
 				<li>Select an existing patch/fix or create a new one.</li>\
 				<li>The patch/fix will be applied on all files whose name contains the patch/fix name.</li>\
@@ -1349,7 +1351,7 @@ function backup_list(data)
 		// top part
 		let fragment = clearBar();
 		// back button
-		addTo(fragment, "div", {cls:["interact", "button"], br:false, onclick:function(){
+		addTo(fragment, "div", {cls:["interact", "button"], title:"Back", br:false, onclick:function(){
 			project_menu();
 		}}).innerHTML = '<img src="assets/images/back.png">';
 		// home button
@@ -1357,7 +1359,7 @@ function backup_list(data)
 		addTo(fragment, "div", {cls:["inline", "text-wrapper"], br:false}).innerHTML = prjname;
 		addTo(fragment, "div", {cls:["barfill"], br:false});
 		// help button
-		addTo(fragment, "div", {cls:["interact", "button"], br:false, onclick:function(){
+		addTo(fragment, "div", {cls:["interact", "button"], title:"Help", br:false, onclick:function(){
 			help.innerHTML = "<ul>\
 				<li>Select an existing backup to use it.</li>\
 				<li>Click Twice or CTRL+Click on <b>Use</b> to select the backup.</li>\
@@ -1570,7 +1572,7 @@ function open_file(data)
 		// folder path
 		const returnpath = lastfileopened.includes('/') ? lastfileopened.split('/').slice(0, lastfileopened.split('/').length-1).join('/')+'/' : "";
 		// back button
-		addTo(fragment, "div", {cls:["interact", "button"], br:false, onclick:function(){
+		addTo(fragment, "div", {cls:["interact", "button"], title:"Back", br:false, onclick:function(){
 			bottom.style.display = "none";
 			if(laststringsearch != null) // return to search result if we came from here
 				postAPI("/api/search_string", string_search, null, {name:prjname, path:returnpath, search:laststringsearch});
@@ -1581,13 +1583,36 @@ function open_file(data)
 		addHomeTo(fragment);
 		addTo(fragment, "div", {cls:["inline", "text-wrapper"], br:false}).innerHTML = "File: " + lastfileopened;
 		addTo(fragment, "div", {cls:["barfill"], br:false});
+		// slider button
+		addTo(fragment, "div", {cls:["interact", "button"], title:"Slide the Original / Translation divide", br:false, onclick:function(){
+			let s = document.getElementById("tl-style"); // to move part around, to display more of original or translated strings
+			switch(tl_style)
+			{
+				case 0:
+					s.href = "assets/ui/tl_mid.css";
+					tl_style = 1;
+					break;
+				case 1:
+					s.href = "assets/ui/tl_right.css";
+					tl_style = 2;
+					break;
+				case 2:
+					s.href = "assets/ui/tl_left.css";
+					tl_style = 0;
+					break;
+				default:
+					s.href = "assets/ui/tl_mid.css";
+					tl_style = 1;
+					break;
+			};
+		}}).innerHTML = '<img src="assets/images/tl_slide.png">';
 		// refresh button
-		addTo(fragment, "div", {cls:["interact", "button"], br:false, onclick:function(){
+		addTo(fragment, "div", {cls:["interact", "button"], title:"Reload the page", br:false, onclick:function(){
 			bottom.style.display = "none";
 			postAPI("/api/file", open_file, null, {name:prjname, path:lastfileopened});
 		}}).innerHTML = '<img src="assets/images/update.png">';
 		// help button
-		addTo(fragment, "div", {cls:["interact", "button"], br:false, onclick:function(){
+		addTo(fragment, "div", {cls:["interact", "button"], title:"Help", br:false, onclick:function(){
 			help.innerHTML = "<ul>\
 				<li>CTRL+Click on a line to <b>disable</b> it, it'll be skipped during the release process.</li>\
 				<li>ALT+CTRL+Click on a line to <b>disable</b> <b>ALL</b> this string occurence in this file.</li>\
@@ -1829,7 +1854,7 @@ function local_browse(title, explanation, mode)
 		// top bar
 		let fragment = clearBar();
 		// back button
-		addTo(fragment, "div", {cls:["interact", "button"], br:false, onclick:function(){
+		addTo(fragment, "div", {cls:["interact", "button"], title:"Back", br:false, onclick:function(){
 			switch(filebrowsingmode)
 			{
 				case 0:
@@ -1938,13 +1963,21 @@ function replace_page()
 		// top bar
 		let fragment = clearBar();
 		// back button
-		addTo(fragment, "div", {cls:["interact", "button"], br:false, onclick:function(){
+		addTo(fragment, "div", {cls:["interact", "button"], title:"Back", br:false, onclick:function(){
 			project_menu();
 		}}).innerHTML = '<img src="assets/images/back.png">';
 		// home button
 		addHomeTo(fragment);
 		addTo(fragment, "div", {cls:["inline", "text-wrapper"], br:false}).innerHTML = "Replace strings";
 		addTo(fragment, "div", {cls:["barfill"], br:false});
+		// help button
+		addTo(fragment, "div", {cls:["interact", "button"], title:"Help", br:false, onclick:function(){
+			help.innerHTML = "<ul>\
+				<li>This will replace all matching content of Translated Strings with your replacement.</li>\
+				<li>This is Case sensitive.</li>\
+			</ul>";
+			help.style.display = "";
+		}}).innerHTML = '<img src="assets/images/help.png">';
 		updateBar(fragment);
 	
 		// main part

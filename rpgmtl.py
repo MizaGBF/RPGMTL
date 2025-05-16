@@ -91,11 +91,9 @@ class RPGMTL():
         # HTTP Routes
         self.app.router.add_static('/assets/images', path='./assets/images', name='assets')
         self.app.router.add_static('/assets/plugins', path='./assets/plugins', name='plugins_assets')
+        self.app.router.add_static('/assets/ui', path='./assets/ui', name='ui')
         self.app.add_routes([
-                web.get('/', self.page),
-                web.get('/script.js', self.script),
-                web.get('/style.css', self.style),
-                web.get('/favicon.ico', self.favicon),
+                web.get('/', self.index), # index.html 
                 
                 web.post('/api/main', self.project_list), # main menu
                 web.post('/api/shutdown', self.shutdown), # stop RPGMTL
@@ -1312,20 +1310,8 @@ class RPGMTL():
     ######################################################
 
     # Request the HTML page
-    async def page(self : RPGMTL, request : web.Request) -> web.Response:
+    async def index(self : RPGMTL, request : web.Request) -> web.Response:
         return web.FileResponse('./assets/ui/index.html')
-
-    # Request the javascript
-    async def script(self : RPGMTL, request : web.Request) -> web.Response:
-        return web.FileResponse('./assets/ui/script.js')
-
-    # Request the stylesheet
-    async def style(self : RPGMTL, request : web.Request) -> web.Response:
-        return web.FileResponse('./assets/ui/style.css')
-
-    # Request the favicon
-    async def favicon(self : RPGMTL, request : web.Request) -> web.Response:
-        return web.FileResponse('./assets/ui/favicon.ico')
 
     # /api/main
     async def project_list(self : RPGMTL, request : web.Request) -> web.Response:
