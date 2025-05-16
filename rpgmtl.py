@@ -1222,6 +1222,8 @@ class RPGMTL():
         folder : PurePath = PurePath(path)
         self.load_strings(name)
         for f in self.strings[name]["files"]:
+            if f not in self.projects[name]["files"]: # double check to be sure we're on the same version
+                continue
             pf : PurePath = PurePath(f)
             if pf.is_relative_to(folder):
                 relative = pf.relative_to(folder)
