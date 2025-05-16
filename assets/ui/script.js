@@ -360,7 +360,13 @@ function clearMain()
 // update the main area with a fragment
 function updateMain(fragment)
 {
-	main.appendChild(fragment);
+	/*
+		use requestAnimationFrame to make sure the fragment is properly calculated,
+		to avoid weird flicker/wobble from the CSS kicking in
+	*/
+	requestAnimationFrame(() => {
+		main.appendChild(fragment);
+	});
 }
 
 // generitc function to process the result of requests
