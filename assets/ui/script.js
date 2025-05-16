@@ -2,6 +2,7 @@
 var bar = null;
 var main = null;
 var bottom = null;
+var top_bar_elems = {}; // contains update_top_bar elements
 var tl_style = 1; // for the tl-style css switcher
 var loader = null;
 var loadertext = null;
@@ -362,19 +363,6 @@ function updateMain(fragment)
 	main.appendChild(fragment);
 }
 
-// clear the top bar area
-function clearBar()
-{
-	bar.innerHTML = '';
-	return document.createDocumentFragment();
-}
-
-// update the top bar area with a fragment
-function updateBar(fragment)
-{
-	bar.appendChild(fragment);
-}
-
 // generitc function to process the result of requests
 function processAPI(success, failure)
 {
@@ -414,6 +402,210 @@ function processAPI(success, failure)
 	}
 }
 
+/* All purpose function to update the top bar
+	- title is the title to be displayed
+	- back_callback is the onclick callback of the top left button
+	- help_callback is the onclick callback of the top right button. If null, the button isn't displayed
+	- additions allow other buttons to appear (or not), set the proper key with a non-zero value:
+		- shutdown : Change the top left button to the shutdown icon
+		- home: Add the Home button on the top left
+		- project: Add the Project button on the top left
+		- github: Add the Github button on the top right
+		- refresh: Add the Refresh button on the top right. Require refresh_callback to be provided with.
+		- slider: Add the Slider button on the top right
+*/
+function update_top_bar(title, back_callback, help_callback = null, additions = {})
+{
+	if(!top_bar_elems.back) // meaning empty, initialization
+	{
+		let fragment = document.createDocumentFragment();
+		top_bar_elems.back = addTo(fragment, "div", {cls:["interact", "button"], title:"Back", br:false});
+		top_bar_elems.back.appendChild(document.createElement("img"));
+		top_bar_elems.title = addTo(fragment, "div", {cls:["inline", "text-wrapper"], br:false});
+		top_bar_elems.spacer = addTo(fragment, "div", {cls:["barfill"], br:false});
+		top_bar_elems.help = addTo(fragment, "div", {cls:["interact", "button"], title:"Help", br:false});
+		top_bar_elems.help.innerHTML = '<img src="assets/images/help.png">';
+		bar.appendChild(fragment);
+	}
+	// set title
+	top_bar_elems.title.innerText = title;
+	// set back callback
+	top_bar_elems.back.onclick = back_callback;
+	// set help callback
+	if(help_callback == null)
+	{
+		top_bar_elems.help.style.display = "none";
+	}
+	else
+	{
+		top_bar_elems.help.onclick = help_callback;
+		top_bar_elems.help.style.display = "";
+	}
+	// set back button to shutdown
+	if(additions.shutdown)
+	{
+		if(top_bar_elems.back.firstChild.src != "assets/images/shutdown.png")
+			top_bar_elems.back.firstChild.src = "assets/images/shutdown.png";
+	}
+	else
+	{
+		if(top_bar_elems.back.firstChild.src != "assets/images/back.png")
+			top_bar_elems.back.firstChild.src = "assets/images/back.png";
+	}
+	// home button
+	if(additions.home)
+	{
+		if(!top_bar_elems.home)
+		{
+			top_bar_elems.home = document.createElement("div");
+			top_bar_elems.home.classList.add("interact");
+			top_bar_elems.home.classList.add("button");
+			top_bar_elems.home.title = "Project Select Page";
+			top_bar_elems.home.onclick = function(){
+				postAPI("/api/main", project_list);
+			};
+			top_bar_elems.home.innerHTML = '<img src="assets/images/home.png">';
+			top_bar_elems.back.after(top_bar_elems.home);
+		}
+	}
+	else
+	{
+		if(top_bar_elems.home)
+		{
+			if(top_bar_elems.home.parentNode)
+				top_bar_elems.home.parentNode.removeChild(top_bar_elems.home);
+			delete top_bar_elems.home;
+		}
+	}
+	// project button
+	if(additions.project)
+	{
+		if(!top_bar_elems.project)
+		{
+			top_bar_elems.project = document.createElement("div");
+			top_bar_elems.project.classList.add("interact");
+			top_bar_elems.project.classList.add("button");
+			top_bar_elems.project.title = "Project Menu";
+			top_bar_elems.project.onclick = function(){
+				postAPI("/api/open_project", project_menu, project_fail, {"name":prjname});
+			};
+			top_bar_elems.project.innerHTML = '<img src="assets/images/project.png">';
+			if(top_bar_elems.home)
+				top_bar_elems.home.after(top_bar_elems.project);
+			else
+				top_bar_elems.back.after(top_bar_elems.project);
+		}
+	}
+	else
+	{
+		if(top_bar_elems.project)
+		{
+			if(top_bar_elems.project.parentNode)
+				top_bar_elems.project.parentNode.removeChild(top_bar_elems.project);
+			delete top_bar_elems.project;
+		}
+	}
+	// github button
+	if(additions.github)
+	{
+		if(!top_bar_elems.github)
+		{
+			top_bar_elems.github = document.createElement("div");
+			top_bar_elems.github.classList.add("interact");
+			top_bar_elems.github.classList.add("button");
+			top_bar_elems.github.title = "Github Page";
+			top_bar_elems.github.onclick = function(){
+				window.open("https://github.com/MizaGBF/RPGMTL", "_blank")
+			};
+			top_bar_elems.github.innerHTML = '<img src="assets/images/github.png">';
+			top_bar_elems.help.before(top_bar_elems.github);
+		}
+	}
+	else
+	{
+		if(top_bar_elems.github)
+		{
+			if(top_bar_elems.github.parentNode)
+				top_bar_elems.github.parentNode.removeChild(top_bar_elems.github);
+			delete top_bar_elems.github;
+		}
+	}
+	// refresh button
+	if(additions.refresh && additions.refresh_callback)
+	{
+		if(!top_bar_elems.refresh)
+		{
+			top_bar_elems.refresh = document.createElement("div");
+			top_bar_elems.refresh.classList.add("interact");
+			top_bar_elems.refresh.classList.add("button");
+			top_bar_elems.refresh.title = "Refresh";
+			
+			top_bar_elems.refresh.onclick = additions.refresh_callback;
+			top_bar_elems.refresh.innerHTML = '<img src="assets/images/update.png">';
+			top_bar_elems.help.before(top_bar_elems.refresh);
+		}
+		else top_bar_elems.refresh.onclick = additions.refresh_callback;
+	}
+	else
+	{
+		if(top_bar_elems.refresh)
+		{
+			if(top_bar_elems.refresh.parentNode)
+				top_bar_elems.refresh.parentNode.removeChild(top_bar_elems.refresh);
+			delete top_bar_elems.refresh;
+		}
+	}
+	// slider button
+	if(additions.slider)
+	{
+		if(!top_bar_elems.slider)
+		{
+			top_bar_elems.slider = document.createElement("div");
+			top_bar_elems.slider.classList.add("interact");
+			top_bar_elems.slider.classList.add("button");
+			top_bar_elems.slider.title = "slider";
+			
+			top_bar_elems.slider.onclick = function(){
+				let s = document.getElementById("tl-style"); // to move part around, to display more of original or translated strings
+				switch(tl_style)
+				{
+					case 0:
+						s.href = "assets/ui/tl_mid.css";
+						tl_style = 1;
+						break;
+					case 1:
+						s.href = "assets/ui/tl_right.css";
+						tl_style = 2;
+						break;
+					case 2:
+						s.href = "assets/ui/tl_left.css";
+						tl_style = 0;
+						break;
+					default:
+						s.href = "assets/ui/tl_mid.css";
+						tl_style = 1;
+						break;
+				};
+			};
+			top_bar_elems.slider.innerHTML = '<img src="assets/images/tl_slide.png">';
+			if(top_bar_elems.refresh)
+				top_bar_elems.refresh.before(top_bar_elems.slider);
+			else
+				top_bar_elems.help.before(top_bar_elems.slider);
+		}
+	}
+	else
+	{
+		if(top_bar_elems.slider)
+		{
+			if(top_bar_elems.slider.parentNode)
+				top_bar_elems.slider.parentNode.removeChild(top_bar_elems.slider);
+			delete top_bar_elems.slider;
+		}
+	}
+}
+
+
 // add home button
 // utility function to not repeat the code everywhere
 function addHomeTo(fragment)
@@ -439,44 +631,40 @@ function project_list(data)
 	clearVariables(); // in case we got here from an error
 	
 	// top bar
-	let fragment = clearBar();
-	// shutdown button
-	addTo(fragment, "div", {cls:["interact", "button"], title:"Shutdown RPGMTL", br:false, onclick:function(){
-		if(this.classList.contains("shutdown") || window.event.ctrlKey)
+	update_top_bar(
+		"RPGMTL v" + data["verstring"],
+		function(){ // back callback
+			if(this.classList.contains("shutdown") || window.event.ctrlKey)
+			{
+				this.classList.toggle("shutdown", false);
+				postAPI("/api/shutdown", function(_unused_) {
+					bar.innerHTML = "";
+					let fragment = clearMain();
+					addTo(fragment, "div", {cls:["title"]}).innerText = "RPGMTL has been shutdown";
+					updateMain(fragment);
+				});
+			}
+			else
+			{
+				this.classList.toggle("shutdown", true);
+				setTimeout(function(node) {
+					node.classList.toggle("shutdown", false);
+				}, 2000, this);
+				pushPopup("Press again to confirm.");
+			}
+		},
+		function(){ // help
+			help.innerHTML = "<ul>\
+				<li>Load an existing <b>Project</b> or create a new one.</li>\
+				<li>Click twice on the Shutdown button to stop RPGMTL remotely.</li>\
+			</ul>";
+			help.style.display = "";
+		},
 		{
-			this.classList.toggle("shutdown", false);
-			postAPI("/api/shutdown", function(_unused_) {
-				clearBar();
-				let fragment = clearMain();
-				addTo(fragment, "div", {cls:["title"]}).innerHTML = "RPGMTL has been shutdown";
-				updateMain(fragment);
-			});
+			shutdown:1,
+			github:1
 		}
-		else
-		{
-			this.classList.toggle("shutdown", true);
-			setTimeout(function(node) {
-				node.classList.toggle("shutdown", false);
-			}, 2000, this);
-			pushPopup("Press again to confirm.");
-		}
-	}}).innerHTML = '<img src="assets/images/shutdown.png">';
-	// add version
-	addTo(fragment, "div", {cls:["inline", "text-wrapper"], br:false}).innerHTML = 'RPGMTL v' + data["verstring"];
-	addTo(fragment, "div", {cls:["barfill"], br:false});
-	// github
-	addTo(fragment, "div", {cls:["interact", "button"], title:"Github", br:false, onclick:function(){
-		window.open("https://github.com/MizaGBF/RPGMTL", "_blank")
-	}}).innerHTML = '<img src="assets/images/github.png">';
-	// help
-	addTo(fragment, "div", {cls:["interact", "button"], title:"Help", br:false, onclick:function(){
-		help.innerHTML = "<ul>\
-			<li>Load an existing <b>Project</b> or create a new one.</li>\
-			<li>Click twice on the Shutdown button to stop RPGMTL remotely.</li>\
-		</ul>";
-		help.style.display = "";
-	}}).innerHTML = '<img src="assets/images/help.png">';
-	updateBar(fragment);
+	);
 	
 	// main part
 	fragment = clearMain();
@@ -523,7 +711,6 @@ function project_list(data)
 // display settings for /api/settings
 function setting_menu(data)
 {
-	
 	try
 	{
 		const is_project = "config" in data;
@@ -531,29 +718,26 @@ function setting_menu(data)
 		upate_page_location("settings", (is_project ? prjname : null), null);
 		
 		// top bar
-		let fragment = clearBar();
-		// back button
-		addTo(fragment, "div", {cls:["interact", "button"], title:"Back", br:false, onclick:function(){
-			if(is_project)
-				project_menu();
-			else
-				postAPI("/api/main", project_list);
-		}}).innerHTML = '<img src="assets/images/back.png">';
-		// home button
-		addHomeTo(fragment);
-		// add project name or default string
-		addTo(fragment, "div", {cls:["inline", "text-wrapper"], br:false}).innerHTML = is_project ? prjname + " Settings" : "Default Settings";
-		addTo(fragment, "div", {cls:["barfill"], br:false});
-		// help button
-		addTo(fragment, "div", {cls:["interact", "button"], title:"Help", br:false, onclick:function(){
-			help.innerHTML = "<ul>\
-				<li>Some settings might require you to extract your project strings again, be careful to not lose progress.</li>\
-				<li><b>Default</b> Settings are your projects defaults.</li>\
-				<li><b>Project</b> Settings override <b>Default</b> Settings when modified.</li>\
-			</ul>";
-			help.style.display = "";
-		}}).innerHTML = '<img src="assets/images/help.png">';
-		updateBar(fragment);
+		update_top_bar(
+			(is_project ? prjname + " Settings" : "Default Settings"),
+			function(){ // back callback
+				if(is_project)
+					project_menu();
+				else
+					postAPI("/api/main", project_list);
+			},
+			function(){ // help
+				help.innerHTML = "<ul>\
+					<li>Some settings might require you to extract your project strings again, be careful to not lose progress.</li>\
+					<li><b>Default</b> Settings are your projects defaults.</li>\
+					<li><b>Project</b> Settings override <b>Default</b> Settings when modified.</li>\
+				</ul>";
+				help.style.display = "";
+			},
+			{
+				home:is_project
+			}
+		);
 		
 		// main part
 		fragment = clearMain();
@@ -720,29 +904,26 @@ function translator_menu(data)
 		upate_page_location("translator", (is_project ? prjname : null), null);
 		
 		// top bar
-		let fragment = clearBar();
-		// back button
-		addTo(fragment, "div", {cls:["interact", "button"], title:"Back", br:false, onclick:function(){
-			if(is_project)
-				project_menu();
-			else
-				postAPI("/api/main", project_list);
-		}}).innerHTML = '<img src="assets/images/back.png">';
-		// home button
-		addHomeTo(fragment);
-		// project name or default string
-		addTo(fragment, "div", {cls:["inline", "text-wrapper"], br:false}).innerHTML = is_project ? prjname + " Settings" : "Global Settings";
-		addTo(fragment, "div", {cls:["barfill"], br:false});
-		// help button
-		addTo(fragment, "div", {cls:["interact", "button"], title:"Help", br:false, onclick:function(){
-			help.innerHTML = "<ul>\
-				<li>Select the Translator Plugin to use.</li>\
-				<li><b>Default</b> Translator is used by default.</li>\
-				<li><b>Project</b> Translator override the <b>Default</b> when modified.</li>\
-			</ul>";
-			help.style.display = "";
-		}}).innerHTML = '<img src="assets/images/help.png">';
-		updateBar(fragment);
+		update_top_bar(
+			(is_project ? prjname + " Translators" : "Global Translators"),
+			function(){ // back callback
+				if(is_project)
+					project_menu();
+				else
+					postAPI("/api/main", project_list);
+			},
+			function(){ // help
+				help.innerHTML = "<ul>\
+					<li>Select the Translator Plugin to use.</li>\
+					<li><b>Default</b> Translator is used by default.</li>\
+					<li><b>Project</b> Translator override the <b>Default</b> when modified.</li>\
+				</ul>";
+				help.style.display = "";
+			},
+			{
+				home:is_project
+			}
+		);
 		
 		// main part
 		fragment = clearMain();
@@ -817,25 +998,19 @@ function project_creation(data)
 	{
 		path = data["path"];
 		// top bar
-		let fragment = clearBar();
-		// back button
-		addTo(fragment, "div", {cls:["interact", "button"], title:"Back", br:false, onclick:function(){
-			postAPI("/api/main", project_list);
-		}}).innerHTML = '<img src="assets/images/back.png">';
-		// home button
-		addHomeTo(fragment);
-		// set page title
-		addTo(fragment, "div", {cls:["inline", "text-wrapper"], br:false}).innerHTML = 'Create a new Project';
-		addTo(fragment, "div", {cls:["barfill"], br:false});
-		// help button
-		addTo(fragment, "div", {cls:["interact", "button"], title:"Help", br:false, onclick:function(){
-			help.innerHTML = "<ul>\
-				<li>The Project Name has little importance, just make sure you know what it refers to.</li>\
-				<li>If already taken, a number will be added after the name.</li>\
-			</ul>";
-			help.style.display = "";
-		}}).innerHTML = '<img src="assets/images/help.png">';
-		updateBar(fragment);
+		update_top_bar(
+			"Create a new Project",
+			function(){ // back callback
+				postAPI("/api/main", project_list);
+			},
+			function(){ // help
+				help.innerHTML = "<ul>\
+					<li>The Project Name has little importance, just make sure you know what it refers to.</li>\
+					<li>If already taken, a number will be added after the name.</li>\
+				</ul>";
+				help.style.display = "";
+			}
+		);
 		
 		// main part
 		fragment = clearMain();
@@ -875,35 +1050,33 @@ function project_menu(data = null)
 		upate_page_location("menu", prjname, null);
 		
 		// top bar
-		let fragment = clearBar();
-		// back button
-		addTo(fragment, "div", {cls:["interact", "button"], title:"Back", br:false, onclick:function(){
-			postAPI("/api/main", project_list);
-		}}).innerHTML = '<img src="assets/images/back.png">';
-		// home button
-		addHomeTo(fragment);
-		addTo(fragment, "div", {cls:["inline", "text-wrapper"], br:false}).innerHTML = prjname;
-		addTo(fragment, "div", {cls:["barfill"], br:false});
-		// help button
-		addTo(fragment, "div", {cls:["interact", "button"], title:"Help", br:false, onclick:function(){
-			help.innerHTML = "<ul>\
-				<li><b>Browse Files</b> to browse and translate strings.</li>\
-				<li><b>Add a Fix</b> to add Python patches to apply during the release process (Check the README for details).</li>\
-				<li><b>Replace Strings in batch</b> open a menu to replace parts of strings by others, in your existing translations.</li>\
-				<li>Set your <b>Settings before<b/> extracting the strings.</li>\
-			</ul>\
-			<ul>\
-				<li><b>Update the Game Files</b> if it got updated or if you need to re-copy the files.</li>\
-				<li><b>Extract the Strings</b> if you need to extract them from Game Files.</li>\
-				<li><b>Release a Patch</b> to create a copy of Game files with your translated strings. They will be found in the <b>release</b> folder.</li>\
-			</ul>\
-			<ul>\
-				<li><b>Import Strings from RPGMTL</b> to import strings from RPGMTL projects from any version.</li>\
-				<li><b>Strings Backups</b> to open the list of backups if you need to revert the project data to an earlier state.</li>\
-			</ul>";
-			help.style.display = "";
-		}}).innerHTML = '<img src="assets/images/help.png">';
-		updateBar(fragment);
+		update_top_bar(
+			prjname,
+			function(){ // back callback
+				postAPI("/api/main", project_list);
+			},
+			function(){ // help
+				help.innerHTML = "<ul>\
+					<li><b>Browse Files</b> to browse and translate strings.</li>\
+					<li><b>Add a Fix</b> to add Python patches to apply during the release process (Check the README for details).</li>\
+					<li><b>Replace Strings in batch</b> open a menu to replace parts of strings by others, in your existing translations.</li>\
+					<li>Set your <b>Settings before<b/> extracting the strings.</li>\
+				</ul>\
+				<ul>\
+					<li><b>Update the Game Files</b> if it got updated or if you need to re-copy the files.</li>\
+					<li><b>Extract the Strings</b> if you need to extract them from Game Files.</li>\
+					<li><b>Release a Patch</b> to create a copy of Game files with your translated strings. They will be found in the <b>release</b> folder.</li>\
+				</ul>\
+				<ul>\
+					<li><b>Import Strings from RPGMTL</b> to import strings from RPGMTL projects from any version.</li>\
+					<li><b>Strings Backups</b> to open the list of backups if you need to revert the project data to an earlier state.</li>\
+				</ul>";
+				help.style.display = "";
+			},
+			{
+				home:1
+			}
+		);
 		
 		// main part
 		// here we add various buttons
@@ -1016,38 +1189,35 @@ function browse_files(data)
 		const bp = data["path"];
 		upate_page_location("browse", prjname, bp);
 		// top bar
-		let fragment = clearBar();
-		// back button
-		addTo(fragment, "div", {cls:["interact", "button"], title:"Back", br:false, onclick:function() {
-			let returnpath = bp.includes('/') ? bp.split('/').slice(0, bp.split('/').length-2).join('/')+'/' : "";
-			// returnpath is the path of the parent folder
-			if(bp == "") // current folder is the root, so back to menu
-				project_menu();
-			else
+		console.log("Path: " + bp);
+		update_top_bar(
+			"Path: " + bp,
+			function(){ // back callback
+				let returnpath = bp.includes('/') ? bp.split('/').slice(0, bp.split('/').length-2).join('/')+'/' : "";
+				// returnpath is the path of the parent folder
+				if(bp == "") // current folder is the root, so back to menu
+					project_menu();
+				else
+				{
+					if(returnpath == '/') returnpath = ''; // if return path is a single slash, set to empty first
+					postAPI("/api/browse", browse_files, null, {name:prjname, path:returnpath});
+				}
+			},
+			function(){ // help
+				help.innerHTML = "<ul>\
+					<li>CTRL+Click on a file to <b>disable</b> it, it won't be patched during the release process.</li>\
+					<li>The string counts and completion percentages update slowly in the background, don't take them for granted.</li>\
+				</ul>";
+				help.style.display = "";
+			},
 			{
-				if(returnpath == '/') returnpath = ''; // if return path is a single slash, set to empty first
-				postAPI("/api/browse", browse_files, null, {name:prjname, path:returnpath});
+				home:1,
+				refresh:1,
+				refresh_callback:function(){
+					postAPI("/api/browse", browse_files, null, {name:prjname, path:bp});
+				}
 			}
-		}}).innerHTML = '<img src="assets/images/back.png">';
-		// home button
-		addHomeTo(fragment);
-		// project button
-		addProjectTo(fragment);
-		addTo(fragment, "div", {cls:["inline", "text-wrapper"], br:false}).innerHTML = "Path: " + bp;
-		addTo(fragment, "div", {cls:["barfill"], br:false});
-		// refresh button
-		addTo(fragment, "div", {cls:["interact", "button"], br:false, onclick:function(){
-			postAPI("/api/browse", browse_files, null, {name:prjname, path:bp});
-		}}).innerHTML = '<img src="assets/images/update.png">';
-		// help button
-		addTo(fragment, "div", {cls:["interact", "button"], title:"Help", br:false, onclick:function(){
-			help.innerHTML = "<ul>\
-				<li>CTRL+Click on a file to <b>disable</b> it, it won't be patched during the release process.</li>\
-				<li>The string counts and completion percentages update slowly in the background, don't take them for granted.</li>\
-			</ul>";
-			help.style.display = "";
-		}}).innerHTML = '<img src="assets/images/help.png">';
-		updateBar(fragment);
+		);
 		
 		// main part
 		fragment = clearMain();
@@ -1162,32 +1332,29 @@ function string_search(data)
 		const bp = data["path"];
 		upate_page_location("search_string", prjname, {"path":bp, "search":data["search"]});
 		// top bar
-		let fragment = clearBar();
-		// back button (return to browse_files)
-		addTo(fragment, "div", {cls:["interact", "button"], title:"Back", br:false, onclick:function() {
-			if(bp in data["files"])
+		update_top_bar(
+			"Search Results",
+			function(){ // back callback
+				if(bp in data["files"])
+				{
+					postAPI("/api/file", open_file, null, {name:prjname, path:data["path"]});
+				}
+				else
+				{
+					postAPI("/api/browse", browse_files, null, {name:prjname, path:data["path"]});
+				}
+			},
+			function(){ // help
+				help.innerHTML = "<ul>\
+					<li>Your search results are displayed here.</li>\
+				</ul>";
+				help.style.display = "";
+			},
 			{
-				postAPI("/api/file", open_file, null, {name:prjname, path:data["path"]});
+				home:1,
+				project:1
 			}
-			else
-			{
-				postAPI("/api/browse", browse_files, null, {name:prjname, path:data["path"]});
-			}
-		}}).innerHTML = '<img src="assets/images/back.png">';
-		// home button
-		addHomeTo(fragment);
-		// project button
-		addProjectTo(fragment);
-		addTo(fragment, "div", {cls:["inline", "text-wrapper"], br:false}).innerHTML = "Search Results";
-		addTo(fragment, "div", {cls:["barfill"], br:false});
-		// help menu
-		addTo(fragment, "div", {cls:["interact", "button"], title:"Help", br:false, onclick:function(){
-			help.innerHTML = "<ul>\
-				<li>Your search results are displayed here.</li>\
-			</ul>";
-			help.style.display = "";
-		}}).innerHTML = '<img src="assets/images/help.png">';
-		updateBar(fragment);
+		);
 		
 		// main part
 		fragment = clearMain();
@@ -1237,25 +1404,20 @@ function browse_patches(data)
 	{
 		upate_page_location("patches", prjname, null);
 		// top part
-		let fragment = clearBar();
-		// back button
-		addTo(fragment, "div", {cls:["interact", "button"], title:"Back", br:false, onclick:function(){
-			project_menu();
-		}}).innerHTML = '<img src="assets/images/back.png">';
-		// home button
-		addHomeTo(fragment);
-		addTo(fragment, "div", {cls:["inline", "text-wrapper"], br:false}).innerHTML = prjname;
-		addTo(fragment, "div", {cls:["barfill"], br:false});
-		// help button
-		addTo(fragment, "div", {cls:["interact", "button"], title:"Help", br:false, onclick:function(){
-			help.innerHTML = "<ul>\
-				<li>Select an existing patch/fix or create a new one.</li>\
-				<li>The patch/fix will be applied on all files whose name contains the patch/fix name.</li>\
-				<li>The patch/fix code must be valid <b>Python</b> code, refer to the <b>README</b> for details.</li>\
-			</ul>";
-			help.style.display = "";
-		}}).innerHTML = '<img src="assets/images/help.png">';
-		updateBar(fragment);
+		update_top_bar(
+			prjname,
+			function(){ // back callback
+				project_menu();
+			},
+			function(){ // help
+				help.innerHTML = "<ul>\
+					<li>Select an existing patch/fix or create a new one.</li>\
+					<li>The patch/fix will be applied on all files whose name contains the patch/fix name.</li>\
+					<li>The patch/fix code must be valid <b>Python</b> code, refer to the <b>README</b> for details.</li>\
+				</ul>";
+				help.style.display = "";
+			}
+		);
 		
 		// main part
 		fragment = clearMain();
@@ -1295,25 +1457,23 @@ function edit_patch(data)
 		if(key != null)
 			upate_page_location("open_patch", prjname, key);
 		// top bar
-		let fragment = clearBar();
-		// back button
-		addTo(fragment, "div", {cls:["interact", "button"], title:"Back", br:false, onclick:function(){
-			postAPI("/api/patches", browse_patches, null, {name:prjname});
-		}}).innerHTML = '<img src="assets/images/back.png">';
-		// home button
-		addHomeTo(fragment);
-		addTo(fragment, "div", {cls:["inline", "text-wrapper"], br:false}).innerHTML = "Create a Fix";
-		addTo(fragment, "div", {cls:["barfill"], br:false});
-		// help button
-		addTo(fragment, "div", {cls:["interact", "button"], title:"Help", br:false, onclick:function(){
-			help.innerHTML = "<ul>\
-				<li>Select an existing patch/fix or create a new one.</li>\
-				<li>The patch/fix will be applied on all files whose name contains the patch/fix name.</li>\
-				<li>The patch/fix code must be valid <b>Python</b> code, refer to the <b>README</b> for details.</li>\
-			</ul>";
-			help.style.display = "";
-		}}).innerHTML = '<img src="assets/images/help.png">';
-		updateBar(fragment);
+		update_top_bar(
+			"Create a Fix",
+			function(){ // back callback
+				postAPI("/api/patches", browse_patches, null, {name:prjname});
+			},
+			function(){ // help
+				help.innerHTML = "<ul>\
+					<li>Select an existing patch/fix or create a new one.</li>\
+					<li>The patch/fix will be applied on all files whose name contains the patch/fix name.</li>\
+					<li>The patch/fix code must be valid <b>Python</b> code, refer to the <b>README</b> for details.</li>\
+				</ul>";
+				help.style.display = "";
+			},
+			{
+				home:1
+			}
+		);
 		
 		// main part
 		fragment = clearMain();
@@ -1362,25 +1522,23 @@ function backup_list(data)
 	{
 		upate_page_location("backups", prjname, null);
 		// top part
-		let fragment = clearBar();
-		// back button
-		addTo(fragment, "div", {cls:["interact", "button"], title:"Back", br:false, onclick:function(){
-			project_menu();
-		}}).innerHTML = '<img src="assets/images/back.png">';
-		// home button
-		addHomeTo(fragment);
-		addTo(fragment, "div", {cls:["inline", "text-wrapper"], br:false}).innerHTML = prjname;
-		addTo(fragment, "div", {cls:["barfill"], br:false});
-		// help button
-		addTo(fragment, "div", {cls:["interact", "button"], title:"Help", br:false, onclick:function(){
-			help.innerHTML = "<ul>\
-				<li>Select an existing backup to use it.</li>\
-				<li>Click Twice or CTRL+Click on <b>Use</b> to select the backup.</li>\
-				<li>Existing strings.json and its backups will be properly kept, while the selected backup will become the new strings.json.</li>\
-			</ul>";
-			help.style.display = "";
-		}}).innerHTML = '<img src="assets/images/help.png">';
-		updateBar(fragment);
+		update_top_bar(
+			prjname,
+			function(){ // back callback
+				project_menu();
+			},
+			function(){ // help
+				help.innerHTML = "<ul>\
+					<li>Select an existing backup to use it.</li>\
+					<li>Click Twice or CTRL+Click on <b>Use</b> to select the backup.</li>\
+					<li>Existing strings.json and its backups will be properly kept, while the selected backup will become the new strings.json.</li>\
+				</ul>";
+				help.style.display = "";
+			},
+			{
+				home:1
+			}
+		);
 		
 		// main part
 		fragment = clearMain();
@@ -1580,69 +1738,44 @@ function open_file(data)
 		
 		upate_page_location("file", prjname, lastfileopened);
 		
-		// top bar
-		let fragment = clearBar();
 		// folder path
 		const returnpath = lastfileopened.includes('/') ? lastfileopened.split('/').slice(0, lastfileopened.split('/').length-1).join('/')+'/' : "";
-		// back button
-		addTo(fragment, "div", {cls:["interact", "button"], title:"Back", br:false, onclick:function(){
-			bottom.style.display = "none";
-			if(laststringsearch != null) // return to search result if we came from here
-				postAPI("/api/search_string", string_search, null, {name:prjname, path:returnpath, search:laststringsearch});
-			else
-				postAPI("/api/browse", browse_files, null, {name:prjname, path:returnpath});
-		}}).innerHTML = '<img src="assets/images/back.png">';
-		// home button
-		addHomeTo(fragment);
-		// project button
-		addProjectTo(fragment);
-		addTo(fragment, "div", {cls:["inline", "text-wrapper"], br:false}).innerHTML = "File: " + lastfileopened;
-		addTo(fragment, "div", {cls:["barfill"], br:false});
-		// slider button
-		addTo(fragment, "div", {cls:["interact", "button"], title:"Slide the Original / Translation divide", br:false, onclick:function(){
-			let s = document.getElementById("tl-style"); // to move part around, to display more of original or translated strings
-			switch(tl_style)
+		
+		// top bar
+		update_top_bar(
+			"File: " + lastfileopened,
+			function(){ // back callback
+				bottom.style.display = "none";
+				if(laststringsearch != null) // return to search result if we came from here
+					postAPI("/api/search_string", string_search, null, {name:prjname, path:returnpath, search:laststringsearch});
+				else
+					postAPI("/api/browse", browse_files, null, {name:prjname, path:returnpath});
+			},
+			function(){ // help
+				help.innerHTML = "<ul>\
+					<li>CTRL+Click on a line to <b>disable</b> it, it'll be skipped during the release process.</li>\
+					<li>ALT+CTRL+Click on a line to <b>disable</b> <b>ALL</b> this string occurence in this file.</li>\
+					<li>SHIFT+Click on a line to <b>unlink</b> it, if you need to set it to a translation specific to this part of the file.</li>\
+					<li>ALT+Click on the original string (on the left) to copy it.</li>\
+					<li>ALT+Click on the translated string (on the right) to copy it.</li>\
+					<li>Click on the translated string (on the right) to edit it.</li>\
+					<li>CTRL+Space to scroll to the next untranslated <b>enabled</b> string.</li>\
+					<li>SHIFT+CTRL+Space to scroll to the next untranslated string.</li>\
+					<li>On top, if available, you'll find <b>Plugin Actions</b> for this file.</li>\
+					<li>You'll also find the <b>Translate the File</b> button.</li>\
+				</ul>";
+				help.style.display = "";
+			},
 			{
-				case 0:
-					s.href = "assets/ui/tl_mid.css";
-					tl_style = 1;
-					break;
-				case 1:
-					s.href = "assets/ui/tl_right.css";
-					tl_style = 2;
-					break;
-				case 2:
-					s.href = "assets/ui/tl_left.css";
-					tl_style = 0;
-					break;
-				default:
-					s.href = "assets/ui/tl_mid.css";
-					tl_style = 1;
-					break;
-			};
-		}}).innerHTML = '<img src="assets/images/tl_slide.png">';
-		// refresh button
-		addTo(fragment, "div", {cls:["interact", "button"], title:"Reload the page", br:false, onclick:function(){
-			bottom.style.display = "none";
-			postAPI("/api/file", open_file, null, {name:prjname, path:lastfileopened});
-		}}).innerHTML = '<img src="assets/images/update.png">';
-		// help button
-		addTo(fragment, "div", {cls:["interact", "button"], title:"Help", br:false, onclick:function(){
-			help.innerHTML = "<ul>\
-				<li>CTRL+Click on a line to <b>disable</b> it, it'll be skipped during the release process.</li>\
-				<li>ALT+CTRL+Click on a line to <b>disable</b> <b>ALL</b> this string occurence in this file.</li>\
-				<li>SHIFT+Click on a line to <b>unlink</b> it, if you need to set it to a translation specific to this part of the file.</li>\
-				<li>ALT+Click on the original string (on the left) to copy it.</li>\
-				<li>ALT+Click on the translated string (on the right) to copy it.</li>\
-				<li>Click on the translated string (on the right) to edit it.</li>\
-				<li>CTRL+Space to scroll to the next untranslated <b>enabled</b> string.</li>\
-				<li>SHIFT+CTRL+Space to scroll to the next untranslated string.</li>\
-				<li>On top, if available, you'll find <b>Plugin Actions</b> for this file.</li>\
-				<li>You'll also find the <b>Translate the File</b> button.</li>\
-			</ul>";
-			help.style.display = "";
-		}}).innerHTML = '<img src="assets/images/help.png">';
-		updateBar(fragment);
+				home:1,
+				refresh:1,
+				refresh_callback:function(){
+					bottom.style.display = "none";
+					postAPI("/api/file", open_file, null, {name:prjname, path:lastfileopened});
+				},
+				slider:1
+			}
+		);
 		
 		// main part
 		fragment = clearMain();
@@ -1867,29 +2000,29 @@ function local_browse(title, explanation, mode)
 		filebrowsingmode = mode;
 		
 		// top bar
-		let fragment = clearBar();
-		// back button
-		addTo(fragment, "div", {cls:["interact", "button"], title:"Back", br:false, onclick:function(){
-			switch(filebrowsingmode)
+		update_top_bar(
+			title,
+			function(){ // back callback
+				switch(filebrowsingmode)
+				{
+					case 0:
+						postAPI("/api/main", project_list);
+						break;
+					case 1:
+					case 2:
+					case 3:
+						project_menu();
+						break;
+					default:
+						// TODO
+						break;
+				}
+			},
+			null,
 			{
-				case 0:
-					postAPI("/api/main", project_list);
-					break;
-				case 1:
-				case 2:
-				case 3:
-					project_menu();
-					break;
-				default:
-					// TODO
-					break;
+				home:1
 			}
-		}}).innerHTML = '<img src="assets/images/back.png">';
-		// home button
-		addHomeTo(fragment);
-		addTo(fragment, "div", {cls:["inline", "text-wrapper"], br:false}).innerHTML = title;
-		addTo(fragment, "div", {cls:["barfill"], br:false});
-		updateBar(fragment);
+		);
 	
 		// main part
 		fragment = clearMain();
@@ -1976,24 +2109,19 @@ function replace_page()
 	try
 	{
 		// top bar
-		let fragment = clearBar();
-		// back button
-		addTo(fragment, "div", {cls:["interact", "button"], title:"Back", br:false, onclick:function(){
-			project_menu();
-		}}).innerHTML = '<img src="assets/images/back.png">';
-		// home button
-		addHomeTo(fragment);
-		addTo(fragment, "div", {cls:["inline", "text-wrapper"], br:false}).innerHTML = "Replace strings";
-		addTo(fragment, "div", {cls:["barfill"], br:false});
-		// help button
-		addTo(fragment, "div", {cls:["interact", "button"], title:"Help", br:false, onclick:function(){
-			help.innerHTML = "<ul>\
-				<li>This will replace all matching content of Translated Strings with your replacement.</li>\
-				<li>This is Case sensitive.</li>\
-			</ul>";
-			help.style.display = "";
-		}}).innerHTML = '<img src="assets/images/help.png">';
-		updateBar(fragment);
+		update_top_bar(
+			"Replace strings",
+			function(){ // back callback
+				project_menu();
+			},
+			function(){
+				help.innerHTML = "<ul>\
+					<li>This will replace all matching content of Translated Strings with your replacement.</li>\
+					<li>This is Case sensitive.</li>\
+				</ul>";
+				help.style.display = "";
+			}
+		);
 	
 		// main part
 		fragment = clearMain();

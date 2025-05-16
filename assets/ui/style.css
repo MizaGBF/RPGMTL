@@ -349,6 +349,7 @@ html, body {
 
 .text-wrapper {
 	direction: rtl;
+	unicode-bidi: plaintext;
 	text-overflow: ellipsis;
 	white-space: nowrap;
 	overflow: hidden; 
