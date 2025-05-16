@@ -2016,10 +2016,10 @@ class RPGMTL():
                 elif item.is_file():
                     match mode:
                         case 0|1:
-                            if item.suffix == ".exe":
+                            if item.suffix.lower() == ".exe":
                                 files.append(item.as_posix())
                         case 2:
-                            if item.suffix in (".json", ".py"):
+                            if item.suffix.lower() in (".json", ".py"):
                                 files.append(item.as_posix())
                         case 3:
                             if item.name == "RPGMKTRANSPATCH":
