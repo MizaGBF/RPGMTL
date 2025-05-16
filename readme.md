@@ -18,7 +18,7 @@ Eventually planned (No ETA):
 - And more as I see fit.  
   
 ![image](https://raw.githubusercontent.com/MizaGBF/RPGMTL/main/assets/readme/1.png)  
-*All screenshots are from version 3.11.*
+*All screenshots are from version 3.19.*
   
 ## Table of contents  
   
@@ -146,7 +146,7 @@ Once done, hit `Create`.
 > [!IMPORTANT]  
 > The game you wish to translate must be on the same machine as RPGMTL.  
   
-![image](https://raw.githubusercontent.com/MizaGBF/RPGMTL/main/assets/readme/3.png "Screenshots taken on v3.19")
+![image](https://raw.githubusercontent.com/MizaGBF/RPGMTL/main/assets/readme/3.png)
   
 ### Project Structure  
   
@@ -171,7 +171,7 @@ For a general use, you only need to care about the `edit` and `release` folders.
   
 On your project page, click on `Browse Files`.  
   
-![image](https://raw.githubusercontent.com/MizaGBF/RPGMTL/main/assets/readme/5.png "Screenshots taken on v3.19")  
+![image](https://raw.githubusercontent.com/MizaGBF/RPGMTL/main/assets/readme/5.png)  
   
 Here you'll be able to go through the detected files.  
 You can set a file to be **ignored** by pressing `CTRL+Left Click` on it. It'll then appear **red**.  
@@ -184,7 +184,7 @@ Additionally, folders containing virtual files will appear with a light grey bac
   
 Click on a file to open the list of strings found inside.  
 Strings are listed in groups, and the group name, if it exists, is show on the top left. It's mostly here for context and as a visual aid.  
-![image](https://raw.githubusercontent.com/MizaGBF/RPGMTL/main/assets/readme/6.png "Screenshots taken on v3.19")
+![image](https://raw.githubusercontent.com/MizaGBF/RPGMTL/main/assets/readme/6.png)
   
 The list shows, on the left, original strings and, on the right, translations.  
 You can click on one to open the editing box.  
