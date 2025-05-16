@@ -418,9 +418,18 @@ function processAPI(success, failure)
 // utility function to not repeat the code everywhere
 function addHomeTo(fragment)
 {
-	addTo(fragment, "div", {cls:["interact", "button"], title:"Project select", br:false, onclick:function(){
+	addTo(fragment, "div", {cls:["interact", "button"], title:"Project Select Page", br:false, onclick:function(){
 		postAPI("/api/main", project_list);
 	}}).innerHTML = '<img src="assets/images/home.png">';
+}
+
+// add project button
+// same as addHomeTo but for the project button
+function addProjectTo(fragment)
+{
+	addTo(fragment, "div", {cls:["interact", "button"], title:"Project Menu", br:false, onclick:function(){
+		postAPI("/api/open_project", project_menu, project_fail, {"name":prjname});
+	}}).innerHTML = '<img src="assets/images/project.png">';
 }
 
 // handle result of /api/main
@@ -1022,6 +1031,8 @@ function browse_files(data)
 		}}).innerHTML = '<img src="assets/images/back.png">';
 		// home button
 		addHomeTo(fragment);
+		// project button
+		addProjectTo(fragment);
 		addTo(fragment, "div", {cls:["inline", "text-wrapper"], br:false}).innerHTML = "Path: " + bp;
 		addTo(fragment, "div", {cls:["barfill"], br:false});
 		// refresh button
@@ -1165,6 +1176,8 @@ function string_search(data)
 		}}).innerHTML = '<img src="assets/images/back.png">';
 		// home button
 		addHomeTo(fragment);
+		// project button
+		addProjectTo(fragment);
 		addTo(fragment, "div", {cls:["inline", "text-wrapper"], br:false}).innerHTML = "Search Results";
 		addTo(fragment, "div", {cls:["barfill"], br:false});
 		// help menu
@@ -1581,6 +1594,8 @@ function open_file(data)
 		}}).innerHTML = '<img src="assets/images/back.png">';
 		// home button
 		addHomeTo(fragment);
+		// project button
+		addProjectTo(fragment);
 		addTo(fragment, "div", {cls:["inline", "text-wrapper"], br:false}).innerHTML = "File: " + lastfileopened;
 		addTo(fragment, "div", {cls:["barfill"], br:false});
 		// slider button
