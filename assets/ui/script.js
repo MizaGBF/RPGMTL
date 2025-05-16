@@ -358,15 +358,22 @@ function clearMain()
 }
 
 // update the main area with a fragment
-function updateMain(fragment)
+function updateMain(fragment, defer = true)
 {
-	/*
-		use requestAnimationFrame to make sure the fragment is properly calculated,
-		to avoid weird flicker/wobble from the CSS kicking in
-	*/
-	requestAnimationFrame(() => {
+	if(defer)
+	{
+		/*
+			use requestAnimationFrame to make sure the fragment is properly calculated,
+			to avoid weird flicker/wobble from the CSS kicking in
+		*/
+		requestAnimationFrame(() => {
+			main.appendChild(fragment);
+		});
+	}
+	else // if waiting isn't an option
+	{
 		main.appendChild(fragment);
-	});
+	}
 }
 
 // generitc function to process the result of requests
@@ -1195,7 +1202,6 @@ function browse_files(data)
 		const bp = data["path"];
 		upate_page_location("browse", prjname, bp);
 		// top bar
-		console.log("Path: " + bp);
 		update_top_bar(
 			"Path: " + bp,
 			function(){ // back callback
@@ -2038,7 +2044,7 @@ function local_browse(title, explanation, mode)
 		addTo(fragment, "div", {id:"folder_container"});
 		addTo(fragment, "div", {cls:["left", "title"]}).innerHTML = "Files";
 		addTo(fragment, "div", {id:"file_container"});
-		updateMain(fragment);
+		updateMain(fragment, false);
 		postAPI("/api/local_path", update_local_browse, null, {"path":"", "mode":filebrowsingmode});
 	}
 	catch(err)
