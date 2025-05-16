@@ -12,7 +12,7 @@ class MED(Plugin):
     def __init__(self : MED) -> None:
         super().__init__()
         self.name : str = "MED"
-        self.description : str = "v1.2\nHandle md_scr.med MED files"
+        self.description : str = "v1.3\nHandle md_scr.med MED files"
 
     def match(self : MED, file_path : str, is_for_action : bool) -> bool:
         if is_for_action:
@@ -28,7 +28,7 @@ class MED(Plugin):
     def get_action_infos(self : MED) -> dict[str, list]:
         return {
             "med_adjust_line": ["assets/plugins/med_adjust_line.png", "Adjust New Line", self.adjust_new_line],
-            "med_check_ascii": ["assets/plugins/med_ascii_check.png", "Look for non-ASCII characters", self.look_non_ascii]
+            "med_check_ascii": ["assets/plugins/med_ascii_check.png", "Look for invalid characters", self.look_non_ascii]
         }
 
     def adjust_new_line(self : MED, name : str, file_path : str, settings : dict[str, Any] = {}) -> str:
@@ -106,11 +106,11 @@ class MED(Plugin):
                     lc = group[i]
                     gl = self.owner.strings[name]["strings"][lc[0]]
                     if lc[2] and lc[1] is not None:
-                        if any(ord(ch) > 0x7F for ch in lc[1]): # check if has non-ASCII character
+                        if "[" in lc[1] or "]" in lc[1] or "♪" in lc[1] or any(ord(ch) > 0x7F for ch in lc[1]): # check if has non-ASCII character
                             count += 1
                             self.owner.strings[name]["files"][file_path][g][i][4] = 1
                     elif gl[1] is not None:
-                        if any(ord(ch) > 0x7F for ch in gl[1]): # check if has non-ASCII character
+                        if "[" in gl[1] or "]" in gl[1] or "♪" in gl[1] or any(ord(ch) > 0x7F for ch in gl[1]): # check if has non-ASCII character
                             count += 1
                             self.owner.strings[name]["files"][file_path][g][i][4] = 1
                     else:
