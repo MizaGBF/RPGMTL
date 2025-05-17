@@ -1163,8 +1163,7 @@ function addSearchBar(node, bp, defaultVal = null)
 	const button = addTo(node, "div", {cls:["interact", "button"], title:"Search", onclick:function(){
 		if(input.value != "")
 		{
-			laststringsearch = input.value;
-			postAPI("/api/search_string", string_search, null, {name:prjname, path:bp, search:laststringsearch});
+			postAPI("/api/search_string", string_search, null, {name:prjname, path:bp, search:input.value});
 		}
 	}});
 	button.innerHTML = '<img src="assets/images/search.png">';
@@ -1340,7 +1339,8 @@ function string_search(data)
 	try
 	{
 		const bp = data["path"];
-		upate_page_location("search_string", prjname, {"path":bp, "search":data["search"]});
+		laststringsearch = data["search"];
+		upate_page_location("search_string", prjname, {"path":bp, "search":laststringsearch});
 		// top bar
 		update_top_bar(
 			"Search Results",
