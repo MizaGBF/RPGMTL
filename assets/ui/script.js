@@ -1220,6 +1220,7 @@ function browse_files(data)
 			},
 			{
 				home:1,
+				project:1,
 				refresh:1,
 				refresh_callback:function(){
 					postAPI("/api/browse", browse_files, null, {name:prjname, path:bp});
@@ -1777,6 +1778,7 @@ function open_file(data)
 			},
 			{
 				home:1,
+				project:1,
 				refresh:1,
 				refresh_callback:function(){
 					bottom.style.display = "none";
