@@ -572,7 +572,7 @@ function update_top_bar(title, back_callback, help_callback = null, additions = 
 			top_bar_elems.slider = document.createElement("div");
 			top_bar_elems.slider.classList.add("interact");
 			top_bar_elems.slider.classList.add("button");
-			top_bar_elems.slider.title = "slider";
+			top_bar_elems.slider.title = "Slide the Original / Translation areas";
 			
 			top_bar_elems.slider.onclick = function(){
 				let s = document.getElementById("tl-style"); // to move part around, to display more of original or translated strings
