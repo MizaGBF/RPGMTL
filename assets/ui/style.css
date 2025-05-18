@@ -309,6 +309,10 @@ html, body {
 	border-color: #75e86b;
 }
 
+.selected-line {
+	border-color: #f7ef00;
+}
+
 .disabled {
 	background: #420101;
 	color: #bbbbbb;

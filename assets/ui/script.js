@@ -1728,7 +1728,12 @@ function prepareGroupOn(node, i)
 					// focus
 					edit_tl.focus();
 					// set this span element as the current string being edited
+					if(currentstr != null)
+					{
+						currentstr.classList.toggle("selected-line", false);
+					}
 					currentstr = span;
+					currentstr.classList.toggle("selected-line", true);
 				}
 			}
 		};
@@ -1902,6 +1907,13 @@ function copy_string() // used in index.html
 	}
 	else pushPopup('You need to be on a secure origin to use the Copy button');
 }
+// send and confirm a string change, used in index.html
+// trash = whether the trash button got used instead
+function cancel_string()
+{
+	bottom.style.display = "none";
+	currentstr.classList.toggle("selected-line", false);
+}
 
 // send and confirm a string change, used in index.html
 // trash = whether the trash button got used instead
@@ -1921,6 +1933,7 @@ function apply_string(trash = false)
 			bottom.style.display = "none";
 			postAPI("/api/browse", browse_files, null, {name:prjname, path:returnpath});
 		}, {name:prjname, version:prjversion, path:prjdata["path"], group:currentstr.group, index:currentstr.string, string:edit_tl.value});
+	currentstr.classList.toggle("selected-line", false);
 }
 
 // update the string list
