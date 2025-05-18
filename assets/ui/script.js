@@ -471,6 +471,7 @@ function update_top_bar(title, back_callback, help_callback = null, additions = 
 			top_bar_elems.home.classList.add("button");
 			top_bar_elems.home.title = "Project Select Page";
 			top_bar_elems.home.onclick = function(){
+				bottom.style.display = "";
 				postAPI("/api/main", project_list);
 			};
 			top_bar_elems.home.innerHTML = '<img src="assets/images/home.png">';
@@ -496,6 +497,7 @@ function update_top_bar(title, back_callback, help_callback = null, additions = 
 			top_bar_elems.project.classList.add("button");
 			top_bar_elems.project.title = "Project Menu";
 			top_bar_elems.project.onclick = function(){
+				bottom.style.display = "";
 				postAPI("/api/open_project", project_menu, project_fail, {"name":prjname});
 			};
 			top_bar_elems.project.innerHTML = '<img src="assets/images/project.png">';
