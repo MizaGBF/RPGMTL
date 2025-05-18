@@ -471,7 +471,7 @@ function update_top_bar(title, back_callback, help_callback = null, additions = 
 			top_bar_elems.home.classList.add("button");
 			top_bar_elems.home.title = "Project Select Page";
 			top_bar_elems.home.onclick = function(){
-				bottom.style.display = "";
+				bottom.style.display = "none";
 				postAPI("/api/main", project_list);
 			};
 			top_bar_elems.home.innerHTML = '<img src="assets/images/home.png">';
