@@ -497,7 +497,7 @@ function update_top_bar(title, back_callback, help_callback = null, additions = 
 			top_bar_elems.project.classList.add("button");
 			top_bar_elems.project.title = "Project Menu";
 			top_bar_elems.project.onclick = function(){
-				bottom.style.display = "";
+				bottom.style.display = "none";
 				postAPI("/api/open_project", project_menu, project_fail, {"name":prjname});
 			};
 			top_bar_elems.project.innerHTML = '<img src="assets/images/project.png">';
