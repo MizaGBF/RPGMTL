@@ -2054,7 +2054,7 @@ function local_browse(title, explanation, mode)
 		// main part
 		fragment = clearMain();
 		addTo(fragment, "div", {cls:["title"]}).innerHTML = explanation;
-		addTo(fragment, "div", {cls:["title"], id:"current_path"});
+		addTo(fragment, "div", {cls:["left"], id:"current_path"});
 		addTo(fragment, "div", {cls:["left", "title"]}).innerHTML = "Folders";
 		addTo(fragment, "div", {id:"folder_container"});
 		addTo(fragment, "div", {cls:["left", "title"]}).innerHTML = "Files";
@@ -2075,7 +2075,21 @@ function local_browse(title, explanation, mode)
 
 function update_local_browse(data)
 {
-	document.getElementById("current_path").innerText = data["path"];
+	// navigation bar
+	let path_parts = data["path"].split("/");
+	let cpath = document.getElementById("current_path");
+	cpath.innerHTML = "";
+	let total_path = path_parts[0];
+	for(let i = 0; i < path_parts.length; ++i)
+	{
+		if(i > 0)
+			total_path += "/" + path_parts[i];
+		const callback_path = total_path;
+		addTo(cpath, "div", {cls:["interact", "text-button"], br:false, onclick:function(){
+			postAPI("/api/local_path", update_local_browse, null, {"path":callback_path, "mode":filebrowsingmode});
+		}}).innerText = path_parts[i];
+	}
+	// update folders
 	let container = document.getElementById("folder_container");
 	container.innerHTML = "";
 	for(let i = 0; i < data["folders"].length; ++i)
