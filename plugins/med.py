@@ -12,7 +12,7 @@ class MED(Plugin):
     def __init__(self : MED) -> None:
         super().__init__()
         self.name : str = "MED"
-        self.description : str = "v1.4\nHandle md_scr.med MED files"
+        self.description : str = "v1.5\nHandle md_scr.med MED files"
 
     def match(self : MED, file_path : str, is_for_action : bool) -> bool:
         if is_for_action:
@@ -201,10 +201,21 @@ class MED(Plugin):
         else:
             raise Exception("[MED] Failed to unpack file")
 
-    def _has_jp(self : MED, line: str) -> bool:
+    def _is_valid_string(self : MED, line: bytes) -> bool:
         for ch in line:
-            if ('\u0800' <= ch and ch <= '\u9fa5') or ('\uff01' <= ch <= '\uff5e'):
+            if ch < 0x1f and ch not in (9, 13, 10): # \t, \n, \r
+                return False
+        return True
+
+    def _is_jp_text(self : MED, line: str) -> bool:
+        for ch in line:
+            if ('\u0800' <= ch <= '\u9fa5') or ('\uff01' <= ch <= '\uff5e'):
                 return True
+        return False
+
+    def _is_comment(self : MED, line: str) -> bool:
+        if len(line) == 0 or line[0] in ';#':
+            return True
         return False
 
     def extract_strings(self : MED, files : dict[str, bytearray]) -> list[list[str]]:
@@ -221,14 +232,15 @@ class MED(Plugin):
                     file_content += int.to_bytes(i, 1, byteorder='little')
                 else:
                     try:
-                        decoded : str = file_content.decode('cp932', errors='ignore')
-                        if self._has_jp(decoded) and decoded[0] not in ';#':
-                            strings.append(decoded)
-                        else:
-                            if len(strings) > 1:
-                                file_entries.append(strings)
-                                strings = [""]
-                            strings[0] = decoded
+                        if self._is_valid_string(file_content):
+                            decoded : str = file_content.decode('cp932', errors='ignore')
+                            if not self._is_comment(decoded) and self._is_jp_text(decoded):
+                                strings.append(decoded)
+                            else:
+                                if len(strings) > 1:
+                                    file_entries.append(strings)
+                                    strings = [""]
+                                strings[0] = decoded
                     except Exception as e:
                         self.owner.log.warning("[MED] Error in 'extract_med':\n" + self.owner.trbk(e))
                     file_content = b''
@@ -254,20 +266,22 @@ class MED(Plugin):
                     if data[offset]:
                         buffer += data[offset:offset+1]
                     else:
-                        decoded : str = buffer.decode('cp932', errors='ignore')
-                        if not self._has_jp(decoded) or decoded[0] in ';#':
-                            group = decoded
-                            offset += 1
-                            buffer = b''
-                            continue
-                        tmp : str = helper.apply_string(decoded, group)
-                        if helper.str_modified:
-                            offset -= len(buffer)
-                            encoded = tmp.encode('cp932', errors='ignore')
-                            data[offset:offset+len(buffer)] = encoded
-                            offset += len(encoded)
-                            modified = True
-                        buffer = b''
+                        if self._is_valid_string(buffer):
+                            decoded : str = buffer.decode('cp932', errors='ignore')
+                            if self._is_comment(decoded) or not self._is_jp_text(decoded):
+                                group = decoded
+                                offset += 1
+                                buffer = b''
+                                continue
+                            else:
+                                tmp : str = helper.apply_string(decoded.replace("\\n", "\n"), group)
+                                if helper.str_modified:
+                                    offset -= len(buffer)
+                                    encoded = tmp.encode('cp932', errors='ignore')
+                                    data[offset:offset+len(buffer)] = encoded
+                                    offset += len(encoded)
+                                    modified = True
+                                buffer = b''
                     offset += 1
                 data[:4] = int.to_bytes(len(data)-0x10, 4, byteorder='little')
             count += 1

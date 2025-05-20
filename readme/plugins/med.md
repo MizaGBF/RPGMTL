@@ -13,7 +13,7 @@ Each file contained inside are extracted as Virtual Files, for clarity sake.
   
 ### Adjust New Line  
   
-This engine doesn't support newline, so lines must be padded with spaces to wrap properly.  
+This engine doesn't always support newline `\n`, so lines must be padded with spaces to wrap properly.  
 As this process can be quite destructive, it's not recommended to do it until your project is complete.  
 This action automatically does it for you.  
 The default is 64 characters per line and can be adjusted in the settings.  
