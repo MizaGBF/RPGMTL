@@ -2061,6 +2061,7 @@ class RPGMTL():
                             if data[g][i][1] is not None:
                                 s : str = data[g][i][1].replace(src, dst)
                                 if s != data[g][i][1]:
+                                    data[g][i][1] = s
                                     data[g][i][4] = 1
                                     count += 1
                         elif data[g][i][0] in modified:
