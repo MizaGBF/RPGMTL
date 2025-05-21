@@ -6,6 +6,7 @@
   
 The MED Plugin targets the md_scr.med archive (containing Script Files) used in some japanese games from Triangle and Lusterise.  
 While the plugin is mature, it hasn't been tested on a lot of games.  
+It **won't** extract non-japanese strings in its current state.  
   
 Each file contained inside are extracted as Virtual Files, for clarity sake.  
   
@@ -59,3 +60,8 @@ Then to decrypt a file:
 - Add the corresponding byte from the secret key (16th File byte corresponds to the 1st byte of the secret key, it wraps around the key).  
   
 To encrypt, it's the opposite, substract the corresponding byte.  
+  
+A script file is composed of the following:  
+- A 16 bytes header containing the length of the content (4 bytes), the offset (4 bytes) and possibly more data.  
+- The file content, mostly null terminated strings encoded in `cp932`. 'Mostly' because there is what looks like binary data too, mostly at the beginning of files.  
+  
