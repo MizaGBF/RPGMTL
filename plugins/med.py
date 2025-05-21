@@ -274,7 +274,7 @@ class MED(Plugin):
                                 buffer = b''
                                 continue
                             else:
-                                tmp : str = helper.apply_string(decoded.replace("\\n", "\n"), group)
+                                tmp : str = helper.apply_string(decoded, group)
                                 if helper.str_modified:
                                     offset -= len(buffer)
                                     encoded = tmp.encode('cp932', errors='ignore')
