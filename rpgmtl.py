@@ -968,8 +968,9 @@ class RPGMTL():
             tl_table : dict[str, bool] = {s : self.strings[name]["strings"][s][1] is not None for s in self.strings[name]["strings"]}
             for f in self.strings[name]["files"]:
                 await asyncio.sleep(0.005) # i.e 5s for 1000 files
-                counts = [0, 0]
+                counts = [0, 0, 0]
                 for g in self.strings[name]["files"][f]:
+                    counts[2] += len(g) - 1
                     for i in range(1, len(g)):
                         if g[i][3]:
                             counts[1] += 1 # disabled count
@@ -979,6 +980,7 @@ class RPGMTL():
                     return
                 self.projects[name]['files'][f]["translated"] = counts[0]
                 self.projects[name]['files'][f]["disabled_strings"] = counts[1]
+                self.projects[name]['files'][f]["strings"] = counts[2]
             # Note: Not changing modified flag
             # This function is already called after modifying something
             # It's to avoid too much writes
