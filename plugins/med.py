@@ -12,7 +12,7 @@ class MED(Plugin):
     def __init__(self : MED) -> None:
         super().__init__()
         self.name : str = "MED"
-        self.description : str = "v1.5\nHandle md_scr.med MED files"
+        self.description : str = "v1.6\nHandle md_scr.med MED files"
 
     def match(self : MED, file_path : str, is_for_action : bool) -> bool:
         if is_for_action:
@@ -282,6 +282,8 @@ class MED(Plugin):
                                     offset += len(encoded)
                                     modified = True
                                 buffer = b''
+                        else:
+                            buffer = b''
                     offset += 1
                 data[:4] = int.to_bytes(len(data)-0x10, 4, byteorder='little')
             count += 1
