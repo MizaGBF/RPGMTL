@@ -265,7 +265,7 @@ The `PatcherHelper` is defined at the start of `rpgmtl.py`, if you wish to take 
 > Be careful of downloading and running a translation project made by someone else, as running the Custom Patches can technically execute anything.  
 > Make sure to at least check the list of patches first.  
   
-### Import Strings from RPGMTL v1/v2
+### Import Strings from RPGMTL  
 This button allows you to import `strings.json` and `strings.py` files from older RPGMTL versions.  
 Custom patches won't be imported, as they relied on different codes.  
 Be aware it's a convenience feature and far from perfect.  
