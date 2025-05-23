@@ -99,6 +99,9 @@ An Autosave is ran on shutdown, and also every 5 minutes otherwise.
 > [!WARNING]  
 > Don't close the console to shut it down! The abrupt stop might result in data losses or corruption.  
   
+> [!NOTE]  
+> Copy buttons will likely not work if you access RPGMTL via an IP (for example, `127.0.0.1:8000`) hence why localhost is prefered. If you are on a different machine, you could try to set a domain name for that machine IP in your OS host file to fix this issue.  
+  
 ### Settings
   
 Before starting anything, you can tinker with the various settings.  
