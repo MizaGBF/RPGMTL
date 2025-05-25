@@ -69,8 +69,9 @@ Run the following command, in the same folder:
 ```console
 python -m pip install -r requirements.txt
 ```  
+On Windows, if you don't know how to do it, you can `SHIFT+Right Click` in the folder and select `Open in Terminal`/`Open PowerShell window here`/`Open Command prompt here`.  
   
-On Windows, if Python isn't in your `PATH`, replace `python` with the full path to its executable (for example `C:\python3\python.exe -m pip install -r requirements.txt`).  
+Additionally, if Python isn't in your `PATH`, replace `python` with the full path to its executable (for example `C:\python3\python.exe -m pip install -r requirements.txt`).  
   
 ### Update  
   
@@ -83,15 +84,16 @@ If a plugin's implementation changed, you might need to Extract the strings agai
 ### Quickstart
   
 Simply run `rpgmtl.py` to start a small web server.  
-Either with in a terminal:  
+Either in a terminal:  
 ```console
 python rpgmtl.py
 ```  
   
-Or by double clicking the file and starting it with Python.  
+Or, on Windows, by double clicking the file and starting it with Python.  
+(Don't try to start it with the Python Launcher, the one with a rocket icon, it won't work. Make sure it's python.exe. Do `Right Click` and `Open with...` to go select it, if needed.)  
   
 Then you can access it with your favorite web browser.  
-`localhost:8000` should be the default address.  
+`http://localhost:8000/` should be the default address. [Direct Link](http://localhost:8000/).  
   
 **To stop it**, use the *Shutdown* button on the top left of the Home Page, or press `CTRL+C` on the server console.  
 An Autosave is ran on shutdown, and also every 5 minutes otherwise.  
@@ -105,7 +107,7 @@ An Autosave is ran on shutdown, and also every 5 minutes otherwise.
 ### Settings
   
 Before starting anything, you can tinker with the various settings.  
-Global settings will affect every new projects.  
+Global settings will affect every projects.  
 They can be overrided individually for each project, if needed.  
   
 ![image](https://raw.githubusercontent.com/MizaGBF/RPGMTL/main/assets/readme/4.png)
@@ -117,7 +119,7 @@ If you wish to access it remotely, it's **recommended** to enable HTTPS.
 You'll need to have a valid certificate and key.  
 Place them in the folder and run **once**:  
 ```console
-python rpgmtl.py --https name_of_your_cert name_of_your_set
+python rpgmtl.py --https name_of_your_key_file name_of_your_password_file
 ```  
 If everything goes well, `SSL is enabled` should appear in the log.  
 The certificate and key locations will be saved for the next use.  

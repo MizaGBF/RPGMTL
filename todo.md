@@ -10,10 +10,10 @@ Future (possible) improvements or bugs are noted here:
   
 - [ ] Add a built-in note system.  
 - [ ] A comment system for each line could be nice too.  
+- [ ] Add an indicator for which plugin a File Action is from.  
   
 ### Translator
   
-- [x] Make it possible to select different translator for single and batle translations.  
-- [x] Let Translator plugins optionally different format for translations (especially for batch translation, to have context for AI uses).
+- [ ] Rework the different TranslatorPlugin type into something cleaner.  
   
   
