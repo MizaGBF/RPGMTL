@@ -422,6 +422,7 @@ function processAPI(success, failure)
 		- github: Add the Github button on the top right
 		- refresh: Add the Refresh button on the top right. Require refresh_callback to be provided with.
 		- slider: Add the Slider button on the top right
+		- file_nav: Add Previous and Next file buttons on the top right. Require file_nav_next_callback and file_nav_previous_callback.
 */
 function update_top_bar(title, back_callback, help_callback = null, additions = {})
 {
@@ -612,6 +613,47 @@ function update_top_bar(title, back_callback, help_callback = null, additions = 
 			if(top_bar_elems.slider.parentNode)
 				top_bar_elems.slider.parentNode.removeChild(top_bar_elems.slider);
 			delete top_bar_elems.slider;
+		}
+	}
+	// file navigation
+	if(additions.file_nav)
+	{
+		if(!top_bar_elems.next_file)
+		{
+			top_bar_elems.next_file = document.createElement("div");
+			top_bar_elems.next_file.classList.add("interact");
+			top_bar_elems.next_file.classList.add("button");
+			top_bar_elems.next_file.title = "Next File";
+			top_bar_elems.next_file.onclick = additions.file_nav_next_callback;
+			top_bar_elems.next_file.innerHTML = '<img src="assets/images/next.png">';
+			top_bar_elems.slider.before(top_bar_elems.next_file);
+		}
+		else top_bar_elems.next_file.onclick = additions.file_nav_next_callback;
+		if(!top_bar_elems.prev_file)
+		{
+			top_bar_elems.prev_file = document.createElement("div");
+			top_bar_elems.prev_file.classList.add("interact");
+			top_bar_elems.prev_file.classList.add("button");
+			top_bar_elems.prev_file.title = "Previous File";
+			top_bar_elems.prev_file.onclick = additions.file_nav_previous_callback;
+			top_bar_elems.prev_file.innerHTML = '<img src="assets/images/previous.png">';
+			top_bar_elems.next_file.before(top_bar_elems.prev_file);
+		}
+		else top_bar_elems.prev_file.onclick = additions.file_nav_previous_callback;
+	}
+	else
+	{
+		if(top_bar_elems.next_file)
+		{
+			if(top_bar_elems.next_file.parentNode)
+				top_bar_elems.next_file.parentNode.removeChild(top_bar_elems.next_file);
+			delete top_bar_elems.next_file;
+		}
+		if(top_bar_elems.prev_file)
+		{
+			if(top_bar_elems.prev_file.parentNode)
+				top_bar_elems.prev_file.parentNode.removeChild(top_bar_elems.prev_file);
+			delete top_bar_elems.prev_file;
 		}
 	}
 }
@@ -1758,6 +1800,25 @@ function open_file(data)
 		// folder path
 		const returnpath = lastfileopened.includes('/') ? lastfileopened.split('/').slice(0, lastfileopened.split('/').length-1).join('/')+'/' : "";
 		
+		// determinate the previous and next file in the same folder
+		let prev_file = null;
+		let next_file = null;
+		let file_same_folder = [];
+		for(let f in prj["files"])
+		{
+			if((returnpath == "" && !f.includes('/'))
+				|| (f.startsWith(returnpath) && !f.substring(returnpath.length).includes('/')))
+			{
+				file_same_folder.push(f);
+			}
+		}
+		if(file_same_folder.length > 1)
+		{
+			let f_index = file_same_folder.indexOf(lastfileopened);
+			prev_file = file_same_folder[(f_index - 1 + file_same_folder.length) % file_same_folder.length];
+			next_file = file_same_folder[(f_index + 1) % file_same_folder.length];
+		}
+		
 		// top bar
 		update_top_bar(
 			"File: " + lastfileopened,
@@ -1791,7 +1852,16 @@ function open_file(data)
 					bottom.style.display = "none";
 					postAPI("/api/file", open_file, null, {name:prjname, path:lastfileopened});
 				},
-				slider:1
+				slider:1,
+				file_nav:+(prev_file != null),
+				file_nav_previous_callback:function(){
+					bottom.style.display = "none";
+					postAPI("/api/file", open_file, null, {name:prjname, path:prev_file});
+				},
+				file_nav_next_callback:function(){
+					bottom.style.display = "none";
+					postAPI("/api/file", open_file, null, {name:prjname, path:next_file});
+				}
 			}
 		);
 		
