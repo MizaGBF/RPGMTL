@@ -10,7 +10,6 @@ Future (possible) improvements or bugs are noted here:
   
 - [ ] Add a built-in note system.  
 - [ ] A comment system for each line could be nice too.  
-- [x] Add an indicator for which plugin a File Action is from.  
   
 ### Translator
   
