@@ -1037,7 +1037,7 @@ class RPGMTL():
         if patch_count > 0:
             self.log.info("Patched {} files for project {} available in the release folder".format(patch_count, name))
         else:
-            self.log.info("No patched {} files for project {}".format(patch_count, name))
+            self.log.info("Patched {} files for project {}".format(patch_count, name))
         return patch_count, err
 
     # execute and apply runtime fix/patch
@@ -1675,7 +1675,7 @@ class RPGMTL():
             if path not in self.strings[name]["files"]:
                 return web.json_response({"result":"bad", "message":"Bad request, invalid 'path' parameter."}, status=400)
             else:
-                actions = {k : [v[1], v[2]] for k, v in self.actions.items() if self.plugins[v[0]].match(path, True)}
+                actions = {k : [v[0], v[1], v[2]] for k, v in self.actions.items() if self.plugins[v[0]].match(path, True)}
                 return web.json_response({"result":"ok", "data":{"config":self.projects[name], "name":name, "path":path, "strings":self.strings[name]["strings"], "list":self.strings[name]["files"][path], "actions":actions}})
 
     # /api/file_action

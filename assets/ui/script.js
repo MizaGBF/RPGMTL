@@ -1801,10 +1801,15 @@ function open_file(data)
 		let topsection = addTo(fragment, "div", {cls:["title"]});
 		topsection.innerHTML = prjname;
 		addTo(fragment, "div", {cls:["title", "left"]}).innerHTML = lastfileopened;
-		
+		let previous_plugin = null;
 		// list file actions
-		for(const [key, [icon, value]] of Object.entries(data["actions"]))
+		for(const [key, [plugin_name, icon, value]] of Object.entries(data["actions"]))
 		{
+			if(previous_plugin != plugin_name)
+			{
+				addTo(fragment, "div", {cls:["title", "left", "interact-group", "smalltext"], br:false}).innerHTML = plugin_name + " Plugin";
+				previous_plugin = plugin_name;
+			}
 			addTo(fragment, "div", {cls:["interact"], onclick:function() {
 				if(this.classList.contains("selected") || window.event.ctrlKey) // confirmation / shortcut to insta confirm
 				{
@@ -1827,6 +1832,7 @@ function open_file(data)
 				}
 			}}).innerHTML = '<img src="' + (icon == null ? "assets/images/setting.png" : icon) + '"> ' + value;
 		}
+		addTo(fragment, "div", {cls:["title", "left", "interact-group", "smalltext"], br:false}).innerHTML = "Other Actions";
 		// add translate this file button
 		addTo(fragment, "div", {cls:["interact"], onclick:function() {
 			if(this.classList.contains("selected") || window.event.ctrlKey) // confirmation / shortcut to insta confirm
