@@ -121,8 +121,8 @@ class Plugin:
         backup_path : PurePath
     ) -> bool:
         # Return True if your plugin is able to extract files from the given file, during the game backup process
-        # If True is returned, you must implement extract
-        pass
+        # Return True if files have been extracted
+        return False
 
     def is_streaming(self : Plugin, file_path : str, is_for_action : bool) -> bool:
         # Return True if your plugin wants a stream handle instead of the file content

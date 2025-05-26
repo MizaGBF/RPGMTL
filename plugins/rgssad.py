@@ -19,15 +19,15 @@ class RGSSAD(Plugin):
         backup_path : PurePath
     ) -> bool:
         if full_path.suffix.lower() not in (".rgssad", ".rgss2a", ".rgss3a"):
-            return
+            return False
         try:
             with open(full_path, mode="rb") as f:
                 magic = f.read(6).decode('ascii')
                 if magic != "RGSSAD":
-                    return
+                    return False
                 version = f.read(2)[1]
                 if version not in (0x01, 0x03):
-                    return
+                    return False
                 # read file list
                 metadatas = self.read_rgssad_v3(f) if version == 0x03 else self.read_rgssad_v1(f)
                 
@@ -59,8 +59,10 @@ class RGSSAD(Plugin):
                                 "disabled_strings":0,
                             }
                             break
+                return len(metadatas) > 0
         except Exception as e:
             self.owner.log.error("[RGSSAD] Failed to extract content from:" + full_path.as_posix() + "\n" + self.owner.trbk(e))
+            return False
 
     def decrypt_file_data(self : RGSSAD, encrypted_data : bytes, initial_key : int) -> bytes:
         decrypted_data = bytearray()
