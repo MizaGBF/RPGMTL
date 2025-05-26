@@ -9,6 +9,7 @@ The list of supported files is currently:
 - CSV (for RPG Maker MV, MZ and other games)  
 - INI (for RPG Maker MV, MZ and other games)  
 - Ruby Marshal (.rxdata, .rvdata, .rvdata2 for RPG Maker XP to VX Ace)  
+- RGSSAD Archives (.rgssad, .rgss2a, .rgss3a for RPG Maker XP to VX Ace)  
 - MED (md_scr.med archives in particular, used by Triangle and Lusterise games)  
 - NSA (arc.nsa archives from NScripter engine) (EXPERIMENTAL)  
   

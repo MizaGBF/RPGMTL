@@ -18,16 +18,7 @@ import argparse
 import ssl
 
 import plugins
-from plugins import TranslatorPlugin, TranslatorBatchFormat
-
-######################################################
-# An enum used for project files
-######################################################
-class FileType(IntEnum):
-    NORMAL = 0 # any file
-    ARCHIVE = 1 # file containing other files
-    VIRTUAL = 2 # file contained in an archive
-    VIRTUAL_UNDEFINED = 3 # virtual but existence remains to be checked
+from plugins import TranslatorPlugin, TranslatorBatchFormat, FileType
 
 ######################################################
 # A simple helper class for the patch system
@@ -408,12 +399,19 @@ class RPGMTL():
         game_path : PurePath = PurePath(self.projects[pname]["path"])
         for path, subdirs, files in os.walk(game_path):
             for name in files:
+                copied : bool = False
+                extracted : bool = False
+                fp : PurePath = PurePath(path, name) # full file path
+                fpr : PurePath = fp.relative_to(game_path) # relative target file path
+                target_dir = backup_path / fpr.parent # directory containing the file
+                
                 for p in self.plugins.values():
-                    if p.match(name, False):
-                        # file is supported by an extension
-                        fp : PurePath = PurePath(path, name) # full file path
-                        fpr : PurePath = fp.relative_to(game_path) # relative target file path
-                        target_dir = backup_path / fpr.parent # directory containing the file
+                    # check if file is supported by an extension
+                    if not extracted and p.extract(update_file_dict, fp, target_dir, backup_path):
+                        extracted = True
+                    
+                    # check if the file must be backed up
+                    if not copied and p.match(name, False):
                         if not os.path.isdir(target_dir): # create directory if not found
                             try:
                                 # create dir if needed
@@ -435,7 +433,7 @@ class RPGMTL():
                             self.log.info(fpr.as_posix() + " has been copied to project folder " + pname)
                         except Exception as e:
                             self.log.error("Couldn't copy the following file:" + fp.as_posix() + " to project folder " + pname + "\n" + self.trbk(e))
-                        break
+                        copied = True
         # keep file setting if it exists
         for k, v in self.projects[pname].get("files", {}).items():
             if k in update_file_dict:

@@ -53,6 +53,13 @@ def load(rpgmtl : RPGMTL) -> None:
         if filename not in ['__init__.py'] and filename.endswith('.py') and os.path.isfile(path_filename):
             _loadPlugin_(rpgmtl, path_filename, filename, relative=".", package='plugins')
 
+# An enum used for project files
+class FileType(IntEnum):
+    NORMAL = 0 # any file
+    ARCHIVE = 1 # file containing other files
+    VIRTUAL = 2 # file contained in an archive
+    VIRTUAL_UNDEFINED = 3 # virtual but existence remains to be checked
+
 class Plugin:
     FILE_ENCODINGS : list[str] = ["utf-8", "shift_jis", "iso8859-1", "cp1251", "cp1252", "ascii"] # To cover a lot of encoding scenarios
     
@@ -105,6 +112,17 @@ class Plugin:
         # Return True if your plugin wants to handle this file
         # The second parameter indicates if it's for a file action
         return False
+
+    def extract(
+        self : Plugin,
+        update_file_dict : dict[str, Any],
+        full_path : PurePath,
+        target_dir : PurePath,
+        backup_path : PurePath
+    ) -> bool:
+        # Return True if your plugin is able to extract files from the given file, during the game backup process
+        # If True is returned, you must implement extract
+        pass
 
     def is_streaming(self : Plugin, file_path : str, is_for_action : bool) -> bool:
         # Return True if your plugin wants a stream handle instead of the file content

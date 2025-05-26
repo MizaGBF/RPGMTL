@@ -15,4 +15,6 @@ Future (possible) improvements or bugs are noted here:
   
 - [ ] Rework the different TranslatorPlugin type into something cleaner.  
   
+### Plugins  
   
+- [x] Allow some sort of built-in file extractions from archive when backing up the original game files (for example, rgssad files)
