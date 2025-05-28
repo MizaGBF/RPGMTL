@@ -8,6 +8,7 @@ from enum import Enum
 from pathlib import PurePath
 from typing import Any
 
+# The logic is inspired from a C# code (I believe) to which I lost the original and link, feel free to point me to it so I can add the credit
 
 # ##########################################################
 # Checksum classes are used name and file data validation
