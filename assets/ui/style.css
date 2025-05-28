@@ -35,6 +35,7 @@ html, body {
 	overflow-y:auto;
 	max-height: calc(100vh - 50px);
 	overflow-x: hidden;
+	scrollbar-color: white black;
 }
 
 #bottom {
