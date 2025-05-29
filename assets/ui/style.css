@@ -41,7 +41,7 @@ html, body {
 #bottom {
 	background: #181818;
 	color: #eeeeee;
-	width: 100%;
+	width: calc(100% - 35px);
 	font-size: 30px;
 	padding: 5px;
 	margin: 0px;

@@ -45,7 +45,7 @@ class RGSSAD(Plugin):
                                     # create dir if needed
                                     os.makedirs(file_path.parent.as_posix(), exist_ok=True)
                                 except Exception as e:
-                                    self.owner.log.error("Couldn't create the following folder:" + file_path.parent.as_posix() + "\n" + self.trbk(e))
+                                    self.owner.log.error("[RGSSAD] Couldn't create the following folder:" + file_path.parent.as_posix() + "\n" + self.trbk(e))
                             # write file
                             with open(file_path, mode="wb") as out:
                                 f.seek(metadata["offset"])
