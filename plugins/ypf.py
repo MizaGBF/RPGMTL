@@ -264,39 +264,41 @@ class YPF(Plugin):
                 ypfh = YPFHeader(stream)
                 # Go through the files
                 for entry in ypfh.archived_files:
-                    if entry.file_name.suffix == ".ybn":
-                        # Validate the file
-                        ypfh.validate_data_integrity(stream, entry.offset, entry.compressed_file_size, entry.data_checksum)
-                        # Read it
-                        stream.seek(entry.offset)
-                        data = stream.read(entry.compressed_file_size)
-                        # Decompress
-                        if entry.is_compressed:
-                            data = zlib.decompress(data)
-                            # Verify size
-                            if len(data) != entry.raw_file_size:
-                                raise Exception("[YPF] Invalid decompressed file size")
+                    file_path : PurePath = target_dir / entry.file_name
+                    for p in self.owner.plugins.values():
+                        if p.match(file_path.name, False):
+                            # Validate the file
+                            ypfh.validate_data_integrity(stream, entry.offset, entry.compressed_file_size, entry.data_checksum)
+                            # Read it
+                            stream.seek(entry.offset)
+                            data = stream.read(entry.compressed_file_size)
+                            # Decompress
+                            if entry.is_compressed:
+                                data = zlib.decompress(data)
+                                # Verify size
+                                if len(data) != entry.raw_file_size:
+                                    raise Exception("[YPF] Invalid decompressed file size")
 
-                        # Add file to project
-                        file_path : PurePath = target_dir / entry.file_name
-                        # create directory if not found
-                        if not os.path.isdir(file_path.parent):
-                            try:
-                                # create dir if needed
-                                os.makedirs(file_path.parent.as_posix(), exist_ok=True)
-                            except Exception as e:
-                                self.owner.log.error("[YPF] Couldn't create the following folder:" + file_path.parent.as_posix() + "\n" + self.trbk(e))
-                        # write file
-                        with open(file_path, mode="wb") as out:
-                            out.write(data)
-                        # add to update_file_dict
-                        update_file_dict[(file_path.relative_to(backup_path)).as_posix()] = {
-                            "file_type":FileType.NORMAL,
-                            "ignored":False,
-                            "strings":0,
-                            "translated":0,
-                            "disabled_strings":0,
-                        }
+                            # Add file to project
+                            # create directory if not found
+                            if not os.path.isdir(file_path.parent):
+                                try:
+                                    # create dir if needed
+                                    os.makedirs(file_path.parent.as_posix(), exist_ok=True)
+                                except Exception as e:
+                                    self.owner.log.error("[YPF] Couldn't create the following folder:" + file_path.parent.as_posix() + "\n" + self.trbk(e))
+                            # write file
+                            with open(file_path, mode="wb") as out:
+                                out.write(data)
+                            # add to update_file_dict
+                            update_file_dict[(file_path.relative_to(backup_path)).as_posix()] = {
+                                "file_type":FileType.NORMAL,
+                                "ignored":False,
+                                "strings":0,
+                                "translated":0,
+                                "disabled_strings":0,
+                            }
+                return True
         except Exception as e:
             self.owner.log.error("[YPF] Failed to extract content from:" + full_path.as_posix() + "\n" + self.owner.trbk(e))
             return False
