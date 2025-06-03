@@ -131,7 +131,7 @@ class JSON(Plugin):
     def __init__(self : JSON) -> None:
         super().__init__()
         self.name : str = "JSON"
-        self.description : str = "v1.9\nHandle JSON files, including ones from RPG Maker MV/MZ"
+        self.description : str = "v1.10\nHandle JSON files, including ones from RPG Maker MV/MZ"
 
     def get_setting_infos(self : Plugin) -> dict[str, list]:
         return {
@@ -532,7 +532,6 @@ class JSON(Plugin):
                         tmp = ""
                     start = i
                     i += 1
-                    start = i
                     i, text = self._walk_event_continuous_command(i, cmds, 655)
                     text.insert(0, tmp)
                     if tmp != "" or len(text) > 1:
