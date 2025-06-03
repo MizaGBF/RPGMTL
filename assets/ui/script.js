@@ -1644,8 +1644,12 @@ function update_file_list(data)
 		set_loading(false);
 		for(const [key, value] of Object.entries(data["files"])) // simply update disabled class
 		{
-			if(value) document.getElementById("text:"+key).classList.add("disabled");
-			else document.getElementById("text:"+key).classList.remove("disabled");
+			let file = document.getElementById("text:"+key);
+			if(file)
+			{
+				if(value) file.classList.add("disabled");
+				else file.classList.remove("disabled");
+			}
 		}
 	}
 	catch(err)
