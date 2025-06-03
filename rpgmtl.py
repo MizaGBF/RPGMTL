@@ -709,7 +709,7 @@ class RPGMTL():
                             self.modified[name] = True
         # Disabling specific RPG maker event codes or groups
         text_codes = set(["Command: Show Text", "Command: Choices", "Command: When ..."]) # allowed ones
-        other_groups = set(["formula", "note", "@icon_name", "@battler_name"])
+        other_groups = set(["battlerName", "faceName", "characterName", "switches", "variables", "encryptionKey", "formula", "note", "@icon_name", "@battler_name"])
         for f in self.strings[name]["files"]:
             for i, group in enumerate(self.strings[name]["files"][f]):
                 if (group[0].startswith("Command: ") and group[0] not in text_codes) or group[0] in other_groups:
