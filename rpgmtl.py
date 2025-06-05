@@ -792,6 +792,7 @@ class RPGMTL():
     # patch the strings from given file, and write to the release folder
     # return value is a tuple of counts, for successfully patched files and errors
     def patch_game_file(self : RPGMTL, name : str, filename : str, release_folder : PurePath) -> tuple[int, int]:
+        totalerr : int = 0
         for p in self.plugins.values():
             try:
                 if p.match(filename, False): # file matches the plugin
@@ -804,18 +805,19 @@ class RPGMTL():
                         with open('projects/' + name + '/originals/' + filename, mode="rb") as iofile:
                             content = iofile.read()
                         content, modified = p.write(name, filename, content) # write content
-                        content, modified = self.apply_fixes(name, filename, content, modified) # apply fixes
+                        content, modified, errcount = self.apply_fixes(name, filename, content, modified) # apply fixes
+                        totalerr += errcount
                         # write file if modified
                         if modified:
                             content = p.format(filename, content)
                             output : Path = Path(release_folder, filename)
                             output.parent.mkdir(parents=True, exist_ok=True)
                             output.write_bytes(content)
-                            return (1, 0)
+                            return (1, totalerr)
             except Exception as e:
                 self.log.error("Failed to patch strings in " + filename + " for project " + name + " using the plugin " + p.name + "\n" + self.trbk(e))
-                return (0, 1)
-        return (0, 0)
+                return (0, totalerr + 1)
+        return (0, totalerr)
 
     # extract strings from backed up files
     def generate(self : RPGMTL, name : str) -> int:
@@ -1033,14 +1035,15 @@ class RPGMTL():
                 self.log.warning("Failed to copy the content of the edit folder for project " + name)
                 err += 1
         if patch_count > 0:
-            self.log.info("Patched {} files for project {} available in the release folder".format(patch_count, name))
+            self.log.info("Patched {} files for project {} with {} errors, available in the release folder".format(patch_count, name, err))
         else:
-            self.log.info("Patched {} files for project {}".format(patch_count, name))
+            self.log.info("Patched {} files for project {}with {} errors,".format(patch_count, name, err))
         return patch_count, err
 
     # execute and apply runtime fix/patch
-    def apply_fixes(self : RPGMTL, _name_ : str, _file_path_ : str, _content_ : bytes, _modified_ : bool) -> tuple[bytes, bool]:
+    def apply_fixes(self : RPGMTL, _name_ : str, _file_path_ : str, _content_ : bytes, _modified_ : bool) -> tuple[bytes, bool, int]:
         # variables got underscore on purpose, as the patch is executed in this context
+        _error_ : int = 0
         for _k_, _v_ in self.projects[_name_]["patches"].items(): # iterate over existing patches
             if _k_ in _file_path_: # if this patch matches this file
                 try:
@@ -1052,8 +1055,9 @@ class RPGMTL():
                         self.log.info("Applied fix " + _k_ + " on file " + _file_path_ + " for project " + _name_)
                 except Exception as _e_:
                     self.log.error("Failed to apply the fix " + _k_ + " on file " + _file_path_ + " for project " + _name_ + "\n" + self.trbk(_e_))
-        # return content (either old or new modified one) and modified flag
-        return _content_, _modified_
+                    _error_ += 1
+        # return content (either old or new modified one), modified flag and error count
+        return _content_, _modified_, _error_
 
     # Function to import strings from old RPGMTL formats (version 1 and 2)
     # Return value is a tuple of state (-1 = error occured, 0 = nothing, 1 = success) and the imported string count

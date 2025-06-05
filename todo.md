@@ -11,6 +11,7 @@ Future (possible) improvements or bugs are noted here:
 - [ ] Add a built-in note system.  
 - [ ] A comment system for each line could be nice too.  
 - [ ] Add more settings to string search and replace strings.  
+- [x] Add some feedback if a fix fails.
   
 ### Translator
   
