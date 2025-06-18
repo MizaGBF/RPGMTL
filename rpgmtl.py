@@ -59,7 +59,7 @@ class PatcherHelper():
 ######################################################
 class RPGMTL():
     # constant
-    VERSION = "3.22"
+    VERSION = "3.23"
     CHILDREN_FILE_ID = "@__children_file__@:"
     HISTORY_LIMIT = 10
     def __init__(self : RPGMTL) -> None:
