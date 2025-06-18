@@ -131,8 +131,23 @@ python rpgmtl.py --http
 ```  
 RPGMTL will *forget* these file locations.  
   
-> [!NOTE]  
-> There are currently no plans to add some sort of authentification system for remote uses.  
+### IP Filter  
+  
+This is another **recommended** feature if you wish to access it remotely.  
+If you wish to filter which IP can access the server, create a `whitelist.txt` file near `rpgmtl.py`.  
+Add the allowed IP inside, one by line.  
+It supports both IP v4 and v6.  
+  
+Then to enable the filter, run **once**:  
+```console
+python rpgmtl.py --ip on
+```  
+  
+To disable it at some point in time:  
+```console
+python rpgmtl.py --ip off
+```  
+Run `python rpgmtl.py --help` for alternative options.  
   
 ## Project Management  
   

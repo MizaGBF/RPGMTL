@@ -10,3 +10,4 @@ dev/
 test.JSON
 TEST/
 TEST/*
+whitelist.txt

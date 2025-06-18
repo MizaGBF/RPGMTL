@@ -12,7 +12,6 @@ from logging.handlers import RotatingFileHandler
 import json
 import difflib
 from pathlib import Path, PurePath
-from enum import IntEnum
 import string
 import argparse
 import ssl
@@ -75,7 +74,7 @@ class RPGMTL():
         self.log = self.loggers['rpgmtl']
         self.log.info("RPGMTL is starting up...")
         # Web server
-        self.app : web.Application = web.Application()
+        self.app : web.Application = web.Application(middlewares=[self.ip_whitelist])
         # Autosave system
         self.app.on_startup.append(self.init_autosave)
         self.app.on_cleanup.append(self.stop_autosave)
@@ -115,7 +114,7 @@ class RPGMTL():
                 web.post('/api/local_path', self.local_path), # Browse local files
                 web.post('/api/replace_strings', self.replace_strings), # Browse local files
         ])
-        # data containers
+        # variables
         self.last_directory = os.getcwd() # used for file browsing
         self.is_posix = os.name != 'nt' # set to True if OS isn't windows
         self.projects : dict[str, Any] = {} # store loaded config.json
@@ -130,11 +129,14 @@ class RPGMTL():
         self.plugin_descriptions : dict[str, str] = {} # store plugin descriptions
         self.actions : dict[str, list] = {} # store plugin actions
         self.history : list[list[str]] = [] # store link to last ten accessed files
+        self.allowed_ips : list[str] = [] # allowed ips
         # loaded plugins
         self.plugins : dict[str, plugins.Plugin] = {}
         self.translators : dict[str, plugins.TranslatorPlugin] = {}
         # load settings.json
         self.load_settings()
+        # parse arguments
+        self.parse_command_line()
         # load the plugins (see plugins/__init__.py )
         plugins.load(self)
 
@@ -336,7 +338,7 @@ class RPGMTL():
             return "".join(parts)
 
     # autosave task
-    async def autosave(self : RPGMTL):
+    async def autosave(self : RPGMTL) -> None:
         while True:
             try:
                 await asyncio.sleep(300) # call save() every 300s
@@ -345,12 +347,27 @@ class RPGMTL():
                 return
 
     # start the autosave task
-    async def init_autosave(self : RPGMTL, app : web.Application):
+    async def init_autosave(self : RPGMTL, app : web.Application) -> None:
         self.autosave_task = asyncio.create_task(self.autosave())
 
     # stop the autosave task
-    async def stop_autosave(self : RPGMTL, app : web.Application):
+    async def stop_autosave(self : RPGMTL, app : web.Application) -> None:
         self.autosave_task.cancel()
+
+    def load_ip_whitelist(self : RPGMTL) -> None:
+        try:
+            with open("whitelist.txt", mode="r", encoding="utf-8") as f:
+                ip_list = f.read()
+        except:
+            self.log.warning("Failed to open whitelist.txt, a new file has been created")
+            try:
+                with open("whitelist.txt", mode="w", encoding="utf-8") as f:
+                    pass
+            except:
+                pass
+            return
+        self.allowed_ips = [ip.strip() for ip in ip_list.replace("\r", "").split("\n")]
+        self.log.info("{} IP are allowed".format(len(self.allowed_ips)))
 
     # check the projects folder and return a list of folder containing config.json files inside
     def load_project_list(self : RPGMTL) -> list[str]:
@@ -1259,13 +1276,14 @@ class RPGMTL():
             self.history = self.history[:self.HISTORY_LIMIT]
         self.settings_modified = True
 
-    # Start RPGMTL and run the server
-    def run(self : RPGMTL) -> None:
+    # parse command line arguments
+    def parse_command_line(self : RPGMTL) -> None:
         # Parse command line
         parser : argparse.ArgumentParser = argparse.ArgumentParser(prog="rpgmtl.py")
         command = parser.add_argument_group('command', 'Optional commands')
         command.add_argument('-s', '--https', help="provide paths to your SSL certificate and key", nargs=2, default=None)
-        command.add_argument('-n', '--http', help="clear SSL certificate settings and force HTTP", action='store_const', const=True, default=False, metavar='')
+        command.add_argument('-n', '--http', help="clear SSL certificate settings and force HTTP", action='store_const', const=True, default=False, metavar='FILES')
+        command.add_argument('-i', '--ip', help="set the IP filter status. Add 1, on, enable, enabled, 0, off, disable or disabled to set it.", nargs=1, default=None, metavar='STATE')
         command.add_argument('-d', '--debug', help="remove some strings from the standard output for clarity", action='store_const', const=True, default=False, metavar='')
         args : argparse.Namespace = parser.parse_args()
         
@@ -1274,7 +1292,6 @@ class RPGMTL():
             self.loggers['aiohttp.access'].propagate = False
         
         # Check HTTPS/SSL
-        ssl_context = None
         if args.http:
             if "https_cert" in self.settings:
                 self.settings.pop("https_cert")
@@ -1287,18 +1304,36 @@ class RPGMTL():
                     ssl_context.load_cert_chain(args.https[0], args.https[1])
                     self.settings["https_cert"] = [args.https[0], args.https[1]]
                     self.settings_modified = True
-                except:
-                    ssl_context = None
-            if ssl_context is None and "https_cert" in self.settings:
-                try:
-                    ssl_context = ssl.create_default_context(ssl.Purpose.CLIENT_AUTH)
-                    ssl_context.load_cert_chain(self.settings["https_cert"][0], self.settings["https_cert"][1])
-                except:
-                    ssl_context = None
+                    self.log.info("HTTPS Certificates are set")
+                except Exception as e:
+                    self.log.error("Failed to set HTTPS Certificates, Exception: " + str(e))
+        if args.ip is not None:
+            match args.ip[0].lower():
+                case "1"|"true"|"on"|"enable"|"enabled":
+                    self.settings["ip_filter"] = True
+                    self.settings_modified = True
+                    self.log.info("IP Filter is enabled")
+                case "0"|"false"|"off"|"disable"|"disabled":
+                    self.settings["ip_filter"] = False
+                    self.settings_modified = True
+                    self.log.info("IP Filter is disabled")
+                case _:
+                    self.log.error("Unknown value for -i/--ip parameter.")
+
+    # Start RPGMTL and run the server
+    def run(self : RPGMTL) -> None:
+        # Init
+        ssl_context = None
+        if "https_cert" in self.settings:
+            try:
+                ssl_context = ssl.create_default_context(ssl.Purpose.CLIENT_AUTH)
+                ssl_context.load_cert_chain(self.settings["https_cert"][0], self.settings["https_cert"][1])
+            except:
+                ssl_context = None
         if ssl_context is not None:
             self.log.info("SSL is enabled")
-            
-        # Init
+        if self.settings.get("ip_filter", False):
+            self.load_ip_whitelist()
         self.load_project_list()
         
         # Start
@@ -1314,6 +1349,19 @@ class RPGMTL():
     ######################################################
     # Request Responses start here
     ######################################################
+
+    @web.middleware
+    async def ip_whitelist(self, request, handler):
+        """
+        This middleware checks if the client's IP address is in the whitelist.
+        """
+        if self.settings.get("ip_filter", False):
+            # peername is a tuple (host, port) from the transport socket
+            # we get the host, i.e. the IP address.
+            client_ip = request.transport.get_extra_info('peername')[0] if request.transport else None
+            if client_ip not in self.allowed_ips:
+                raise web.HTTPForbidden(reason=f"IP {client_ip} not allowed")
+        return await handler(request)
 
     # Request the HTML page
     async def index(self : RPGMTL, request : web.Request) -> web.Response:
