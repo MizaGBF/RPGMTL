@@ -2,6 +2,7 @@ from __future__ import annotations
 from . import Plugin, FileType
 import io
 import os
+import json
 import struct
 import zlib
 from enum import Enum
@@ -13,28 +14,25 @@ from typing import Any
 # ##########################################################
 # Checksum classes are used name and file data validation
 # ##########################################################
-class Checksum:
-    def compute_hash(self : Checksum, data : bytes) -> int:
+class YChecksum:
+    def compute_hash(self : YChecksum, data : bytes) -> int:
         raise NotImplementedError
 
-    def compute_stream(self : Checksum, stream: io.BufferedReader, length: int) -> int:
+    def compute_stream(self : YChecksum, stream: io.BufferedReader, length: int) -> int:
         data = stream.read(length)
         return self.compute_hash(data)
 
-
-class Adler32(Checksum):
-    def compute_hash(self : Adler32, data : bytes) -> int:
+class YAdler32(YChecksum):
+    def compute_hash(self : YAdler32, data : bytes) -> int:
         # zlib.adler32 returns signed int in Python3, mask to 32-bit unsigned
         return zlib.adler32(data) & 0xFFFFFFFF
 
-
-class Crc32(Checksum):
-    def compute_hash(self : Crc32, data : bytes) -> int:
+class YCrc32(YChecksum):
+    def compute_hash(self : YCrc32, data : bytes) -> int:
         return zlib.crc32(data) & 0xFFFFFFFF
 
-
-class MurmurHash2(Checksum):
-    def compute_hash(self : MurmurHash2, data : bytes) -> int:
+class YMurmurHash2(YChecksum):
+    def compute_hash(self : YMurmurHash2, data : bytes) -> int:
         # Implementation of MurmurHash2 (32-bit)
         seed = 0
         data_length = len(data)
@@ -76,8 +74,6 @@ class MurmurHash2(Checksum):
 
         return h
 
-
-
 # ##########################################################
 # YPFEntry describes a file Entry
 # ##########################################################
@@ -97,7 +93,6 @@ class YPFEntry:
         self.offset: int = 0
         self.data_checksum: int = 0
 
-
 # ##########################################################
 # YPFHeader describes a YPF file header
 # ##########################################################
@@ -107,8 +102,8 @@ class YPFHeader:
     def __init__(self : YPFHeader, stream : io.BufferedReader) -> None:
         self.archived_files : list[YPFEntry] = []
         self.archived_files_header_size: int = 0
-        self.name_checksum: Checksum = None
-        self.data_checksum: Checksum = None
+        self.name_checksum: YChecksum = None
+        self.data_checksum: YChecksum = None
         self.file_name_encryption_key: int = 0
         self.length_swapping_table: bytes = b''
 
@@ -152,11 +147,11 @@ class YPFHeader:
 
     def _set_checksum(self : YPFHeader) -> None:
         if self.version < 479:
-            self.data_checksum = Adler32()
-            self.name_checksum = Crc32()
+            self.data_checksum = YAdler32()
+            self.name_checksum = YCrc32()
         else:
-            self.data_checksum = MurmurHash2()
-            self.name_checksum = MurmurHash2()
+            self.data_checksum = YMurmurHash2()
+            self.name_checksum = YMurmurHash2()
 
     def _assume_file_name_encryption_key(self : YPFHeader) -> None:
         if self.version == 290:
@@ -236,7 +231,6 @@ class YPFHeader:
                 return e
         return None
 
-
 # ##########################################################
 # The RPGMTL plugin
 # Extract and look for ybn files
@@ -247,7 +241,7 @@ class YPF(Plugin):
     def __init__(self : YPF):
         super().__init__()
         self.name : str = "YPF"
-        self.description : str = " v1.0\nExtract content from YPF files"
+        self.description : str = " v1.1\nExtract content from YPF files"
 
     def extract(
         self : YPF,
@@ -259,6 +253,9 @@ class YPF(Plugin):
         if full_path.suffix.lower() != ".ypf":
             return False
         try:
+            ybn_keys : dict[str, int] = {}
+            ybn_msgs : dict[int, int] = {}
+            ybn_calls : dict[int, int] = {}
             with open(full_path, mode="rb") as stream:
                 # Extract the header
                 ypfh = YPFHeader(stream)
@@ -287,6 +284,7 @@ class YPF(Plugin):
                                     os.makedirs(file_path.parent.as_posix(), exist_ok=True)
                                 except Exception as e:
                                     self.owner.log.error("[YPF] Couldn't create the following folder:" + file_path.parent.as_posix() + "\n" + self.trbk(e))
+
                             # write file
                             with open(file_path, mode="wb") as out:
                                 out.write(data)
@@ -298,6 +296,30 @@ class YPF(Plugin):
                                 "translated":0,
                                 "disabled_strings":0,
                             }
+                            # retrieve data to help with parsing later
+                            if "YBN" in self.owner.plugins:
+                                key, msg_op, call_op = self.owner.plugins["YBN"].get_codes(data, file_path)
+                                if key is not None:
+                                    ybn_keys[key] = ybn_keys.get(key, 0) + 1
+                                    if msg_op != 0:
+                                        ybn_msgs[msg_op] = ybn_msgs.get(msg_op, 0) + 1
+                                    if call_op != 0:
+                                        ybn_calls[call_op] = ybn_calls.get(call_op, 0) + 1
+                # we take note of most commonly used key, msg_opcode and call_opcode in a separate, commong json file
+                if "YBN" in self.owner.plugins:
+                    with open(target_dir / "ypf.json", mode="w", encoding="utf-8") as f:
+                        d = {
+                            "key":None,
+                            "msg":None,
+                            "op":None
+                        }
+                        if len(ybn_keys) > 0:
+                            d["key"] = max(ybn_keys, key=ybn_keys.get)
+                        if len(ybn_msgs) > 0:
+                            d["msg"] = max(ybn_msgs, key=ybn_msgs.get)
+                        if len(ybn_calls) > 0:
+                            d["op"] = max(ybn_calls, key=ybn_calls.get)
+                        json.dump(d, f)
                 return True
         except Exception as e:
             self.owner.log.error("[YPF] Failed to extract content from:" + full_path.as_posix() + "\n" + self.owner.trbk(e))
