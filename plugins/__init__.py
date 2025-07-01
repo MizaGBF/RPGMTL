@@ -161,7 +161,7 @@ class Plugin:
         return content
 
     # No need to implement the methods below unless you have the need for it
-    def reset(self : Plugin) -> None:
+    def reset(self : Plugin, project_path : Path = Path(), filename : str = "") -> None:
         # If you reimplement this one, be sure to call super on this base version
         # Reset the encoding setting before patching
         self._enc_cur_ = 0

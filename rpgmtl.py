@@ -792,16 +792,17 @@ class RPGMTL():
 
     # extract the strings from given file
     def extract_game_file(self : RPGMTL, name : str, filename : str) -> tuple[bool, list[list[str]]]:
+        p_path : Path = Path('projects', name, 'originals')
         for p in self.plugins.values():
             if p.match(filename, False): # this file match with the plugin
-                p.reset() # reset plugin state
+                p.reset(p_path, filename) # reset plugin state
                 p.set_settings(self.settings | self.projects[name]['settings']) # and set setting
                 # read the content
                 if p.is_streaming(filename, False):
-                    with open('projects/' + name + '/originals/' + filename, mode="rb") as infile:
+                    with open((p_path / filename).as_posix(), mode="rb") as infile:
                         return True, p.read_stream(name, filename, infile)
                 else:
-                    with open('projects/' + name + '/originals/' + filename, mode="rb") as infile:
+                    with open((p_path / filename).as_posix(), mode="rb") as infile:
                         content = infile.read()
                 return True, p.read(filename, content)
         return False, []
@@ -809,17 +810,18 @@ class RPGMTL():
     # patch the strings from given file, and write to the release folder
     # return value is a tuple of counts, for successfully patched files and errors
     def patch_game_file(self : RPGMTL, name : str, filename : str, release_folder : PurePath) -> tuple[int, int]:
+        p_path : Path = Path('projects', name, 'originals')
         totalerr : int = 0
         for p in self.plugins.values():
             try:
                 if p.match(filename, False): # file matches the plugin
-                    p.reset()
+                    p.reset(p_path, filename)
                     p.set_settings(self.settings | self.projects[name]['settings'])
                     if p.is_streaming(filename, False):
-                        with open('projects/' + name + '/originals/' + filename, mode="rb") as iofile:
+                        with open((p_path / filename).as_posix(), mode="rb") as iofile:
                             return p.write_stream(name, filename, iofile, Path(release_folder, filename))
                     else:
-                        with open('projects/' + name + '/originals/' + filename, mode="rb") as iofile:
+                        with open((p_path / filename).as_posix(), mode="rb") as iofile:
                             content = iofile.read()
                         content, modified = p.write(name, filename, content) # write content
                         content, modified, errcount = self.apply_fixes(name, filename, content, modified) # apply fixes
