@@ -71,7 +71,7 @@ class TLGemini(TranslatorPlugin):
     def __init__(self : TLGemini) -> None:
         super().__init__()
         self.name : str = "TL Gemini"
-        self.description : str = " v0.4\nWrapper around the google-genai module to prompt Gemini. (EXPERIMENTAL)"
+        self.description : str = " v0.5\nWrapper around the google-genai module to prompt Gemini. (EXPERIMENTAL)"
         self.instance = None
         self.key_in_use = None
 
@@ -80,8 +80,8 @@ class TLGemini(TranslatorPlugin):
 
     def get_setting_infos(self : TLGemini) -> dict[str, list]:
         return {
-            "gemini_api_key": ["Set the Google Studio API Key", "str", "", None],
-            "gemini_model": ["Set the Gemini Model String", "str", "gemini-2.5-flash-preview-04-17", None],
+            "gemini_api_key": ["Set the Google Studio <a href=\"https://aistudio.google.com/apikey\">API Key</a>", "str", "", None],
+            "gemini_model": ["Set the Gemini <a href=\"https://aistudio.google.com/changelog\">Model String</a> (<a href=\"https://ai.google.dev/gemini-api/docs/rate-limits\">Rate Limits</a>)", "str", "gemini-2.5-flash", None],
             "gemini_src_language": ["Set the Source Language", "str", "Japanese", None],
             "gemini_target_language": ["Set the Target Language", "str", "English", None],
             "gemini_extra_context": ["Set extra informations or commands for the AI", "str", "", None]
