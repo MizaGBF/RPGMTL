@@ -250,7 +250,7 @@ class YPF(Plugin):
         target_dir : PurePath,
         backup_path : PurePath
     ) -> bool:
-        if full_path.suffix.lower() != ".ypf":
+        if full_path.name.lower() != "ysbin.ypf":
             return False
         try:
             ybn_keys : dict[str, int] = {}
@@ -262,32 +262,29 @@ class YPF(Plugin):
                 # Go through the files
                 for entry in ypfh.archived_files:
                     file_path : PurePath = target_dir / entry.file_name
+                    # Validate the file
+                    ypfh.validate_data_integrity(stream, entry.offset, entry.compressed_file_size, entry.data_checksum)
+                    # Read it
+                    stream.seek(entry.offset)
+                    data = stream.read(entry.compressed_file_size)
+                    # Decompress
+                    if entry.is_compressed:
+                        data = zlib.decompress(data)
+                        # Verify size
+                        if len(data) != entry.raw_file_size:
+                            raise Exception("[YPF] Invalid decompressed file size")
+                    # create directory if not found
+                    if not os.path.isdir(file_path.parent):
+                        try:
+                            # create dir if needed
+                            os.makedirs(file_path.parent.as_posix(), exist_ok=True)
+                        except Exception as e:
+                            self.owner.log.error("[YPF] Couldn't create the following folder:" + file_path.parent.as_posix() + "\n" + self.trbk(e))
+                    # write file
+                    with open(file_path, mode="wb") as out:
+                        out.write(data)
                     for p in self.owner.plugins.values():
                         if p.match(file_path.name, False):
-                            # Validate the file
-                            ypfh.validate_data_integrity(stream, entry.offset, entry.compressed_file_size, entry.data_checksum)
-                            # Read it
-                            stream.seek(entry.offset)
-                            data = stream.read(entry.compressed_file_size)
-                            # Decompress
-                            if entry.is_compressed:
-                                data = zlib.decompress(data)
-                                # Verify size
-                                if len(data) != entry.raw_file_size:
-                                    raise Exception("[YPF] Invalid decompressed file size")
-
-                            # Add file to project
-                            # create directory if not found
-                            if not os.path.isdir(file_path.parent):
-                                try:
-                                    # create dir if needed
-                                    os.makedirs(file_path.parent.as_posix(), exist_ok=True)
-                                except Exception as e:
-                                    self.owner.log.error("[YPF] Couldn't create the following folder:" + file_path.parent.as_posix() + "\n" + self.trbk(e))
-
-                            # write file
-                            with open(file_path, mode="wb") as out:
-                                out.write(data)
                             # add to update_file_dict
                             update_file_dict[(file_path.relative_to(backup_path)).as_posix()] = {
                                 "file_type":FileType.NORMAL,
@@ -297,8 +294,8 @@ class YPF(Plugin):
                                 "disabled_strings":0,
                             }
                             # retrieve data to help with parsing later
-                            if "YBN" in self.owner.plugins:
-                                key, msg_op, call_op = self.owner.plugins["YBN"].get_codes(data, file_path)
+                            if p.name == "YBN":
+                                key, msg_op, call_op = p.get_codes(data, file_path)
                                 if key is not None:
                                     ybn_keys[key] = ybn_keys.get(key, 0) + 1
                                     if msg_op != 0:
