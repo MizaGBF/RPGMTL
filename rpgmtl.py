@@ -1030,7 +1030,7 @@ class RPGMTL():
             if (self.projects[name]["files"][f]["ignored"]
                     or (ftype == FileType.NORMAL and len(self.strings[name]["files"][f]) == 0)
                     or ftype in (FileType.VIRTUAL, FileType.VIRTUAL_UNDEFINED)):
-                # skip ignored files, virtual files or empty normal files
+                # skip ignored files and virtual files
                 continue
             r : tuple[int, int] = self.patch_game_file(name, f, release_folder)
             if r[0] > 0:

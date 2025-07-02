@@ -4,5 +4,6 @@
   
 ## Quick Overview  
   
-The YPF targets YPF Archive files from the YU-RIS Engine.  
-For now, it only extracts YBN files.  
+The YPF plugin targets YPF Archive files from the YU-RIS Engine.  
+It only extracts YBN files.  
+A json file will be created near archive content, containing the YBN decryption key and opcodes (It requires the YBN plugin).  
