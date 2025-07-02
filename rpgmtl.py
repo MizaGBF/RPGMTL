@@ -1410,7 +1410,6 @@ class RPGMTL():
                         path_dir : Path = Path(dir)
                         if path_dir in path_exe.parents or path_dir == path_exe:
                             return web.json_response({"result":"bad", "message":"Selecting an executable in the {} system directory or sub-directory is forbidden.".format(dir_name)})
-        return web.json_response({"result":"bad", "message":"DISABLED"})
         if name is None: # new project
             return web.json_response({"result":"ok", "data":{"path":file_path}, "message":"Please select a project name."})
         else: # update existing project
