@@ -1056,7 +1056,7 @@ class RPGMTL():
         if patch_count > 0:
             self.log.info("Patched {} files for project {} with {} errors, available in the release folder".format(patch_count, name, err))
         else:
-            self.log.info("Patched {} files for project {}with {} errors,".format(patch_count, name, err))
+            self.log.info("Patched {} files for project {} with {} errors,".format(patch_count, name, err))
         return patch_count, err
 
     # execute and apply runtime fix/patch
