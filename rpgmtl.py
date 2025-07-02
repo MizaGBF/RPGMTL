@@ -1387,6 +1387,30 @@ class RPGMTL():
         name = payload.get('name', None)
         path = payload.get('path', None)
         file_path = self.select_exe(path, name)
+        cwd : Path = Path.cwd().resolve()
+        path_exe : Path = Path(file_path).resolve()
+        if path_exe in cwd.parents or path_exe == cwd:
+            return web.json_response({"result":"bad", "message":"RPGMTL is present further down in the selected folder."})
+        else:
+            if not self.is_posix: # windows
+                if path_exe.as_posix() == "C:/":
+                    return web.json_response({"result":"bad", "message":"Selecting an executable in the root of the Windows C: Drive is forbidden."})
+                elif path_exe.as_posix() in ("C:/Program Files", "C:/Program Files (x86)", "C:/ProgramData"):
+                    return web.json_response({"result":"bad", "message":"Selecting an executable in the root of the Program Files folders is forbidden."})
+                else:
+                    for dir, dir_name in (("C:/Nvidia", "Nvidia"), ("C:/Windows", "Windows"), ("C:/sources", "Sources")):
+                        path_dir : Path = Path(dir)
+                        if path_dir in path_exe.parents or path_dir == path_exe:
+                            return web.json_response({"result":"bad", "message":"Selecting an executable in the {} system directory or sub-directory is forbidden.".format(dir_name)})
+            else: # unix
+                if path_exe.as_posix() == "/":
+                    return web.json_response({"result":"bad", "message":"Selecting an executable in the root directory is forbidden."})
+                else:
+                    for dir, dir_name in (("/boot", "boot"), ("/dev", "dev"), ("/etc", "etc"), ("/lib", "lib"), ("/lib64", "lib64"), ("/proc", "proc"), ("/sys", "sys"), ("/usr", "usr")):
+                        path_dir : Path = Path(dir)
+                        if path_dir in path_exe.parents or path_dir == path_exe:
+                            return web.json_response({"result":"bad", "message":"Selecting an executable in the {} system directory or sub-directory is forbidden.".format(dir_name)})
+        return web.json_response({"result":"bad", "message":"DISABLED"})
         if name is None: # new project
             return web.json_response({"result":"ok", "data":{"path":file_path}, "message":"Please select a project name."})
         else: # update existing project
