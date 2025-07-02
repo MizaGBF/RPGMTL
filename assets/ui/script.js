@@ -1816,6 +1816,7 @@ function open_file(data)
 				file_same_folder.push(f);
 			}
 		}
+		file_same_folder.sort();
 		if(file_same_folder.length > 1)
 		{
 			let f_index = file_same_folder.indexOf(lastfileopened);
