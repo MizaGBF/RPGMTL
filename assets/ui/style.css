@@ -364,6 +364,22 @@ html, body {
 	background: #333d3d;
 }
 
+a:link {
+	color: #00ffff;
+}
+
+a:visited {
+	color: #aaffff;
+}
+
+a:hover {
+	color: #ffaaaa;
+}
+
+a:active {
+	color: #ff0000;
+}
+
 .red {
 	background: #c42323;
 }
