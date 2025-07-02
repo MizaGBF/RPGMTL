@@ -695,61 +695,54 @@ class YBN(Plugin):
         appended_new_data = bytearray()
         
         new_offset = script.header.resource_size
-        arg_cursor = 0 # Tracks current YArg's start position in modified_arg_data_bytearray
-
+        arg_cursor = 0 # Tracks current YArg's start position in arg_data
         for inst_idx, inst in enumerate(script.insts):
-            if inst.op == ops.msg_op:
-                arg = inst.args[0]
-                raw_str_bytes: bytes|None = None
-                # Go logic: Type 3 uses res.Res, otherwise res.ResRaw
-                if arg.type == 3 and arg.res and arg.res.res is not None:
-                    raw_str_bytes = arg.res.res
-                elif arg.res and arg.res.res_raw is not None:
-                    raw_str_bytes = arg.res.res_raw
+            is_msg_op = inst.op == ops.msg_op
+            is_call_op_for_extraction = False
+            if inst.op == ops.call_op and inst.args and inst.args[0].res and inst.args[0].res.res is not None: # Ensure res and res.res exist
+                 is_call_op_for_extraction = self.is_function_to_extract(inst.args[0].res.res)
+            is_other_relevant_op = ops.other_op and inst.op in ops.other_op
+            for arg_idx, arg in enumerate(inst.args):
+                # Calculate offsets for YArg.ResSize and YArg.ResOffset within modified_arg_data_bytearray
+                # YArg structure: Value(2), Type(2), ResSize(4), ResOffset(4)
+                size_field_offset = arg_cursor + 4
+                offset_field_offset = arg_cursor + 8
 
-                if raw_str_bytes is not None:
-                    string = helper.apply_string(self.decode_string(raw_str_bytes), "Message")
-                    if helper.modified:
-                        # Resources can't be patched in place without causing a mess, so they must be appended
-                        size_field_offset = arg_cursor + 4
-                        offset_field_offset = arg_cursor + 8
+                should_process_this_arg = False
+                original = None
+                group = None
+                if is_msg_op and arg_idx == 0:
+                    should_process_this_arg = True
+                    if arg.type == 3 and arg.res and arg.res.res is not None:
+                        raw_str_bytes = arg.res.res
+                    elif arg.res and arg.res.res_raw is not None:
+                        raw_str_bytes = arg.res.res_raw
+                    original = self.decode_string(raw_str_bytes)
+                    group = "Message"
+                elif is_call_op_for_extraction and arg_idx > 0: # Skip func name arg
+                    if arg.type == 3 and arg.res and arg.res.res is not None and arg.res.res != b'""' and arg.res.res != b"''":
+                        should_process_this_arg = True
+                        original = self.decode_string(arg.res.res)
+                        group = "Function"
+                elif is_other_relevant_op:
+                    if arg.type == 3 and arg.res and arg.res.res is not None and arg.res.res != b'""' and arg.res.res != b"''":
+                        should_process_this_arg = True
+                        original = self.decode_string(arg.res.res)
+                        group = f"Other {inst.op}"
+
+                if should_process_this_arg:
+                    string = helper.apply_string(original, group)
+                    if helper.str_modified:
                         new_res = self.pack_line(arg, string)
+
+                        # Update ResSize and ResOffset in the mutable modified_arg_data_bytearray
                         struct.pack_into("<I", arg_data, size_field_offset, len(new_res))
                         struct.pack_into("<I", arg_data, offset_field_offset, new_offset)
 
                         appended_new_data.extend(new_res)
                         new_offset += len(new_res)
 
-            elif inst.op == ops.call_op:
-                func_name_arg = inst.args[0]
-                if func_name_arg.res and func_name_arg.res.res and self.is_function_to_extract(func_name_arg.res.res):
-                    for arg_sub_idx, arg in enumerate(inst.args[1:]):
-                        if arg.type == 3 and arg.res and arg.res.res is not None and arg.res.res != b'""' and arg.res.res != b"''":
-                            string = helper.apply_string(self.decode_string(arg.res.res), "Function")
-                            if helper.modified:
-                                size_field_offset = arg_cursor + 4
-                                offset_field_offset = arg_cursor + 8
-                                new_res = self.pack_line(arg, string)
-                                struct.pack_into("<I", arg_data, size_field_offset, len(new_res))
-                                struct.pack_into("<I", arg_data, offset_field_offset, new_offset)
-
-                                appended_new_data.extend(new_res)
-                                new_offset += len(new_res)
-
-            elif ops.other_op and inst.op in ops.other_op:
-                for arg_idx, arg in enumerate(inst.args):
-                     if arg.type == 3 and arg.res and arg.res.res is not None and arg.res.res != b'""' and arg.res.res != b"''":
-                        string = helper.apply_string(self.decode_string(arg.res.res), f"Other {inst.op}")
-                        if helper.modified:
-                            size_field_offset = arg_cursor + 4
-                            offset_field_offset = arg_cursor + 8
-                            new_res = self.pack_line(arg, string)
-                            struct.pack_into("<I", arg_data, size_field_offset, len(new_res))
-                            struct.pack_into("<I", arg_data, offset_field_offset, new_offset)
-
-                            appended_new_data.extend(new_res)
-                            new_offset += len(new_res)
-
+                arg_cursor += YArg.size() # Advance to the next YArg's position
         # Assemble the new YBN file
         final_ybn_buffer = BytesIO()
 
