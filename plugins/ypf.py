@@ -81,6 +81,7 @@ class YPFEntry:
     class FileType(Enum):
         FILE = 0
         DIRECTORY = 1
+        UNSUPPORTED = -1
         # Add other types if necessary
 
     def __init__(self : YPFHeader) -> None:
@@ -198,7 +199,7 @@ class YPFHeader:
         try:
             entry.type = YPFEntry.FileType(ft)
         except Exception:
-            raise Exception("[YPF] Unexpected File Type")
+            entry.type = YPFEntry.FileType.UNSUPPORTED
         # Compressed flag
         entry.is_compressed = (stream.read(1)[0] == 1)
         # Sizes
@@ -241,7 +242,7 @@ class YPF(Plugin):
     def __init__(self : YPF):
         super().__init__()
         self.name : str = "YPF"
-        self.description : str = " v1.1\nExtract content from YPF files"
+        self.description : str = " v1.2\nExtract content from YPF files"
 
     def extract(
         self : YPF,
@@ -250,7 +251,7 @@ class YPF(Plugin):
         target_dir : PurePath,
         backup_path : PurePath
     ) -> bool:
-        if full_path.name.lower() != "ysbin.ypf":
+        if full_path.suffix.lower() != ".ypf":
             return False
         try:
             ybn_keys : dict[str, int] = {}
@@ -262,6 +263,8 @@ class YPF(Plugin):
                 # Go through the files
                 for entry in ypfh.archived_files:
                     file_path : PurePath = target_dir / entry.file_name
+                    if file_path.suffix.lower() not in (".ybn",):
+                        continue
                     # Validate the file
                     ypfh.validate_data_integrity(stream, entry.offset, entry.compressed_file_size, entry.data_checksum)
                     # Read it
