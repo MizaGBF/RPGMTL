@@ -18,3 +18,7 @@ Game Folder/
 └── game.exe
 ```  
 So, if you wish to test or distribute a patch, make sure to but the `ybin` folder at the root of the game folder.  
+  
+## Reference  
+  
+Online Engine Manual: [http://yu-ris.net/manual/eris/html/top.html](http://yu-ris.net/manual/eris/html/top.html).  

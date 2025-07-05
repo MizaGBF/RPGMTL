@@ -3,7 +3,6 @@ from . import Plugin, WalkHelper
 import struct
 from collections import Counter
 from io import BytesIO
-import codecs
 from pathlib import Path
 import json
 
@@ -620,10 +619,10 @@ class YBN(Plugin):
             self.owner.log.warning(f"[YBN] Unknown or empty codepage, defaulting to {codepage_name}.")
 
         try:
-            return codecs.decode(byte_str, codepage_name, errors='replace')
+            return byte_str.decode(codepage_name, errors='replace')
         except LookupError:
             self.owner.log.warning(f"[YBN] Codepage {codepage_name} not found. Trying utf-8.")
-            return codecs.decode(byte_str, "utf-8", errors='replace')
+            return byte_str.decode("utf-8", errors='replace')
         except Exception as e:
             self.owner.log.error(f"[YBN] Error decoding string with {codepage_name}: {e}. Falling back to latin-1.")
             return byte_str.decode('latin-1', errors='replace')
@@ -634,10 +633,10 @@ class YBN(Plugin):
             codepage_name = "shift_jis" # Default fallback
             self.owner.log.warning(f"[YBN] Unknown or empty codepage for encoding, defaulting to {codepage_name}.")
         try:
-            return codecs.encode(text_str, codepage_name, errors='replace')
+            return text_str.encode(codepage_name, errors='replace')
         except LookupError:
             self.owner.log.warning(f"[YBN] Codepage {codepage_name} not found for encoding. Trying utf-8.")
-            return codecs.encode(text_str, "utf-8", errors='replace')
+            return text_str.encode("utf-8", errors='replace')
         except Exception as e:
             self.owner.log.error(f"[YBN] encoding string with {codepage_name}: {e}. Falling back to latin-1.")
             return text_str.encode('latin-1', errors='replace')
