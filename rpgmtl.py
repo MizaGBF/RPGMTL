@@ -483,7 +483,7 @@ class RPGMTL():
             # initialize config.json
             self.projects[name] = {
                 "version":0,
-                "settings":self.settings,
+                "settings":{},
                 "path":path + "/",
                 "patches":{}
             }
