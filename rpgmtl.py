@@ -72,7 +72,7 @@ class RPGMTL():
             self.loggers[l] = logging.getLogger(l)
             self.loggers[l].addHandler(handler)
         self.log = self.loggers['rpgmtl']
-        self.log.info("RPGMTL is starting up...")
+        self.log.info("RPGMTL v{} is starting up...".format(self.VERSION))
         # Web server
         self.app : web.Application = web.Application(middlewares=[self.ip_whitelist])
         # Autosave system
