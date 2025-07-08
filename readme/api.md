@@ -117,7 +117,6 @@ Return in data: project 'name', project 'config'
 ```
 /api/unload
 Payload: project 'name'
-Return in data: ??
 ```
   
 ```
