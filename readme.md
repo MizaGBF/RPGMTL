@@ -11,7 +11,7 @@ The list of supported files is currently:
 - Ruby Marshal (.rxdata, .rvdata, .rvdata2 for RPG Maker XP to VX Ace)  
 - RGSSAD Archives (.rgssad, .rgss2a, .rgss3a for RPG Maker XP to VX Ace)  
 - MED (md_scr.med archives, used by Triangle and Lusterise games)  
-- YPF Archives and YBN Scripts (YU-RIS Engine) (EXPERIMENTAL)  
+- YPF Archives and YBN Scripts (YU-RIS Engine)  
 - NSA (arc.nsa archives from NScripter engine) (EXPERIMENTAL)  
   
 Eventually planned (No ETA):  
