@@ -16,7 +16,7 @@ Future (possible) improvements or bugs are noted here:
   
 ### Translator
   
-- [ ] Gemini: Improve JSON validation.  
+- [x] Gemini: Improve JSON validation.  
 - [ ] Gemini: Add some sort of automatic character/item name table.  
 - [ ] Rework the different TranslatorPlugin type into something cleaner.  
   

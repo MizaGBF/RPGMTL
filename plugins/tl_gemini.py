@@ -2,6 +2,7 @@ from __future__ import annotations
 from . import TranslatorPlugin, TranslatorBatchFormat
 try:
     from google import genai
+    from pydantic import BaseModel
 except:
     raise Exception("Failed to import google-genai.\nMake sure it's installed using: pip install -U google-genai")
 from typing import Any
@@ -10,6 +11,7 @@ import re
 
 PROMPT : str = """You are the World's best Video Game Translator.
 Your task is to take a JSON object formatted in such manner:
+```json
 {
     "file":"FILE",
     "number":BATCH_NUMBER,
@@ -27,51 +29,71 @@ Your task is to take a JSON object formatted in such manner:
         }
     ]
 }
-The strings are in order of occurence.
-
-To complete your task, you must absolutely do the following:
-  1. The User requires that you translate from $SOURCE$ to $TARGET$.
-  2. Don't translate strings with an existing translation.
-  3. Preserve placeholders (e.g. {playerName}, %VAR%, <tag>), punctuation, and code syntax.
-  4. Return a JSON object, containing the STRING_ID of the strings you translated, and the corresponding translation. It's not necessary to indent it.
-  5. Do NOT include any comments, explanations, or extra fields. ONLY return the JSON object.
-$EXTRA$
-Simple Example for Japanese to English:  
-Input:
+```
+Example:
+```json
 {
     "file":"Game Script.json",
     "number":35,
     "strings":[
         {
+            "id":"2-1",
+            "parent":"Group 2: Message Jack",
+            "source":"昨日はすごく楽しかった！",
+            "translation":"It was so much fun yesterday!"
+        },
+        {
             "id":"2-2",
-            "parent":"Group 2: Text Box",
+            "parent":"Group 2: Message John",
             "source":"昨日何をしましたか？"
         },
         {
-            "id":"2-1",
-            "parent":"Group 2: Text Box",
-            "source":"私は昨日、映画を見ました。",
-            "translation":"I watched a movie yesterday."
+            "id":"2-3",
+            "parent":"Group 2: Message Jack",
+            "source":"私は映画を見ました。"
         }
     ]
 }
-Output:
-{
-    "2-2":"What did you do yesterday?"
-}
-    
-The batch that you must translate is the following:
+```
+You must translate them from $SOURCE$ to $TARGET$.
+The strings are in order of occurence.
+An existing translation may or may not be provided.
+Don't re-translate unless it's incorrect.
+Preserve placeholders (e.g. {playerName}, %VAR%, <tag>), punctuation, new line (e.g. \n), and code syntax.
+
+Produce JSON matching this specification:
+```json
+[
+    {"id":"STRING_ID", "translation":"TRANSLATED_STRING"}
+]
+```
+Example:
+```json
+[
+    {"id":"2-2", "translation":"What did you do yesterday?"},
+    {"id":"2-3", "translation":"I saw a movie."}
+]
+```
+Do NOT include any other text or formatting outside of the JSON object.
+Provide only the JSON object. No explanations, no 'Here is your translation:' or anything similar.
+$EXTRA$
+
+The user input:
 $INPUT$
 
-Now waiting your output.
+Your output:
 """
 JSON_SANITIZER = re.compile(r'(?P<key>"[^"]*"\s*:\s*)"(?P<content>.*?)"(?P<tail>(?=,|\}))', re.DOTALL)
+
+class GModel(BaseModel):
+    id: str
+    translation: str
 
 class TLGemini(TranslatorPlugin):
     def __init__(self : TLGemini) -> None:
         super().__init__()
         self.name : str = "TL Gemini"
-        self.description : str = " v0.5\nWrapper around the google-genai module to prompt Gemini. (EXPERIMENTAL)"
+        self.description : str = " v0.6\nWrapper around the google-genai module to prompt Gemini. (EXPERIMENTAL)"
         self.instance = None
         self.key_in_use = None
 
@@ -98,33 +120,31 @@ class TLGemini(TranslatorPlugin):
         except Exception as e:
              self.owner.log.error("[TL Gemini] Error in '_init_translator':\n" + self.owner.trbk(e))
 
-    def _sanitize(self : TLGemini, text : str) -> str:
-        def _repl(m):
-            # re-escape the inner content properly
-            escaped = json.dumps(m.group('content'), ensure_ascii=False)
-            # json.dumps wraps it in quotes, so just drop the extra quotes
-            return "{}{}{}".format(m.group('key'), escaped, m.group('tail'))
-        # run the replacement globally
-        return JSON_SANITIZER.sub(_repl, bad)
-
-    def parse_model_output(self : TLGemini, text : str) -> dict[str, str]:
-        start = text.find("{")
-        if start == -1:
-            raise Exception("[TL Gemini] Error in 'parse_model_output', failed to find the start of the JSON")
-        end = text.rfind("}")
-        if start == -1:
-            raise Exception("[TL Gemini] Error in 'parse_model_output', failed to find the end of the JSON")
-        return json.loads(text[start:end+1])
+    def parse_model_output(self : TLGemini, text : str, input_batch : dict[str, Any]) -> dict[str, str]:
+        id_set : set[str] = set()
+        for string in input_batch["strings"]:
+            id_set.add(string["id"])
+        output : list[dict[str, str]] = json.loads(text)
+        parsed : dict[str, str] = {}
+        for el in output:
+            if el.get("id", None) is not None and el.get("translation", None) is not None and el["id"] in id_set:
+                parsed[el["id"]] = el["translation"]
+        return parsed
 
     async def ask_gemini(self : TLGemini, batch : dict[str, Any], settings : dict[str, Any] = {}) -> dict[str, str]:
         self._init_translator(settings)
         extra_context : str = ""
         if settings["gemini_extra_context"].strip() != "":
-            extra_context = "  6. The User also specified the following: {}\n".format(settings["gemini_extra_context"])
+            extra_context = "\nThe User specified the following:\n{}".format(settings["gemini_extra_context"])
         response = self.instance.models.generate_content(
-            model=settings["gemini_model"], contents=PROMPT.replace("$TARGET$", settings["gemini_target_language"]).replace("$SOURCE$", settings["gemini_src_language"]).replace("$EXTRA$", extra_context).replace("$INPUT$", json.dumps(batch), 1)
+            model=settings["gemini_model"],
+            contents=PROMPT.replace("$TARGET$", settings["gemini_target_language"]).replace("$SOURCE$", settings["gemini_src_language"]).replace("$EXTRA$", extra_context).replace("$INPUT$", json.dumps(batch), 1),
+            config={
+                "response_mime_type": "application/json",
+                "response_schema": list[GModel]
+            }
         )
-        return self.parse_model_output(response.text)
+        return self.parse_model_output(response.text, batch)
 
     async def translate(self : TLGemini, string : str, settings : dict[str, Any] = {}) -> str|None:
         try:
