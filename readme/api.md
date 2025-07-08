@@ -115,6 +115,12 @@ Return in data: project 'name', project 'config'
 ```
   
 ```
+/api/unload
+Payload: project 'name'
+Return in data: ??
+```
+  
+```
 /api/browse
 Payload: project 'name', folder 'path'
 Return in data: project 'name', project 'config', folder 'path', list of 'files', list of 'folders'

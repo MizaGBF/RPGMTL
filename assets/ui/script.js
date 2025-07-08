@@ -1114,6 +1114,7 @@ function project_menu(data = null)
 					<li><b>Add a Fix</b> to add Python patches to apply during the release process (Check the README for details).</li>\
 					<li><b>Replace Strings in batch</b> open a menu to replace parts of strings by others, in your existing translations.</li>\
 					<li>Set your <b>Settings before<b/> extracting the strings.</li>\
+					<li><b>Unload the Project<b/> if you must do modifications on the local files, using external scripts or whatever.</li>\
 				</ul>\
 				<ul>\
 					<li><b>Update the Game Files</b> if it got updated or if you need to re-copy the files.</li>\
@@ -1155,6 +1156,11 @@ function project_menu(data = null)
 		addTo(fragment, "div", {cls:["interact"], onclick:function(){
 			postAPI("/api/translator", translator_menu, null, {name:prjname});
 		}}).innerHTML = '<img src="assets/images/translate.png"> Project Translator';
+		addTo(fragment, "div", {cls:["interact"], onclick:function(){
+			postAPI("/api/unload", function() {
+				postAPI("/api/main", project_list)
+			}, null, {name:prjname});
+		}}).innerHTML = '<img src="assets/images/cancel.png"> Unload the Project';
 		addTo(fragment, "div", {cls:["spacer"]});
 		addTo(fragment, "div", {cls:["interact"], onclick:function(){
 			local_browse("Update project files", "Select the Game executable.", 1);

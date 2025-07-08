@@ -94,6 +94,7 @@ class RPGMTL():
                 web.post('/api/update_translator', self.update_translator), # Update Translator
                 web.post('/api/settings', self.get_settings), # Open Settings
                 web.post('/api/update_settings', self.update_setting), # Update Settings
+                web.post('/api/unload', self.unload_project), # Unload project
                 web.post('/api/extract', self.generate_project), # Extract Strings
                 web.post('/api/release', self.release), # Create Translation Patch
                 web.post('/api/patches', self.open_patches), # Open Fix/Patch List
@@ -1547,6 +1548,22 @@ class RPGMTL():
             self.modified[name] = True
             settings = self.settings | self.projects[name]["settings"]
             return web.json_response({"result":"ok", "data":{"name":name, "config":self.projects[name], "settings":settings}})
+
+    # /api/unload
+    async def unload_project(self : RPGMTL, request : web.Request) -> web.Response:
+        payload = await request.json()
+        name = payload.get('name', None)
+        if name is None:
+            return web.json_response({"result":"bad", "message":"Bad request, missing 'name' parameter."}, status=400)
+        else:
+            self.save()
+            if name in self.strings:
+                self.strings.pop(name)
+            if name in self.projects:
+                self.projects.pop(name)
+            if name in self.modified:
+                self.modified.pop(name)
+            return web.json_response({"result":"ok", "data":{}, "message":"Project has been unloaded."})
 
     # /api/extract
     async def generate_project(self : RPGMTL, request : web.Request) -> web.Response:

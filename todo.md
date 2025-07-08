@@ -12,7 +12,7 @@ Future (possible) improvements or bugs are noted here:
 - [ ] A comment system for each line could be nice too.  
 - [ ] Add more settings to string search and replace strings.  
 - [ ] Add complete keyboard navigation/controls.  
-- [ ] Add Unload Project button.  
+- [x] Add Unload Project button.  
   
 ### Translator
   
