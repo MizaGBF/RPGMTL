@@ -1919,7 +1919,7 @@ function open_file(data)
 			if(this.classList.contains("selected") || window.event.ctrlKey) // confirmation / shortcut to insta confirm
 			{
 				this.classList.toggle("selected", false);
-				set_loading_text("Translating this file...");
+				set_loading_text("Translating this file, be patient...");
 				postAPI("/api/translate_file", update_string_list, function(){
 					bottom.style.display = "none";
 					postAPI("/api/browse", browse_files, null, {name:prjname, path:returnpath});
