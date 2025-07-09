@@ -145,7 +145,7 @@ function load_location()
 }
 
 // Reset major variables
-function clearVariables()
+function clear_variables()
 {
 	keypressenabled = false;
 	path = null;
@@ -249,7 +249,7 @@ document.onkeypress = function(e)
 
 // create and add a new element to a node, and return it
 // support various parameters
-function addTo(node, tagName, {cls = [], id = null, title = null, onload = null, onclick = null, onerror = null, br = true}={})
+function add_to(node, tagName, {cls = [], id = null, title = null, onload = null, onclick = null, onerror = null, br = true}={})
 {
 	let tag = document.createElement(tagName);
 	for(let i = 0; i < cls.length; ++i)
@@ -328,29 +328,29 @@ function reqAPI(type, url, success, failure, payload = null)
 }
 
 // Remove selected flag on a button
-function clearSelected(node)
+function clear_selected(node)
 {
 	node.classList.toggle("selected", false);
 }
 
 // display a popup with the given string for 4s
-function pushPopup(string)
+function push_popup(string)
 {
 	let div = document.createElement('div');
 	div.className = 'popup';
 	div.innerHTML = string;
 	document.body.appendChild(div);
-	setTimeout(rmPopup, 4000, div);
+	setTimeout(clear_popup, 4000, div);
 }
 
 // remove a popup
-function rmPopup(popup)
+function clear_popup(popup)
 {
 	popup.parentNode.removeChild(popup);
 }
 
 // clear the main area
-function clearMain()
+function clear_main()
 {
 	set_loading(false);
 	main.innerHTML = "";
@@ -358,7 +358,7 @@ function clearMain()
 }
 
 // update the main area with a fragment
-function updateMain(fragment)
+function update_main(fragment)
 {
 	/*
 		use requestAnimationFrame to make sure the fragment is properly calculated,
@@ -379,7 +379,7 @@ function processAPI(success, failure)
 	{
 		let json = JSON.parse(this.response);
 		if("message" in json)
-			pushPopup(json["message"]);
+			push_popup(json["message"]);
 		if(json["result"] == "ok") // good result
 		{
 			if("name" in json["data"] && "config" in json["data"]) // check data content (note: data MUST be present)
@@ -429,11 +429,11 @@ function update_top_bar(title, back_callback, help_callback = null, additions = 
 	if(!top_bar_elems.back) // meaning empty, initialization
 	{
 		let fragment = document.createDocumentFragment();
-		top_bar_elems.back = addTo(fragment, "div", {cls:["interact", "button"], title:"Back", br:false});
+		top_bar_elems.back = add_to(fragment, "div", {cls:["interact", "button"], title:"Back", br:false});
 		top_bar_elems.back.appendChild(document.createElement("img"));
-		top_bar_elems.title = addTo(fragment, "div", {cls:["inline", "text-wrapper"], br:false});
-		top_bar_elems.spacer = addTo(fragment, "div", {cls:["barfill"], br:false});
-		top_bar_elems.help = addTo(fragment, "div", {cls:["interact", "button"], title:"Help", br:false});
+		top_bar_elems.title = add_to(fragment, "div", {cls:["inline", "text-wrapper"], br:false});
+		top_bar_elems.spacer = add_to(fragment, "div", {cls:["barfill"], br:false});
+		top_bar_elems.help = add_to(fragment, "div", {cls:["interact", "button"], title:"Help", br:false});
 		top_bar_elems.help.innerHTML = '<img src="assets/images/help.png">';
 		bar.appendChild(fragment);
 	}
@@ -648,18 +648,18 @@ function update_top_bar(title, back_callback, help_callback = null, additions = 
 
 // add home button
 // utility function to not repeat the code everywhere
-function addHomeTo(fragment)
+function add_home_to(fragment)
 {
-	addTo(fragment, "div", {cls:["interact", "button"], title:"Project Select Page", br:false, onclick:function(){
+	add_to(fragment, "div", {cls:["interact", "button"], title:"Project Select Page", br:false, onclick:function(){
 		postAPI("/api/main", project_list);
 	}}).innerHTML = '<img src="assets/images/home.png">';
 }
 
 // add project button
-// same as addHomeTo but for the project button
-function addProjectTo(fragment)
+// same as add_home_to but for the project button
+function add_project_to(fragment)
 {
-	addTo(fragment, "div", {cls:["interact", "button"], title:"Project Menu", br:false, onclick:function(){
+	add_to(fragment, "div", {cls:["interact", "button"], title:"Project Menu", br:false, onclick:function(){
 		postAPI("/api/open_project", project_menu, project_fail, {"name":prjname});
 	}}).innerHTML = '<img src="assets/images/project.png">';
 }
@@ -668,7 +668,7 @@ function addProjectTo(fragment)
 function project_list(data)
 {
 	upate_page_location(null, null, null);
-	clearVariables(); // in case we got here from an error
+	clear_variables(); // in case we got here from an error
 	
 	// top bar
 	update_top_bar(
@@ -679,9 +679,9 @@ function project_list(data)
 				this.classList.toggle("shutdown", false);
 				postAPI("/api/shutdown", function(_unused_) {
 					bar.innerHTML = "";
-					let fragment = clearMain();
-					addTo(fragment, "div", {cls:["title"]}).innerText = "RPGMTL has been shutdown";
-					updateMain(fragment);
+					let fragment = clear_main();
+					add_to(fragment, "div", {cls:["title"]}).innerText = "RPGMTL has been shutdown";
+					update_main(fragment);
 				});
 			}
 			else
@@ -690,7 +690,7 @@ function project_list(data)
 				setTimeout(function(node) {
 					node.classList.toggle("shutdown", false);
 				}, 2000, this);
-				pushPopup("Press again to confirm.");
+				push_popup("Press again to confirm.");
 			}
 		},
 		function(){ // help
@@ -707,45 +707,45 @@ function project_list(data)
 	);
 	
 	// main part
-	fragment = clearMain();
-	addTo(fragment, "div", {cls:["title"]}).innerHTML = "Project List";
+	fragment = clear_main();
+	add_to(fragment, "div", {cls:["title"]}).innerHTML = "Project List";
 	if(data["list"].length > 0) // list projects
 	{
 		for(let i = 0; i < data["list"].length; ++i)
 		{
 			const t = data["list"][i];
-			addTo(fragment, "div", {cls:["interact"], onclick:function(){
+			add_to(fragment, "div", {cls:["interact"], onclick:function(){
 				postAPI("/api/open_project", project_menu, project_fail, {"name":t});
 			}}).innerHTML = data["list"][i];
 		}
 	}
-	addTo(fragment, "div", {cls:["spacer"]});
+	add_to(fragment, "div", {cls:["spacer"]});
 	// add buttons
-	addTo(fragment, "div", {cls:["interact"], onclick:function(){
+	add_to(fragment, "div", {cls:["interact"], onclick:function(){
 		local_browse("Create a project", "Select a Game executable.", 0);
 	}}).innerHTML = '<img src="assets/images/new.png"> New Project';
-	addTo(fragment, "div", {cls:["interact"], onclick:function(){
+	add_to(fragment, "div", {cls:["interact"], onclick:function(){
 		postAPI("/api/settings", setting_menu);
 	}}).innerHTML = '<img src="assets/images/setting.png"> Global Settings';
-	addTo(fragment, "div", {cls:["interact"], onclick:function(){
+	add_to(fragment, "div", {cls:["interact"], onclick:function(){
 		postAPI("/api/translator", translator_menu);
 	}}).innerHTML = '<img src="assets/images/translate.png"> Default Translator';
-	addTo(fragment, "div", {cls:["spacer"]});
+	add_to(fragment, "div", {cls:["spacer"]});
 	// quick links
 	if(data["history"].length > 0) // list last browsed Files
 	{
-		addTo(fragment, "div", {cls:["title", "left"], br:false}).innerHTML = "Last Accessed Files";
+		add_to(fragment, "div", {cls:["title", "left"], br:false}).innerHTML = "Last Accessed Files";
 		for(let i = 0; i < data["history"].length; ++i)
 		{
 			const c_entry = data["history"][i];
-			addTo(fragment, "div", {cls:["interact", "text-wrapper"], onclick:function() {
+			add_to(fragment, "div", {cls:["interact", "text-wrapper"], onclick:function() {
 				postAPI("/api/file", open_file, function() {
 					postAPI("/api/main", project_list);
 				}, {name:c_entry[0], path:c_entry[1]});
 			}}).innerHTML = c_entry[0] + ": " + c_entry[1];
 		}
 	}
-	updateMain(fragment);
+	update_main(fragment);
 }
 
 // display settings for /api/settings
@@ -780,15 +780,15 @@ function setting_menu(data)
 		);
 		
 		// main part
-		fragment = clearMain();
+		fragment = clear_main();
 		let layout = data["layout"];
 		let settings = data["settings"];
 		
 		if(is_project) // add button to reset settings of THIS project
 		{
-			addTo(fragment, "div", {cls:["interact"], onclick:function(){
+			add_to(fragment, "div", {cls:["interact"], onclick:function(){
 				postAPI("/api/update_settings", function(result_data) {
-					pushPopup("The Project Settings have been reset to Global Settings.");
+					push_popup("The Project Settings have been reset to Global Settings.");
 					project_menu();
 				}, null, {name:prjname});
 			}}).innerHTML = '<img src="assets/images/trash.png"> Reset All Settings to Global';
@@ -799,10 +799,10 @@ function setting_menu(data)
 		for(const [file, fsett] of Object.entries(layout))
 		{
 			// add plugin name
-			addTo(fragment, "div", {cls:["title", "left"], br:false}).innerHTML = file + " Plugin settings";
+			add_to(fragment, "div", {cls:["title", "left"], br:false}).innerHTML = file + " Plugin settings";
 			// and description if it exists
 			if(file in data["descriptions"] && data["descriptions"][file] != "")
-				addTo(fragment, "div", {cls:["left", "interact-group", "smalltext"]}).innerText = data["descriptions"][file];
+				add_to(fragment, "div", {cls:["left", "interact-group", "smalltext"]}).innerText = data["descriptions"][file];
 			// go over options
 			for(const [key, fdata] of Object.entries(fsett))
 			{
@@ -810,11 +810,11 @@ function setting_menu(data)
 				{
 					case "bool": // bool type
 					{
-						addTo(fragment, "div", {cls:["settingtext"], br:false}).innerHTML = fdata[0];
+						add_to(fragment, "div", {cls:["settingtext"], br:false}).innerHTML = fdata[0];
 						// add a simple toggle
-						const elem = addTo(fragment, "div", {cls:["interact", "button"], onclick:function(){
+						const elem = add_to(fragment, "div", {cls:["interact", "button"], onclick:function(){
 							let callback = function(result_data) {
-								pushPopup("The setting has been updated.");
+								push_popup("The setting has been updated.");
 								set_loading(false);
 								if(key in result_data["settings"])
 									elem.classList.toggle("green", result_data["settings"][key]);
@@ -832,21 +832,21 @@ function setting_menu(data)
 					}
 					default: // other types
 					{
-						addTo(fragment, "div", {cls:["settingtext"]}).innerHTML = fdata[0];
+						add_to(fragment, "div", {cls:["settingtext"]}).innerHTML = fdata[0];
 						if(fdata[2] == null) // text input
 						{
 							// add an input element
-							const input = addTo(fragment, "input", {cls:["input", "smallinput"], br:false});
+							const input = add_to(fragment, "input", {cls:["input", "smallinput"], br:false});
 							input.type = "text";
 							// and confirmation button
-							const elem = addTo(fragment, "div", {cls:["interact", "button"], onclick:function(){
+							const elem = add_to(fragment, "div", {cls:["interact", "button"], onclick:function(){
 								let val = "";
 								switch(fdata[1]) // make sure our value is what RPGMTL wants
 								{
 									case "int":
 										if(isNaN(input.value) || isNaN(parseFloat(input.value)))
 										{
-											pushPopup("The value isn't a valid integer.");
+											push_popup("The value isn't a valid integer.");
 											return;
 										}
 										val = Math.floor(parseFloat(input.value));
@@ -854,7 +854,7 @@ function setting_menu(data)
 									case "float":
 										if(isNaN(input.value) || isNaN(parseFloat(input.value)))
 										{
-											pushPopup("The value isn't a valid floating number.");
+											push_popup("The value isn't a valid floating number.");
 											return;
 										}
 										val = parseFloat(input.value);
@@ -864,7 +864,7 @@ function setting_menu(data)
 										break;
 								}
 								let callback = function(result_data) {
-									pushPopup("The setting has been updated.");
+									push_popup("The setting has been updated.");
 									set_loading(false);
 									if(key in result_data["settings"])
 										input.value = result_data["settings"][key];
@@ -891,18 +891,18 @@ function setting_menu(data)
 						else // choice selection
 						{
 							// add select and option elements
-							const sel = addTo(fragment, "select", {cls:["input", "smallinput"], br:false});
+							const sel = add_to(fragment, "select", {cls:["input", "smallinput"], br:false});
 							for(let i = 0; i < fdata[2].length; ++i)
 							{
-								let opt = addTo(sel, "option");
+								let opt = add_to(sel, "option");
 								opt.value = fdata[2][i];
 								opt.textContent = fdata[2][i];
 							}
 							// and confirmation button
-							const elem = addTo(fragment, "div", {cls:["interact", "button"], onclick:function()
+							const elem = add_to(fragment, "div", {cls:["interact", "button"], onclick:function()
 							{
 								let callback = function(result_data) {
-									pushPopup("The setting has been updated.");
+									push_popup("The setting has been updated.");
 									set_loading(false);
 									if(key in result_data["settings"])
 										set.value = result_data["settings"][key];
@@ -923,13 +923,13 @@ function setting_menu(data)
 			}
 		}
 		if(count == 0)
-			addTo(fragment, "div", {cls:["title", "left"]}).innerHTML = "No settings available for your Plugins";
-		updateMain(fragment);
+			add_to(fragment, "div", {cls:["title", "left"]}).innerHTML = "No settings available for your Plugins";
+		update_main(fragment);
 	}
 	catch(err)
 	{
 		console.error("Exception thrown", err.stack);
-		pushPopup("An unexpected error occured.");
+		push_popup("An unexpected error occured.");
 		postAPI("/api/main", project_list);
 	}
 }
@@ -966,7 +966,7 @@ function translator_menu(data)
 		);
 		
 		// main part
-		fragment = clearMain();
+		fragment = clear_main();
 		let list = data["list"]; // translator plugin list
 		let possibles = ["current", "batch"];
 		let possibles_text = ["Single Translation Button", "Translate this File Button"];
@@ -974,36 +974,36 @@ function translator_menu(data)
 		{
 			if(list.length == 0)
 			{
-				addTo(fragment, "div", {cls:["title", "left"]}).innerHTML = "No Translator Plugin available";
+				add_to(fragment, "div", {cls:["title", "left"]}).innerHTML = "No Translator Plugin available";
 				break;
 			}
 			else
 			{
 				if(t == 0 && is_project) // add button to reset project setting (Only at the top)
 				{
-					addTo(fragment, "div", {cls:["interact"], onclick:function(){
+					add_to(fragment, "div", {cls:["interact"], onclick:function(){
 						postAPI("/api/update_translator", function(result_data) {
-							pushPopup("The Project Translator have been reset to the default.");
+							push_popup("The Project Translator have been reset to the default.");
 							project_menu();
 						}, null, {name:prjname});
 					}}).innerHTML = '<img src="assets/images/trash.png"> Use RPGMTL Default';
 				}
 				// add text
-				addTo(fragment, "div", {cls:["title", "left"]}).innerHTML = possibles_text[t];
+				add_to(fragment, "div", {cls:["title", "left"]}).innerHTML = possibles_text[t];
 				// add select and option elements
-				const sel = addTo(fragment, "select", {cls:["input", "smallinput"], br:false});
+				const sel = add_to(fragment, "select", {cls:["input", "smallinput"], br:false});
 				for(let i = 0; i < list.length; ++i)
 				{
-					let opt = addTo(sel, "option");
+					let opt = add_to(sel, "option");
 					opt.value = list[i];
 					opt.textContent = list[i];
 				}
 				const tindex = t;
 				// and confirmation button
-				const elem = addTo(fragment, "div", {cls:["interact", "button"], onclick:function()
+				const elem = add_to(fragment, "div", {cls:["interact", "button"], onclick:function()
 				{
 					let callback = function(result_data) {
-						pushPopup("The setting has been updated.");
+						push_popup("The setting has been updated.");
 						set_loading(false);
 					};
 					if(is_project)
@@ -1015,12 +1015,12 @@ function translator_menu(data)
 				sel.value = data[possibles[t]];
 			}
 		}
-		updateMain(fragment);
+		update_main(fragment);
 	}
 	catch(err)
 	{
 		console.error("Exception thrown", err.stack);
-		pushPopup("An unexpected error occured.");
+		push_popup("An unexpected error occured.");
 		postAPI("/api/main", project_list);
 	}
 }
@@ -1053,11 +1053,11 @@ function project_creation(data)
 		);
 		
 		// main part
-		fragment = clearMain();
-		addTo(fragment, "div", {cls:["title", "left"]}).innerHTML = "Folder/Project Name";
+		fragment = clear_main();
+		add_to(fragment, "div", {cls:["title", "left"]}).innerHTML = "Folder/Project Name";
 		
 		// project name input element
-		let input = addTo(fragment, "input", {cls:["input"]});
+		let input = add_to(fragment, "input", {cls:["input"]});
 		input.type = "text";
 		
 		let tmp = path.split("/"); // set input default value
@@ -1067,12 +1067,12 @@ function project_creation(data)
 			input.value = "Project";
 		
 		// confirm button
-		addTo(fragment, "div", {cls:["interact"], onclick:function(){
+		add_to(fragment, "div", {cls:["interact"], onclick:function(){
 			set_loading_text("Creating the project...");
 			if(input.value.trim() != "")
 				postAPI("/api/new_project", project_menu, project_fail, {path: path, name: input.value});
 		}}).innerHTML = '<img src="assets/images/confirm.png"> Create';
-		updateMain(fragment);
+		update_main(fragment);
 	}
 }
 
@@ -1122,64 +1122,64 @@ function project_menu(data = null)
 		// main part
 		// here we add various buttons
 		// some only appear if files have been parsed
-		fragment = clearMain();
-		addTo(fragment, "div", {cls:["title"]}).innerHTML = prjname;
-		addTo(fragment, "div", {cls:["title", "left"]}).innerHTML = "Game Folder: " + prj["path"];
+		fragment = clear_main();
+		add_to(fragment, "div", {cls:["title"]}).innerHTML = prjname;
+		add_to(fragment, "div", {cls:["title", "left"]}).innerHTML = "Game Folder: " + prj["path"];
 		if(prj.files)
 		{
-			addTo(fragment, "div", {cls:["interact"], onclick:function(){
+			add_to(fragment, "div", {cls:["interact"], onclick:function(){
 				postAPI("/api/browse", browse_files, null, {name:prjname, path:""});
 			}}).innerHTML = '<img src="assets/images/folder.png"> Browse Files';
-			addTo(fragment, "div", {cls:["interact"], onclick:function(){
+			add_to(fragment, "div", {cls:["interact"], onclick:function(){
 				postAPI("/api/patches", browse_patches, null, {name:prjname});
 			}}).innerHTML = '<img src="assets/images/bandaid.png"> Add a Fix';
-			addTo(fragment, "div", {cls:["interact"], onclick:function(){
+			add_to(fragment, "div", {cls:["interact"], onclick:function(){
 				replace_page();
 			}}).innerHTML = '<img src="assets/images/copy.png"> Replace Strings in batch';
 		}
-		addTo(fragment, "div", {cls:["interact"], onclick:function(){
+		add_to(fragment, "div", {cls:["interact"], onclick:function(){
 			postAPI("/api/settings", setting_menu, null, {name:prjname});
 		}}).innerHTML = '<img src="assets/images/setting.png"> Project Settings';
-		addTo(fragment, "div", {cls:["interact"], onclick:function(){
+		add_to(fragment, "div", {cls:["interact"], onclick:function(){
 			postAPI("/api/translator", translator_menu, null, {name:prjname});
 		}}).innerHTML = '<img src="assets/images/translate.png"> Project Translator';
-		addTo(fragment, "div", {cls:["interact"], onclick:function(){
+		add_to(fragment, "div", {cls:["interact"], onclick:function(){
 			postAPI("/api/unload", function() {
 				postAPI("/api/main", project_list)
 			}, null, {name:prjname});
 		}}).innerHTML = '<img src="assets/images/cancel.png"> Unload the Project';
-		addTo(fragment, "div", {cls:["spacer"]});
-		addTo(fragment, "div", {cls:["interact"], onclick:function(){
+		add_to(fragment, "div", {cls:["spacer"]});
+		add_to(fragment, "div", {cls:["interact"], onclick:function(){
 			local_browse("Update project files", "Select the Game executable.", 1);
 		}}).innerHTML = '<img src="assets/images/update.png"> Update the Game Files';
-		addTo(fragment, "div", {cls:["interact"], onclick:function(){
+		add_to(fragment, "div", {cls:["interact"], onclick:function(){
 			set_loading_text("Extracting, be patient...");
 			postAPI("/api/extract", project_menu, project_fail, {name:prjname});
 		}}).innerHTML = '<img src="assets/images/export.png"> Extract the Strings';
 		if(prj.files)
 		{
-			addTo(fragment, "div", {cls:["interact"], onclick:function(){
+			add_to(fragment, "div", {cls:["interact"], onclick:function(){
 				set_loading_text("The patch is being generated in the release folder...");
 				postAPI("/api/release", project_menu, null, {name:prjname});
 			}}).innerHTML = '<img src="assets/images/release.png"> Release a Patch';
-			addTo(fragment, "div", {cls:["spacer"]});
-			addTo(fragment, "div", {cls:["interact"], onclick:function(){
+			add_to(fragment, "div", {cls:["spacer"]});
+			add_to(fragment, "div", {cls:["interact"], onclick:function(){
 				postAPI("/api/backups", backup_list, null, {name:prjname});
 			}}).innerHTML = '<img src="assets/images/copy.png"> String Backups';
-			addTo(fragment, "div", {cls:["interact"], onclick:function(){
+			add_to(fragment, "div", {cls:["interact"], onclick:function(){
 				local_browse("Import RPGMTL", "Select an old RPGMTL strings file.", 2);
 			}}).innerHTML = '<img src="assets/images/import.png"> Import Strings from RPGMTL';
-			addTo(fragment, "div", {cls:["interact"], onclick:function(){
+			add_to(fragment, "div", {cls:["interact"], onclick:function(){
 				local_browse("Import RPGMAKERTRANSPATCH", "Select a RPGMAKERTRANSPATCH file.", 3);
 			}}).innerHTML = '<img src="assets/images/import.png"> Import Strings from RPGMakerTrans v3';
-			addTo(fragment, "div", {cls:["spacer"]});
+			add_to(fragment, "div", {cls:["spacer"]});
 		}
-		updateMain(fragment);
+		update_main(fragment);
 	}
 	catch(err)
 	{
 		console.error("Exception thrown", err.stack);
-		pushPopup("An unexpected error occured.");
+		push_popup("An unexpected error occured.");
 		postAPI("/api/main", project_list);
 	}
 }
@@ -1188,7 +1188,7 @@ function project_menu(data = null)
 function addSearchBar(node, bp, defaultVal = null)
 {
 	// input element
-	const input = addTo(node, "input", {cls:["input", "smallinput"], br:false});
+	const input = add_to(node, "input", {cls:["input", "smallinput"], br:false});
 	input.placeholder = "Search a string";
 	if(defaultVal != null)
 		input.value = defaultVal;
@@ -1197,7 +1197,7 @@ function addSearchBar(node, bp, defaultVal = null)
 	else
 		input.value = "";
 	// add confirm button
-	const button = addTo(node, "div", {cls:["interact", "button"], title:"Search", onclick:function(){
+	const button = add_to(node, "div", {cls:["interact", "button"], title:"Search", onclick:function(){
 		if(input.value != "")
 		{
 			postAPI("/api/search_string", string_search, null, {name:prjname, path:bp, search:input.value});
@@ -1265,23 +1265,23 @@ function browse_files(data)
 		);
 		
 		// main part
-		fragment = clearMain();
-		addTo(fragment, "div", {cls:["title"]}).innerHTML = prjname;
+		fragment = clear_main();
+		add_to(fragment, "div", {cls:["title"]}).innerHTML = prjname;
 		// add the string search
 		addSearchBar(fragment, bp);
 		
 		// add completion indicator (filled at the bottom)
-		let completion = addTo(fragment, "div", {cls:["title", "left"]});
+		let completion = add_to(fragment, "div", {cls:["title", "left"]});
 		let fstring = 0;
 		let ftotal = 0;
 		let fcount = 0;
 		
-		addTo(fragment, "div", {cls:["title", "left"]}).innerHTML = bp;
+		add_to(fragment, "div", {cls:["title", "left"]}).innerHTML = bp;
 		// go over folders
 		for(let i = 0; i < data["folders"].length; ++i)
 		{
 			const t = data["folders"][i];
-			let div = addTo(fragment, "div", {cls:["interact"]});
+			let div = add_to(fragment, "div", {cls:["interact"]});
 			if(t == "..") // special one indicating we aren't on the root level
 			{
 				div.innerHTML = '<img src="assets/images/back.png"> ..';
@@ -1309,7 +1309,7 @@ function browse_files(data)
 					postAPI("/api/browse", browse_files, null, {name:prjname, path:t});
 			};
 		}
-		addTo(fragment, "div", {cls:["title", "left"]}).innerHTML = "List of Files";
+		add_to(fragment, "div", {cls:["title", "left"]}).innerHTML = "List of Files";
 		// possible class sets
 		let cls = [
 			["interact", "text-wrapper"],
@@ -1319,7 +1319,7 @@ function browse_files(data)
 		for(const [key, value] of Object.entries(data["files"]))
 		{
 			// add button
-			let button = addTo(fragment, "div", {cls:cls[+value], br:false, id:"text:"+key, onclick:function(){
+			let button = add_to(fragment, "div", {cls:cls[+value], br:false, id:"text:"+key, onclick:function(){
 				if(window.event.ctrlKey) // ignore shortcut
 				{
 					postAPI("/api/ignore_file", update_file_list, null, {name:prjname, path:key, state:+!this.classList.contains("disabled")});
@@ -1348,13 +1348,13 @@ function browse_files(data)
 			if(key == lastfileopened) // if this is the last opened file
 				scrollTo = button; // store it
 		}
-		addTo(fragment, "div", {cls:["spacer"]});
-		addTo(fragment, "div", {cls:["spacer"]});
-		addTo(fragment, "div", {cls:["spacer"]});
+		add_to(fragment, "div", {cls:["spacer"]});
+		add_to(fragment, "div", {cls:["spacer"]});
+		add_to(fragment, "div", {cls:["spacer"]});
 		// set folder completion indicator
 		let percent = ftotal > 0 ? ', ' + (Math.round(10000 * fcount / ftotal) / 100) + '%' : '';
 		completion.textContent = "Current Total: " + fstring + " strings" + percent;
-		updateMain(fragment).then(() => {
+		update_main(fragment).then(() => {
 			if(scrollTo != null) // scroll to last opened file
 				scrollTo.scrollIntoView();
 		});
@@ -1364,7 +1364,7 @@ function browse_files(data)
 	{
 		lastfileopened = null;
 		console.error("Exception thrown", err.stack);
-		pushPopup("An unexpected error occured.");
+		push_popup("An unexpected error occured.");
 		project_menu();
 	}
 }
@@ -1404,11 +1404,11 @@ function string_search(data)
 		);
 		
 		// main part
-		fragment = clearMain();
-		addTo(fragment, "div", {cls:["title"]}).innerHTML = prjname;
+		fragment = clear_main();
+		add_to(fragment, "div", {cls:["title"]}).innerHTML = prjname;
 		addSearchBar(fragment, bp, data["search"]);
 		
-		addTo(fragment, "div", {cls:["title", "left"]}).innerHTML = "Search Results";
+		add_to(fragment, "div", {cls:["title", "left"]}).innerHTML = "Search Results";
 		let cls = [
 			["interact", "text-wrapper"],
 			["interact", "text-wrapper", "disabled"]
@@ -1416,7 +1416,7 @@ function string_search(data)
 		// list files
 		for(const [key, value] of Object.entries(data["files"]))
 		{
-			let button = addTo(fragment, "div", {cls:cls[+value], br:false, id:"text:"+key, onclick:function(){
+			let button = add_to(fragment, "div", {cls:cls[+value], br:false, id:"text:"+key, onclick:function(){
 				if(window.event.ctrlKey) // disable shortcut
 				{
 					postAPI("/api/ignore_file", update_file_list, null, {name:prjname, path:key, state:+!this.classList.contains("disabled")});
@@ -1434,12 +1434,12 @@ function string_search(data)
 				button.classList.add("complete");
 			button.innerHTML = key + ' (' + total + " strings" + percent;
 		}
-		updateMain(fragment);
+		update_main(fragment);
 	}
 	catch(err)
 	{
 		console.error("Exception thrown", err.stack);
-		pushPopup("An unexpected error occured.");
+		push_popup("An unexpected error occured.");
 		project_menu();
 	}
 }
@@ -1467,30 +1467,30 @@ function browse_patches(data)
 		);
 		
 		// main part
-		fragment = clearMain();
-		addTo(fragment, "div", {cls:["title"]}).innerHTML = prjname;
-		addTo(fragment, "div", {cls:["title", "left"]}).innerHTML = "Fix List";
+		fragment = clear_main();
+		add_to(fragment, "div", {cls:["title"]}).innerHTML = prjname;
+		add_to(fragment, "div", {cls:["title", "left"]}).innerHTML = "Fix List";
 		// list patches
 		for(const [key, value] of Object.entries(prj["patches"]))
 		{
 			// add button to open
-			addTo(fragment, "div", {cls:["interact"], onclick:function()
+			add_to(fragment, "div", {cls:["interact"], onclick:function()
 			{
 				postAPI("/api/open_patch", edit_patch, null, {name:prjname, key:key});
 			}
 			}).innerHTML = '<img src="assets/images/bandaid.png"> ' + key;
 		}
-		addTo(fragment, "div", {cls:["spacer"]});
+		add_to(fragment, "div", {cls:["spacer"]});
 		// add create button
-		addTo(fragment, "div", {cls:["interact"], onclick:function(){
+		add_to(fragment, "div", {cls:["interact"], onclick:function(){
 			edit_patch({});
 		}}).innerHTML = '<img src="assets/images/new.png"> Create';
-		updateMain(fragment);
+		update_main(fragment);
 	}
 	catch(err)
 	{
 		console.error("Exception thrown", err.stack);
-		pushPopup("An unexpected error occured.");
+		push_popup("An unexpected error occured.");
 		project_menu();
 	}
 }
@@ -1523,15 +1523,15 @@ function edit_patch(data)
 		);
 		
 		// main part
-		fragment = clearMain();
+		fragment = clear_main();
 		// add various input and text elements
-		addTo(fragment, "div", {cls:["title"]}).innerHTML = prjname;
-		addTo(fragment, "div", {cls:["title", "left"]}).innerHTML = "Filename match";
-		addTo(fragment, "input", {cls:["input"], id:"filter"}).type = "text";
-		addTo(fragment, "div", {cls:["title", "left"]}).innerHTML = "Python Code";
-		addTo(fragment, "div", {cls:["input"], id:"fix"}).contentEditable = "plaintext-only";
+		add_to(fragment, "div", {cls:["title"]}).innerHTML = prjname;
+		add_to(fragment, "div", {cls:["title", "left"]}).innerHTML = "Filename match";
+		add_to(fragment, "input", {cls:["input"], id:"filter"}).type = "text";
+		add_to(fragment, "div", {cls:["title", "left"]}).innerHTML = "Python Code";
+		add_to(fragment, "div", {cls:["input"], id:"fix"}).contentEditable = "plaintext-only";
 		// add confirm button
-		addTo(fragment, "div", {cls:["interact"], onclick:function(){
+		add_to(fragment, "div", {cls:["interact"], onclick:function(){
 			let newkey = document.getElementById("filter").value;
 			let code = document.getElementById("fix").textContent;
 			if(newkey.trim() != "" && code.trim() != "")
@@ -1540,10 +1540,10 @@ function edit_patch(data)
 			}
 			else
 			{
-				pushPopup("At least one field is empty");
+				push_popup("At least one field is empty");
 			}
 		}}).innerHTML = '<img src="assets/images/confirm.png"> Confirm';
-		addTo(fragment, "div", {cls:["interact"], onclick:function(){
+		add_to(fragment, "div", {cls:["interact"], onclick:function(){
 			postAPI("/api/update_patch", browse_patches, null, {name:prjname, key:key});
 		}}).innerHTML = '<img src="assets/images/trash.png"> Delete';
 		
@@ -1552,12 +1552,12 @@ function edit_patch(data)
 			fragment.getElementById("filter").value = key;
 			fragment.getElementById("fix").textContent = prj["patches"][key];
 		}
-		updateMain(fragment);
+		update_main(fragment);
 	}
 	catch(err)
 	{
 		console.error("Exception thrown", err.stack);
-		pushPopup("An unexpected error occured.");
+		push_popup("An unexpected error occured.");
 		project_menu();
 	}
 }
@@ -1588,16 +1588,16 @@ function backup_list(data)
 		);
 		
 		// main part
-		fragment = clearMain();
-		addTo(fragment, "div", {cls:["title"]}).innerHTML = prjname;
-		addTo(fragment, "div", {cls:["title", "left"]}).innerHTML = "Backup List";
+		fragment = clear_main();
+		add_to(fragment, "div", {cls:["title"]}).innerHTML = prjname;
+		add_to(fragment, "div", {cls:["title", "left"]}).innerHTML = "Backup List";
 		if(data["list"].length == 0)
-			addTo(fragment, "div", {cls:["title", "left", "block", "inline"], br:false}).innerHTML = "No backup available";
+			add_to(fragment, "div", {cls:["title", "left", "block", "inline"], br:false}).innerHTML = "No backup available";
 		// list project backups
 		for(const elem of data["list"])
 		{
 			// add button to load it
-			addTo(fragment, "div", {cls:["interact", "text-button", "inline"], br:false, onclick:function(){
+			add_to(fragment, "div", {cls:["interact", "text-button", "inline"], br:false, onclick:function(){
 				if(this.classList.contains("selected") || window.event.ctrlKey) // confirmation / shortcut to insta confirm
 				{
 					this.classList.toggle("selected", false);
@@ -1606,25 +1606,25 @@ function backup_list(data)
 				else
 				{
 					this.classList.toggle("selected", true);
-					setTimeout(clearSelected, 2000, this);
-					pushPopup("Press again to confirm.");
+					setTimeout(clear_selected, 2000, this);
+					push_popup("Press again to confirm.");
 				}
 			}}).innerHTML = '<img src="assets/images/copy.png"> Use';
-			addTo(fragment, "div", {cls:["title", "left", "block", "inline"], br:false}).innerHTML = elem[0];
+			add_to(fragment, "div", {cls:["title", "left", "block", "inline"], br:false}).innerHTML = elem[0];
 			// add backup infos
 			let size = "";
 			if(elem[1] >= 1048576) size = Math.round(elem[1] / 1048576) + "MB";
 			else if(elem[1] >= 1024) size = Math.round(elem[1] / 1024) + "KB";
 			else size = elem[1] + "B";
-			addTo(fragment, "div", {cls:["title", "left", "block", "inline", "smalltext"], br:false}).innerHTML = size;
-			addTo(fragment, "div", {cls:["title", "left", "block", "inline", "smalltext"]}).innerHTML = new Date(elem[2]*1000).toISOString().split('.')[0].replace('T', ' ');
+			add_to(fragment, "div", {cls:["title", "left", "block", "inline", "smalltext"], br:false}).innerHTML = size;
+			add_to(fragment, "div", {cls:["title", "left", "block", "inline", "smalltext"]}).innerHTML = new Date(elem[2]*1000).toISOString().split('.')[0].replace('T', ' ');
 		}
-		updateMain(fragment);
+		update_main(fragment);
 	}
 	catch(err)
 	{
 		console.error("Exception thrown", err.stack);
-		pushPopup("An unexpected error occured.");
+		push_popup("An unexpected error occured.");
 		project_menu();
 	}
 }
@@ -1648,7 +1648,7 @@ function update_file_list(data)
 	catch(err)
 	{
 		console.error("Exception thrown", err.stack);
-		pushPopup("An unexpected error occured.");
+		push_popup("An unexpected error occured.");
 		project_menu();
 	}
 }
@@ -1656,8 +1656,8 @@ function update_file_list(data)
 // Prepare string space for string list
 function prepareGroupOn(node, i)
 {
-	let base = addTo(node, "div", {cls:["interact-group"]}); // base container
-	let group = addTo(base, "span", {cls:["smalltext"], id:i}); // group container
+	let base = add_to(node, "div", {cls:["interact-group"]}); // base container
+	let group = add_to(base, "span", {cls:["smalltext"], id:i}); // group container
 	if(prjlist[i][0] != "") // add group name OR index
 		group.textContent = prjlist[i][0];
 	else
@@ -1665,19 +1665,19 @@ function prepareGroupOn(node, i)
 	// iterate over strings of this group
 	for(let j = 1; j < prjlist[i].length; ++j)
 	{
-		const span = addTo(base, "span", {cls:["interact", "string-group"]}); // add container
+		const span = add_to(base, "span", {cls:["interact", "string-group"]}); // add container
 		span.group = i;
 		span.string = j;
 		
-		let marker = addTo(span, "div", {cls:["marker", "inline"], br:false}); // left marker (modified, plugins...)
+		let marker = add_to(span, "div", {cls:["marker", "inline"], br:false}); // left marker (modified, plugins...)
 		
-		let original = addTo(span, "pre", {cls:["title", "inline", "smalltext", "string-area", "original"], br:false}); // original string
+		let original = add_to(span, "pre", {cls:["title", "inline", "smalltext", "string-area", "original"], br:false}); // original string
 		original.group = i;
 		original.string = j;
 		original.textContent = prjstring[prjlist[i][j][0]][0];
 		const occurence = prjstring[prjlist[i][j][0]][2];
 		
-		let translation = addTo(span, "pre", {cls:["title", "inline", "smalltext", "string-area", "translation"], br:false}); // translated string
+		let translation = add_to(span, "pre", {cls:["title", "inline", "smalltext", "string-area", "translation"], br:false}); // translated string
 		translation.group = i;
 		translation.string = j;
 		
@@ -1716,9 +1716,9 @@ function prepareGroupOn(node, i)
 				{
 					laststringinteracted = tsize;
 					navigator.clipboard.writeText(original.textContent);
-					pushPopup('The String has been copied');
+					push_popup('The String has been copied');
 				}
-				else pushPopup('You need to be on a secure origin to use the Copy button');
+				else push_popup('You need to be on a secure origin to use the Copy button');
 			}
 		};
 		translation.onclick = function() // add translated string copy AND open
@@ -1731,9 +1731,9 @@ function prepareGroupOn(node, i)
 					{
 						laststringinteracted = tsize;
 						navigator.clipboard.writeText(translation.textContent);
-						pushPopup('The String has been copied');
+						push_popup('The String has been copied');
 					}
-					else pushPopup('You need to be on a secure origin to use the Copy button');
+					else push_popup('You need to be on a secure origin to use the Copy button');
 				}
 				else
 				{
@@ -1864,21 +1864,21 @@ function open_file(data)
 		);
 		
 		// main part
-		fragment = clearMain();
+		fragment = clear_main();
 		
-		let topsection = addTo(fragment, "div", {cls:["title"]});
+		let topsection = add_to(fragment, "div", {cls:["title"]});
 		topsection.innerHTML = prjname;
-		addTo(fragment, "div", {cls:["title", "left"]}).innerHTML = lastfileopened;
+		add_to(fragment, "div", {cls:["title", "left"]}).innerHTML = lastfileopened;
 		let previous_plugin = null;
 		// list file actions
 		for(const [key, [plugin_name, icon, value]] of Object.entries(data["actions"]))
 		{
 			if(previous_plugin != plugin_name)
 			{
-				addTo(fragment, "div", {cls:["title", "left", "interact-group", "smalltext"], br:false}).innerHTML = plugin_name + " Plugin";
+				add_to(fragment, "div", {cls:["title", "left", "interact-group", "smalltext"], br:false}).innerHTML = plugin_name + " Plugin";
 				previous_plugin = plugin_name;
 			}
-			addTo(fragment, "div", {cls:["interact"], onclick:function() {
+			add_to(fragment, "div", {cls:["interact"], onclick:function() {
 				if(this.classList.contains("selected") || window.event.ctrlKey) // confirmation / shortcut to insta confirm
 				{
 					this.classList.toggle("selected", false);
@@ -1895,14 +1895,14 @@ function open_file(data)
 				else
 				{
 					this.classList.toggle("selected", true);
-					setTimeout(clearSelected, 2000, this);
-					pushPopup("Press again to confirm.");
+					setTimeout(clear_selected, 2000, this);
+					push_popup("Press again to confirm.");
 				}
 			}}).innerHTML = '<img src="' + (icon == null ? "assets/images/setting.png" : icon) + '"> ' + value;
 		}
-		addTo(fragment, "div", {cls:["title", "left", "interact-group", "smalltext"], br:false}).innerHTML = "Other Actions";
+		add_to(fragment, "div", {cls:["title", "left", "interact-group", "smalltext"], br:false}).innerHTML = "Other Actions";
 		// add translate this file button
-		addTo(fragment, "div", {cls:["interact"], onclick:function() {
+		add_to(fragment, "div", {cls:["interact"], onclick:function() {
 			if(this.classList.contains("selected") || window.event.ctrlKey) // confirmation / shortcut to insta confirm
 			{
 				this.classList.toggle("selected", false);
@@ -1915,8 +1915,8 @@ function open_file(data)
 			else
 			{
 				this.classList.toggle("selected", true);
-				setTimeout(clearSelected, 2000, this);
-				pushPopup("Press again to confirm.");
+				setTimeout(clear_selected, 2000, this);
+				push_popup("Press again to confirm.");
 			}
 		}}).innerHTML = '<img src="assets/images/translate.png"> Translate the File';
 		
@@ -1925,19 +1925,19 @@ function open_file(data)
 			case 0: // NORMAL
 				break;
 			case 1: // ARCHIVE
-				addTo(fragment, "div", {cls:["interact"], onclick:function() {
+				add_to(fragment, "div", {cls:["interact"], onclick:function() {
 					postAPI("/api/browse", browse_files, null, {name:prjname, path:lastfileopened + "/"});
 				}}).innerHTML = '<img src="assets/images/archive.png"> Access Files contained inside';
-				addTo(fragment, "div", {cls:["title", "left", "smalltext"]}).innerText = "This file has been divided into multiple files.";
+				add_to(fragment, "div", {cls:["title", "left", "smalltext"]}).innerText = "This file has been divided into multiple files.";
 				break;
 			case 2: // VIRTUAL
-				addTo(fragment, "div", {cls:["interact"], onclick:function() {
+				add_to(fragment, "div", {cls:["interact"], onclick:function() {
 					postAPI("/api/file", open_file, null, {name:prjname, path:prj["files"][lastfileopened]["parent"]});
 				}}).innerHTML = '<img src="assets/images/archive.png"> Open Parent File';
-				addTo(fragment, "div", {cls:["title", "left", "smalltext"]}).innerText = "This file is part of a bigger file.";
+				add_to(fragment, "div", {cls:["title", "left", "smalltext"]}).innerText = "This file is part of a bigger file.";
 				break;
 			case 3: // VIRTUAL_UNDEFINED
-				addTo(fragment, "div", {cls:["title", "left", "smalltext"]}).innerText = "If you see this, something went wrong.";
+				add_to(fragment, "div", {cls:["title", "left", "smalltext"]}).innerText = "If you see this, something went wrong.";
 				break;
 			default:
 				break;
@@ -1949,10 +1949,10 @@ function open_file(data)
 		{
 			prepareGroupOn(fragment, i);
 		}
-		addTo(fragment, "div", {cls:["spacer"]});
-		addTo(fragment, "div", {cls:["spacer"]});
-		addTo(fragment, "div", {cls:["spacer"]});
-		updateMain(fragment).then(() => {
+		add_to(fragment, "div", {cls:["spacer"]});
+		add_to(fragment, "div", {cls:["spacer"]});
+		add_to(fragment, "div", {cls:["spacer"]});
+		update_main(fragment).then(() => {
 			// update the string list with the data
 			let scrollTo = update_string_list(data);
 			// scroll to string (if set)
@@ -1966,7 +1966,7 @@ function open_file(data)
 	{
 		keypressenabled = false;
 		console.error("Exception thrown", err.stack);
-		pushPopup("An unexpected error occured.");
+		push_popup("An unexpected error occured.");
 		bottom.style.display = "none";
 		project_menu();
 	}
@@ -1977,9 +1977,9 @@ function copy_string() // used in index.html
 	if(navigator.clipboard != undefined)
 	{
 		navigator.clipboard.writeText(edit_ori.textContent);
-		pushPopup('Original String has been copied');
+		push_popup('Original String has been copied');
 	}
-	else pushPopup('You need to be on a secure origin to use the Copy button');
+	else push_popup('You need to be on a secure origin to use the Copy button');
 }
 // send and confirm a string change, used in index.html
 // trash = whether the trash button got used instead
@@ -2070,7 +2070,7 @@ function update_string_list(data)
 	catch(err)
 	{
 		console.error("Exception thrown", err.stack);
-		pushPopup("An unexpected error occured.");
+		push_popup("An unexpected error occured.");
 		project_menu();
 	}
 	// return searched, which contains either null OR a string to scroll to
@@ -2126,14 +2126,14 @@ function local_browse(title, explanation, mode)
 		);
 	
 		// main part
-		fragment = clearMain();
-		addTo(fragment, "div", {cls:["title"]}).innerHTML = explanation;
-		addTo(fragment, "div", {cls:["left"], id:"current_path"});
-		addTo(fragment, "div", {cls:["left", "title"]}).innerHTML = "Folders";
-		addTo(fragment, "div", {id:"folder_container"});
-		addTo(fragment, "div", {cls:["left", "title"]}).innerHTML = "Files";
-		addTo(fragment, "div", {id:"file_container"});
-		updateMain(fragment).then(() => {
+		fragment = clear_main();
+		add_to(fragment, "div", {cls:["title"]}).innerHTML = explanation;
+		add_to(fragment, "div", {cls:["left"], id:"current_path"});
+		add_to(fragment, "div", {cls:["left", "title"]}).innerHTML = "Folders";
+		add_to(fragment, "div", {id:"folder_container"});
+		add_to(fragment, "div", {cls:["left", "title"]}).innerHTML = "Files";
+		add_to(fragment, "div", {id:"file_container"});
+		update_main(fragment).then(() => {
 			postAPI("/api/local_path", update_local_browse, null, {"path":"", "mode":filebrowsingmode});
 		});
 	}
@@ -2141,7 +2141,7 @@ function local_browse(title, explanation, mode)
 	{
 		keypressenabled = false;
 		console.error("Exception thrown", err.stack);
-		pushPopup("An unexpected error occured.");
+		push_popup("An unexpected error occured.");
 		bottom.style.display = "none";
 		project_menu();
 	}
@@ -2159,7 +2159,7 @@ function update_local_browse(data)
 		if(i > 0)
 			total_path += "/" + path_parts[i];
 		const callback_path = total_path;
-		addTo(cpath, "div", {cls:["interact", "text-button"], br:false, onclick:function(){
+		add_to(cpath, "div", {cls:["interact", "text-button"], br:false, onclick:function(){
 			postAPI("/api/local_path", update_local_browse, null, {"path":callback_path, "mode":filebrowsingmode});
 		}}).innerText = path_parts[i];
 	}
@@ -2169,7 +2169,7 @@ function update_local_browse(data)
 	for(let i = 0; i < data["folders"].length; ++i)
 	{
 		const t = data["folders"][i];
-		addTo(container, "div", {cls:["interact"], onclick:function(){
+		add_to(container, "div", {cls:["interact"], onclick:function(){
 			if(t == "..")
 			{
 				if(data["path"].length == 3 && data["path"].endsWith(":/"))
@@ -2195,7 +2195,7 @@ function update_local_browse(data)
 	for(let i = 0; i < data["files"].length; ++i)
 	{
 		const t = data["files"][i];
-		addTo(container, "div", {cls:["interact"], onclick:function(){
+		add_to(container, "div", {cls:["interact"], onclick:function(){
 			switch(filebrowsingmode)
 			{
 				case 0:
@@ -2240,19 +2240,19 @@ function replace_page()
 		);
 	
 		// main part
-		fragment = clearMain();
-		addTo(fragment, "div", {cls:["title", "left"]}).innerText = "Replace strings by others (Case Sensitive)";
-		addTo(fragment, "div", {cls:["title", "left", "smalltext"]}).innerText = "Only translations are affected";
+		fragment = clear_main();
+		add_to(fragment, "div", {cls:["title", "left"]}).innerText = "Replace strings by others (Case Sensitive)";
+		add_to(fragment, "div", {cls:["title", "left", "smalltext"]}).innerText = "Only translations are affected";
 		
-		const input = addTo(fragment, "input", {cls:["input", "smallinput"]});
+		const input = add_to(fragment, "input", {cls:["input", "smallinput"]});
 		input.placeholder = "String to replace";
-		const output = addTo(fragment, "input", {cls:["input", "smallinput"]});
+		const output = add_to(fragment, "input", {cls:["input", "smallinput"]});
 		output.placeholder = "Replace by";
-		addTo(fragment, "div", {cls:["interact", "text-button"], br:false, onclick:function(){
+		add_to(fragment, "div", {cls:["interact", "text-button"], br:false, onclick:function(){
 			if(input.value == "")
 			{
 				this.classList.toggle("selected", false);
-				pushPopup("The input is empty.");
+				push_popup("The input is empty.");
 			}
 			else if(this.classList.contains("selected") || window.event.ctrlKey)
 			{
@@ -2262,17 +2262,17 @@ function replace_page()
 			else
 			{
 				this.classList.toggle("selected", true);
-				setTimeout(clearSelected, 2000, this);
-				pushPopup("Press again to confirm.");
+				setTimeout(clear_selected, 2000, this);
+				push_popup("Press again to confirm.");
 			}
 		}}).innerHTML = '<img src="assets/images/copy.png"> Replace';
-		updateMain(fragment);
+		update_main(fragment);
 	}
 	catch(err)
 	{
 		keypressenabled = false;
 		console.error("Exception thrown", err.stack);
-		pushPopup("An unexpected error occured.");
+		push_popup("An unexpected error occured.");
 		bottom.style.display = "none";
 		project_menu();
 	}
