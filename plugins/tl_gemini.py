@@ -7,7 +7,6 @@ except:
     raise Exception("Failed to import google-genai.\nMake sure it's installed using: pip install -U google-genai")
 from typing import Any
 import json
-import re
 
 PROMPT : str = """You are the World's best Video Game Translator.
 Your task is to take a JSON object formatted in such manner:
@@ -83,7 +82,6 @@ $INPUT$
 
 Your output:
 """
-JSON_SANITIZER = re.compile(r'(?P<key>"[^"]*"\s*:\s*)"(?P<content>.*?)"(?P<tail>(?=,|\}))', re.DOTALL)
 
 class GModel(BaseModel):
     id: str
