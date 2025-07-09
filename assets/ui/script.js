@@ -3,7 +3,7 @@ var bar = null;
 var main = null;
 var bottom = null;
 var top_bar_elems = {}; // contains update_top_bar elements
-var tl_style = 1; // for the tl-style css switcher
+var tl_style = 2; // for sliding the string areas, there are 7 positions
 var loader = null;
 var loadertext = null;
 var loaderanim = null;
@@ -578,26 +578,13 @@ function update_top_bar(title, back_callback, help_callback = null, additions = 
 			top_bar_elems.slider.title = "Slide the Original / Translation areas";
 			
 			top_bar_elems.slider.onclick = function(){
-				let s = document.getElementById("tl-style"); // to move part around, to display more of original or translated strings
-				switch(tl_style)
-				{
-					case 0:
-						s.href = "assets/ui/tl_mid.css";
-						tl_style = 1;
-						break;
-					case 1:
-						s.href = "assets/ui/tl_right.css";
-						tl_style = 2;
-						break;
-					case 2:
-						s.href = "assets/ui/tl_left.css";
-						tl_style = 0;
-						break;
-					default:
-						s.href = "assets/ui/tl_mid.css";
-						tl_style = 1;
-						break;
-				};
+				tl_style = (tl_style + 1) % 5;
+				/* Positions
+					10% 25% 45% 65% 80%
+				*/
+				const percents = [10, 25, 45, 65, 80];
+				document.documentElement.style.setProperty('--ori-width', percents[tl_style] + "%");
+				document.documentElement.style.setProperty('--tl-width', (90 - percents[tl_style]) + "%");
 			};
 			top_bar_elems.slider.innerHTML = '<img src="assets/images/tl_slide.png">';
 			if(top_bar_elems.refresh)
@@ -1684,13 +1671,13 @@ function prepareGroupOn(node, i)
 		
 		let marker = addTo(span, "div", {cls:["marker", "inline"], br:false}); // left marker (modified, plugins...)
 		
-		let original = addTo(span, "pre", {cls:["title", "inline", "smalltext", "original"], br:false}); // original string
+		let original = addTo(span, "pre", {cls:["title", "inline", "smalltext", "string-area", "original"], br:false}); // original string
 		original.group = i;
 		original.string = j;
 		original.textContent = prjstring[prjlist[i][j][0]][0];
 		const occurence = prjstring[prjlist[i][j][0]][2];
 		
-		let translation = addTo(span, "pre", {cls:["title", "inline", "smalltext", "translation"], br:false}); // translated string
+		let translation = addTo(span, "pre", {cls:["title", "inline", "smalltext", "string-area", "translation"], br:false}); // translated string
 		translation.group = i;
 		translation.string = j;
 		
