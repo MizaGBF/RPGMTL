@@ -264,6 +264,15 @@ function add_to(node, tagName, {cls = [], id = null, title = null, onload = null
 	return tag;
 }
 
+function add_button(node, title, img = null, callback = null)
+{
+	let btn = add_to(node, "div", {cls:["interact", "button"], title:title, onclick:callback, br:false});
+	let img_node = document.createElement("img");
+	img_node.src = img;
+	btn.appendChild(img_node);
+	return btn;
+}
+
 // set the loading element visibility
 function set_loading(state)
 {
@@ -415,14 +424,13 @@ function update_top_bar(title, back_callback, help_callback = null, additions = 
 	if(!top_bar_elems.back) // meaning empty, initialization
 	{
 		let fragment = document.createDocumentFragment();
-		top_bar_elems.back = add_to(fragment, "div", {cls:["interact", "button"], title:"Back", br:false});
-		top_bar_elems.back.appendChild(document.createElement("img"));
+		top_bar_elems.back = add_button(fragment, "Back");
 		top_bar_elems.title = add_to(fragment, "div", {cls:["inline", "text-wrapper"], br:false});
 		top_bar_elems.spacer = add_to(fragment, "div", {cls:["barfill"], br:false});
-		top_bar_elems.help = add_to(fragment, "div", {cls:["interact", "button"], title:"Help", br:false});
-		top_bar_elems.help.innerHTML = '<img src="assets/images/help.png">';
+		top_bar_elems.help = add_button(fragment, "Help", "assets/images/help.png");
 		bar.appendChild(fragment);
 	}
+	top_bar_elems.back.classList.toggle("shutdown", false);
 	// set title
 	top_bar_elems.title.innerText = title;
 	// set back callback
@@ -453,15 +461,10 @@ function update_top_bar(title, back_callback, help_callback = null, additions = 
 	{
 		if(!top_bar_elems.home)
 		{
-			top_bar_elems.home = document.createElement("div");
-			top_bar_elems.home.classList.add("interact");
-			top_bar_elems.home.classList.add("button");
-			top_bar_elems.home.title = "Project Select Page";
-			top_bar_elems.home.onclick = function(){
+			top_bar_elems.home = add_button(null, "Project Select Page", "assets/images/home.png", function(){
 				bottom.style.display = "none";
 				post("/api/main", project_list);
-			};
-			top_bar_elems.home.innerHTML = '<img src="assets/images/home.png">';
+			});
 			top_bar_elems.back.after(top_bar_elems.home);
 		}
 	}
@@ -479,15 +482,10 @@ function update_top_bar(title, back_callback, help_callback = null, additions = 
 	{
 		if(!top_bar_elems.project)
 		{
-			top_bar_elems.project = document.createElement("div");
-			top_bar_elems.project.classList.add("interact");
-			top_bar_elems.project.classList.add("button");
-			top_bar_elems.project.title = "Project Menu";
-			top_bar_elems.project.onclick = function(){
+			top_bar_elems.home = add_button(null, "Project Menu", "assets/images/project.png", function(){
 				bottom.style.display = "none";
 				post("/api/open_project", project_menu, project_fail, {"name":prjname});
-			};
-			top_bar_elems.project.innerHTML = '<img src="assets/images/project.png">';
+			});
 			if(top_bar_elems.home)
 				top_bar_elems.home.after(top_bar_elems.project);
 			else
@@ -508,14 +506,9 @@ function update_top_bar(title, back_callback, help_callback = null, additions = 
 	{
 		if(!top_bar_elems.github)
 		{
-			top_bar_elems.github = document.createElement("div");
-			top_bar_elems.github.classList.add("interact");
-			top_bar_elems.github.classList.add("button");
-			top_bar_elems.github.title = "Github Page";
-			top_bar_elems.github.onclick = function(){
+			top_bar_elems.github = add_button(null, "Github Page", "assets/images/github.png", function(){
 				window.open("https://github.com/MizaGBF/RPGMTL", "_blank")
-			};
-			top_bar_elems.github.innerHTML = '<img src="assets/images/github.png">';
+			});
 			top_bar_elems.help.before(top_bar_elems.github);
 		}
 	}
@@ -533,13 +526,7 @@ function update_top_bar(title, back_callback, help_callback = null, additions = 
 	{
 		if(!top_bar_elems.refresh)
 		{
-			top_bar_elems.refresh = document.createElement("div");
-			top_bar_elems.refresh.classList.add("interact");
-			top_bar_elems.refresh.classList.add("button");
-			top_bar_elems.refresh.title = "Refresh";
-			
-			top_bar_elems.refresh.onclick = additions.refresh_callback;
-			top_bar_elems.refresh.innerHTML = '<img src="assets/images/update.png">';
+			top_bar_elems.refresh = add_button(null, "Refresh", "assets/images/update.png", additions.refresh_callback);
 			top_bar_elems.help.before(top_bar_elems.refresh);
 		}
 		else top_bar_elems.refresh.onclick = additions.refresh_callback;
@@ -558,12 +545,7 @@ function update_top_bar(title, back_callback, help_callback = null, additions = 
 	{
 		if(!top_bar_elems.slider)
 		{
-			top_bar_elems.slider = document.createElement("div");
-			top_bar_elems.slider.classList.add("interact");
-			top_bar_elems.slider.classList.add("button");
-			top_bar_elems.slider.title = "Slide the Original / Translation areas";
-			
-			top_bar_elems.slider.onclick = function(){
+			top_bar_elems.slider = add_button(null, "Slide String Areas", "assets/images/tl_slide.png", function(){
 				tl_style = (tl_style + 1) % 5;
 				/* Positions
 					10% 25% 45% 65% 80%
@@ -571,8 +553,7 @@ function update_top_bar(title, back_callback, help_callback = null, additions = 
 				const percents = [10, 25, 45, 65, 80];
 				document.documentElement.style.setProperty('--ori-width', percents[tl_style] + "%");
 				document.documentElement.style.setProperty('--tl-width', (90 - percents[tl_style]) + "%");
-			};
-			top_bar_elems.slider.innerHTML = '<img src="assets/images/tl_slide.png">';
+			});
 			if(top_bar_elems.refresh)
 				top_bar_elems.refresh.before(top_bar_elems.slider);
 			else
@@ -593,23 +574,13 @@ function update_top_bar(title, back_callback, help_callback = null, additions = 
 	{
 		if(!top_bar_elems.next_file)
 		{
-			top_bar_elems.next_file = document.createElement("div");
-			top_bar_elems.next_file.classList.add("interact");
-			top_bar_elems.next_file.classList.add("button");
-			top_bar_elems.next_file.title = "Next File";
-			top_bar_elems.next_file.onclick = additions.file_nav_next_callback;
-			top_bar_elems.next_file.innerHTML = '<img src="assets/images/next.png">';
+			top_bar_elems.next_file = add_button(null, "Next File", "assets/images/next.png", additions.file_nav_next_callback);
 			top_bar_elems.slider.before(top_bar_elems.next_file);
 		}
 		else top_bar_elems.next_file.onclick = additions.file_nav_next_callback;
 		if(!top_bar_elems.prev_file)
 		{
-			top_bar_elems.prev_file = document.createElement("div");
-			top_bar_elems.prev_file.classList.add("interact");
-			top_bar_elems.prev_file.classList.add("button");
-			top_bar_elems.prev_file.title = "Previous File";
-			top_bar_elems.prev_file.onclick = additions.file_nav_previous_callback;
-			top_bar_elems.prev_file.innerHTML = '<img src="assets/images/previous.png">';
+			top_bar_elems.next_file = add_button(null, "Previous File", "assets/images/previous.png", additions.file_nav_previous_callback);
 			top_bar_elems.next_file.before(top_bar_elems.prev_file);
 		}
 		else top_bar_elems.prev_file.onclick = additions.file_nav_previous_callback;
@@ -629,25 +600,6 @@ function update_top_bar(title, back_callback, help_callback = null, additions = 
 			delete top_bar_elems.prev_file;
 		}
 	}
-}
-
-
-// add home button
-// utility function to not repeat the code everywhere
-function add_home_to(fragment)
-{
-	add_to(fragment, "div", {cls:["interact", "button"], title:"Project Select Page", br:false, onclick:function(){
-		post("/api/main", project_list);
-	}}).innerHTML = '<img src="assets/images/home.png">';
-}
-
-// add project button
-// same as add_home_to but for the project button
-function add_project_to(fragment)
-{
-	add_to(fragment, "div", {cls:["interact", "button"], title:"Project Menu", br:false, onclick:function(){
-		post("/api/open_project", project_menu, project_fail, {"name":prjname});
-	}}).innerHTML = '<img src="assets/images/project.png">';
 }
 
 // handle result of /api/main
@@ -798,7 +750,7 @@ function setting_menu(data)
 					{
 						add_to(fragment, "div", {cls:["settingtext"], br:false}).innerHTML = fdata[0];
 						// add a simple toggle
-						const elem = add_to(fragment, "div", {cls:["interact", "button"], onclick:function(){
+						const elem = add_button(fragment, "Set", "assets/images/confirm.png", function(){
 							let callback = function(result_data) {
 								push_popup("The setting has been updated.");
 								set_loading(false);
@@ -809,8 +761,7 @@ function setting_menu(data)
 								post("/api/update_settings", callback, null, {name:prjname, key:key, value:!elem.classList.contains("green")});
 							else
 								post("/api/update_settings", callback, null, {key:key, value:!elem.classList.contains("green")});
-						}});
-						elem.innerHTML = '<img src="assets/images/confirm.png">';
+						});
 						if(key in settings)
 							elem.classList.toggle("green", settings[key]);
 						++count;
@@ -825,7 +776,7 @@ function setting_menu(data)
 							const input = add_to(fragment, "input", {cls:["input", "smallinput"], br:false});
 							input.type = "text";
 							// and confirmation button
-							const elem = add_to(fragment, "div", {cls:["interact", "button"], onclick:function(){
+							const elem = add_button(fragment, "Set", "assets/images/confirm.png", function(){
 								let val = "";
 								switch(fdata[1]) // make sure our value is what RPGMTL wants
 								{
@@ -859,8 +810,7 @@ function setting_menu(data)
 									post("/api/update_settings", callback, null, {name:prjname, key:key, value:val});
 								else
 									post("/api/update_settings", callback, null, {key:key, value:val});
-							}});
-							elem.innerHTML = '<img src="assets/images/confirm.png">';
+							});
 							// add listener to detect keypress
 							input.addEventListener('keypress', function(event) {
 								if (event.key === 'Enter')
@@ -885,7 +835,7 @@ function setting_menu(data)
 								opt.textContent = fdata[2][i];
 							}
 							// and confirmation button
-							const elem = add_to(fragment, "div", {cls:["interact", "button"], onclick:function()
+							const elem = add_button(fragment, "Set", "assets/images/confirm.png", function()
 							{
 								let callback = function(result_data) {
 									push_popup("The setting has been updated.");
@@ -897,8 +847,7 @@ function setting_menu(data)
 									post("/api/update_settings", callback, null, {name:prjname, key:key, value:sel.value});
 								else
 									post("/api/update_settings", callback, null, {key:key, value:sel.value});
-							}});
-							elem.innerHTML = '<img src="assets/images/confirm.png">';
+							});
 							if(key in settings)
 								sel.value = settings[key];
 							++count;
@@ -986,7 +935,7 @@ function translator_menu(data)
 				}
 				const tindex = t;
 				// and confirmation button
-				const elem = add_to(fragment, "div", {cls:["interact", "button"], onclick:function()
+				const elem = add_button(fragment, "Set", "assets/images/confirm.png", function()
 				{
 					let callback = function(result_data) {
 						push_popup("The setting has been updated.");
@@ -996,8 +945,7 @@ function translator_menu(data)
 						post("/api/update_translator", callback, null, {name:prjname, value:sel.value, index:tindex});
 					else
 						post("/api/update_translator", callback, null, {value:sel.value, index:tindex});
-				}});
-				elem.innerHTML = '<img src="assets/images/confirm.png">';
+				});
 				sel.value = data[possibles[t]];
 			}
 		}
@@ -1183,13 +1131,12 @@ function addSearchBar(node, bp, defaultVal = null)
 	else
 		input.value = "";
 	// add confirm button
-	const button = add_to(node, "div", {cls:["interact", "button"], title:"Search", onclick:function(){
+	const button = add_button(node, "Search", "assets/images/search.png", function(){
 		if(input.value != "")
 		{
 			post("/api/search_string", string_search, null, {name:prjname, path:bp, search:input.value});
 		}
-	}});
-	button.innerHTML = '<img src="assets/images/search.png">';
+	});
 	// and listener for return key
 	input.addEventListener('keypress', function(event) {
 		if (event.key === 'Enter')
