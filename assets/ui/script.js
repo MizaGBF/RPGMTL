@@ -59,15 +59,15 @@ function load_location()
 		{
 			case "menu":
 			{
-				postAPI("/api/open_project", project_menu, function() {
-					postAPI("/api/main", project_list);
+				post("/api/open_project", project_menu, function() {
+					post("/api/main", project_list);
 				}, {name:urlparams.get("name")});
 				break;
 			}
 			case "settings":
 			{
-				postAPI("/api/settings", setting_menu, function() {
-					postAPI("/api/main", project_list);
+				post("/api/settings", setting_menu, function() {
+					post("/api/main", project_list);
 				}, {name:urlparams.get("name")});
 				break;
 			}
@@ -75,64 +75,64 @@ function load_location()
 			{
 				if(urlparams.has("name"))
 				{
-					postAPI("/api/translator", translator_menu, function() {
-						postAPI("/api/main", project_list);
+					post("/api/translator", translator_menu, function() {
+						post("/api/main", project_list);
 					}, {name:urlparams.get("name")});
 				}
 				else
 				{
-					postAPI("/api/translator", translator_menu, function() {
-						postAPI("/api/main", project_list);
+					post("/api/translator", translator_menu, function() {
+						post("/api/main", project_list);
 					});
 				}
 				break;
 			}
 			case "browse":
 			{
-				postAPI("/api/browse", browse_files, function() {
-					postAPI("/api/main", project_list);
+				post("/api/browse", browse_files, function() {
+					post("/api/main", project_list);
 				}, {name:urlparams.get("name"), path:JSON.parse(b64tos(urlparams.get("params")))});
 				break;
 			}
 			case "search_string":
 			{
 				let p = JSON.parse(b64tos(urlparams.get("params")));
-				postAPI("/api/search_string", string_search, function() {
-					postAPI("/api/main", project_list);
+				post("/api/search_string", string_search, function() {
+					post("/api/main", project_list);
 				}, {name:urlparams.get("name"), path:p.path, search:p.search});
 				break;
 			}
 			case "patches":
 			{
-				postAPI("/api/patches", browse_patches, function() {
-					postAPI("/api/main", project_list);
+				post("/api/patches", browse_patches, function() {
+					post("/api/main", project_list);
 				}, {name:urlparams.get("name")});
 				break;
 			}
 			case "open_patch":
 			{
-				postAPI("/api/open_patch", edit_patch, function() {
-					postAPI("/api/main", project_list);
+				post("/api/open_patch", edit_patch, function() {
+					post("/api/main", project_list);
 				}, {name:urlparams.get("name"), key:JSON.parse(b64tos(urlparams.get("params")))});
 				break;
 			}
 			case "backups":
 			{
-				postAPI("/api/backups", backup_list, function() {
-					postAPI("/api/main", project_list);
+				post("/api/backups", backup_list, function() {
+					post("/api/main", project_list);
 				}, {name:urlparams.get("name")});
 				break;
 			}
 			case "file":
 			{
-				postAPI("/api/file", open_file, function() {
-					postAPI("/api/main", project_list);
+				post("/api/file", open_file, function() {
+					post("/api/main", project_list);
 				}, {name:urlparams.get("name"), path:JSON.parse(b64tos(urlparams.get("params")))});
 				break;
 			}
 			default:
 			{
-				postAPI("/api/main", project_list);
+				post("/api/main", project_list);
 				break;
 			}
 		};
@@ -140,7 +140,7 @@ function load_location()
 	catch(err)
 	{
 		console.error(err);
-		postAPI("/api/main", project_list);
+		post("/api/main", project_list);
 	}
 }
 
@@ -285,46 +285,33 @@ function set_loading_text(content)
 	loadertext.textContent = content;
 }
 
-// make a GET request
+// make a POST request
 // About callbacks:
 // success is called on success
 // failure is called on failure
-function getAPI(url, success = null, failure = null)
+function post(url, success = null, failure = null, payload = {})
 {
-	reqAPI("GET", url, success, failure);
-}
-
-// make a POST request
-function postAPI(url, success = null, failure = null, payload = null)
-{
-	reqAPI("POST", url, success, failure, payload);
-}
-
-// process requests
-function reqAPI(type, url, success, failure, payload = null)
-{
-	set_loading(true); // enable loading element
-	var xhr = new XMLHttpRequest();
-	// we call processAPI regardless of result, with our success/failure callbacks
-	xhr.ontimeout = function () {
-		processAPI.apply(xhr, [success, failure]);
-	};
-	xhr.onload = function() {
-		if (xhr.readyState === 4) {
-			processAPI.apply(xhr, [success, failure]);
+	set_loading(true);
+	fetch(
+		url,
+		{
+			method: "POST", // Specify the HTTP method
+			headers: {"Content-Type": "application/json;charset=UTF-8"},
+			body: JSON.stringify(payload)
 		}
-	};
-	xhr.open(type, url, true); // set request type here
-	xhr.timeout = 0; // no timeout
-	if(type == "POST" && payload != null)
-	{
-		xhr.setRequestHeader("Content-Type", "application/json;charset=UTF-8");
-		xhr.send(JSON.stringify(payload));
-	}
-	else
-	{
-		xhr.send(null);
-	}
+	).then(
+		response => {
+			try
+			{
+				response.json().then((json) => {
+					process_call(json, success, failure);
+				});
+			} catch(err) {
+				console.error("Unexpected error", err.stack);
+				set_loading_text("An unexpected error occured.<br>" + err.stack + "<br><br>Refresh the page.<br>Make sure to report the bug if the issue continue.");
+			}
+		}
+	);
 }
 
 // Remove selected flag on a button
@@ -373,11 +360,10 @@ function update_main(fragment)
 }
 
 // generitc function to process the result of requests
-function processAPI(success, failure)
+function process_call(json, success, failure)
 {
 	try
 	{
-		let json = JSON.parse(this.response);
 		if("message" in json)
 			push_popup(json["message"]);
 		if(json["result"] == "ok") // good result
@@ -473,7 +459,7 @@ function update_top_bar(title, back_callback, help_callback = null, additions = 
 			top_bar_elems.home.title = "Project Select Page";
 			top_bar_elems.home.onclick = function(){
 				bottom.style.display = "none";
-				postAPI("/api/main", project_list);
+				post("/api/main", project_list);
 			};
 			top_bar_elems.home.innerHTML = '<img src="assets/images/home.png">';
 			top_bar_elems.back.after(top_bar_elems.home);
@@ -499,7 +485,7 @@ function update_top_bar(title, back_callback, help_callback = null, additions = 
 			top_bar_elems.project.title = "Project Menu";
 			top_bar_elems.project.onclick = function(){
 				bottom.style.display = "none";
-				postAPI("/api/open_project", project_menu, project_fail, {"name":prjname});
+				post("/api/open_project", project_menu, project_fail, {"name":prjname});
 			};
 			top_bar_elems.project.innerHTML = '<img src="assets/images/project.png">';
 			if(top_bar_elems.home)
@@ -651,7 +637,7 @@ function update_top_bar(title, back_callback, help_callback = null, additions = 
 function add_home_to(fragment)
 {
 	add_to(fragment, "div", {cls:["interact", "button"], title:"Project Select Page", br:false, onclick:function(){
-		postAPI("/api/main", project_list);
+		post("/api/main", project_list);
 	}}).innerHTML = '<img src="assets/images/home.png">';
 }
 
@@ -660,7 +646,7 @@ function add_home_to(fragment)
 function add_project_to(fragment)
 {
 	add_to(fragment, "div", {cls:["interact", "button"], title:"Project Menu", br:false, onclick:function(){
-		postAPI("/api/open_project", project_menu, project_fail, {"name":prjname});
+		post("/api/open_project", project_menu, project_fail, {"name":prjname});
 	}}).innerHTML = '<img src="assets/images/project.png">';
 }
 
@@ -677,7 +663,7 @@ function project_list(data)
 			if(this.classList.contains("shutdown") || window.event.ctrlKey)
 			{
 				this.classList.toggle("shutdown", false);
-				postAPI("/api/shutdown", function(_unused_) {
+				post("/api/shutdown", function(_unused_) {
 					bar.innerHTML = "";
 					let fragment = clear_main();
 					add_to(fragment, "div", {cls:["title"]}).innerText = "RPGMTL has been shutdown";
@@ -715,7 +701,7 @@ function project_list(data)
 		{
 			const t = data["list"][i];
 			add_to(fragment, "div", {cls:["interact"], onclick:function(){
-				postAPI("/api/open_project", project_menu, project_fail, {"name":t});
+				post("/api/open_project", project_menu, project_fail, {"name":t});
 			}}).innerHTML = data["list"][i];
 		}
 	}
@@ -725,10 +711,10 @@ function project_list(data)
 		local_browse("Create a project", "Select a Game executable.", 0);
 	}}).innerHTML = '<img src="assets/images/new.png"> New Project';
 	add_to(fragment, "div", {cls:["interact"], onclick:function(){
-		postAPI("/api/settings", setting_menu);
+		post("/api/settings", setting_menu);
 	}}).innerHTML = '<img src="assets/images/setting.png"> Global Settings';
 	add_to(fragment, "div", {cls:["interact"], onclick:function(){
-		postAPI("/api/translator", translator_menu);
+		post("/api/translator", translator_menu);
 	}}).innerHTML = '<img src="assets/images/translate.png"> Default Translator';
 	add_to(fragment, "div", {cls:["spacer"]});
 	// quick links
@@ -739,8 +725,8 @@ function project_list(data)
 		{
 			const c_entry = data["history"][i];
 			add_to(fragment, "div", {cls:["interact", "text-wrapper"], onclick:function() {
-				postAPI("/api/file", open_file, function() {
-					postAPI("/api/main", project_list);
+				post("/api/file", open_file, function() {
+					post("/api/main", project_list);
 				}, {name:c_entry[0], path:c_entry[1]});
 			}}).innerHTML = c_entry[0] + ": " + c_entry[1];
 		}
@@ -764,7 +750,7 @@ function setting_menu(data)
 				if(is_project)
 					project_menu();
 				else
-					postAPI("/api/main", project_list);
+					post("/api/main", project_list);
 			},
 			function(){ // help
 				help.innerHTML = "<ul>\
@@ -787,7 +773,7 @@ function setting_menu(data)
 		if(is_project) // add button to reset settings of THIS project
 		{
 			add_to(fragment, "div", {cls:["interact"], onclick:function(){
-				postAPI("/api/update_settings", function(result_data) {
+				post("/api/update_settings", function(result_data) {
 					push_popup("The Project Settings have been reset to Global Settings.");
 					project_menu();
 				}, null, {name:prjname});
@@ -820,9 +806,9 @@ function setting_menu(data)
 									elem.classList.toggle("green", result_data["settings"][key]);
 							};
 							if(is_project)
-								postAPI("/api/update_settings", callback, null, {name:prjname, key:key, value:!elem.classList.contains("green")});
+								post("/api/update_settings", callback, null, {name:prjname, key:key, value:!elem.classList.contains("green")});
 							else
-								postAPI("/api/update_settings", callback, null, {key:key, value:!elem.classList.contains("green")});
+								post("/api/update_settings", callback, null, {key:key, value:!elem.classList.contains("green")});
 						}});
 						elem.innerHTML = '<img src="assets/images/confirm.png">';
 						if(key in settings)
@@ -870,9 +856,9 @@ function setting_menu(data)
 										input.value = result_data["settings"][key];
 								};
 								if(is_project)
-									postAPI("/api/update_settings", callback, null, {name:prjname, key:key, value:val});
+									post("/api/update_settings", callback, null, {name:prjname, key:key, value:val});
 								else
-									postAPI("/api/update_settings", callback, null, {key:key, value:val});
+									post("/api/update_settings", callback, null, {key:key, value:val});
 							}});
 							elem.innerHTML = '<img src="assets/images/confirm.png">';
 							// add listener to detect keypress
@@ -908,9 +894,9 @@ function setting_menu(data)
 										set.value = result_data["settings"][key];
 								};
 								if(is_project)
-									postAPI("/api/update_settings", callback, null, {name:prjname, key:key, value:sel.value});
+									post("/api/update_settings", callback, null, {name:prjname, key:key, value:sel.value});
 								else
-									postAPI("/api/update_settings", callback, null, {key:key, value:sel.value});
+									post("/api/update_settings", callback, null, {key:key, value:sel.value});
 							}});
 							elem.innerHTML = '<img src="assets/images/confirm.png">';
 							if(key in settings)
@@ -930,7 +916,7 @@ function setting_menu(data)
 	{
 		console.error("Exception thrown", err.stack);
 		push_popup("An unexpected error occured.");
-		postAPI("/api/main", project_list);
+		post("/api/main", project_list);
 	}
 }
 
@@ -950,7 +936,7 @@ function translator_menu(data)
 				if(is_project)
 					project_menu();
 				else
-					postAPI("/api/main", project_list);
+					post("/api/main", project_list);
 			},
 			function(){ // help
 				help.innerHTML = "<ul>\
@@ -982,7 +968,7 @@ function translator_menu(data)
 				if(t == 0 && is_project) // add button to reset project setting (Only at the top)
 				{
 					add_to(fragment, "div", {cls:["interact"], onclick:function(){
-						postAPI("/api/update_translator", function(result_data) {
+						post("/api/update_translator", function(result_data) {
 							push_popup("The Project Translator have been reset to the default.");
 							project_menu();
 						}, null, {name:prjname});
@@ -1007,9 +993,9 @@ function translator_menu(data)
 						set_loading(false);
 					};
 					if(is_project)
-						postAPI("/api/update_translator", callback, null, {name:prjname, value:sel.value, index:tindex});
+						post("/api/update_translator", callback, null, {name:prjname, value:sel.value, index:tindex});
 					else
-						postAPI("/api/update_translator", callback, null, {value:sel.value, index:tindex});
+						post("/api/update_translator", callback, null, {value:sel.value, index:tindex});
 				}});
 				elem.innerHTML = '<img src="assets/images/confirm.png">';
 				sel.value = data[possibles[t]];
@@ -1021,7 +1007,7 @@ function translator_menu(data)
 	{
 		console.error("Exception thrown", err.stack);
 		push_popup("An unexpected error occured.");
-		postAPI("/api/main", project_list);
+		post("/api/main", project_list);
 	}
 }
 
@@ -1032,7 +1018,7 @@ function project_creation(data)
 	
 	if(data["path"] == "" || data["path"] == null)
 	{
-		postAPI("/api/main", project_list);
+		post("/api/main", project_list);
 	}
 	else
 	{
@@ -1041,7 +1027,7 @@ function project_creation(data)
 		update_top_bar(
 			"Create a new Project",
 			function(){ // back callback
-				postAPI("/api/main", project_list);
+				post("/api/main", project_list);
 			},
 			function(){ // help
 				help.innerHTML = "<ul>\
@@ -1070,7 +1056,7 @@ function project_creation(data)
 		add_to(fragment, "div", {cls:["interact"], onclick:function(){
 			set_loading_text("Creating the project...");
 			if(input.value.trim() != "")
-				postAPI("/api/new_project", project_menu, project_fail, {path: path, name: input.value});
+				post("/api/new_project", project_menu, project_fail, {path: path, name: input.value});
 		}}).innerHTML = '<img src="assets/images/confirm.png"> Create';
 		update_main(fragment);
 	}
@@ -1079,7 +1065,7 @@ function project_creation(data)
 // fallback if a critical error occured
 function project_fail()
 {
-	postAPI("/api/main", project_list);
+	post("/api/main", project_list);
 }
 
 // display project options (called by many API and more, data is optional and unused)
@@ -1093,7 +1079,7 @@ function project_menu(data = null)
 		update_top_bar(
 			prjname,
 			function(){ // back callback
-				postAPI("/api/main", project_list);
+				post("/api/main", project_list);
 			},
 			function(){ // help
 				help.innerHTML = "<ul>\
@@ -1128,24 +1114,24 @@ function project_menu(data = null)
 		if(prj.files)
 		{
 			add_to(fragment, "div", {cls:["interact"], onclick:function(){
-				postAPI("/api/browse", browse_files, null, {name:prjname, path:""});
+				post("/api/browse", browse_files, null, {name:prjname, path:""});
 			}}).innerHTML = '<img src="assets/images/folder.png"> Browse Files';
 			add_to(fragment, "div", {cls:["interact"], onclick:function(){
-				postAPI("/api/patches", browse_patches, null, {name:prjname});
+				post("/api/patches", browse_patches, null, {name:prjname});
 			}}).innerHTML = '<img src="assets/images/bandaid.png"> Add a Fix';
 			add_to(fragment, "div", {cls:["interact"], onclick:function(){
 				replace_page();
 			}}).innerHTML = '<img src="assets/images/copy.png"> Replace Strings in batch';
 		}
 		add_to(fragment, "div", {cls:["interact"], onclick:function(){
-			postAPI("/api/settings", setting_menu, null, {name:prjname});
+			post("/api/settings", setting_menu, null, {name:prjname});
 		}}).innerHTML = '<img src="assets/images/setting.png"> Project Settings';
 		add_to(fragment, "div", {cls:["interact"], onclick:function(){
-			postAPI("/api/translator", translator_menu, null, {name:prjname});
+			post("/api/translator", translator_menu, null, {name:prjname});
 		}}).innerHTML = '<img src="assets/images/translate.png"> Project Translator';
 		add_to(fragment, "div", {cls:["interact"], onclick:function(){
-			postAPI("/api/unload", function() {
-				postAPI("/api/main", project_list)
+			post("/api/unload", function() {
+				post("/api/main", project_list)
 			}, null, {name:prjname});
 		}}).innerHTML = '<img src="assets/images/cancel.png"> Unload the Project';
 		add_to(fragment, "div", {cls:["spacer"]});
@@ -1154,17 +1140,17 @@ function project_menu(data = null)
 		}}).innerHTML = '<img src="assets/images/update.png"> Update the Game Files';
 		add_to(fragment, "div", {cls:["interact"], onclick:function(){
 			set_loading_text("Extracting, be patient...");
-			postAPI("/api/extract", project_menu, project_fail, {name:prjname});
+			post("/api/extract", project_menu, project_fail, {name:prjname});
 		}}).innerHTML = '<img src="assets/images/export.png"> Extract the Strings';
 		if(prj.files)
 		{
 			add_to(fragment, "div", {cls:["interact"], onclick:function(){
 				set_loading_text("The patch is being generated in the release folder...");
-				postAPI("/api/release", project_menu, null, {name:prjname});
+				post("/api/release", project_menu, null, {name:prjname});
 			}}).innerHTML = '<img src="assets/images/release.png"> Release a Patch';
 			add_to(fragment, "div", {cls:["spacer"]});
 			add_to(fragment, "div", {cls:["interact"], onclick:function(){
-				postAPI("/api/backups", backup_list, null, {name:prjname});
+				post("/api/backups", backup_list, null, {name:prjname});
 			}}).innerHTML = '<img src="assets/images/copy.png"> String Backups';
 			add_to(fragment, "div", {cls:["interact"], onclick:function(){
 				local_browse("Import RPGMTL", "Select an old RPGMTL strings file.", 2);
@@ -1180,7 +1166,7 @@ function project_menu(data = null)
 	{
 		console.error("Exception thrown", err.stack);
 		push_popup("An unexpected error occured.");
-		postAPI("/api/main", project_list);
+		post("/api/main", project_list);
 	}
 }
 
@@ -1200,7 +1186,7 @@ function addSearchBar(node, bp, defaultVal = null)
 	const button = add_to(node, "div", {cls:["interact", "button"], title:"Search", onclick:function(){
 		if(input.value != "")
 		{
-			postAPI("/api/search_string", string_search, null, {name:prjname, path:bp, search:input.value});
+			post("/api/search_string", string_search, null, {name:prjname, path:bp, search:input.value});
 		}
 	}});
 	button.innerHTML = '<img src="assets/images/search.png">';
@@ -1244,7 +1230,7 @@ function browse_files(data)
 				else
 				{
 					if(returnpath == '/') returnpath = ''; // if return path is a single slash, set to empty first
-					postAPI("/api/browse", browse_files, null, {name:prjname, path:returnpath});
+					post("/api/browse", browse_files, null, {name:prjname, path:returnpath});
 				}
 			},
 			function(){ // help
@@ -1259,7 +1245,7 @@ function browse_files(data)
 				project:1,
 				refresh:1,
 				refresh_callback:function(){
-					postAPI("/api/browse", browse_files, null, {name:prjname, path:bp});
+					post("/api/browse", browse_files, null, {name:prjname, path:bp});
 				}
 			}
 		);
@@ -1301,12 +1287,12 @@ function browse_files(data)
 				{
 					let s = bp.split("/"); // at least 2 elements in s means there is one slash in the path, i.e. we aren't in the root level
 					if(s.length == 2)
-						postAPI("/api/browse", browse_files, null, {name:prjname, path:""});
+						post("/api/browse", browse_files, null, {name:prjname, path:""});
 					else
-						postAPI("/api/browse", browse_files, null, {name:prjname, path:s.slice(0, s.length-2).join("/") + "/"});
+						post("/api/browse", browse_files, null, {name:prjname, path:s.slice(0, s.length-2).join("/") + "/"});
 				}
 				else // open whatever folder it is
-					postAPI("/api/browse", browse_files, null, {name:prjname, path:t});
+					post("/api/browse", browse_files, null, {name:prjname, path:t});
 			};
 		}
 		add_to(fragment, "div", {cls:["title", "left"]}).innerHTML = "List of Files";
@@ -1322,12 +1308,12 @@ function browse_files(data)
 			let button = add_to(fragment, "div", {cls:cls[+value], br:false, id:"text:"+key, onclick:function(){
 				if(window.event.ctrlKey) // ignore shortcut
 				{
-					postAPI("/api/ignore_file", update_file_list, null, {name:prjname, path:key, state:+!this.classList.contains("disabled")});
+					post("/api/ignore_file", update_file_list, null, {name:prjname, path:key, state:+!this.classList.contains("disabled")});
 				}
 				else
 				{
 					set_loading_text("Opening " + key + "...");
-					postAPI("/api/file", open_file, null, {name:prjname, path:key});
+					post("/api/file", open_file, null, {name:prjname, path:key});
 				}
 			}});
 			// add completion indicator
@@ -1384,11 +1370,11 @@ function string_search(data)
 			function(){ // back callback
 				if(bp in data["files"])
 				{
-					postAPI("/api/file", open_file, null, {name:prjname, path:data["path"]});
+					post("/api/file", open_file, null, {name:prjname, path:data["path"]});
 				}
 				else
 				{
-					postAPI("/api/browse", browse_files, null, {name:prjname, path:data["path"]});
+					post("/api/browse", browse_files, null, {name:prjname, path:data["path"]});
 				}
 			},
 			function(){ // help
@@ -1419,12 +1405,12 @@ function string_search(data)
 			let button = add_to(fragment, "div", {cls:cls[+value], br:false, id:"text:"+key, onclick:function(){
 				if(window.event.ctrlKey) // disable shortcut
 				{
-					postAPI("/api/ignore_file", update_file_list, null, {name:prjname, path:key, state:+!this.classList.contains("disabled")});
+					post("/api/ignore_file", update_file_list, null, {name:prjname, path:key, state:+!this.classList.contains("disabled")});
 				}
 				else
 				{
 					set_loading_text("Opening " + key + "...");
-					postAPI("/api/file", open_file, null, {name:prjname, path:key});
+					post("/api/file", open_file, null, {name:prjname, path:key});
 				}
 			}});
 			let total = prj["files"][key]["strings"] - prj["files"][key]["disabled_strings"];
@@ -1476,7 +1462,7 @@ function browse_patches(data)
 			// add button to open
 			add_to(fragment, "div", {cls:["interact"], onclick:function()
 			{
-				postAPI("/api/open_patch", edit_patch, null, {name:prjname, key:key});
+				post("/api/open_patch", edit_patch, null, {name:prjname, key:key});
 			}
 			}).innerHTML = '<img src="assets/images/bandaid.png"> ' + key;
 		}
@@ -1507,7 +1493,7 @@ function edit_patch(data)
 		update_top_bar(
 			"Create a Fix",
 			function(){ // back callback
-				postAPI("/api/patches", browse_patches, null, {name:prjname});
+				post("/api/patches", browse_patches, null, {name:prjname});
 			},
 			function(){ // help
 				help.innerHTML = "<ul>\
@@ -1536,7 +1522,7 @@ function edit_patch(data)
 			let code = document.getElementById("fix").textContent;
 			if(newkey.trim() != "" && code.trim() != "")
 			{
-				postAPI("/api/update_patch", browse_patches, null, {name:prjname, key:key, newkey:newkey, code:code});
+				post("/api/update_patch", browse_patches, null, {name:prjname, key:key, newkey:newkey, code:code});
 			}
 			else
 			{
@@ -1544,7 +1530,7 @@ function edit_patch(data)
 			}
 		}}).innerHTML = '<img src="assets/images/confirm.png"> Confirm';
 		add_to(fragment, "div", {cls:["interact"], onclick:function(){
-			postAPI("/api/update_patch", browse_patches, null, {name:prjname, key:key});
+			post("/api/update_patch", browse_patches, null, {name:prjname, key:key});
 		}}).innerHTML = '<img src="assets/images/trash.png"> Delete';
 		
 		if(key != null)
@@ -1601,7 +1587,7 @@ function backup_list(data)
 				if(this.classList.contains("selected") || window.event.ctrlKey) // confirmation / shortcut to insta confirm
 				{
 					this.classList.toggle("selected", false);
-					postAPI("/api/load_backup", project_menu, null, {name:prjname, file:elem[0]});
+					post("/api/load_backup", project_menu, null, {name:prjname, file:elem[0]});
 				}
 				else
 				{
@@ -1690,13 +1676,13 @@ function prepareGroupOn(node, i)
 			{
 				laststringinteracted = tsize;
 				set_loading_text("Updating...");
-				postAPI("/api/update_string", update_string_list, null, {setting:1, version:prjversion, name:prjname, path:prjdata["path"], group:this.group, index:this.string});
+				post("/api/update_string", update_string_list, null, {setting:1, version:prjversion, name:prjname, path:prjdata["path"], group:this.group, index:this.string});
 			}
 			else if(window.event.ctrlKey && !window.event.shiftKey && window.event.altKey) // multi disable
 			{
 				laststringinteracted = tsize;
 				set_loading_text("Updating...");
-				postAPI("/api/update_string", update_string_list, null, {setting:2, version:prjversion, name:prjname, path:prjdata["path"], group:this.group, index:this.string});
+				post("/api/update_string", update_string_list, null, {setting:2, version:prjversion, name:prjname, path:prjdata["path"], group:this.group, index:this.string});
 			}
 			else if(!window.event.ctrlKey && window.event.shiftKey && !window.event.altKey) // unlink
 			{
@@ -1704,7 +1690,7 @@ function prepareGroupOn(node, i)
 				{
 					laststringinteracted = tsize;
 					set_loading_text("Updating...");
-					postAPI("/api/update_string", update_string_list, null, {setting:0, version:prjversion, name:prjname, path:prjdata["path"], group:this.group, index:this.string});
+					post("/api/update_string", update_string_list, null, {setting:0, version:prjversion, name:prjname, path:prjdata["path"], group:this.group, index:this.string});
 				}
 			}
 		};
@@ -1823,9 +1809,9 @@ function open_file(data)
 			function(){ // back callback
 				bottom.style.display = "none";
 				if(laststringsearch != null) // return to search result if we came from here
-					postAPI("/api/search_string", string_search, null, {name:prjname, path:returnpath, search:laststringsearch});
+					post("/api/search_string", string_search, null, {name:prjname, path:returnpath, search:laststringsearch});
 				else
-					postAPI("/api/browse", browse_files, null, {name:prjname, path:returnpath});
+					post("/api/browse", browse_files, null, {name:prjname, path:returnpath});
 			},
 			function(){ // help
 				help.innerHTML = "<ul>\
@@ -1848,17 +1834,17 @@ function open_file(data)
 				refresh:1,
 				refresh_callback:function(){
 					bottom.style.display = "none";
-					postAPI("/api/file", open_file, null, {name:prjname, path:lastfileopened});
+					post("/api/file", open_file, null, {name:prjname, path:lastfileopened});
 				},
 				slider:1,
 				file_nav:+(prev_file != null),
 				file_nav_previous_callback:function(){
 					bottom.style.display = "none";
-					postAPI("/api/file", open_file, null, {name:prjname, path:prev_file});
+					post("/api/file", open_file, null, {name:prjname, path:prev_file});
 				},
 				file_nav_next_callback:function(){
 					bottom.style.display = "none";
-					postAPI("/api/file", open_file, null, {name:prjname, path:next_file});
+					post("/api/file", open_file, null, {name:prjname, path:next_file});
 				}
 			}
 		);
@@ -1882,12 +1868,12 @@ function open_file(data)
 				if(this.classList.contains("selected") || window.event.ctrlKey) // confirmation / shortcut to insta confirm
 				{
 					this.classList.toggle("selected", false);
-					postAPI("/api/file_action",
+					post("/api/file_action",
 						function() {
-							postAPI("/api/file", open_file, null, {name:prjname, path:lastfileopened});
+							post("/api/file", open_file, null, {name:prjname, path:lastfileopened});
 						},
 						function() { // reload the file
-							postAPI("/api/browse", browse_files, null, {name:prjname, path:returnpath});
+							post("/api/browse", browse_files, null, {name:prjname, path:returnpath});
 						},
 						{name:prjname, path:lastfileopened, version:prjversion, key:key}
 					);
@@ -1907,9 +1893,9 @@ function open_file(data)
 			{
 				this.classList.toggle("selected", false);
 				set_loading_text("Translating this file, be patient...");
-				postAPI("/api/translate_file", update_string_list, function(){
+				post("/api/translate_file", update_string_list, function(){
 					bottom.style.display = "none";
-					postAPI("/api/browse", browse_files, null, {name:prjname, path:returnpath});
+					post("/api/browse", browse_files, null, {name:prjname, path:returnpath});
 				}, {name:prjname, path:lastfileopened, version:prjversion});
 			}
 			else
@@ -1926,13 +1912,13 @@ function open_file(data)
 				break;
 			case 1: // ARCHIVE
 				add_to(fragment, "div", {cls:["interact"], onclick:function() {
-					postAPI("/api/browse", browse_files, null, {name:prjname, path:lastfileopened + "/"});
+					post("/api/browse", browse_files, null, {name:prjname, path:lastfileopened + "/"});
 				}}).innerHTML = '<img src="assets/images/archive.png"> Access Files contained inside';
 				add_to(fragment, "div", {cls:["title", "left", "smalltext"]}).innerText = "This file has been divided into multiple files.";
 				break;
 			case 2: // VIRTUAL
 				add_to(fragment, "div", {cls:["interact"], onclick:function() {
-					postAPI("/api/file", open_file, null, {name:prjname, path:prj["files"][lastfileopened]["parent"]});
+					post("/api/file", open_file, null, {name:prjname, path:prj["files"][lastfileopened]["parent"]});
 				}}).innerHTML = '<img src="assets/images/archive.png"> Open Parent File';
 				add_to(fragment, "div", {cls:["title", "left", "smalltext"]}).innerText = "This file is part of a bigger file.";
 				break;
@@ -1998,14 +1984,14 @@ function apply_string(trash = false)
 	// folder path of file
 	const returnpath = prjdata["path"].includes('/') ? prjdata["path"].split('/').slice(0, prjdata["path"].split('/').length-1).join('/')+'/' : "";
 	if(trash)
-		postAPI("/api/update_string", update_string_list, function(){
+		post("/api/update_string", update_string_list, function(){
 			bottom.style.display = "none";
-			postAPI("/api/browse", browse_files, null, {name:prjname, path:returnpath});
+			post("/api/browse", browse_files, null, {name:prjname, path:returnpath});
 		}, {name:prjname, version:prjversion, path:prjdata["path"], group:currentstr.group, index:currentstr.string});
 	else
-		postAPI("/api/update_string", update_string_list, function(){
+		post("/api/update_string", update_string_list, function(){
 			bottom.style.display = "none";
-			postAPI("/api/browse", browse_files, null, {name:prjname, path:returnpath});
+			post("/api/browse", browse_files, null, {name:prjname, path:returnpath});
 		}, {name:prjname, version:prjversion, path:prjdata["path"], group:currentstr.group, index:currentstr.string, string:edit_tl.value});
 	currentstr.classList.toggle("selected-line", false);
 }
@@ -2081,7 +2067,7 @@ function update_string_list(data)
 function translate_string()
 {
 	set_loading_text("Fetching translation...");
-	postAPI("/api/translate_string", function(data) {
+	post("/api/translate_string", function(data) {
 		set_loading(false);
 		if(data["translation"] != null)
 		{
@@ -2107,7 +2093,7 @@ function local_browse(title, explanation, mode)
 				switch(filebrowsingmode)
 				{
 					case 0:
-						postAPI("/api/main", project_list);
+						post("/api/main", project_list);
 						break;
 					case 1:
 					case 2:
@@ -2134,7 +2120,7 @@ function local_browse(title, explanation, mode)
 		add_to(fragment, "div", {cls:["left", "title"]}).innerHTML = "Files";
 		add_to(fragment, "div", {id:"file_container"});
 		update_main(fragment).then(() => {
-			postAPI("/api/local_path", update_local_browse, null, {"path":"", "mode":filebrowsingmode});
+			post("/api/local_path", update_local_browse, null, {"path":"", "mode":filebrowsingmode});
 		});
 	}
 	catch(err)
@@ -2160,7 +2146,7 @@ function update_local_browse(data)
 			total_path += "/" + path_parts[i];
 		const callback_path = total_path;
 		add_to(cpath, "div", {cls:["interact", "text-button"], br:false, onclick:function(){
-			postAPI("/api/local_path", update_local_browse, null, {"path":callback_path, "mode":filebrowsingmode});
+			post("/api/local_path", update_local_browse, null, {"path":callback_path, "mode":filebrowsingmode});
 		}}).innerText = path_parts[i];
 	}
 	// update folders
@@ -2175,17 +2161,17 @@ function update_local_browse(data)
 				if(data["path"].length == 3 && data["path"].endsWith(":/"))
 				{
 					// special windows case
-					postAPI("/api/local_path", update_local_browse, null, {"path":"::", "mode":filebrowsingmode});
+					post("/api/local_path", update_local_browse, null, {"path":"::", "mode":filebrowsingmode});
 				}
 				else
 				{
 					// parent directory
-					postAPI("/api/local_path", update_local_browse, null, {"path":data["path"].split('/').slice(0, data["path"].split('/').length-1).join('/'), "mode":filebrowsingmode});
+					post("/api/local_path", update_local_browse, null, {"path":data["path"].split('/').slice(0, data["path"].split('/').length-1).join('/'), "mode":filebrowsingmode});
 				}
 			}
 			else
 			{
-				postAPI("/api/local_path", update_local_browse, null, {"path":t, "mode":filebrowsingmode});
+				post("/api/local_path", update_local_browse, null, {"path":t, "mode":filebrowsingmode});
 			}
 		}}).innerHTML = t.split("/")[t.split("/").length-1];
 	}
@@ -2199,16 +2185,16 @@ function update_local_browse(data)
 			switch(filebrowsingmode)
 			{
 				case 0:
-					postAPI("/api/update_location", project_creation, null, {"path":t});
+					post("/api/update_location", project_creation, null, {"path":t});
 					break;
 				case 1:
-					postAPI("/api/update_location", project_menu, null, {"name":prjname, "path":t});
+					post("/api/update_location", project_menu, null, {"name":prjname, "path":t});
 					break;
 				case 2:
-					postAPI("/api/import", project_menu, null, {name:prjname, path:t});
+					post("/api/import", project_menu, null, {name:prjname, path:t});
 					break;
 				case 3:
-					postAPI("/api/import_rpgmtrans", project_menu, null, {name:prjname, path:t});
+					post("/api/import_rpgmtrans", project_menu, null, {name:prjname, path:t});
 					break;
 				default:
 					break;
@@ -2257,7 +2243,7 @@ function replace_page()
 			else if(this.classList.contains("selected") || window.event.ctrlKey)
 			{
 				this.classList.toggle("selected", false);
-				postAPI("/api/replace_strings", null, null, {name:prjname, src:input.value, dst:output.value});
+				post("/api/replace_strings", null, null, {name:prjname, src:input.value, dst:output.value});
 			}
 			else
 			{
