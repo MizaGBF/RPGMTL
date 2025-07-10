@@ -11,3 +11,4 @@ test.JSON
 TEST/
 TEST/*
 whitelist.txt
+disabled.txt

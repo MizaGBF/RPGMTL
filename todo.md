@@ -13,7 +13,7 @@ Future (possible) improvements or bugs are noted here:
 - [ ] Add more settings to string search and replace strings.  
 - [ ] Add complete keyboard navigation/controls.  
 - [x] Add Unload Project button.  
-- [ ] Add way to disable/enable plugin (via command line?).
+- [x] Add way to disable/enable plugin.
   
 ### Translator
   

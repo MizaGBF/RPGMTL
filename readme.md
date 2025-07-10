@@ -149,6 +149,16 @@ python rpgmtl.py --ip off
 ```  
 Run `python rpgmtl.py --help` for alternative options.  
   
+### Disable a Plugin  
+  
+To disable a plugin and stops it from loading, you can create a file named `disabled.txt` in the same folder as `rpgmtl.py`, with the name of the plugin files you which to ignore, one per line.  
+For example:  
+```
+json
+rm_marshal
+```  
+will disable both those plugins.  
+  
 ## Project Management  
   
 ### Creation  

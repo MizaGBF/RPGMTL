@@ -10,6 +10,14 @@ There are two types of Plugin:
 - Plugins, also referred as File Plugins below. They extract and patch strings in game files.  
 - Translator Plugins, which interface to Translator APIs and such.  
   
+To disable a plugin and stops it from loading, you can create a file named `disabled.txt` in the same folder as `rpgmtl.py`, with the name of the plugin files you which to ignore, one per line.  
+For example:  
+```
+json
+rm_marshal
+```  
+will disable both those plugins.  
+  
 ## Plugin develoment  
   
 ### Quickstart

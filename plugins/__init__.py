@@ -3,7 +3,7 @@ from importlib import import_module
 import os
 import io
 import ast
-from pathlib import Path
+from pathlib import PurePath, Path
 from dataclasses import dataclass
 from enum import IntEnum
 from typing import TYPE_CHECKING, Any
@@ -48,7 +48,24 @@ def _loadPlugin_(rpgmtl : RPGMTL, path_filename : str, filename : str, relative 
         rpgmtl.log.error("Exception in plugin file " + path_filename + "\n" + rpgmtl.trbk(e))
 
 def load(rpgmtl : RPGMTL) -> None:
+    disabled = set()
+    try:
+        with open("disabled.txt", mode="r", encoding="utf-8") as f:
+            plist = f.read().replace("\r", "").split("\n")
+            for p in plist:
+                pn = p.strip()
+                if pn == "":
+                    continue
+                if not pn.endswith(".py"):
+                    disabled.add(pn + ".py")
+                else:
+                    disabled.add(pn)
+    except:
+        pass
     for filename in os.listdir('plugins/'):
+        if filename in disabled:
+            rpgmtl.log.warning("Plugin " + filename + " has been disabled by disabled.txt")
+            continue
         path_filename = os.path.join('plugins/', filename)
         if filename not in ['__init__.py'] and filename.endswith('.py') and os.path.isfile(path_filename):
             _loadPlugin_(rpgmtl, path_filename, filename, relative=".", package='plugins')
