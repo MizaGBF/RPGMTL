@@ -301,12 +301,6 @@ function post(url, success = null, failure = null, payload = {})
 	// note: check if catch is needed?
 }
 
-// Remove selected flag on a button
-function clear_selected(node)
-{
-	node.classList.toggle("selected", false);
-}
-
 // display a popup with the given string for 4s
 function push_popup(string)
 {
@@ -408,7 +402,6 @@ function update_top_bar(title, back_callback, help_callback = null, additions = 
 		top_bar_elems.help = add_button(fragment, "Help", "assets/images/help.png");
 		bar.appendChild(fragment);
 	}
-	top_bar_elems.back.classList.toggle("shutdown", false);
 	// set title
 	top_bar_elems.title.innerText = title;
 	// set back callback
@@ -590,23 +583,14 @@ function project_list(data)
 	update_top_bar(
 		"RPGMTL v" + data["verstring"],
 		function(){ // back callback
-			if(this.classList.contains("shutdown") || window.event.ctrlKey)
+			if(window.event.ctrlKey | window.confirm("Shutdown RPGMTL?\nEverything will be saved."))
 			{
-				this.classList.toggle("shutdown", false);
 				post("/api/shutdown", function(_unused_) {
 					bar.innerHTML = "";
 					let fragment = new_page();
 					add_to(fragment, "div", {cls:["title"]}).innerText = "RPGMTL has been shutdown";
 					update_main(fragment);
 				});
-			}
-			else
-			{
-				this.classList.toggle("shutdown", true);
-				setTimeout(function(node) {
-					node.classList.toggle("shutdown", false);
-				}, 2000, this);
-				push_popup("Press again to confirm.");
 			}
 		},
 		function(){ // help
@@ -1537,16 +1521,9 @@ function backup_list(data)
 		{
 			// add button to load it
 			add_to(fragment, "div", {cls:["interact", "text-button", "inline"], br:false, onclick:function(){
-				if(this.classList.contains("selected") || window.event.ctrlKey) // confirmation / shortcut to insta confirm
+				if(window.event.ctrlKey || window.confirm("Load this backup?")) // confirmation / shortcut to insta confirm
 				{
-					this.classList.toggle("selected", false);
 					post("/api/load_backup", project_menu, null, {name:project.name, file:elem[0]});
-				}
-				else
-				{
-					this.classList.toggle("selected", true);
-					setTimeout(clear_selected, 2000, this);
-					push_popup("Press again to confirm.");
 				}
 			}}).innerHTML = '<img src="assets/images/copy.png"> Use';
 			add_to(fragment, "div", {cls:["title", "left", "block", "inline"], br:false}).innerHTML = elem[0];
@@ -1822,9 +1799,8 @@ function open_file(data)
 				previous_plugin = plugin_name;
 			}
 			add_interaction(fragment, '<img src="' + (icon == null ? "assets/images/setting.png" : icon) + '"> ' + value, function() {
-				if(this.classList.contains("selected") || window.event.ctrlKey) // confirmation / shortcut to insta confirm
+				if(window.event.ctrlKey || window.confirm("Use " + value + "?")) // confirmation / shortcut to insta confirm
 				{
-					this.classList.toggle("selected", false);
 					post("/api/file_action",
 						function() {
 							go_file(project.name, lastfileopened);
@@ -1835,31 +1811,18 @@ function open_file(data)
 						{name:project.name, path:lastfileopened, version:project.version, key:key}
 					);
 				}
-				else
-				{
-					this.classList.toggle("selected", true);
-					setTimeout(clear_selected, 2000, this);
-					push_popup("Press again to confirm.");
-				}
 			});
 		}
 		add_to(fragment, "div", {cls:["title", "left", "interact-group", "smalltext"], br:false}).innerHTML = "Other Actions";
 		// add translate this file button
 		add_interaction(fragment, '<img src="assets/images/translate.png"> Translate the File', function() {
-			if(this.classList.contains("selected") || window.event.ctrlKey) // confirmation / shortcut to insta confirm
+			if(window.event.ctrlKey || window.confirm("Translate this file?\nIt can take time.")) // confirmation / shortcut to insta confirm
 			{
-				this.classList.toggle("selected", false);
 				set_loading_text("Translating this file, be patient...");
 				post("/api/translate_file", update_string_list, function(){
 					bottom.style.display = "none";
 					go_browse(project.name, returnpath);
 				}, {name:project.name, path:lastfileopened, version:project.version});
-			}
-			else
-			{
-				this.classList.toggle("selected", true);
-				setTimeout(clear_selected, 2000, this);
-				push_popup("Press again to confirm.");
 			}
 		});
 		
@@ -2194,19 +2157,11 @@ function replace_page()
 		add_to(fragment, "div", {cls:["interact", "text-button"], br:false, onclick:function(){
 			if(input.value == "")
 			{
-				this.classList.toggle("selected", false);
 				push_popup("The input is empty.");
 			}
-			else if(this.classList.contains("selected") || window.event.ctrlKey)
+			else if(window.event.ctrlKey || window.confirm("Replace '" + input.value + "'\nby '" + output.value + "'?"))
 			{
-				this.classList.toggle("selected", false);
 				post("/api/replace_strings", null, null, {name:project.name, src:input.value, dst:output.value});
-			}
-			else
-			{
-				this.classList.toggle("selected", true);
-				setTimeout(clear_selected, 2000, this);
-				push_popup("Press again to confirm.");
 			}
 		}}).innerHTML = '<img src="assets/images/copy.png"> Replace';
 		update_main(fragment);

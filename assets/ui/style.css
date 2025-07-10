@@ -343,14 +343,6 @@ html, body {
 	color: #bbbbbb;
 }
 
-.shutdown {
-	background: #de0000;
-}
-
-.selected {
-	background: #b00000;
-}
-
 .control-spacer {
 	min-width: 5px;
 }
