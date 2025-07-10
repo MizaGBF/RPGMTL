@@ -3,6 +3,18 @@
   --tl-width: 45%;
 }
 
+@keyframes animation-button-press {
+	0% {
+		transform: scale(1);
+	}
+	50% {
+		transform: scale(0.9);
+	}
+	100% {
+		transform: scale(1);
+	}
+}
+
 html, body {
 	background: #252526;
 	font-family: sans-serif;
@@ -198,6 +210,10 @@ html, body {
 
 .interact:hover {
 	border-color: #eeeeee;
+}
+
+.interact:active {
+	animation: animation-button-press 0.1s;
 }
 
 .button {
