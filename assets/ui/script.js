@@ -273,6 +273,13 @@ function add_button(node, title, img = null, callback = null)
 	return btn;
 }
 
+function add_interaction(node, innerHTML, callback)
+{
+	let interaction = add_to(node, "div", {cls:["interact", "text-wrapper"], onclick:callback});
+	interaction.innerHTML = innerHTML;
+	return interaction;
+}
+
 // set the loading element visibility
 function set_loading(state)
 {
@@ -652,22 +659,22 @@ function project_list(data)
 		for(let i = 0; i < data["list"].length; ++i)
 		{
 			const t = data["list"][i];
-			add_to(fragment, "div", {cls:["interact"], onclick:function(){
+			add_interaction(fragment, data["list"][i], function(){
 				post("/api/open_project", project_menu, project_fail, {"name":t});
-			}}).innerHTML = data["list"][i];
+			});
 		}
 	}
 	add_to(fragment, "div", {cls:["spacer"]});
 	// add buttons
-	add_to(fragment, "div", {cls:["interact"], onclick:function(){
+	add_interaction(fragment, '<img src="assets/images/new.png"> New Project', function(){
 		local_browse("Create a project", "Select a Game executable.", 0);
-	}}).innerHTML = '<img src="assets/images/new.png"> New Project';
-	add_to(fragment, "div", {cls:["interact"], onclick:function(){
+	});
+	add_interaction(fragment, '<img src="assets/images/setting.png"> Global Settings', function(){
 		post("/api/settings", setting_menu);
-	}}).innerHTML = '<img src="assets/images/setting.png"> Global Settings';
-	add_to(fragment, "div", {cls:["interact"], onclick:function(){
+	});
+	add_interaction(fragment, '<img src="assets/images/translate.png"> Default Translator', function(){
 		post("/api/translator", translator_menu);
-	}}).innerHTML = '<img src="assets/images/translate.png"> Default Translator';
+	});
 	add_to(fragment, "div", {cls:["spacer"]});
 	// quick links
 	if(data["history"].length > 0) // list last browsed Files
@@ -676,11 +683,11 @@ function project_list(data)
 		for(let i = 0; i < data["history"].length; ++i)
 		{
 			const c_entry = data["history"][i];
-			add_to(fragment, "div", {cls:["interact", "text-wrapper"], onclick:function() {
+			add_interaction(fragment, c_entry[0] + ": " + c_entry[1], function(){
 				post("/api/file", open_file, function() {
 					post("/api/main", project_list);
 				}, {name:c_entry[0], path:c_entry[1]});
-			}}).innerHTML = c_entry[0] + ": " + c_entry[1];
+			});
 		}
 	}
 	update_main(fragment);
@@ -724,12 +731,12 @@ function setting_menu(data)
 		
 		if(is_project) // add button to reset settings of THIS project
 		{
-			add_to(fragment, "div", {cls:["interact"], onclick:function(){
+			add_interaction(fragment, '<img src="assets/images/trash.png"> Reset All Settings to Global', function(){
 				post("/api/update_settings", function(result_data) {
 					push_popup("The Project Settings have been reset to Global Settings.");
 					project_menu();
 				}, null, {name:prjname});
-			}}).innerHTML = '<img src="assets/images/trash.png"> Reset All Settings to Global';
+			});
 		}
 		
 		let count = 0;
@@ -933,12 +940,12 @@ function translator_menu(data)
 			{
 				if(t == 0 && is_project) // add button to reset project setting (Only at the top)
 				{
-					add_to(fragment, "div", {cls:["interact"], onclick:function(){
+					add_interaction(fragment, '<img src="assets/images/trash.png"> Use RPGMTL Default', function(){
 						post("/api/update_translator", function(result_data) {
 							push_popup("The Project Translator have been reset to the default.");
 							project_menu();
 						}, null, {name:prjname});
-					}}).innerHTML = '<img src="assets/images/trash.png"> Use RPGMTL Default';
+					});
 				}
 				// add text
 				add_to(fragment, "div", {cls:["title", "left"]}).innerHTML = possibles_text[t];
@@ -1018,11 +1025,11 @@ function project_creation(data)
 			input.value = "Project";
 		
 		// confirm button
-		add_to(fragment, "div", {cls:["interact"], onclick:function(){
+		add_interaction(fragment, '<img src="assets/images/confirm.png"> Create', function(){
 			set_loading_text("Creating the project...");
 			if(input.value.trim() != "")
 				post("/api/new_project", project_menu, project_fail, {path: path, name: input.value});
-		}}).innerHTML = '<img src="assets/images/confirm.png"> Create';
+		});
 		update_main(fragment);
 	}
 }
@@ -1078,51 +1085,51 @@ function project_menu(data = null)
 		add_to(fragment, "div", {cls:["title", "left"]}).innerHTML = "Game Folder: " + prj["path"];
 		if(prj.files)
 		{
-			add_to(fragment, "div", {cls:["interact"], onclick:function(){
+			add_interaction(fragment, '<img src="assets/images/folder.png"> Browse Files', function(){
 				post("/api/browse", browse_files, null, {name:prjname, path:""});
-			}}).innerHTML = '<img src="assets/images/folder.png"> Browse Files';
-			add_to(fragment, "div", {cls:["interact"], onclick:function(){
+			});
+			add_interaction(fragment, '<img src="assets/images/bandaid.png"> Add a Fix', function(){
 				post("/api/patches", browse_patches, null, {name:prjname});
-			}}).innerHTML = '<img src="assets/images/bandaid.png"> Add a Fix';
-			add_to(fragment, "div", {cls:["interact"], onclick:function(){
+			});
+			add_interaction(fragment, '<img src="assets/images/copy.png"> Replace Strings in batch', function(){
 				replace_page();
-			}}).innerHTML = '<img src="assets/images/copy.png"> Replace Strings in batch';
+			});
 		}
-		add_to(fragment, "div", {cls:["interact"], onclick:function(){
+		add_interaction(fragment, '<img src="assets/images/setting.png"> Project Settings', function(){
 			post("/api/settings", setting_menu, null, {name:prjname});
-		}}).innerHTML = '<img src="assets/images/setting.png"> Project Settings';
-		add_to(fragment, "div", {cls:["interact"], onclick:function(){
+		});
+		add_interaction(fragment, '<img src="assets/images/translate.png"> Project Translator', function(){
 			post("/api/translator", translator_menu, null, {name:prjname});
-		}}).innerHTML = '<img src="assets/images/translate.png"> Project Translator';
-		add_to(fragment, "div", {cls:["interact"], onclick:function(){
+		});
+		add_interaction(fragment, '<img src="assets/images/cancel.png"> Unload the Project', function(){
 			post("/api/unload", function() {
 				post("/api/main", project_list)
 			}, null, {name:prjname});
-		}}).innerHTML = '<img src="assets/images/cancel.png"> Unload the Project';
+		});
 		add_to(fragment, "div", {cls:["spacer"]});
-		add_to(fragment, "div", {cls:["interact"], onclick:function(){
+		add_interaction(fragment, '<img src="assets/images/update.png"> Update the Game Files', function(){
 			local_browse("Update project files", "Select the Game executable.", 1);
-		}}).innerHTML = '<img src="assets/images/update.png"> Update the Game Files';
-		add_to(fragment, "div", {cls:["interact"], onclick:function(){
+		});
+		add_interaction(fragment, '<img src="assets/images/export.png"> Extract the Strings', function(){
 			set_loading_text("Extracting, be patient...");
 			post("/api/extract", project_menu, project_fail, {name:prjname});
-		}}).innerHTML = '<img src="assets/images/export.png"> Extract the Strings';
+		});
 		if(prj.files)
 		{
-			add_to(fragment, "div", {cls:["interact"], onclick:function(){
+			add_interaction(fragment, '<img src="assets/images/release.png"> Release a Patch', function(){
 				set_loading_text("The patch is being generated in the release folder...");
 				post("/api/release", project_menu, null, {name:prjname});
-			}}).innerHTML = '<img src="assets/images/release.png"> Release a Patch';
+			});
 			add_to(fragment, "div", {cls:["spacer"]});
-			add_to(fragment, "div", {cls:["interact"], onclick:function(){
+			add_interaction(fragment, '<img src="assets/images/copy.png"> String Backups', function(){
 				post("/api/backups", backup_list, null, {name:prjname});
-			}}).innerHTML = '<img src="assets/images/copy.png"> String Backups';
-			add_to(fragment, "div", {cls:["interact"], onclick:function(){
+			});
+			add_interaction(fragment, '<img src="assets/images/import.png"> Import Strings from RPGMTL', function(){
 				local_browse("Import RPGMTL", "Select an old RPGMTL strings file.", 2);
-			}}).innerHTML = '<img src="assets/images/import.png"> Import Strings from RPGMTL';
-			add_to(fragment, "div", {cls:["interact"], onclick:function(){
+			});
+			add_interaction(fragment, '<img src="assets/images/import.png"> Import Strings from RPGMakerTrans v3', function(){
 				local_browse("Import RPGMAKERTRANSPATCH", "Select a RPGMAKERTRANSPATCH file.", 3);
-			}}).innerHTML = '<img src="assets/images/import.png"> Import Strings from RPGMakerTrans v3';
+			});
 			add_to(fragment, "div", {cls:["spacer"]});
 		}
 		update_main(fragment);
@@ -1424,17 +1431,15 @@ function browse_patches(data)
 		for(const [key, value] of Object.entries(prj["patches"]))
 		{
 			// add button to open
-			add_to(fragment, "div", {cls:["interact"], onclick:function()
-			{
+			add_interaction(fragment, '<img src="assets/images/bandaid.png"> ' + key, function() {
 				post("/api/open_patch", edit_patch, null, {name:prjname, key:key});
-			}
-			}).innerHTML = '<img src="assets/images/bandaid.png"> ' + key;
+			});
 		}
 		add_to(fragment, "div", {cls:["spacer"]});
 		// add create button
-		add_to(fragment, "div", {cls:["interact"], onclick:function(){
+		add_interaction(fragment, '<img src="assets/images/new.png"> Create', function() {
 			edit_patch({});
-		}}).innerHTML = '<img src="assets/images/new.png"> Create';
+		});
 		update_main(fragment);
 	}
 	catch(err)
@@ -1481,7 +1486,7 @@ function edit_patch(data)
 		add_to(fragment, "div", {cls:["title", "left"]}).innerHTML = "Python Code";
 		add_to(fragment, "div", {cls:["input"], id:"fix"}).contentEditable = "plaintext-only";
 		// add confirm button
-		add_to(fragment, "div", {cls:["interact"], onclick:function(){
+		add_interaction(fragment, '<img src="assets/images/confirm.png"> Confirm', function() {
 			let newkey = document.getElementById("filter").value;
 			let code = document.getElementById("fix").textContent;
 			if(newkey.trim() != "" && code.trim() != "")
@@ -1492,11 +1497,10 @@ function edit_patch(data)
 			{
 				push_popup("At least one field is empty");
 			}
-		}}).innerHTML = '<img src="assets/images/confirm.png"> Confirm';
-		add_to(fragment, "div", {cls:["interact"], onclick:function(){
+		});
+		add_interaction(fragment, '<img src="assets/images/trash.png"> Delete', function() {
 			post("/api/update_patch", browse_patches, null, {name:prjname, key:key});
-		}}).innerHTML = '<img src="assets/images/trash.png"> Delete';
-		
+		});
 		if(key != null)
 		{
 			fragment.getElementById("filter").value = key;
@@ -1828,7 +1832,7 @@ function open_file(data)
 				add_to(fragment, "div", {cls:["title", "left", "interact-group", "smalltext"], br:false}).innerHTML = plugin_name + " Plugin";
 				previous_plugin = plugin_name;
 			}
-			add_to(fragment, "div", {cls:["interact"], onclick:function() {
+			add_interaction(fragment, '<img src="' + (icon == null ? "assets/images/setting.png" : icon) + '"> ' + value, function() {
 				if(this.classList.contains("selected") || window.event.ctrlKey) // confirmation / shortcut to insta confirm
 				{
 					this.classList.toggle("selected", false);
@@ -1848,11 +1852,11 @@ function open_file(data)
 					setTimeout(clear_selected, 2000, this);
 					push_popup("Press again to confirm.");
 				}
-			}}).innerHTML = '<img src="' + (icon == null ? "assets/images/setting.png" : icon) + '"> ' + value;
+			});
 		}
 		add_to(fragment, "div", {cls:["title", "left", "interact-group", "smalltext"], br:false}).innerHTML = "Other Actions";
 		// add translate this file button
-		add_to(fragment, "div", {cls:["interact"], onclick:function() {
+		add_interaction(fragment, '<img src="assets/images/translate.png"> Translate the File', function() {
 			if(this.classList.contains("selected") || window.event.ctrlKey) // confirmation / shortcut to insta confirm
 			{
 				this.classList.toggle("selected", false);
@@ -1868,22 +1872,22 @@ function open_file(data)
 				setTimeout(clear_selected, 2000, this);
 				push_popup("Press again to confirm.");
 			}
-		}}).innerHTML = '<img src="assets/images/translate.png"> Translate the File';
+		});
 		
 		switch(prj["files"][lastfileopened]["file_type"])
 		{
 			case 0: // NORMAL
 				break;
 			case 1: // ARCHIVE
-				add_to(fragment, "div", {cls:["interact"], onclick:function() {
+				add_interaction(fragment, '<img src="assets/images/archive.png"> Access Files contained inside', function() {
 					post("/api/browse", browse_files, null, {name:prjname, path:lastfileopened + "/"});
-				}}).innerHTML = '<img src="assets/images/archive.png"> Access Files contained inside';
+				});
 				add_to(fragment, "div", {cls:["title", "left", "smalltext"]}).innerText = "This file has been divided into multiple files.";
 				break;
 			case 2: // VIRTUAL
-				add_to(fragment, "div", {cls:["interact"], onclick:function() {
+				add_interaction(fragment, '<img src="assets/images/archive.png"> Open Parent File', function() {
 					post("/api/file", open_file, null, {name:prjname, path:prj["files"][lastfileopened]["parent"]});
-				}}).innerHTML = '<img src="assets/images/archive.png"> Open Parent File';
+				});
 				add_to(fragment, "div", {cls:["title", "left", "smalltext"]}).innerText = "This file is part of a bigger file.";
 				break;
 			case 3: // VIRTUAL_UNDEFINED
@@ -2119,7 +2123,7 @@ function update_local_browse(data)
 	for(let i = 0; i < data["folders"].length; ++i)
 	{
 		const t = data["folders"][i];
-		add_to(container, "div", {cls:["interact"], onclick:function(){
+		add_interaction(container, t.split("/")[t.split("/").length-1], function(){
 			if(t == "..")
 			{
 				if(data["path"].length == 3 && data["path"].endsWith(":/"))
@@ -2137,7 +2141,7 @@ function update_local_browse(data)
 			{
 				post("/api/local_path", update_local_browse, null, {"path":t, "mode":filebrowsingmode});
 			}
-		}}).innerHTML = t.split("/")[t.split("/").length-1];
+		});
 	}
 	
 	container = document.getElementById("file_container");
@@ -2145,7 +2149,7 @@ function update_local_browse(data)
 	for(let i = 0; i < data["files"].length; ++i)
 	{
 		const t = data["files"][i];
-		add_to(container, "div", {cls:["interact"], onclick:function(){
+		add_interaction(container, t.split("/")[t.split("/").length-1], function(){
 			switch(filebrowsingmode)
 			{
 				case 0:
@@ -2163,7 +2167,7 @@ function update_local_browse(data)
 				default:
 					break;
 			}
-		}}).innerHTML = t.split("/")[t.split("/").length-1];
+		});
 	}
 	
 	set_loading(false);

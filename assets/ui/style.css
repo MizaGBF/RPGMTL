@@ -216,6 +216,10 @@ html, body {
 	animation: animation-button-press 0.1s;
 }
 
+.string-group:active {
+	animation: none;
+}
+
 .button {
 	width: 34px;
 	height: 34px;
