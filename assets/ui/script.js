@@ -345,11 +345,10 @@ function clear_popup(popup)
 	popup.parentNode.removeChild(popup);
 }
 
-// clear the main area
-function clear_main()
+// get ready to draw new main page
+function new_page()
 {
 	set_loading(false);
-	main.innerHTML = "";
 	return document.createDocumentFragment();
 }
 
@@ -362,6 +361,7 @@ function update_main(fragment)
 	*/
     return new Promise((resolve, reject) => {
         requestAnimationFrame(() => {
+			main.innerHTML = "";
 			main.appendChild(fragment);
             resolve(); 
         });
@@ -617,7 +617,7 @@ function project_list(data)
 				this.classList.toggle("shutdown", false);
 				post("/api/shutdown", function(_unused_) {
 					bar.innerHTML = "";
-					let fragment = clear_main();
+					let fragment = new_page();
 					add_to(fragment, "div", {cls:["title"]}).innerText = "RPGMTL has been shutdown";
 					update_main(fragment);
 				});
@@ -645,7 +645,7 @@ function project_list(data)
 	);
 	
 	// main part
-	fragment = clear_main();
+	fragment = new_page();
 	add_to(fragment, "div", {cls:["title"]}).innerHTML = "Project List";
 	if(data["list"].length > 0) // list projects
 	{
@@ -718,7 +718,7 @@ function setting_menu(data)
 		);
 		
 		// main part
-		fragment = clear_main();
+		fragment = new_page();
 		let layout = data["layout"];
 		let settings = data["settings"];
 		
@@ -918,7 +918,7 @@ function translator_menu(data)
 		);
 		
 		// main part
-		fragment = clear_main();
+		fragment = new_page();
 		let list = data["list"]; // translator plugin list
 		let possibles = ["current", "batch"];
 		let possibles_text = ["Single Translation Button", "Translate this File Button"];
@@ -1004,7 +1004,7 @@ function project_creation(data)
 		);
 		
 		// main part
-		fragment = clear_main();
+		fragment = new_page();
 		add_to(fragment, "div", {cls:["title", "left"]}).innerHTML = "Folder/Project Name";
 		
 		// project name input element
@@ -1073,7 +1073,7 @@ function project_menu(data = null)
 		// main part
 		// here we add various buttons
 		// some only appear if files have been parsed
-		fragment = clear_main();
+		fragment = new_page();
 		add_to(fragment, "div", {cls:["title"]}).innerHTML = prjname;
 		add_to(fragment, "div", {cls:["title", "left"]}).innerHTML = "Game Folder: " + prj["path"];
 		if(prj.files)
@@ -1215,7 +1215,7 @@ function browse_files(data)
 		);
 		
 		// main part
-		fragment = clear_main();
+		fragment = new_page();
 		add_to(fragment, "div", {cls:["title"]}).innerHTML = prjname;
 		// add the string search
 		addSearchBar(fragment, bp);
@@ -1354,7 +1354,7 @@ function string_search(data)
 		);
 		
 		// main part
-		fragment = clear_main();
+		fragment = new_page();
 		add_to(fragment, "div", {cls:["title"]}).innerHTML = prjname;
 		addSearchBar(fragment, bp, data["search"]);
 		
@@ -1417,7 +1417,7 @@ function browse_patches(data)
 		);
 		
 		// main part
-		fragment = clear_main();
+		fragment = new_page();
 		add_to(fragment, "div", {cls:["title"]}).innerHTML = prjname;
 		add_to(fragment, "div", {cls:["title", "left"]}).innerHTML = "Fix List";
 		// list patches
@@ -1473,7 +1473,7 @@ function edit_patch(data)
 		);
 		
 		// main part
-		fragment = clear_main();
+		fragment = new_page();
 		// add various input and text elements
 		add_to(fragment, "div", {cls:["title"]}).innerHTML = prjname;
 		add_to(fragment, "div", {cls:["title", "left"]}).innerHTML = "Filename match";
@@ -1538,7 +1538,7 @@ function backup_list(data)
 		);
 		
 		// main part
-		fragment = clear_main();
+		fragment = new_page();
 		add_to(fragment, "div", {cls:["title"]}).innerHTML = prjname;
 		add_to(fragment, "div", {cls:["title", "left"]}).innerHTML = "Backup List";
 		if(data["list"].length == 0)
@@ -1814,7 +1814,7 @@ function open_file(data)
 		);
 		
 		// main part
-		fragment = clear_main();
+		fragment = new_page();
 		
 		let topsection = add_to(fragment, "div", {cls:["title"]});
 		topsection.innerHTML = prjname;
@@ -2076,7 +2076,7 @@ function local_browse(title, explanation, mode)
 		);
 	
 		// main part
-		fragment = clear_main();
+		fragment = new_page();
 		add_to(fragment, "div", {cls:["title"]}).innerHTML = explanation;
 		add_to(fragment, "div", {cls:["left"], id:"current_path"});
 		add_to(fragment, "div", {cls:["left", "title"]}).innerHTML = "Folders";
@@ -2190,7 +2190,7 @@ function replace_page()
 		);
 	
 		// main part
-		fragment = clear_main();
+		fragment = new_page();
 		add_to(fragment, "div", {cls:["title", "left"]}).innerText = "Replace strings by others (Case Sensitive)";
 		add_to(fragment, "div", {cls:["title", "left", "smalltext"]}).innerText = "Only translations are affected";
 		
