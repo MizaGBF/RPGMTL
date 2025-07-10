@@ -177,11 +177,11 @@ function upate_page_location(page, name, params)
 }
 
 // for keyboard Space shortcut detection during file editing
-document.onkeypress = function(e)
+document.addEventListener('keydown', function(e)
 {
 	if(keypressenabled) // flag to enable this function
 	{
-		if(e.code == 'Space' && strtablecache.length > 0 && e.target.tagName != "textarea") // check if space key was pressed and not on textarea
+		if(e.code == 'Space' && strtablecache.length > 0 && e.target.tagName != "TEXTAREA") // check if space key was pressed and not on textarea
 		{
 			if(e.ctrlKey && !e.shiftKey) // CTRL+space
 			{
@@ -215,7 +215,7 @@ document.onkeypress = function(e)
 			}
 		}
 	}
-};
+});
 
 // create and add a new element to a node, and return it
 // support various parameters
@@ -298,6 +298,7 @@ function post(url, success = null, failure = null, payload = {})
 			}
 		}
 	);
+	// note: check if catch is needed?
 }
 
 // Remove selected flag on a button
@@ -843,7 +844,7 @@ function setting_menu(data)
 								push_popup("The setting has been updated.");
 								set_loading(false);
 								if(key in result_data["settings"])
-									set.value = result_data["settings"][key];
+									sel.value = result_data["settings"][key];
 							};
 							if(is_project)
 							{
