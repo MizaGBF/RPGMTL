@@ -255,6 +255,13 @@ function add_interaction(node, innerHTML, callback)
 	return interaction;
 }
 
+function add_grid_cell(node, innerHTML, callback)
+{
+	let cell = add_to(node, "div", {cls:["interact", "text-wrapper", "grid-cell"], onclick:callback, br:false});
+	cell.innerHTML = innerHTML;
+	return cell;
+}
+
 // set the loading element visibility
 function set_loading(state)
 {
@@ -628,10 +635,11 @@ function project_list(data)
 	add_to(fragment, "div", {cls:["title"]}).innerHTML = "Project List";
 	if(data["list"].length > 0) // list projects
 	{
+		let grid = add_to(fragment, "div", {cls:["grid"]});
 		for(let i = 0; i < data["list"].length; ++i)
 		{
 			const t = data["list"][i];
-			add_interaction(fragment, data["list"][i], function(){
+			add_grid_cell(grid, data["list"][i], function(){
 				go_project(t);
 			});
 		}
