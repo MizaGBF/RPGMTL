@@ -340,6 +340,18 @@ function update_main(fragment)
         requestAnimationFrame(() => {
 			main.innerHTML = "";
 			main.appendChild(fragment);
+			
+			// Set initial focus
+			const firstFocusableElement = main.querySelector('input, select, textarea, [tabindex="0"], a, button');
+			if(firstFocusableElement) // Note: placeholder for future keyboard navigation
+			{
+				firstFocusableElement.focus();
+			}
+			else
+			{
+				// If no specific focusable element, try focusing the main content area
+				main.focus();
+			}
             resolve(); 
         });
     });
