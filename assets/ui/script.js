@@ -54,80 +54,60 @@ function load_location()
 		{
 			case "menu":
 			{
-				post("/api/open_project", project_menu, function() {
-					post("/api/main", project_list);
-				}, {name:urlparams.get("name")});
+				go_project(urlparams.get("name"));
 				break;
 			}
 			case "settings":
 			{
-				post("/api/settings", setting_menu, function() {
-					post("/api/main", project_list);
-				}, {name:urlparams.get("name")});
+				go_settings(urlparams.get("name"), true);
 				break;
 			}
 			case "translator":
 			{
 				if(urlparams.has("name"))
 				{
-					post("/api/translator", translator_menu, function() {
-						post("/api/main", project_list);
-					}, {name:urlparams.get("name")});
+					go_translator(urlparams.get("name"), true);
 				}
 				else
 				{
-					post("/api/translator", translator_menu, function() {
-						post("/api/main", project_list);
-					});
+					go_translator(null, true);
 				}
 				break;
 			}
 			case "browse":
 			{
-				post("/api/browse", browse_files, function() {
-					post("/api/main", project_list);
-				}, {name:urlparams.get("name"), path:JSON.parse(b64tos(urlparams.get("params")))});
+				go_browse(urlparams.get("name"), JSON.parse(b64tos(urlparams.get("params"))), true);
 				break;
 			}
 			case "search_string":
 			{
 				let p = JSON.parse(b64tos(urlparams.get("params")));
-				post("/api/search_string", string_search, function() {
-					post("/api/main", project_list);
-				}, {name:urlparams.get("name"), path:p.path, search:p.search});
+				go_search(urlparams.get("name"), p.path, p.search, true);
 				break;
 			}
 			case "patches":
 			{
-				post("/api/patches", browse_patches, function() {
-					post("/api/main", project_list);
-				}, {name:urlparams.get("name")});
+				go_patches(urlparams.get("name"), true);
 				break;
 			}
 			case "open_patch":
 			{
-				post("/api/open_patch", edit_patch, function() {
-					post("/api/main", project_list);
-				}, {name:urlparams.get("name"), key:JSON.parse(b64tos(urlparams.get("params")))});
+				go_open_patch(urlparams.get("name"), JSON.parse(b64tos(urlparams.get("params"))), true);
 				break;
 			}
 			case "backups":
 			{
-				post("/api/backups", backup_list, function() {
-					post("/api/main", project_list);
-				}, {name:urlparams.get("name")});
+				go_backups(urlparams.get("name"), true);
 				break;
 			}
 			case "file":
 			{
-				post("/api/file", open_file, function() {
-					post("/api/main", project_list);
-				}, {name:urlparams.get("name"), path:JSON.parse(b64tos(urlparams.get("params")))});
+				go_file(urlparams.get("name"), JSON.parse(b64tos(urlparams.get("params"))), true);
 				break;
 			}
 			default:
 			{
-				post("/api/main", project_list);
+				go_main();
 				break;
 			}
 		};
@@ -135,7 +115,7 @@ function load_location()
 	catch(err)
 	{
 		console.error(err);
-		post("/api/main", project_list);
+		go_main();
 	}
 }
 
@@ -460,7 +440,7 @@ function update_top_bar(title, back_callback, help_callback = null, additions = 
 		{
 			top_bar_elems.home = add_button(null, "Project Select Page", "assets/images/home.png", function(){
 				bottom.style.display = "none";
-				post("/api/main", project_list);
+				go_main();
 			});
 			top_bar_elems.back.after(top_bar_elems.home);
 		}
@@ -481,7 +461,7 @@ function update_top_bar(title, back_callback, help_callback = null, additions = 
 		{
 			top_bar_elems.project = add_button(null, "Project Menu", "assets/images/project.png", function(){
 				bottom.style.display = "none";
-				post("/api/open_project", project_menu, project_fail, {"name":project.name});
+				go_project(project.name);
 			});
 			if(top_bar_elems.home)
 				top_bar_elems.home.after(top_bar_elems.project);
@@ -650,7 +630,7 @@ function project_list(data)
 		{
 			const t = data["list"][i];
 			add_interaction(fragment, data["list"][i], function(){
-				post("/api/open_project", project_menu, project_fail, {"name":t});
+				go_project(t);
 			});
 		}
 	}
@@ -660,10 +640,10 @@ function project_list(data)
 		local_browse("Create a project", "Select a Game executable.", 0);
 	});
 	add_interaction(fragment, '<img src="assets/images/setting.png"> Global Settings', function(){
-		post("/api/settings", setting_menu);
+		go_settings(null, true);
 	});
 	add_interaction(fragment, '<img src="assets/images/translate.png"> Default Translator', function(){
-		post("/api/translator", translator_menu);
+		go_translator(null, true);
 	});
 	add_to(fragment, "div", {cls:["spacer"]});
 	// quick links
@@ -674,9 +654,7 @@ function project_list(data)
 		{
 			const c_entry = data["history"][i];
 			add_interaction(fragment, c_entry[0] + ": " + c_entry[1], function(){
-				post("/api/file", open_file, function() {
-					post("/api/main", project_list);
-				}, {name:c_entry[0], path:c_entry[1]});
+				go_file(c_entry[0], c_entry[1], true);
 			});
 		}
 	}
@@ -699,7 +677,7 @@ function setting_menu(data)
 				if(is_project)
 					project_menu();
 				else
-					post("/api/main", project_list);
+					go_main();
 			},
 			function(){ // help
 				help.innerHTML = "<ul>\
@@ -753,9 +731,13 @@ function setting_menu(data)
 								elem.classList.toggle("green", result_data["settings"][key]);
 						};
 						if(is_project)
+						{
 							post("/api/update_settings", callback, null, {name:project.name, key:key, value:!elem.classList.contains("green")});
+						}
 						else
+						{
 							post("/api/update_settings", callback, null, {key:key, value:!elem.classList.contains("green")});
+						}
 					});
 					if(key in settings)
 						elem.classList.toggle("green", settings[key]);
@@ -820,9 +802,13 @@ function setting_menu(data)
 									input.value = result_data["settings"][key];
 							};
 							if(is_project)
+							{
 								post("/api/update_settings", callback, null, {name:project.name, key:key, value:val});
+							}
 							else
+							{
 								post("/api/update_settings", callback, null, {key:key, value:val});
+							}
 						});
 						if(fdata[1] != "text")
 						{
@@ -860,9 +846,13 @@ function setting_menu(data)
 									set.value = result_data["settings"][key];
 							};
 							if(is_project)
+							{
 								post("/api/update_settings", callback, null, {name:project.name, key:key, value:sel.value});
+							}
 							else
+							{
 								post("/api/update_settings", callback, null, {key:key, value:sel.value});
+							}
 						});
 						if(key in settings)
 							sel.value = settings[key];
@@ -879,7 +869,7 @@ function setting_menu(data)
 	{
 		console.error("Exception thrown", err.stack);
 		push_popup("An unexpected error occured.");
-		post("/api/main", project_list);
+		go_main();
 	}
 }
 
@@ -899,7 +889,7 @@ function translator_menu(data)
 				if(is_project)
 					project_menu();
 				else
-					post("/api/main", project_list);
+					go_main();
 			},
 			function(){ // help
 				help.innerHTML = "<ul>\
@@ -956,9 +946,13 @@ function translator_menu(data)
 						set_loading(false);
 					};
 					if(is_project)
+					{
 						post("/api/update_translator", callback, null, {name:project.name, value:sel.value, index:tindex});
+					}
 					else
+					{
 						post("/api/update_translator", callback, null, {value:sel.value, index:tindex});
+					}
 				});
 				sel.value = data[possibles[t]];
 			}
@@ -969,7 +963,7 @@ function translator_menu(data)
 	{
 		console.error("Exception thrown", err.stack);
 		push_popup("An unexpected error occured.");
-		post("/api/main", project_list);
+		go_main();
 	}
 }
 
@@ -980,7 +974,7 @@ function project_creation(data)
 	
 	if(data["path"] == "" || data["path"] == null)
 	{
-		post("/api/main", project_list);
+		go_main();
 	}
 	else
 	{
@@ -989,7 +983,7 @@ function project_creation(data)
 		update_top_bar(
 			"Create a new Project",
 			function(){ // back callback
-				post("/api/main", project_list);
+				go_main();
 			},
 			function(){ // help
 				help.innerHTML = "<ul>\
@@ -1018,16 +1012,12 @@ function project_creation(data)
 		add_interaction(fragment, '<img src="assets/images/confirm.png"> Create', function(){
 			set_loading_text("Creating the project...");
 			if(input.value.trim() != "")
-				post("/api/new_project", project_menu, project_fail, {path: path, name: input.value});
+			{
+				go_new_project(path, input.value);
+			}
 		});
 		update_main(fragment);
 	}
-}
-
-// fallback if a critical error occured
-function project_fail()
-{
-	post("/api/main", project_list);
 }
 
 // display project options (called by many API and more, data is optional and unused)
@@ -1041,7 +1031,7 @@ function project_menu(data = null)
 		update_top_bar(
 			project.name,
 			function(){ // back callback
-				post("/api/main", project_list);
+				go_main();
 			},
 			function(){ // help
 				help.innerHTML = "<ul>\
@@ -1076,25 +1066,23 @@ function project_menu(data = null)
 		if(project.config.files)
 		{
 			add_interaction(fragment, '<img src="assets/images/folder.png"> Browse Files', function(){
-				post("/api/browse", browse_files, null, {name:project.name, path:""});
+				go_browse(project.name, "");
 			});
 			add_interaction(fragment, '<img src="assets/images/bandaid.png"> Add a Fix', function(){
-				post("/api/patches", browse_patches, null, {name:project.name});
+				go_patches(project.name);
 			});
 			add_interaction(fragment, '<img src="assets/images/copy.png"> Replace Strings in batch', function(){
 				replace_page();
 			});
 		}
 		add_interaction(fragment, '<img src="assets/images/setting.png"> Project Settings', function(){
-			post("/api/settings", setting_menu, null, {name:project.name});
+			go_settings(project.name);
 		});
 		add_interaction(fragment, '<img src="assets/images/translate.png"> Project Translator', function(){
-			post("/api/translator", translator_menu, null, {name:project.name});
+			go_translator(project.name);
 		});
 		add_interaction(fragment, '<img src="assets/images/cancel.png"> Unload the Project', function(){
-			post("/api/unload", function() {
-				post("/api/main", project_list)
-			}, null, {name:project.name});
+			post("/api/unload", go_main, null, {name:project.name});
 		});
 		add_to(fragment, "div", {cls:["spacer"]});
 		add_interaction(fragment, '<img src="assets/images/update.png"> Update the Game Files', function(){
@@ -1102,7 +1090,7 @@ function project_menu(data = null)
 		});
 		add_interaction(fragment, '<img src="assets/images/export.png"> Extract the Strings', function(){
 			set_loading_text("Extracting, be patient...");
-			post("/api/extract", project_menu, project_fail, {name:project.name});
+			post("/api/extract", project_menu, go_main, {name:project.name});
 		});
 		if(project.config.files)
 		{
@@ -1112,7 +1100,7 @@ function project_menu(data = null)
 			});
 			add_to(fragment, "div", {cls:["spacer"]});
 			add_interaction(fragment, '<img src="assets/images/copy.png"> String Backups', function(){
-				post("/api/backups", backup_list, null, {name:project.name});
+				go_backups(project.name);
 			});
 			add_interaction(fragment, '<img src="assets/images/import.png"> Import Strings from RPGMTL', function(){
 				local_browse("Import RPGMTL", "Select an old RPGMTL strings file.", 2);
@@ -1128,7 +1116,7 @@ function project_menu(data = null)
 	{
 		console.error("Exception thrown", err.stack);
 		push_popup("An unexpected error occured.");
-		post("/api/main", project_list);
+		go_main();
 	}
 }
 
@@ -1191,7 +1179,7 @@ function browse_files(data)
 				else
 				{
 					if(returnpath == '/') returnpath = ''; // if return path is a single slash, set to empty first
-					post("/api/browse", browse_files, null, {name:project.name, path:returnpath});
+					go_browse(project.name, returnpath);
 				}
 			},
 			function(){ // help
@@ -1206,7 +1194,7 @@ function browse_files(data)
 				project:1,
 				refresh:1,
 				refresh_callback:function(){
-					post("/api/browse", browse_files, null, {name:project.name, path:bp});
+					go_browse(project.name, bp);
 				}
 			}
 		);
@@ -1248,12 +1236,18 @@ function browse_files(data)
 				{
 					let s = bp.split("/"); // at least 2 elements in s means there is one slash in the path, i.e. we aren't in the root level
 					if(s.length == 2)
-						post("/api/browse", browse_files, null, {name:project.name, path:""});
+					{
+						go_browse(project.name, "");
+					}
 					else
-						post("/api/browse", browse_files, null, {name:project.name, path:s.slice(0, s.length-2).join("/") + "/"});
+					{
+						go_browse(project.name, s.slice(0, s.length-2).join("/") + "/");
+					}
 				}
 				else // open whatever folder it is
-					post("/api/browse", browse_files, null, {name:project.name, path:t});
+				{
+					go_browse(project.name, t);
+				}
 			};
 		}
 		add_to(fragment, "div", {cls:["title", "left"]}).innerHTML = "List of Files";
@@ -1274,7 +1268,7 @@ function browse_files(data)
 				else
 				{
 					set_loading_text("Opening " + key + "...");
-					post("/api/file", open_file, null, {name:project.name, path:key});
+					go_file(project.name, key);
 				}
 			}});
 			// add completion indicator
@@ -1331,11 +1325,11 @@ function string_search(data)
 			function(){ // back callback
 				if(bp in data["files"])
 				{
-					post("/api/file", open_file, null, {name:project.name, path:data["path"]});
+					go_file(project.name, data["path"]);
 				}
 				else
 				{
-					post("/api/browse", browse_files, null, {name:project.name, path:data["path"]});
+					go_browse(project.name, data["path"]);
 				}
 			},
 			function(){ // help
@@ -1371,7 +1365,7 @@ function string_search(data)
 				else
 				{
 					set_loading_text("Opening " + key + "...");
-					post("/api/file", open_file, null, {name:project.name, path:key});
+					go_file(project.name, key);
 				}
 			}});
 			let total = project.config["files"][key]["strings"] - project.config["files"][key]["disabled_strings"];
@@ -1422,7 +1416,7 @@ function browse_patches(data)
 		{
 			// add button to open
 			add_interaction(fragment, '<img src="assets/images/bandaid.png"> ' + key, function() {
-				post("/api/open_patch", edit_patch, null, {name:project.name, key:key});
+				go_open_patch(project.name, key);
 			});
 		}
 		add_to(fragment, "div", {cls:["spacer"]});
@@ -1452,7 +1446,7 @@ function edit_patch(data)
 		update_top_bar(
 			"Create a Fix",
 			function(){ // back callback
-				post("/api/patches", browse_patches, null, {name:project.name});
+				go_patches(project.name);
 			},
 			function(){ // help
 				help.innerHTML = "<ul>\
@@ -1767,9 +1761,13 @@ function open_file(data)
 			function(){ // back callback
 				bottom.style.display = "none";
 				if(laststringsearch != null) // return to search result if we came from here
-					post("/api/search_string", string_search, null, {name:project.name, path:returnpath, search:laststringsearch});
+				{
+					go_search(project.name, returnpath, laststringsearch);
+				}
 				else
-					post("/api/browse", browse_files, null, {name:project.name, path:returnpath});
+				{
+					go_browse(project.name, returnpath);
+				}
 			},
 			function(){ // help
 				help.innerHTML = "<ul>\
@@ -1792,17 +1790,17 @@ function open_file(data)
 				refresh:1,
 				refresh_callback:function(){
 					bottom.style.display = "none";
-					post("/api/file", open_file, null, {name:project.name, path:lastfileopened});
+					go_file(project.name, lastfileopened);
 				},
 				slider:1,
 				file_nav:+(prev_file != null),
 				file_nav_previous_callback:function(){
 					bottom.style.display = "none";
-					post("/api/file", open_file, null, {name:project.name, path:prev_file});
+					go_file(project.name, prev_file);
 				},
 				file_nav_next_callback:function(){
 					bottom.style.display = "none";
-					post("/api/file", open_file, null, {name:project.name, path:next_file});
+					go_file(project.name, next_file);
 				}
 			}
 		);
@@ -1828,10 +1826,10 @@ function open_file(data)
 					this.classList.toggle("selected", false);
 					post("/api/file_action",
 						function() {
-							post("/api/file", open_file, null, {name:project.name, path:lastfileopened});
+							go_file(project.name, lastfileopened);
 						},
 						function() { // reload the file
-							post("/api/browse", browse_files, null, {name:project.name, path:returnpath});
+							go_browse(project.name, returnpath);
 						},
 						{name:project.name, path:lastfileopened, version:project.version, key:key}
 					);
@@ -1853,7 +1851,7 @@ function open_file(data)
 				set_loading_text("Translating this file, be patient...");
 				post("/api/translate_file", update_string_list, function(){
 					bottom.style.display = "none";
-					post("/api/browse", browse_files, null, {name:project.name, path:returnpath});
+					go_browse(project.name, returnpath);
 				}, {name:project.name, path:lastfileopened, version:project.version});
 			}
 			else
@@ -1870,13 +1868,13 @@ function open_file(data)
 				break;
 			case 1: // ARCHIVE
 				add_interaction(fragment, '<img src="assets/images/archive.png"> Access Files contained inside', function() {
-					post("/api/browse", browse_files, null, {name:project.name, path:lastfileopened + "/"});
+					go_browse(project.name, lastfileopened + "/");
 				});
 				add_to(fragment, "div", {cls:["title", "left", "smalltext"]}).innerText = "This file has been divided into multiple files.";
 				break;
 			case 2: // VIRTUAL
 				add_interaction(fragment, '<img src="assets/images/archive.png"> Open Parent File', function() {
-					post("/api/file", open_file, null, {name:project.name, path:project.config["files"][lastfileopened]["parent"]});
+					go_file(project.name, project.config["files"][lastfileopened]["parent"]);
 				});
 				add_to(fragment, "div", {cls:["title", "left", "smalltext"]}).innerText = "This file is part of a bigger file.";
 				break;
@@ -1944,12 +1942,12 @@ function apply_string(trash = false)
 	if(trash)
 		post("/api/update_string", update_string_list, function(){
 			bottom.style.display = "none";
-			post("/api/browse", browse_files, null, {name:project.name, path:returnpath});
+			go_browse(project.name, returnpath);
 		}, {name:project.name, version:project.version, path:project.last_data["path"], group:currentstr.group, index:currentstr.string});
 	else
 		post("/api/update_string", update_string_list, function(){
 			bottom.style.display = "none";
-			post("/api/browse", browse_files, null, {name:project.name, path:returnpath});
+			go_browse(project.name, returnpath);
 		}, {name:project.name, version:project.version, path:project.last_data["path"], group:currentstr.group, index:currentstr.string, string:edit_tl.value});
 	currentstr.classList.toggle("selected-line", false);
 }
@@ -2051,7 +2049,7 @@ function local_browse(title, explanation, mode)
 				switch(filebrowsingmode)
 				{
 					case 0:
-						post("/api/main", project_list);
+						go_main();
 						break;
 					case 1:
 					case 2:
@@ -2220,4 +2218,74 @@ function replace_page()
 		bottom.style.display = "none";
 		project_menu();
 	}
+}
+
+// wrappers around API calls
+function go_main()
+{
+	post("/api/main", project_list);
+}
+
+function go_new_project(at_path, name)
+{
+	post("/api/new_project", project_menu, go_main, {path:at_path, name:name});
+}
+
+function go_project(name)
+{
+	post("/api/open_project", project_menu, go_main, {name:name});
+}
+
+function go_settings(name = null, onerror_back_to_main = false)
+{
+	if(name == null)
+	{
+		post("/api/settings", setting_menu, (onerror_back_to_main ? go_main : null));
+	}
+	else
+	{
+		post("/api/settings", setting_menu, (onerror_back_to_main ? go_main : null), {name:name});
+	}
+}
+
+function go_translator(name = null, onerror_back_to_main = false)
+{
+	if(name == null)
+	{
+		post("/api/translator", translator_menu, (onerror_back_to_main ? go_main : null));
+	}
+	else
+	{
+		post("/api/translator", translator_menu, (onerror_back_to_main ? go_main : null), {name:name});
+	}
+}
+
+function go_browse(name, in_path, onerror_back_to_main = false)
+{
+	post("/api/browse", browse_files, (onerror_back_to_main ? go_main : null), {name:name, path:in_path});
+}
+
+function go_search(name, in_path, search, onerror_back_to_main = false)
+{
+	post("/api/search_string", string_search, (onerror_back_to_main ? go_main : null), {name:name, path:in_path, search:search})
+}
+
+function go_patches(name, onerror_back_to_main = false)
+{
+	post("/api/patches", browse_patches, (onerror_back_to_main ? go_main : null), {name:name});
+}
+
+function go_open_patch(name, key, onerror_back_to_main = false)
+{
+	post("/api/open_patch", edit_patch, (onerror_back_to_main ? go_main : null), {name:name, key:key});
+}
+
+function go_backups(name, onerror_back_to_main = false)
+{
+	post("/api/backups", backup_list, (onerror_back_to_main ? go_main : null), {name:name});
+}
+
+function go_file(name, path, onerror_back_to_main = false)
+{
+	post("/api/file", open_file, (onerror_back_to_main ? go_main : null), {name:name, path:path});
 }
