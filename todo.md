@@ -13,10 +13,12 @@ Future (possible) improvements or bugs are noted here:
 - [ ] Add more settings to string search and replace strings.  
 - [ ] Add complete keyboard navigation/controls.  
 - [x] Add Unload Project button.  
-- [x] Add way to disable/enable plugin.
-- [x] In settings, add more input types.
-- [ ] Grid/Flexbox CSS for project list(?).
-- [ ] Improve CSS of text setting input type.
+- [x] Add way to disable/enable plugin.  
+- [x] In settings, add more input types.  
+- [ ] Grid/Flexbox CSS for project list(?).  
+- [x] Improve CSS of text setting input type.  
+- [ ] Grab focus of main page upon page change.  
+- [ ] Update readme screenshots.  
   
 ### Translator
   

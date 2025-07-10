@@ -179,6 +179,8 @@ function upate_page_location(page, name, params)
 // for keyboard Space shortcut detection during file editing
 document.addEventListener('keydown', function(e)
 {
+	if(loader.style.display == null)
+		return;
 	if(keypressenabled) // flag to enable this function
 	{
 		if(e.code == 'Space' && strtablecache.length > 0 && e.target.tagName != "TEXTAREA") // check if space key was pressed and not on textarea
@@ -197,6 +199,7 @@ document.addEventListener('keydown', function(e)
 					i = (i + 1) % strtablecache.length;
 				}
 				e.stopPropagation();
+				e.preventDefault();
 			}
 			else if(e.ctrlKey && e.shiftKey) // CTRL+SHIFT+space
 			{
@@ -212,6 +215,7 @@ document.addEventListener('keydown', function(e)
 					i = (i + 1) % strtablecache.length;
 				}
 				e.stopPropagation();
+				e.preventDefault();
 			}
 		}
 	}
@@ -237,9 +241,10 @@ function add_to(node, tagName, {cls = [], id = null, title = null, onload = null
 function add_button(node, title, img = null, callback = null)
 {
 	let btn = add_to(node, "div", {cls:["interact", "button"], title:title, onclick:callback, br:false});
-	let img_node = document.createElement("img");
-	img_node.src = img;
-	btn.appendChild(img_node);
+	btn.style.backgroundPosition = "6px 0px";
+	btn.style.backgroundRepeat = "no-repeat";
+	if(img != null)
+		btn.style.backgroundImage = "url(\"" + img + "\")";
 	return btn;
 }
 
@@ -396,10 +401,10 @@ function update_top_bar(title, back_callback, help_callback = null, additions = 
 	if(!top_bar_elems.back) // meaning empty, initialization
 	{
 		let fragment = document.createDocumentFragment();
-		top_bar_elems.back = add_button(fragment, "Back");
+		top_bar_elems.back = add_button(fragment, "Back", null, null);
 		top_bar_elems.title = add_to(fragment, "div", {cls:["inline", "text-wrapper"], br:false});
 		top_bar_elems.spacer = add_to(fragment, "div", {cls:["barfill"], br:false});
-		top_bar_elems.help = add_button(fragment, "Help", "assets/images/help.png");
+		top_bar_elems.help = add_button(fragment, "Help", "assets/images/help.png", null);
 		bar.appendChild(fragment);
 	}
 	// set title
@@ -419,13 +424,13 @@ function update_top_bar(title, back_callback, help_callback = null, additions = 
 	// set back button to shutdown
 	if(additions.shutdown)
 	{
-		if(top_bar_elems.back.firstChild.src != "assets/images/shutdown.png")
-			top_bar_elems.back.firstChild.src = "assets/images/shutdown.png";
+		if(top_bar_elems.back.style.backgroundImage != "url(\"assets/images/shutdown.png\")")
+			top_bar_elems.back.style.backgroundImage = "url(\"assets/images/shutdown.png\")";
 	}
 	else
 	{
-		if(top_bar_elems.back.firstChild.src != "assets/images/back.png")
-			top_bar_elems.back.firstChild.src = "assets/images/back.png";
+		if(top_bar_elems.back.style.backgroundImage != "url(\"assets/images/back.png\")")
+			top_bar_elems.back.style.backgroundImage = "url(\"assets/images/back.png\")";
 	}
 	// home button
 	if(additions.home)
@@ -724,6 +729,7 @@ function setting_menu(data)
 							post("/api/update_settings", callback, null, {key:key, value:!elem.classList.contains("green")});
 						}
 					});
+					fragment.appendChild(document.createElement("br"));
 					if(key in settings)
 						elem.classList.toggle("green", settings[key]);
 					++count;
@@ -734,14 +740,17 @@ function setting_menu(data)
 					if(fdata[2] == null) // text input
 					{
 						/*
-							text: textarea, no return key validation
+							text: div (not textarea, we want resize) & no return key validation
 							str: standard input text
 							password: input password
 							int/float: standard input text
 						*/
 						// add an input element
-						console.log(fdata[1]);
-						const input = add_to(fragment, (fdata[1] == "text" ? "textarea" : "input"), {cls:["input", "smallinput"], br:false});
+						const input = (
+							fdata[1] == "text" ?
+							add_to(fragment, "div", {cls:["input", "smallinput", "inline"], br:false}) :
+							add_to(fragment, "input", {cls:["input", "smallinput"], br:false})
+						);
 						switch(fdata[1])
 						{
 							case "password":
@@ -752,6 +761,11 @@ function setting_menu(data)
 							case "str":
 							{
 								input.type = "text";
+								break;
+							}
+							case "text":
+							{
+								input.contentEditable="plaintext-only";
 								break;
 							}
 						}
@@ -795,6 +809,7 @@ function setting_menu(data)
 								post("/api/update_settings", callback, null, {key:key, value:val});
 							}
 						});
+						fragment.appendChild(document.createElement("br"));
 						if(fdata[1] != "text")
 						{
 							// add listener to detect keypress
