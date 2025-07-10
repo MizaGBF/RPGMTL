@@ -15,6 +15,8 @@ Future (possible) improvements or bugs are noted here:
 - [x] Add Unload Project button.  
 - [x] Add way to disable/enable plugin.
 - [x] In settings, add more input types.
+- [ ] Grid/Flexbox CSS for project list(?).
+- [ ] Improve CSS of text setting input type.
   
 ### Translator
   
