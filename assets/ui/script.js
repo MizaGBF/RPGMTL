@@ -744,73 +744,91 @@ function setting_menu(data)
 			// go over options
 			for(const [key, fdata] of Object.entries(fsett))
 			{
-				switch(fdata[1])
+				if(fdata[1] == "bool")
 				{
-					case "bool": // bool type
+					add_to(fragment, "div", {cls:["settingtext"], br:false}).innerHTML = fdata[0];
+					// add a simple toggle
+					const elem = add_button(fragment, "Set", "assets/images/confirm.png", function(){
+						let callback = function(result_data) {
+							push_popup("The setting has been updated.");
+							set_loading(false);
+							if(key in result_data["settings"])
+								elem.classList.toggle("green", result_data["settings"][key]);
+						};
+						if(is_project)
+							post("/api/update_settings", callback, null, {name:prjname, key:key, value:!elem.classList.contains("green")});
+						else
+							post("/api/update_settings", callback, null, {key:key, value:!elem.classList.contains("green")});
+					});
+					if(key in settings)
+						elem.classList.toggle("green", settings[key]);
+					++count;
+				}
+				else // other text/number types
+				{
+					add_to(fragment, "div", {cls:["settingtext"]}).innerHTML = fdata[0];
+					if(fdata[2] == null) // text input
 					{
-						add_to(fragment, "div", {cls:["settingtext"], br:false}).innerHTML = fdata[0];
-						// add a simple toggle
+						/*
+							text: textarea, no return key validation
+							str: standard input text
+							password: input password
+							int/float: standard input text
+						*/
+						// add an input element
+						console.log(fdata[1]);
+						const input = add_to(fragment, (fdata[1] == "text" ? "textarea" : "input"), {cls:["input", "smallinput"], br:false});
+						switch(fdata[1])
+						{
+							case "password":
+							{
+								input.type = "password";
+								break;
+							}
+							case "str":
+							{
+								input.type = "text";
+								break;
+							}
+						}
+						// and confirmation button
 						const elem = add_button(fragment, "Set", "assets/images/confirm.png", function(){
+							let val = "";
+							switch(fdata[1]) // make sure our value is what RPGMTL wants
+							{
+								case "int":
+									if(isNaN(input.value) || isNaN(parseFloat(input.value)))
+									{
+										push_popup("The value isn't a valid integer.");
+										return;
+									}
+									val = Math.floor(parseFloat(input.value));
+									break;
+								case "float":
+									if(isNaN(input.value) || isNaN(parseFloat(input.value)))
+									{
+										push_popup("The value isn't a valid floating number.");
+										return;
+									}
+									val = parseFloat(input.value);
+									break;
+								default:
+									val = input.value;
+									break;
+							}
 							let callback = function(result_data) {
 								push_popup("The setting has been updated.");
 								set_loading(false);
 								if(key in result_data["settings"])
-									elem.classList.toggle("green", result_data["settings"][key]);
+									input.value = result_data["settings"][key];
 							};
 							if(is_project)
-								post("/api/update_settings", callback, null, {name:prjname, key:key, value:!elem.classList.contains("green")});
+								post("/api/update_settings", callback, null, {name:prjname, key:key, value:val});
 							else
-								post("/api/update_settings", callback, null, {key:key, value:!elem.classList.contains("green")});
+								post("/api/update_settings", callback, null, {key:key, value:val});
 						});
-						if(key in settings)
-							elem.classList.toggle("green", settings[key]);
-						++count;
-						break;
-					}
-					default: // other types
-					{
-						add_to(fragment, "div", {cls:["settingtext"]}).innerHTML = fdata[0];
-						if(fdata[2] == null) // text input
+						if(fdata[1] != "text")
 						{
-							// add an input element
-							const input = add_to(fragment, "input", {cls:["input", "smallinput"], br:false});
-							input.type = "text";
-							// and confirmation button
-							const elem = add_button(fragment, "Set", "assets/images/confirm.png", function(){
-								let val = "";
-								switch(fdata[1]) // make sure our value is what RPGMTL wants
-								{
-									case "int":
-										if(isNaN(input.value) || isNaN(parseFloat(input.value)))
-										{
-											push_popup("The value isn't a valid integer.");
-											return;
-										}
-										val = Math.floor(parseFloat(input.value));
-										break;
-									case "float":
-										if(isNaN(input.value) || isNaN(parseFloat(input.value)))
-										{
-											push_popup("The value isn't a valid floating number.");
-											return;
-										}
-										val = parseFloat(input.value);
-										break;
-									default:
-										val = input.value;
-										break;
-								}
-								let callback = function(result_data) {
-									push_popup("The setting has been updated.");
-									set_loading(false);
-									if(key in result_data["settings"])
-										input.value = result_data["settings"][key];
-								};
-								if(is_project)
-									post("/api/update_settings", callback, null, {name:prjname, key:key, value:val});
-								else
-									post("/api/update_settings", callback, null, {key:key, value:val});
-							});
 							// add listener to detect keypress
 							input.addEventListener('keypress', function(event) {
 								if (event.key === 'Enter')
@@ -819,40 +837,39 @@ function setting_menu(data)
 									elem.click();
 								}
 							});
-							
-							if(key in settings)
-								input.value = settings[key];
-							++count;
 						}
-						else // choice selection
+						
+						if(key in settings)
+							input.value = settings[key];
+						++count;
+					}
+					else // choice selection
+					{
+						// add select and option elements
+						const sel = add_to(fragment, "select", {cls:["input", "smallinput"], br:false});
+						for(let i = 0; i < fdata[2].length; ++i)
 						{
-							// add select and option elements
-							const sel = add_to(fragment, "select", {cls:["input", "smallinput"], br:false});
-							for(let i = 0; i < fdata[2].length; ++i)
-							{
-								let opt = add_to(sel, "option");
-								opt.value = fdata[2][i];
-								opt.textContent = fdata[2][i];
-							}
-							// and confirmation button
-							const elem = add_button(fragment, "Set", "assets/images/confirm.png", function()
-							{
-								let callback = function(result_data) {
-									push_popup("The setting has been updated.");
-									set_loading(false);
-									if(key in result_data["settings"])
-										set.value = result_data["settings"][key];
-								};
-								if(is_project)
-									post("/api/update_settings", callback, null, {name:prjname, key:key, value:sel.value});
-								else
-									post("/api/update_settings", callback, null, {key:key, value:sel.value});
-							});
-							if(key in settings)
-								sel.value = settings[key];
-							++count;
+							let opt = add_to(sel, "option");
+							opt.value = fdata[2][i];
+							opt.textContent = fdata[2][i];
 						}
-						break;
+						// and confirmation button
+						const elem = add_button(fragment, "Set", "assets/images/confirm.png", function()
+						{
+							let callback = function(result_data) {
+								push_popup("The setting has been updated.");
+								set_loading(false);
+								if(key in result_data["settings"])
+									set.value = result_data["settings"][key];
+							};
+							if(is_project)
+								post("/api/update_settings", callback, null, {name:prjname, key:key, value:sel.value});
+							else
+								post("/api/update_settings", callback, null, {key:key, value:sel.value});
+						});
+						if(key in settings)
+							sel.value = settings[key];
+						++count;
 					}
 				}
 			}

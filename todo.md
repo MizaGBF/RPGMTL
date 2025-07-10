@@ -14,6 +14,7 @@ Future (possible) improvements or bugs are noted here:
 - [ ] Add complete keyboard navigation/controls.  
 - [x] Add Unload Project button.  
 - [x] Add way to disable/enable plugin.
+- [x] In settings, add more input types.
   
 ### Translator
   

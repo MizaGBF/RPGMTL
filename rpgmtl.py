@@ -161,7 +161,7 @@ class RPGMTL():
                     menu_info.append(v[1]) # add type string
                     if not isinstance(v[2], bool): # check default value
                         raise Exception("[{}] Default value of setting key {} isn't of type bool".format(plugin.name, k))
-                case "str":
+                case "str"|"password"|"text":
                     menu_info.append(v[1])
                     if not isinstance(v[2], str):
                         raise Exception("[{}] Default value of setting key {} isn't of type str".format(plugin.name, k))
@@ -1522,7 +1522,7 @@ class RPGMTL():
             if key in self.setting_menu[f]:
                 try:
                     match self.setting_menu[f][key][1]:
-                        case "str":
+                        case "str"|"password"|"text":
                             if not isinstance(value, str):
                                 raise Exception()
                         case "bool":

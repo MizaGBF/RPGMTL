@@ -216,7 +216,7 @@ For example:
   
 This add one setting to RPGMTL.  
 The first parameter is the description.  
-The second is the type of the setting. It can be `"str"`, `"bool"`, `"num"` (Which can be either a Python Integer or Float).  
+The second is the type of the setting. It can be `"str"`, `"password"`, `"text"`, `"bool"`, `"num"` (Which can be either a Python Integer or Float).  
 The third is the default value.  
 The fourth is the list of possible values. If you don't wish to provide one, set it to None.  
   
