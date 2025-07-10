@@ -15,12 +15,7 @@ var tl_string_length = null;
 // global variables
 var keypressenabled = false;
 var path = null;
-var prjname = null;
-var prj = null;
-var prjdata = null;
-var prjversion = 0;
-var prjstring = null;
-var prjlist = null;
+var project = {}; // current project
 var currentstr = null;
 var strtablecache = [];
 var lastfileopened = null;
@@ -149,12 +144,7 @@ function clear_variables()
 {
 	keypressenabled = false;
 	path = null;
-	prjname = null;
-	prj = null;
-	prjdata = null;
-	prjversion = 0;
-	prjstring = null;
-	prjlist = null;
+	project = {};
 	currentstr = null;
 	strtablecache = [];
 	lastfileopened = null;
@@ -387,9 +377,9 @@ function process_call(json, success, failure)
 			if("name" in json["data"] && "config" in json["data"]) // check data content (note: data MUST be present)
 			{
 				// keep project infos up to date
-				prjname = json["data"]["name"];
-				prj = json["data"]["config"];
-				prjversion = prj["version"];
+				project.name = json["data"]["name"];
+				project.config = json["data"]["config"];
+				project.version = json["data"]["config"]["version"];
 			}
 			if(success) // call success callback if it exists
 				success(json["data"]);
@@ -491,7 +481,7 @@ function update_top_bar(title, back_callback, help_callback = null, additions = 
 		{
 			top_bar_elems.project = add_button(null, "Project Menu", "assets/images/project.png", function(){
 				bottom.style.display = "none";
-				post("/api/open_project", project_menu, project_fail, {"name":prjname});
+				post("/api/open_project", project_menu, project_fail, {"name":project.name});
 			});
 			if(top_bar_elems.home)
 				top_bar_elems.home.after(top_bar_elems.project);
@@ -700,11 +690,11 @@ function setting_menu(data)
 	{
 		const is_project = "config" in data;
 		
-		upate_page_location("settings", (is_project ? prjname : null), null);
+		upate_page_location("settings", (is_project ? project.name : null), null);
 		
 		// top bar
 		update_top_bar(
-			(is_project ? prjname + " Settings" : "Default Settings"),
+			(is_project ? project.name + " Settings" : "Default Settings"),
 			function(){ // back callback
 				if(is_project)
 					project_menu();
@@ -735,7 +725,7 @@ function setting_menu(data)
 				post("/api/update_settings", function(result_data) {
 					push_popup("The Project Settings have been reset to Global Settings.");
 					project_menu();
-				}, null, {name:prjname});
+				}, null, {name:project.name});
 			});
 		}
 		
@@ -763,7 +753,7 @@ function setting_menu(data)
 								elem.classList.toggle("green", result_data["settings"][key]);
 						};
 						if(is_project)
-							post("/api/update_settings", callback, null, {name:prjname, key:key, value:!elem.classList.contains("green")});
+							post("/api/update_settings", callback, null, {name:project.name, key:key, value:!elem.classList.contains("green")});
 						else
 							post("/api/update_settings", callback, null, {key:key, value:!elem.classList.contains("green")});
 					});
@@ -830,7 +820,7 @@ function setting_menu(data)
 									input.value = result_data["settings"][key];
 							};
 							if(is_project)
-								post("/api/update_settings", callback, null, {name:prjname, key:key, value:val});
+								post("/api/update_settings", callback, null, {name:project.name, key:key, value:val});
 							else
 								post("/api/update_settings", callback, null, {key:key, value:val});
 						});
@@ -870,7 +860,7 @@ function setting_menu(data)
 									set.value = result_data["settings"][key];
 							};
 							if(is_project)
-								post("/api/update_settings", callback, null, {name:prjname, key:key, value:sel.value});
+								post("/api/update_settings", callback, null, {name:project.name, key:key, value:sel.value});
 							else
 								post("/api/update_settings", callback, null, {key:key, value:sel.value});
 						});
@@ -900,11 +890,11 @@ function translator_menu(data)
 	{
 		const is_project = "config" in data;
 		
-		upate_page_location("translator", (is_project ? prjname : null), null);
+		upate_page_location("translator", (is_project ? project.name : null), null);
 		
 		// top bar
 		update_top_bar(
-			(is_project ? prjname + " Translators" : "Global Translators"),
+			(is_project ? project.name + " Translators" : "Global Translators"),
 			function(){ // back callback
 				if(is_project)
 					project_menu();
@@ -944,7 +934,7 @@ function translator_menu(data)
 						post("/api/update_translator", function(result_data) {
 							push_popup("The Project Translator have been reset to the default.");
 							project_menu();
-						}, null, {name:prjname});
+						}, null, {name:project.name});
 					});
 				}
 				// add text
@@ -966,7 +956,7 @@ function translator_menu(data)
 						set_loading(false);
 					};
 					if(is_project)
-						post("/api/update_translator", callback, null, {name:prjname, value:sel.value, index:tindex});
+						post("/api/update_translator", callback, null, {name:project.name, value:sel.value, index:tindex});
 					else
 						post("/api/update_translator", callback, null, {value:sel.value, index:tindex});
 				});
@@ -1045,11 +1035,11 @@ function project_menu(data = null)
 {
 	try
 	{
-		upate_page_location("menu", prjname, null);
+		upate_page_location("menu", project.name, null);
 		
 		// top bar
 		update_top_bar(
-			prjname,
+			project.name,
 			function(){ // back callback
 				post("/api/main", project_list);
 			},
@@ -1081,30 +1071,30 @@ function project_menu(data = null)
 		// here we add various buttons
 		// some only appear if files have been parsed
 		fragment = new_page();
-		add_to(fragment, "div", {cls:["title"]}).innerHTML = prjname;
-		add_to(fragment, "div", {cls:["title", "left"]}).innerHTML = "Game Folder: " + prj["path"];
-		if(prj.files)
+		add_to(fragment, "div", {cls:["title"]}).innerHTML = project.name;
+		add_to(fragment, "div", {cls:["title", "left"]}).innerHTML = "Game Folder: " + project.config["path"];
+		if(project.config.files)
 		{
 			add_interaction(fragment, '<img src="assets/images/folder.png"> Browse Files', function(){
-				post("/api/browse", browse_files, null, {name:prjname, path:""});
+				post("/api/browse", browse_files, null, {name:project.name, path:""});
 			});
 			add_interaction(fragment, '<img src="assets/images/bandaid.png"> Add a Fix', function(){
-				post("/api/patches", browse_patches, null, {name:prjname});
+				post("/api/patches", browse_patches, null, {name:project.name});
 			});
 			add_interaction(fragment, '<img src="assets/images/copy.png"> Replace Strings in batch', function(){
 				replace_page();
 			});
 		}
 		add_interaction(fragment, '<img src="assets/images/setting.png"> Project Settings', function(){
-			post("/api/settings", setting_menu, null, {name:prjname});
+			post("/api/settings", setting_menu, null, {name:project.name});
 		});
 		add_interaction(fragment, '<img src="assets/images/translate.png"> Project Translator', function(){
-			post("/api/translator", translator_menu, null, {name:prjname});
+			post("/api/translator", translator_menu, null, {name:project.name});
 		});
 		add_interaction(fragment, '<img src="assets/images/cancel.png"> Unload the Project', function(){
 			post("/api/unload", function() {
 				post("/api/main", project_list)
-			}, null, {name:prjname});
+			}, null, {name:project.name});
 		});
 		add_to(fragment, "div", {cls:["spacer"]});
 		add_interaction(fragment, '<img src="assets/images/update.png"> Update the Game Files', function(){
@@ -1112,17 +1102,17 @@ function project_menu(data = null)
 		});
 		add_interaction(fragment, '<img src="assets/images/export.png"> Extract the Strings', function(){
 			set_loading_text("Extracting, be patient...");
-			post("/api/extract", project_menu, project_fail, {name:prjname});
+			post("/api/extract", project_menu, project_fail, {name:project.name});
 		});
-		if(prj.files)
+		if(project.config.files)
 		{
 			add_interaction(fragment, '<img src="assets/images/release.png"> Release a Patch', function(){
 				set_loading_text("The patch is being generated in the release folder...");
-				post("/api/release", project_menu, null, {name:prjname});
+				post("/api/release", project_menu, null, {name:project.name});
 			});
 			add_to(fragment, "div", {cls:["spacer"]});
 			add_interaction(fragment, '<img src="assets/images/copy.png"> String Backups', function(){
-				post("/api/backups", backup_list, null, {name:prjname});
+				post("/api/backups", backup_list, null, {name:project.name});
 			});
 			add_interaction(fragment, '<img src="assets/images/import.png"> Import Strings from RPGMTL', function(){
 				local_browse("Import RPGMTL", "Select an old RPGMTL strings file.", 2);
@@ -1158,7 +1148,7 @@ function addSearchBar(node, bp, defaultVal = null)
 	const button = add_button(node, "Search", "assets/images/search.png", function(){
 		if(input.value != "")
 		{
-			post("/api/search_string", string_search, null, {name:prjname, path:bp, search:input.value});
+			post("/api/search_string", string_search, null, {name:project.name, path:bp, search:input.value});
 		}
 	});
 	// and listener for return key
@@ -1176,8 +1166,8 @@ function search_this()
 {
 	let urlparams = new URLSearchParams("");
 	urlparams.set("page", "search_string");
-	urlparams.set("name", prjname);
-	urlparams.set("params", stob64(JSON.stringify({name:prjname, path:prjdata["path"], search:document.getElementById('edit-ori').textContent})));
+	urlparams.set("name", project.name);
+	urlparams.set("params", stob64(JSON.stringify({name:project.name, path:project.last_data["path"], search:document.getElementById('edit-ori').textContent})));
 	window.open(window.location.pathname + '?' + urlparams.toString(), '_blank').focus(); // open in another tab
 }
 
@@ -1189,7 +1179,7 @@ function browse_files(data)
 		keypressenabled = false;
 		laststringsearch = null;
 		const bp = data["path"];
-		upate_page_location("browse", prjname, bp);
+		upate_page_location("browse", project.name, bp);
 		// top bar
 		update_top_bar(
 			"Path: " + bp,
@@ -1201,7 +1191,7 @@ function browse_files(data)
 				else
 				{
 					if(returnpath == '/') returnpath = ''; // if return path is a single slash, set to empty first
-					post("/api/browse", browse_files, null, {name:prjname, path:returnpath});
+					post("/api/browse", browse_files, null, {name:project.name, path:returnpath});
 				}
 			},
 			function(){ // help
@@ -1216,14 +1206,14 @@ function browse_files(data)
 				project:1,
 				refresh:1,
 				refresh_callback:function(){
-					post("/api/browse", browse_files, null, {name:prjname, path:bp});
+					post("/api/browse", browse_files, null, {name:project.name, path:bp});
 				}
 			}
 		);
 		
 		// main part
 		fragment = new_page();
-		add_to(fragment, "div", {cls:["title"]}).innerHTML = prjname;
+		add_to(fragment, "div", {cls:["title"]}).innerHTML = project.name;
 		// add the string search
 		addSearchBar(fragment, bp);
 		
@@ -1243,7 +1233,7 @@ function browse_files(data)
 			{
 				div.innerHTML = '<img src="assets/images/back.png"> ..';
 			}
-			else if(prj["files"][t.slice(0, -1)] != undefined) // for archive type files
+			else if(project.config["files"][t.slice(0, -1)] != undefined) // for archive type files
 			{
 				div.innerHTML = '<img src="assets/images/archive.png"> ' + t;
 				div.classList.add("archive");
@@ -1258,12 +1248,12 @@ function browse_files(data)
 				{
 					let s = bp.split("/"); // at least 2 elements in s means there is one slash in the path, i.e. we aren't in the root level
 					if(s.length == 2)
-						post("/api/browse", browse_files, null, {name:prjname, path:""});
+						post("/api/browse", browse_files, null, {name:project.name, path:""});
 					else
-						post("/api/browse", browse_files, null, {name:prjname, path:s.slice(0, s.length-2).join("/") + "/"});
+						post("/api/browse", browse_files, null, {name:project.name, path:s.slice(0, s.length-2).join("/") + "/"});
 				}
 				else // open whatever folder it is
-					post("/api/browse", browse_files, null, {name:prjname, path:t});
+					post("/api/browse", browse_files, null, {name:project.name, path:t});
 			};
 		}
 		add_to(fragment, "div", {cls:["title", "left"]}).innerHTML = "List of Files";
@@ -1279,29 +1269,29 @@ function browse_files(data)
 			let button = add_to(fragment, "div", {cls:cls[+value], br:false, id:"text:"+key, onclick:function(){
 				if(window.event.ctrlKey) // ignore shortcut
 				{
-					post("/api/ignore_file", update_file_list, null, {name:prjname, path:key, state:+!this.classList.contains("disabled")});
+					post("/api/ignore_file", update_file_list, null, {name:project.name, path:key, state:+!this.classList.contains("disabled")});
 				}
 				else
 				{
 					set_loading_text("Opening " + key + "...");
-					post("/api/file", open_file, null, {name:prjname, path:key});
+					post("/api/file", open_file, null, {name:project.name, path:key});
 				}
 			}});
 			// add completion indicator
-			let total = prj["files"][key]["strings"] - prj["files"][key]["disabled_strings"];
-			let count = prj["files"][key]["translated"];
+			let total = project.config["files"][key]["strings"] - project.config["files"][key]["disabled_strings"];
+			let count = project.config["files"][key]["translated"];
 			let percent = total > 0 ? ", " + (Math.round(10000 * count / total) / 100) + "%)" : ")";
 			
 			if(!value) // add to folder completion indicator
 			{
-				fstring += prj["files"][key]["strings"];
+				fstring += project.config["files"][key]["strings"];
 				ftotal += total;
 				fcount += count;
 			}
 			
 			if(count == total) // add complete class if no string left to translate
 				button.classList.add("complete");
-			button.textContent = key + ' (' + prj["files"][key]["strings"] + percent; // set text
+			button.textContent = key + ' (' + project.config["files"][key]["strings"] + percent; // set text
 			if(key == lastfileopened) // if this is the last opened file
 				scrollTo = button; // store it
 		}
@@ -1334,18 +1324,18 @@ function string_search(data)
 	{
 		const bp = data["path"];
 		laststringsearch = data["search"];
-		upate_page_location("search_string", prjname, {"path":bp, "search":laststringsearch});
+		upate_page_location("search_string", project.name, {"path":bp, "search":laststringsearch});
 		// top bar
 		update_top_bar(
 			"Search Results",
 			function(){ // back callback
 				if(bp in data["files"])
 				{
-					post("/api/file", open_file, null, {name:prjname, path:data["path"]});
+					post("/api/file", open_file, null, {name:project.name, path:data["path"]});
 				}
 				else
 				{
-					post("/api/browse", browse_files, null, {name:prjname, path:data["path"]});
+					post("/api/browse", browse_files, null, {name:project.name, path:data["path"]});
 				}
 			},
 			function(){ // help
@@ -1362,7 +1352,7 @@ function string_search(data)
 		
 		// main part
 		fragment = new_page();
-		add_to(fragment, "div", {cls:["title"]}).innerHTML = prjname;
+		add_to(fragment, "div", {cls:["title"]}).innerHTML = project.name;
 		addSearchBar(fragment, bp, data["search"]);
 		
 		add_to(fragment, "div", {cls:["title", "left"]}).innerHTML = "Search Results";
@@ -1376,16 +1366,16 @@ function string_search(data)
 			let button = add_to(fragment, "div", {cls:cls[+value], br:false, id:"text:"+key, onclick:function(){
 				if(window.event.ctrlKey) // disable shortcut
 				{
-					post("/api/ignore_file", update_file_list, null, {name:prjname, path:key, state:+!this.classList.contains("disabled")});
+					post("/api/ignore_file", update_file_list, null, {name:project.name, path:key, state:+!this.classList.contains("disabled")});
 				}
 				else
 				{
 					set_loading_text("Opening " + key + "...");
-					post("/api/file", open_file, null, {name:prjname, path:key});
+					post("/api/file", open_file, null, {name:project.name, path:key});
 				}
 			}});
-			let total = prj["files"][key]["strings"] - prj["files"][key]["disabled_strings"];
-			let count = prj["files"][key]["translated"];
+			let total = project.config["files"][key]["strings"] - project.config["files"][key]["disabled_strings"];
+			let count = project.config["files"][key]["translated"];
 			let percent = total > 0 ? ', ' + (Math.round(10000 * count / total) / 100) + '%)' : ')';
 			if(count == total)
 				button.classList.add("complete");
@@ -1406,10 +1396,10 @@ function browse_patches(data)
 {
 	try
 	{
-		upate_page_location("patches", prjname, null);
+		upate_page_location("patches", project.name, null);
 		// top part
 		update_top_bar(
-			prjname,
+			project.name,
 			function(){ // back callback
 				project_menu();
 			},
@@ -1425,14 +1415,14 @@ function browse_patches(data)
 		
 		// main part
 		fragment = new_page();
-		add_to(fragment, "div", {cls:["title"]}).innerHTML = prjname;
+		add_to(fragment, "div", {cls:["title"]}).innerHTML = project.name;
 		add_to(fragment, "div", {cls:["title", "left"]}).innerHTML = "Fix List";
 		// list patches
-		for(const [key, value] of Object.entries(prj["patches"]))
+		for(const [key, value] of Object.entries(project.config["patches"]))
 		{
 			// add button to open
 			add_interaction(fragment, '<img src="assets/images/bandaid.png"> ' + key, function() {
-				post("/api/open_patch", edit_patch, null, {name:prjname, key:key});
+				post("/api/open_patch", edit_patch, null, {name:project.name, key:key});
 			});
 		}
 		add_to(fragment, "div", {cls:["spacer"]});
@@ -1457,12 +1447,12 @@ function edit_patch(data)
 	{
 		const key = data["key"]; // patch key. Note: CAN be null
 		if(key != null)
-			upate_page_location("open_patch", prjname, key);
+			upate_page_location("open_patch", project.name, key);
 		// top bar
 		update_top_bar(
 			"Create a Fix",
 			function(){ // back callback
-				post("/api/patches", browse_patches, null, {name:prjname});
+				post("/api/patches", browse_patches, null, {name:project.name});
 			},
 			function(){ // help
 				help.innerHTML = "<ul>\
@@ -1480,7 +1470,7 @@ function edit_patch(data)
 		// main part
 		fragment = new_page();
 		// add various input and text elements
-		add_to(fragment, "div", {cls:["title"]}).innerHTML = prjname;
+		add_to(fragment, "div", {cls:["title"]}).innerHTML = project.name;
 		add_to(fragment, "div", {cls:["title", "left"]}).innerHTML = "Filename match";
 		add_to(fragment, "input", {cls:["input"], id:"filter"}).type = "text";
 		add_to(fragment, "div", {cls:["title", "left"]}).innerHTML = "Python Code";
@@ -1491,7 +1481,7 @@ function edit_patch(data)
 			let code = document.getElementById("fix").textContent;
 			if(newkey.trim() != "" && code.trim() != "")
 			{
-				post("/api/update_patch", browse_patches, null, {name:prjname, key:key, newkey:newkey, code:code});
+				post("/api/update_patch", browse_patches, null, {name:project.name, key:key, newkey:newkey, code:code});
 			}
 			else
 			{
@@ -1499,12 +1489,12 @@ function edit_patch(data)
 			}
 		});
 		add_interaction(fragment, '<img src="assets/images/trash.png"> Delete', function() {
-			post("/api/update_patch", browse_patches, null, {name:prjname, key:key});
+			post("/api/update_patch", browse_patches, null, {name:project.name, key:key});
 		});
 		if(key != null)
 		{
 			fragment.getElementById("filter").value = key;
-			fragment.getElementById("fix").textContent = prj["patches"][key];
+			fragment.getElementById("fix").textContent = project.config["patches"][key];
 		}
 		update_main(fragment);
 	}
@@ -1521,10 +1511,10 @@ function backup_list(data)
 {
 	try
 	{
-		upate_page_location("backups", prjname, null);
+		upate_page_location("backups", project.name, null);
 		// top part
 		update_top_bar(
-			prjname,
+			project.name,
 			function(){ // back callback
 				project_menu();
 			},
@@ -1543,7 +1533,7 @@ function backup_list(data)
 		
 		// main part
 		fragment = new_page();
-		add_to(fragment, "div", {cls:["title"]}).innerHTML = prjname;
+		add_to(fragment, "div", {cls:["title"]}).innerHTML = project.name;
 		add_to(fragment, "div", {cls:["title", "left"]}).innerHTML = "Backup List";
 		if(data["list"].length == 0)
 			add_to(fragment, "div", {cls:["title", "left", "block", "inline"], br:false}).innerHTML = "No backup available";
@@ -1555,7 +1545,7 @@ function backup_list(data)
 				if(this.classList.contains("selected") || window.event.ctrlKey) // confirmation / shortcut to insta confirm
 				{
 					this.classList.toggle("selected", false);
-					post("/api/load_backup", project_menu, null, {name:prjname, file:elem[0]});
+					post("/api/load_backup", project_menu, null, {name:project.name, file:elem[0]});
 				}
 				else
 				{
@@ -1612,12 +1602,12 @@ function prepareGroupOn(node, i)
 {
 	let base = add_to(node, "div", {cls:["interact-group"]}); // base container
 	let group = add_to(base, "span", {cls:["smalltext"], id:i}); // group container
-	if(prjlist[i][0] != "") // add group name OR index
-		group.textContent = prjlist[i][0];
+	if(project.string_groups[i][0] != "") // add group name OR index
+		group.textContent = project.string_groups[i][0];
 	else
 		group.textContent = "#"+(i+1);
 	// iterate over strings of this group
-	for(let j = 1; j < prjlist[i].length; ++j)
+	for(let j = 1; j < project.string_groups[i].length; ++j)
 	{
 		const span = add_to(base, "span", {cls:["interact", "string-group"]}); // add container
 		span.group = i;
@@ -1628,8 +1618,8 @@ function prepareGroupOn(node, i)
 		let original = add_to(span, "pre", {cls:["title", "inline", "smalltext", "string-area", "original"], br:false}); // original string
 		original.group = i;
 		original.string = j;
-		original.textContent = prjstring[prjlist[i][j][0]][0];
-		const occurence = prjstring[prjlist[i][j][0]][2];
+		original.textContent = project.strings[project.string_groups[i][j][0]][0];
+		const occurence = project.strings[project.string_groups[i][j][0]][2];
 		
 		let translation = add_to(span, "pre", {cls:["title", "inline", "smalltext", "string-area", "translation"], br:false}); // translated string
 		translation.group = i;
@@ -1644,13 +1634,13 @@ function prepareGroupOn(node, i)
 			{
 				laststringinteracted = tsize;
 				set_loading_text("Updating...");
-				post("/api/update_string", update_string_list, null, {setting:1, version:prjversion, name:prjname, path:prjdata["path"], group:this.group, index:this.string});
+				post("/api/update_string", update_string_list, null, {setting:1, version:project.version, name:project.name, path:project.last_data["path"], group:this.group, index:this.string});
 			}
 			else if(window.event.ctrlKey && !window.event.shiftKey && window.event.altKey) // multi disable
 			{
 				laststringinteracted = tsize;
 				set_loading_text("Updating...");
-				post("/api/update_string", update_string_list, null, {setting:2, version:prjversion, name:prjname, path:prjdata["path"], group:this.group, index:this.string});
+				post("/api/update_string", update_string_list, null, {setting:2, version:project.version, name:project.name, path:project.last_data["path"], group:this.group, index:this.string});
 			}
 			else if(!window.event.ctrlKey && window.event.shiftKey && !window.event.altKey) // unlink
 			{
@@ -1658,7 +1648,7 @@ function prepareGroupOn(node, i)
 				{
 					laststringinteracted = tsize;
 					set_loading_text("Updating...");
-					post("/api/update_string", update_string_list, null, {setting:0, version:prjversion, name:prjname, path:prjdata["path"], group:this.group, index:this.string});
+					post("/api/update_string", update_string_list, null, {setting:0, version:project.version, name:project.name, path:project.last_data["path"], group:this.group, index:this.string});
 				}
 			}
 		};
@@ -1693,7 +1683,7 @@ function prepareGroupOn(node, i)
 				{
 					laststringinteracted = tsize;
 					// string from project data
-					let ss = prjlist[span.group][span.string];
+					let ss = project.string_groups[span.group][span.string];
 					// update bottom part
 					// set occurence count
 					if(occurence > 1)
@@ -1701,19 +1691,19 @@ function prepareGroupOn(node, i)
 					else
 						edit_times.textContent = "";
 					// set original string text
-					edit_ori.textContent = prjstring[ss[0]][0];
+					edit_ori.textContent = project.strings[ss[0]][0];
 					// set textarea with current translation
 					if(ss[2]) // local/unlinked
 					{
 						if(ss[1] != null)
 							edit_tl.value = ss[1];
 						else
-							edit_tl.value = prjstring[ss[0]][0]; // default to original if not translated
+							edit_tl.value = project.strings[ss[0]][0]; // default to original if not translated
 					}
-					else if(prjstring[ss[0]][1] != null) // global
-						edit_tl.value = prjstring[ss[0]][1];
+					else if(project.strings[ss[0]][1] != null) // global
+						edit_tl.value = project.strings[ss[0]][1];
 					else
-						edit_tl.value = prjstring[ss[0]][0]; // default to original if not translated
+						edit_tl.value = project.strings[ss[0]][0]; // default to original if not translated
 					// update string-length indicator
 					tl_string_length.innerHTML = edit_tl.value.length;
 					// make element visible
@@ -1741,12 +1731,12 @@ function open_file(data)
 		// init stuff
 		keypressenabled = true;
 		laststringinteracted = 0;
-		prjstring = data["strings"];
-		prjlist = data["list"];
-		prjdata = data;
+		project.strings = data["strings"];
+		project.string_groups = data["list"];
+		project.last_data = data;
 		lastfileopened = data["path"];
 		
-		upate_page_location("file", prjname, lastfileopened);
+		upate_page_location("file", project.name, lastfileopened);
 		
 		// folder path
 		const returnpath = lastfileopened.includes('/') ? lastfileopened.split('/').slice(0, lastfileopened.split('/').length-1).join('/')+'/' : "";
@@ -1755,7 +1745,7 @@ function open_file(data)
 		let prev_file = null;
 		let next_file = null;
 		let file_same_folder = [];
-		for(let f in prj["files"])
+		for(let f in project.config["files"])
 		{
 			if((returnpath == "" && !f.includes('/'))
 				|| (f.startsWith(returnpath) && !f.substring(returnpath.length).includes('/')))
@@ -1777,9 +1767,9 @@ function open_file(data)
 			function(){ // back callback
 				bottom.style.display = "none";
 				if(laststringsearch != null) // return to search result if we came from here
-					post("/api/search_string", string_search, null, {name:prjname, path:returnpath, search:laststringsearch});
+					post("/api/search_string", string_search, null, {name:project.name, path:returnpath, search:laststringsearch});
 				else
-					post("/api/browse", browse_files, null, {name:prjname, path:returnpath});
+					post("/api/browse", browse_files, null, {name:project.name, path:returnpath});
 			},
 			function(){ // help
 				help.innerHTML = "<ul>\
@@ -1802,17 +1792,17 @@ function open_file(data)
 				refresh:1,
 				refresh_callback:function(){
 					bottom.style.display = "none";
-					post("/api/file", open_file, null, {name:prjname, path:lastfileopened});
+					post("/api/file", open_file, null, {name:project.name, path:lastfileopened});
 				},
 				slider:1,
 				file_nav:+(prev_file != null),
 				file_nav_previous_callback:function(){
 					bottom.style.display = "none";
-					post("/api/file", open_file, null, {name:prjname, path:prev_file});
+					post("/api/file", open_file, null, {name:project.name, path:prev_file});
 				},
 				file_nav_next_callback:function(){
 					bottom.style.display = "none";
-					post("/api/file", open_file, null, {name:prjname, path:next_file});
+					post("/api/file", open_file, null, {name:project.name, path:next_file});
 				}
 			}
 		);
@@ -1821,7 +1811,7 @@ function open_file(data)
 		fragment = new_page();
 		
 		let topsection = add_to(fragment, "div", {cls:["title"]});
-		topsection.innerHTML = prjname;
+		topsection.innerHTML = project.name;
 		add_to(fragment, "div", {cls:["title", "left"]}).innerHTML = lastfileopened;
 		let previous_plugin = null;
 		// list file actions
@@ -1838,12 +1828,12 @@ function open_file(data)
 					this.classList.toggle("selected", false);
 					post("/api/file_action",
 						function() {
-							post("/api/file", open_file, null, {name:prjname, path:lastfileopened});
+							post("/api/file", open_file, null, {name:project.name, path:lastfileopened});
 						},
 						function() { // reload the file
-							post("/api/browse", browse_files, null, {name:prjname, path:returnpath});
+							post("/api/browse", browse_files, null, {name:project.name, path:returnpath});
 						},
-						{name:prjname, path:lastfileopened, version:prjversion, key:key}
+						{name:project.name, path:lastfileopened, version:project.version, key:key}
 					);
 				}
 				else
@@ -1863,8 +1853,8 @@ function open_file(data)
 				set_loading_text("Translating this file, be patient...");
 				post("/api/translate_file", update_string_list, function(){
 					bottom.style.display = "none";
-					post("/api/browse", browse_files, null, {name:prjname, path:returnpath});
-				}, {name:prjname, path:lastfileopened, version:prjversion});
+					post("/api/browse", browse_files, null, {name:project.name, path:returnpath});
+				}, {name:project.name, path:lastfileopened, version:project.version});
 			}
 			else
 			{
@@ -1874,19 +1864,19 @@ function open_file(data)
 			}
 		});
 		
-		switch(prj["files"][lastfileopened]["file_type"])
+		switch(project.config["files"][lastfileopened]["file_type"])
 		{
 			case 0: // NORMAL
 				break;
 			case 1: // ARCHIVE
 				add_interaction(fragment, '<img src="assets/images/archive.png"> Access Files contained inside', function() {
-					post("/api/browse", browse_files, null, {name:prjname, path:lastfileopened + "/"});
+					post("/api/browse", browse_files, null, {name:project.name, path:lastfileopened + "/"});
 				});
 				add_to(fragment, "div", {cls:["title", "left", "smalltext"]}).innerText = "This file has been divided into multiple files.";
 				break;
 			case 2: // VIRTUAL
 				add_interaction(fragment, '<img src="assets/images/archive.png"> Open Parent File', function() {
-					post("/api/file", open_file, null, {name:prjname, path:prj["files"][lastfileopened]["parent"]});
+					post("/api/file", open_file, null, {name:project.name, path:project.config["files"][lastfileopened]["parent"]});
 				});
 				add_to(fragment, "div", {cls:["title", "left", "smalltext"]}).innerText = "This file is part of a bigger file.";
 				break;
@@ -1899,7 +1889,7 @@ function open_file(data)
 		
 		// list strings
 		strtablecache = [];
-		for(let i = 0; i < prjlist.length; ++i)
+		for(let i = 0; i < project.string_groups.length; ++i)
 		{
 			prepareGroupOn(fragment, i);
 		}
@@ -1950,17 +1940,17 @@ function apply_string(trash = false)
 	bottom.style.display = "none";
 	set_loading_text("Updating...");
 	// folder path of file
-	const returnpath = prjdata["path"].includes('/') ? prjdata["path"].split('/').slice(0, prjdata["path"].split('/').length-1).join('/')+'/' : "";
+	const returnpath = project.last_data["path"].includes('/') ? project.last_data["path"].split('/').slice(0, project.last_data["path"].split('/').length-1).join('/')+'/' : "";
 	if(trash)
 		post("/api/update_string", update_string_list, function(){
 			bottom.style.display = "none";
-			post("/api/browse", browse_files, null, {name:prjname, path:returnpath});
-		}, {name:prjname, version:prjversion, path:prjdata["path"], group:currentstr.group, index:currentstr.string});
+			post("/api/browse", browse_files, null, {name:project.name, path:returnpath});
+		}, {name:project.name, version:project.version, path:project.last_data["path"], group:currentstr.group, index:currentstr.string});
 	else
 		post("/api/update_string", update_string_list, function(){
 			bottom.style.display = "none";
-			post("/api/browse", browse_files, null, {name:prjname, path:returnpath});
-		}, {name:prjname, version:prjversion, path:prjdata["path"], group:currentstr.group, index:currentstr.string, string:edit_tl.value});
+			post("/api/browse", browse_files, null, {name:project.name, path:returnpath});
+		}, {name:project.name, version:project.version, path:project.last_data["path"], group:currentstr.group, index:currentstr.string, string:edit_tl.value});
 	currentstr.classList.toggle("selected-line", false);
 }
 
@@ -1971,15 +1961,15 @@ function update_string_list(data)
 	try
 	{
 		// update list in memory with received data
-		prjstring = data["strings"];
-		prjlist = data["list"];
+		project.strings = data["strings"];
+		project.string_groups = data["list"];
 		let lcstringsearch = laststringsearch != null ? laststringsearch.toLowerCase() : ""; // last searched string (lowercase)
 		// iterate over ALL strings
 		for(let i = 0; i < strtablecache.length; ++i)
 		{
 			const elems = strtablecache[i];
 			// retrieve string details
-			const s = prjlist[elems[0].group][elems[0].string];
+			const s = project.string_groups[elems[0].group][elems[0].string];
 			if(s[2]) // local/linked check
 			{
 				elems[0].classList.toggle("unlinked", true);
@@ -1999,7 +1989,7 @@ function update_string_list(data)
 			else // global
 			{
 				elems[0].classList.toggle("unlinked", false);
-				const g = prjstring[s[0]];
+				const g = project.strings[s[0]];
 				if(g[1] == null)
 				{
 					if(elems[2].textContent != "")
@@ -2042,7 +2032,7 @@ function translate_string()
 			edit_tl.value = data["translation"];
 			tl_string_length.innerHTML = edit_tl.value.length;
 		}
-	}, function() {}, {name:prjname, string:edit_ori.textContent});
+	}, function() {}, {name:project.name, string:edit_ori.textContent});
 }
 
 // base for file browsing via /api/local_path
@@ -2156,13 +2146,13 @@ function update_local_browse(data)
 					post("/api/update_location", project_creation, null, {"path":t});
 					break;
 				case 1:
-					post("/api/update_location", project_menu, null, {"name":prjname, "path":t});
+					post("/api/update_location", project_menu, null, {"name":project.name, "path":t});
 					break;
 				case 2:
-					post("/api/import", project_menu, null, {name:prjname, path:t});
+					post("/api/import", project_menu, null, {name:project.name, path:t});
 					break;
 				case 3:
-					post("/api/import_rpgmtrans", project_menu, null, {name:prjname, path:t});
+					post("/api/import_rpgmtrans", project_menu, null, {name:project.name, path:t});
 					break;
 				default:
 					break;
@@ -2211,7 +2201,7 @@ function replace_page()
 			else if(this.classList.contains("selected") || window.event.ctrlKey)
 			{
 				this.classList.toggle("selected", false);
-				post("/api/replace_strings", null, null, {name:prjname, src:input.value, dst:output.value});
+				post("/api/replace_strings", null, null, {name:project.name, src:input.value, dst:output.value});
 			}
 			else
 			{
