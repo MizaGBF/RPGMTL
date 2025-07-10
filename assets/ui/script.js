@@ -482,7 +482,7 @@ function update_top_bar(title, back_callback, help_callback = null, additions = 
 	{
 		if(!top_bar_elems.project)
 		{
-			top_bar_elems.home = add_button(null, "Project Menu", "assets/images/project.png", function(){
+			top_bar_elems.project = add_button(null, "Project Menu", "assets/images/project.png", function(){
 				bottom.style.display = "none";
 				post("/api/open_project", project_menu, project_fail, {"name":prjname});
 			});
@@ -580,7 +580,7 @@ function update_top_bar(title, back_callback, help_callback = null, additions = 
 		else top_bar_elems.next_file.onclick = additions.file_nav_next_callback;
 		if(!top_bar_elems.prev_file)
 		{
-			top_bar_elems.next_file = add_button(null, "Previous File", "assets/images/previous.png", additions.file_nav_previous_callback);
+			top_bar_elems.prev_file = add_button(null, "Previous File", "assets/images/previous.png", additions.file_nav_previous_callback);
 			top_bar_elems.next_file.before(top_bar_elems.prev_file);
 		}
 		else top_bar_elems.prev_file.onclick = additions.file_nav_previous_callback;
