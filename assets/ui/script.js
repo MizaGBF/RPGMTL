@@ -245,7 +245,7 @@ function focus_and_scroll(el)
 // for keyboard shortcut and navigation
 document.addEventListener('keydown', function(e)
 {
-	if(loader.style.display == null || e.altKey || e.metaKey)
+	if(loader.style.display != "none" || e.altKey || e.metaKey)
 		return;
 	let all_allowed = is_not_using_input(e.target);
 	switch(e.key)
@@ -706,7 +706,7 @@ document.addEventListener('keydown', function(e)
 
 document.addEventListener('keyup', function(e)
 {
-	if(loader.style.display == null || e.altKey || e.metaKey || !is_not_using_input(e.target))
+	if(loader.style.display != "none" || e.altKey || e.metaKey || !is_not_using_input(e.target))
 		return;
 	switch(e.code)
 	{
@@ -813,7 +813,7 @@ function set_loading(state)
 	if(state)
 	{
 		loaderanim.classList.add("loader");
-		loader.style.display = null;
+		loader.style.display = "";
 	}
 	else
 	{
