@@ -18,7 +18,7 @@ Future (possible) improvements or bugs are noted here:
 - [x] Grid/Flexbox CSS for project list(?).  
 - [x] Improve CSS of text setting input type.  
 - [x] Grab focus of main page upon page change.  
-- [ ] Update readme screenshots.  
+- [x] Update readme screenshots.  
   
 ### Translator
   
