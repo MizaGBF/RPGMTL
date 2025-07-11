@@ -2893,6 +2893,12 @@ function update_local_browse(data)
 {
 	// navigation bar
 	let path_parts = data["path"].split("/");
+	// windows driver letter fix
+	if(path_parts.length == 2 && path_parts[1] == "" && path_parts[0][1] == ':')
+		path_parts.pop();
+	// windows root fix
+	if(path_parts.length == 1 && path_parts[0] == "")
+		path_parts.pop();
 	let cpath = document.getElementById("current_path");
 	cpath.innerHTML = "";
 	let total_path = path_parts[0];
@@ -2901,17 +2907,18 @@ function update_local_browse(data)
 		if(i > 0)
 			total_path += "/" + path_parts[i];
 		const callback_path = total_path;
-		add_to(cpath, "div", {cls:["interact", "text-button"], br:false, onclick:function(){
+		add_to(cpath, "div", {cls:["interact", "text-button"], br:false, navigable:true, onclick:function(){
 			post("/api/local_path", update_local_browse, null, {"path":callback_path, "mode":filebrowsingmode});
 		}}).innerText = path_parts[i];
 	}
 	// update folders
 	let container = document.getElementById("folder_container");
 	container.innerHTML = "";
+	let first_element = null;
 	for(let i = 0; i < data["folders"].length; ++i)
 	{
 		const t = data["folders"][i];
-		add_interaction(container, t.split("/")[t.split("/").length-1], function(){
+		const el = add_interaction(container, t.split("/")[t.split("/").length-1], function(){
 			if(t == "..")
 			{
 				if(data["path"].length == 3 && data["path"].endsWith(":/"))
@@ -2930,8 +2937,9 @@ function update_local_browse(data)
 				post("/api/local_path", update_local_browse, null, {"path":t, "mode":filebrowsingmode});
 			}
 		});
+		if(first_element == null)
+			first_element = el;
 	}
-	
 	container = document.getElementById("file_container");
 	container.innerHTML = "";
 	for(let i = 0; i < data["files"].length; ++i)
@@ -2957,6 +2965,9 @@ function update_local_browse(data)
 			}
 		});
 	}
+	if(first_element != null)
+		first_element.focus();
+	navigables = document.querySelectorAll('[tabindex="0"]');
 	set_loading(false);
 }
 
