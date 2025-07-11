@@ -213,14 +213,14 @@ class Plugin:
                     raise Exception("Couldn't determine encoding of file content")
 
 class TranslatorBatchFormat(IntEnum):
-    DEFAULT = 0 # string or list of string
-    CONTEXT = 1 # formatted for AI translation
+    STANDARD = 0 # string or list of string
+    AI = 1 # formatted for AI translation
 
 """
 The TranslatorFormat will determine what input the translator plugin receives in translate_batch()
-    0 (DEFAULT):
+    0 (STANDARD):
         - translate_batch(): A list of string
-    1 (CONTEXT):
+    1 (AI):
         - translate_batch(): The following structure will be given:
             {
                 "file":"FILE",
@@ -247,7 +247,14 @@ class TranslatorPlugin:
         self.description : str = "__undefined__"
 
     def get_format(self : TranslatorPlugin) -> TranslatorBatchFormat:
-        return TranslatorBatchFormat.DEFAULT
+        return TranslatorBatchFormat.STANDARD
+
+    def get_token_budget_threshold(self : TranslatorPlugin) -> int:
+        # Only used for TranslatorBatchFormat.AI
+        # Return the threshold for the number of token of the JSON input
+        # It doesn't count the rest of the prompt you might use, etc...
+        # If greater, it will be broken down in multiple batches
+        return 10000
 
     def connect(self : TranslatorPlugin, rpgmtl : RPGMTL) -> None:
         # No ned to reimplement this one

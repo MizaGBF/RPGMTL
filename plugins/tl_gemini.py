@@ -96,7 +96,10 @@ class TLGemini(TranslatorPlugin):
         self.key_in_use = None
 
     def get_format(self : TranslatorPlugin) -> TranslatorBatchFormat:
-        return TranslatorBatchFormat.CONTEXT
+        return TranslatorBatchFormat.AI
+
+    def get_token_budget_threshold(self : TranslatorPlugin) -> int:
+        return 20000
 
     def get_setting_infos(self : TLGemini) -> dict[str, list]:
         return {

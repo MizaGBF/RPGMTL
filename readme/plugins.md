@@ -166,11 +166,11 @@ for file in my_archive:
 ### Translator Plugin Batch Format
   
 You can override a `TranslatorPlugin` `get_format` so that `translate_batch` will receive and return data in a different way.  
-If set with `TranslatorBatchFormat.DEFAULT`:  
+If set with `TranslatorBatchFormat.STANDARD`:  
 Input is a list of string to translate.  
 Output is a list, of same size, of translated strings (or None if one failed to translate). Indexes must correspond with the Input.  
  
-If set with `TranslatorBatchFormat.CONTEXT`:  
+If set with `TranslatorBatchFormat.AI`:  
 Input format is the following:  
 ```json
 {
@@ -199,6 +199,7 @@ Output format is:
     "STRING_ID":"TRANSLATION"
 }
 ```  
+You might also need to override `get_token_budget_threshold()` in your plugin, to set the amount of approximate maximum length of the input JSON, in tokens.  
   
 ## Plugin Settings  
   

@@ -1870,7 +1870,7 @@ class RPGMTL():
                     translation = None
             return web.json_response({"result":"ok", "data":{"translation":translation}})
 
-    # subroutine of translate_file() for TranslatorBatchFormat.DEFAULT
+    # subroutine of translate_file() for TranslatorBatchFormat.STANDARD
     async def default_batch_translate_file(self : RPGMTL, name : str, path : str, plugin : TranslatorPlugin) -> tuple[bool, int|str]:
         version = self.projects[name]["version"]
         file = self.strings[name]["files"][path]
@@ -1922,7 +1922,7 @@ class RPGMTL():
         # Respond
         return True, count
 
-    # subroutine of translate_file() for TranslatorBatchFormat.CONTEXT
+    # subroutine of translate_file() for TranslatorBatchFormat.AI
     async def context_batch_translate_file(self : RPGMTL, name : str, path : str, plugin : TranslatorPlugin) -> web.Response:
         version = self.projects[name]["version"]
         file = self.strings[name]["files"][path]
@@ -1967,8 +1967,8 @@ class RPGMTL():
                     batch["strings"][-1]["translation"] = t[3]
                 else:
                     batch_has_untranslated = True
-                token_estimation += len(str(batch["strings"][-1])) / 4
-                if token_estimation > 20000: # attempt to separate in multiple batches according to estimated token size
+                token_estimation += len(str(batch["strings"][-1])) / 4 # number of characters / 4
+                if token_estimation >= plugin.get_token_budget_threshold(): # attempt to separate in multiple batches according to estimated token size
                     token_estimation = 0
                     if batch_has_untranslated:
                         batches.append(batch)
@@ -2040,7 +2040,7 @@ class RPGMTL():
                 return web.json_response({"result":"bad", "message":"No Batch Translator currently set"})
             # Fetching strings in need of translation
             match current.get_format():
-                case TranslatorBatchFormat.CONTEXT:
+                case TranslatorBatchFormat.AI:
                     state, res = await self.context_batch_translate_file(name, path, current)
                 case _:
                     state, res = await self.default_batch_translate_file(name, path, current)
@@ -2079,7 +2079,7 @@ class RPGMTL():
                 if not ignored and string_count > 0:
                     file_count += 1
                     match current.get_format():
-                        case TranslatorBatchFormat.CONTEXT:
+                        case TranslatorBatchFormat.AI:
                             state, res =  await self.context_batch_translate_file(name, path, current)
                         case _:
                             state, res =  await self.default_batch_translate_file(name, path, current)
