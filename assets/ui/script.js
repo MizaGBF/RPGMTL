@@ -1914,8 +1914,7 @@ function browse_files(data)
 			if(key == lastfileopened) // if this is the last opened file
 				scrollTo = button; // store it
 		}
-		add_to(fragment, "div", {cls:["spacer"]});
-		add_to(fragment, "div", {cls:["spacer"]});
+		// add space at the bottom
 		add_to(fragment, "div", {cls:["spacer"]});
 		// set folder completion indicator
 		let percent = ftotal > 0 ? ', ' + (Math.round(10000 * fcount / ftotal) / 100) + '%' : '';
@@ -2605,6 +2604,9 @@ function open_file(data)
 		{
 			prepareGroupOn(fragment, i);
 		}
+		// add spaces for bottom part to not cover the last elements
+		add_to(fragment, "div", {cls:["spacer"]});
+		add_to(fragment, "div", {cls:["spacer"]});
 		add_to(fragment, "div", {cls:["spacer"]});
 		add_to(fragment, "div", {cls:["spacer"]});
 		add_to(fragment, "div", {cls:["spacer"]});
