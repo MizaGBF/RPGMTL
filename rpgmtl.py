@@ -2048,34 +2048,69 @@ class RPGMTL():
         path = payload.get('path', None)
         name = payload.get('name', None)
         search = payload.get('search', None)
+        case = payload.get('case', None)
+        contains = payload.get('contains', None)
         if path is None:
             return web.json_response({"result":"bad", "message":"Bad request, missing 'path' parameter"}, status=400)
         elif search is None:
             return web.json_response({"result":"bad", "message":"Bad request, missing 'search' parameter"}, status=400)
         elif name is None:
             return web.json_response({"result":"bad", "message":"Bad request, missing 'name' parameter"}, status=400)
+        elif case is None:
+            return web.json_response({"result":"bad", "message":"Bad request, missing 'case' parameter"}, status=400)
+        elif contains is None:
+            return web.json_response({"result":"bad", "message":"Bad request, missing 'contains' parameter"}, status=400)
         else:
             self.load_project(name)
             self.load_strings(name)
-
-            lsearch = search.lower()
-            id_matches : set[str] = ([k for k, s in self.strings[name]["strings"].items() if lsearch in s[0].lower() or (s[1] is not None and lsearch in s[1].lower())])
+            # set search term and list all string matching in set
+            lsearch : str = search.lower() if not case else search
+            id_matches : set[str]
+            if not case:
+                if contains:
+                    id_matches = {k for k, s in self.strings[name]["strings"].items() if lsearch in s[0].lower() or (s[1] is not None and lsearch in s[1].lower())}
+                else:
+                    id_matches = {k for k, s in self.strings[name]["strings"].items() if lsearch == s[0].lower() or (s[1] is not None and lsearch == s[1].lower())}
+            else:
+                if contains:
+                    id_matches = {k for k, s in self.strings[name]["strings"].items() if lsearch in s[0] or (s[1] is not None and lsearch in s[1])}
+                else:
+                    id_matches = {k for k, s in self.strings[name]["strings"].items() if lsearch == s[0] or (s[1] is not None and lsearch == s[1])}
             files : set[str] = set()
             for f, groups in self.strings[name]["files"].items():
                 for g in groups:
                     if f in files:
                         break
                     for i in range(1, len(g)):
-                        if g[i][0] in id_matches or (g[i][1] is not None and lsearch in g[i][1].lower()):
+                        if g[i][2]:
+                            if g[i][1] is not None:
+                                if not case:
+                                    if contains:
+                                        if lsearch in g[i][1].lower():
+                                            files.add(f)
+                                            break
+                                    else:
+                                        if lsearch == g[i][1].lower():
+                                            files.add(f)
+                                            break
+                                else:
+                                    if contains:
+                                        if lsearch in g[i][1]:
+                                            files.add(f)
+                                            break
+                                    else:
+                                        if lsearch == g[i][1]:
+                                            files.add(f)
+                                            break
+                        elif g[i][0] in id_matches:
                             files.add(f)
                             break
-
             result : dict[str, bool] = {}
             keys : list[str] = list(files)
             keys.sort()
             for f in keys:
                 result[f] = self.projects[name]["files"].get(f, {}).get("ignored", False)
-            return web.json_response({"result":"ok", "data":{"config":self.projects[name], "name":name, "path":path, "search":search, "files":result}, "message":"Found in {} files".format(len(files))})
+            return web.json_response({"result":"ok", "data":{"config":self.projects[name], "name":name, "path":path, "search":search, "case":case, "contains":contains, "files":result}, "message":"Found in {} files".format(len(files))})
 
     # /api/local_path
     async def local_path(self : RPGMTL, request : web.Request) -> web.Response:

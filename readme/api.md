@@ -223,8 +223,8 @@ Return in data: project 'name', project 'config', file 'path', project 'strings'
 
 ```
 /api/search_string
-Payload: project 'name', file 'path', 'search' string
-Return in data: project 'name', project 'config', 'search' string, matched 'files'
+Payload: project 'name', file 'path' (Only used for UI purpose), 'search' string, 'case' bool, 'contains' bool
+Return in data: project 'name', project 'config', 'search' string, 'case' bool, 'contains' bool, matched 'files'
 ```
 
 ```

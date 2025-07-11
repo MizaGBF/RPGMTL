@@ -19,7 +19,11 @@ var project = {}; // current project
 var currentstr = null;
 var strtablecache = [];
 var lastfileopened = null;
-var laststringsearch = null;
+var search_state = {
+	string:null,
+	casesensitive:false,
+	contains:true
+};
 var filebrowsingmode = 0;
 var navigables = []; // elements with tabindex = 0
 var navigable_index = 0;
@@ -90,7 +94,7 @@ function load_location()
 			case "search_string":
 			{
 				let p = JSON.parse(b64tos(urlparams.get("params")));
-				go_search(urlparams.get("name"), p.path, p.search, true);
+				go_search(urlparams.get("name"), p.path, p.search, (p.casesensitive ?? false), (p.contains ?? true), true);
 				break;
 			}
 			case "patches":
@@ -143,7 +147,7 @@ function clear_variables()
 	currentstr = null;
 	strtablecache = [];
 	lastfileopened = null;
-	laststringsearch = null;
+	search_state.string = null;
 	filebrowsingmode = 0;
 }
 
@@ -895,7 +899,6 @@ function update_main(fragment, to_focus = null)
 			{
 				to_focus.focus();
 				update_focus(to_focus);
-				console.log(to_focus);
 			}
 			else
 			{
@@ -1738,17 +1741,28 @@ function addSearchBar(node, bp, defaultVal = null)
 	input.placeholder = "Search a string";
 	if(defaultVal != null)
 		input.value = defaultVal;
-	else if(laststringsearch != null) // set last string searched if not null
-		input.value = laststringsearch;
+	else if(search_state.string != null) // set last string searched if not null
+		input.value = search_state.string;
 	else
 		input.value = "";
+	// setting buttons
+	const casesensi = add_button(fragment, "Case Sensitive", "assets/images/search_case.png", function(){
+		this.classList.toggle("green");
+	}, true);
+	if(search_state.casesensitive)
+		casesensi.classList.toggle("green", true);
+	const contains = add_button(fragment, "Exact Match", "assets/images/search_exact.png", function(){
+		this.classList.toggle("green");
+	}, true);
+	if(!search_state.contains)
+		contains.classList.toggle("green", true);
 	// add confirm button
 	const button = add_button(node, "Search", "assets/images/search.png", function(){
 		if(input.value != "")
 		{
-			post("/api/search_string", string_search, null, {name:project.name, path:bp, search:input.value});
+			go_search(project.name, bp, input.value, casesensi.classList.contains("green"), !contains.classList.contains("green"));
 		}
-	});
+	}, true);
 	// and listener for return key
 	input.addEventListener('keypress', function(event) {
 		if (event.key === 'Enter')
@@ -1765,7 +1779,13 @@ function search_this()
 	let urlparams = new URLSearchParams("");
 	urlparams.set("page", "search_string");
 	urlparams.set("name", project.name);
-	urlparams.set("params", stob64(JSON.stringify({name:project.name, path:project.last_data["path"], search:document.getElementById('edit-ori').textContent})));
+	urlparams.set("params", stob64(JSON.stringify({
+		name:project.name,
+		path:project.last_data["path"],
+		search:document.getElementById('edit-ori').textContent,
+		casesensitive:true,
+		contains:false
+	})));
 	window.open(window.location.pathname + '?' + urlparams.toString(), '_blank').focus(); // open in another tab
 }
 
@@ -1774,7 +1794,7 @@ function browse_files(data)
 {
 	try
 	{
-		laststringsearch = null;
+		search_state.string = null;
 		const bp = data["path"];
 		upate_page_location("browse", project.name, bp);
 		// top bar
@@ -1950,8 +1970,10 @@ function string_search(data)
 	try
 	{
 		const bp = data["path"];
-		laststringsearch = data["search"];
-		upate_page_location("search_string", project.name, {"path":bp, "search":laststringsearch});
+		search_state.string = data["search"];
+		search_state.casesensitive = data["case"];
+		search_state.contains = data["contains"];
+		upate_page_location("search_string", project.name, {"path":bp, "search":search_state.string, "casesensitive":search_state.casesensitive, "contains":search_state.contains});
 		// top bar
 		update_top_bar(
 			"Search Results",
@@ -2462,9 +2484,9 @@ function open_file(data)
 			"File: " + lastfileopened,
 			function(){ // back callback
 				bottom.style.display = "none";
-				if(laststringsearch != null) // return to search result if we came from here
+				if(search_state.string != null) // return to search result if we came from here
 				{
-					go_search(project.name, returnpath, laststringsearch);
+					go_search(project.name, returnpath, search_state.string, search_state.casesensitive, search_state.contains);
 				}
 				else
 				{
@@ -2615,7 +2637,11 @@ function open_file(data)
 			let scrollTo = update_string_list(data);
 			// scroll to string (if set)
 			if(scrollTo)
+			{
 				scrollTo.scrollIntoView();
+				scrollTo.focus();
+				update_focus(scrollTo);
+			}
 			else
 				topsection.scrollIntoView();
 		});
@@ -2684,7 +2710,15 @@ function update_string_list(data)
 		// update list in memory with received data
 		project.strings = data["strings"];
 		project.string_groups = data["list"];
-		let lcstringsearch = laststringsearch != null ? laststringsearch.toLowerCase() : ""; // last searched string (lowercase)
+		let lcstringsearch = "";
+		// last searched string
+		if(search_state.string != null)
+		{
+			if(!search_state.casesensitive)
+				lcstringsearch = search_state.string.toLowerCase();
+			else
+				lcstringsearch = search_state.string;
+		}
 		// iterate over ALL strings
 		for(let i = 0; i < strtablecache.length; ++i)
 		{
@@ -2727,8 +2761,52 @@ function update_string_list(data)
 			elems[0].classList.toggle("disabled", s[3] != 0);
 			elems[1].classList.toggle("modified", s[4] != 0);
 			// check if string is the target of a string search
-			if(laststringsearch != null && searched == null && (elems[2].textContent.toLowerCase().includes(lcstringsearch) || elems[3].textContent.toLowerCase().includes(lcstringsearch)))
-				searched = elems[2].parentNode;
+			// if so, store in searched
+			if(search_state.string != null && searched == null)
+			{
+				if(!search_state.casesensitive)
+				{
+					if(search_state.contains)
+					{
+						if(elems[2].textContent.toLowerCase().includes(lcstringsearch)
+							|| elems[3].textContent.toLowerCase().includes(lcstringsearch)
+						)
+						{
+							searched = elems[0];
+						}
+					}
+					else
+					{
+						if(elems[2].textContent.includes(lcstringsearch)
+							|| elems[3].textContent.includes(lcstringsearch)
+						)
+						{
+							searched = elems[0];
+						}
+					}
+				}
+				else
+				{
+					if(search_state.contains)
+					{
+						if(elems[2].textContent.toLowerCase() == lcstringsearch
+							|| elems[3].textContent.toLowerCase() == lcstringsearch
+						)
+						{
+							searched = elems[0];
+						}
+					}
+					else
+					{
+						if(elems[2].textContent == lcstringsearch
+							|| elems[3].textContent == lcstringsearch
+						)
+						{
+							searched = elems[0];
+						}
+					}
+				}
+			}
 		}
 		set_loading(false);
 	}
@@ -2977,9 +3055,9 @@ function go_browse(name, in_path, onerror_back_to_main = false)
 	post("/api/browse", browse_files, (onerror_back_to_main ? go_main : null), {name:name, path:in_path});
 }
 
-function go_search(name, in_path, search, onerror_back_to_main = false)
+function go_search(name, in_path, search, casesensitive, contains, onerror_back_to_main = false)
 {
-	post("/api/search_string", string_search, (onerror_back_to_main ? go_main : null), {name:name, path:in_path, search:search})
+	post("/api/search_string", string_search, (onerror_back_to_main ? go_main : null), {name:name, path:in_path, search:search, case:casesensitive, contains:contains})
 }
 
 function go_patches(name, onerror_back_to_main = false)
