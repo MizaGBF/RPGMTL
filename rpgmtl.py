@@ -1948,6 +1948,7 @@ class RPGMTL():
         await asyncio.sleep(0)
         count : int = 0
         if untranslated > 0:
+            self.log.info("Batch translating {} strings in file '{}' for project {}...".format(untranslated, path, name))
             # create batches
             batches : list[dict[str, Any]] = []
             batch : dict[str, Any] = {
@@ -1986,7 +1987,6 @@ class RPGMTL():
                 result = await plugin.translate_batch(batch, self.settings | self.projects[name]['settings'])
                 if result is not None:
                     translated = translated | result
-            self.log.info("Batch translating {} strings in file '{}' for project {}...".format(len(to_translate), path, name))
             # check version
             if version != self.projects[name]["version"]:
                 self.log.error("Batch translation for project " + name + " has been aborted because of a version update")

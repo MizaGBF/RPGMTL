@@ -139,7 +139,7 @@ class TLGemini(TranslatorPlugin):
             extra_context = "\nThe User specified the following:\n{}".format(settings["gemini_extra_context"])
         response = self.instance.models.generate_content(
             model=settings["gemini_model"],
-            contents=PROMPT.replace("$TARGET$", settings["gemini_target_language"]).replace("$SOURCE$", settings["gemini_src_language"]).replace("$EXTRA$", extra_context).replace("$INPUT$", json.dumps(batch), 1),
+            contents=PROMPT.replace("$TARGET$", settings["gemini_target_language"]).replace("$SOURCE$", settings["gemini_src_language"]).replace("$EXTRA$", extra_context).replace("$INPUT$", json.dumps(batch, ensure_ascii=False, indent=4), 1),
             config={
                 "response_mime_type": "application/json",
                 "response_schema": list[GModel]
