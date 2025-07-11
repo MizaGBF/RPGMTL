@@ -1898,7 +1898,7 @@ class RPGMTL():
         count : int
         if len(to_translate) > 0:
             # Translating
-            self.log.info("Batch translating " + str(len(to_translate)) + " strings for project " + name + "...")
+            self.log.info("Batch translating {} strings in file '{}' for project {}...".format(len(to_translate), path, name))
             result = await plugin.translate_batch(to_translate, self.settings | self.projects[name]['settings'])
             if len(result) != len(to_translate):
                 self.log.error("Batch translation for project " + name + " failed")
@@ -1913,7 +1913,7 @@ class RPGMTL():
                 revert_table[i][1][1] = result[i]
                 revert_table[i][0][4] = 0
                 count += 1
-            self.log.info(str(count) + " strings have been translated for project " + name)
+            self.log.info("{} strings have been translated in file '{}' for project {}...".format(count, path, name))
         else:
             count = 0
         if count > 0:
@@ -1986,7 +1986,7 @@ class RPGMTL():
                 result = await plugin.translate_batch(batch, self.settings | self.projects[name]['settings'])
                 if result is not None:
                     translated = translated | result
-            self.log.info("Batch translating file " + path + " for project " + name + "...")
+            self.log.info("Batch translating {} strings in file '{}' for project {}...".format(len(to_translate), path, name))
             # check version
             if version != self.projects[name]["version"]:
                 self.log.error("Batch translation for project " + name + " has been aborted because of a version update")
@@ -2013,6 +2013,7 @@ class RPGMTL():
                 except:
                     pass
         if count > 0:
+            self.log.info("{} strings have been translated in file '{}' for project {}...".format(count, path, name))
             self.modified[name] = True
             self.start_compute_translated(name)
         # Respond
