@@ -113,6 +113,38 @@ They can be overrided individually for each project, if needed.
   
 ![image](https://raw.githubusercontent.com/MizaGBF/RPGMTL/main/assets/readme/4.png)
   
+### Keyboard shortcuts
+  
+RPGMTL is entirely usable without mouse:  
+- `Tab`, `Shift+Tab`, `Arrow`, `Page Up`, `Page Down`, `Home` and `End` keys to navigate around. `Tab` works even if you're focused on a text input.  
+- `F1` key to open and close the help, when available.  
+- `Escape` key to use top left button (Either Back or Shutdown) and to close the help if open.  
+- `Enter` key lets you interact with the highlighted element or validate a text input.  
+  
+In the file page:  
+- `Ctrl+Space` to go the next enabled untranslated string.  
+- `Ctrl+Shift+Space` to go the next untranslated string.  
+- `Ctrl+H` to go back to the home page, if available.  
+- `Ctrl+P` to go back to the project page, if available.  
+- `Ctrl+R` to reload the page, if available.  
+- `Ctrl+M` to move and slide the original and translated string areas.  
+- `Ctrl+O` to copy the selected string original version.  
+- `Ctrl+I` to copy the selected string translated version.  
+- `Ctrl+U` to unlink/link back the string from/to its global translation.  
+- `Ctrl+Y` to ignore the string.  
+- `Ctrl+Shift+Y` to ignore all the occurences of this string.  
+- `Ctrl+Left/Right` to go to the previous/next file, if available.  
+- `Ctrl+E` to focus the edit area, if open.  
+  
+When the edit area is open:  
+- `Escape` key to unfocus the edit area, if focused.  
+- `Ctrl+S` to confirm and save the translation.  
+- `Ctrl+Q` to cancel and close the edit area.  
+- `Ctrl+K` to translate the original string.  
+- `Ctrl+L` to search the original string.  
+- `Ctrl+O` to copy the original string, if focused.  
+- `Ctrl+D` to delete the translation.  
+  
 ### HTTPS
   
 The project is intended to be used on a local network.  

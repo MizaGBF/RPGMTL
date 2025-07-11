@@ -3,6 +3,7 @@ var bar = null;
 var main = null;
 var bottom = null;
 var top_bar_elems = {}; // contains update_top_bar elements
+var edit_btns = {}; // contains button from the edit-tl area from the html
 var tl_style = 2; // for sliding the string areas, there are 7 positions
 var loader = null;
 var loadertext = null;
@@ -13,15 +14,15 @@ var edit_times = null;
 var edit_tl = null;
 var tl_string_length = null;
 // global variables
-var keypressenabled = false;
 var path = null;
 var project = {}; // current project
 var currentstr = null;
 var strtablecache = [];
 var lastfileopened = null;
 var laststringsearch = null;
-var laststringinteracted = 0;
 var filebrowsingmode = 0;
+var navigables = []; // elements with tabindex = 0
+var navigable_index = 0;
 
 // entry point
 function init()
@@ -38,6 +39,13 @@ function init()
 	edit_times = document.getElementById("edit-times");
 	edit_tl = document.getElementById("edit-tl");
 	tl_string_length = document.getElementById("string-length");
+	// edit-tl buttons
+	edit_btns.trash = document.getElementById("edit-btn-trash");
+	edit_btns.search = document.getElementById("edit-btn-search");
+	edit_btns.copy = document.getElementById("edit-btn-copy");
+	edit_btns.translate = document.getElementById("edit-btn-translate");
+	edit_btns.close = document.getElementById("edit-btn-close");
+	edit_btns.save = document.getElementById("edit-btn-save");
 	// request the page
 	load_location();
 }
@@ -119,17 +127,23 @@ function load_location()
 	}
 }
 
+// close help overlay
+function close_help()
+{
+	help.style.display = "none";
+	if(navigables.length > 0)
+		navigables[navigable_index].focus({preventScroll: true});
+}
+
 // Reset major variables
 function clear_variables()
 {
-	keypressenabled = false;
 	path = null;
 	project = {};
 	currentstr = null;
 	strtablecache = [];
 	lastfileopened = null;
 	laststringsearch = null;
-	laststringinteracted = 0;
 	filebrowsingmode = 0;
 }
 
@@ -176,54 +190,580 @@ function upate_page_location(page, name, params)
 	}
 }
 
-// for keyboard Space shortcut detection during file editing
+// update the navigable index if our focused element is part of our navigable ones
+function update_focus(el)
+{
+	for(let i = 0; i < navigables.length; ++i)
+	{
+		if(el == navigables[i])
+		{
+			if(navigable_index != i)
+			{
+				navigable_index = i;
+				return;
+			}
+		}
+	}
+}
+
+// return true if user isn't using an input
+function is_not_using_input(el)
+{
+	return !(["TEXTAREA", "INPUT"].includes(el.tagName) || el.classList.contains("input"));
+}
+
+// focus element and scroll window if needed
+function focus_and_scroll(el)
+{
+	el.focus({preventScroll: true});
+	let rect = el.getBoundingClientRect();
+	// top bar element (use hardcoded height for speed)
+	if(rect.top <= 50)
+	{
+		main.scrollBy(0, rect.top - 50);
+	}
+	// bottom part (if visible)
+	else if(bottom.style.display == "")
+	{
+		let b = bottom.getBoundingClientRect();
+		if(rect.bottom >= b.top - 2)
+		{
+			main.scrollBy(0, rect.bottom - b.top + 2);
+		}
+	}
+	// bottom of viewport
+	else if(rect.bottom >= window.innerHeight - 2)
+	{
+		main.scrollBy(0, rect.bottom - window.innerHeight + 2);
+	}
+}
+
+// for keyboard shortcut and navigation
 document.addEventListener('keydown', function(e)
 {
-	if(loader.style.display == null)
+	if(loader.style.display == null || e.altKey || e.metaKey)
 		return;
-	if(keypressenabled) // flag to enable this function
+	let all_allowed = is_not_using_input(e.target);
+	switch(e.key)
 	{
-		if(e.code == 'Space' && strtablecache.length > 0 && e.target.tagName != "TEXTAREA") // check if space key was pressed and not on textarea
+		case "Escape":
 		{
-			if(e.ctrlKey && !e.shiftKey) // CTRL+space
+			if(!e.ctrlKey && !e.shiftKey)
 			{
-				let i = (laststringinteracted + 1) % strtablecache.length; // iterate over cached strings until we find one without translation
-				while(i != laststringinteracted)
+				// close help
+				if(help.style.display != "none")
 				{
-					if(!strtablecache[i][0].classList.contains("disabled") && strtablecache[i][2].classList.contains("disabled")) // this one also makes sure the string is enabled
+					close_help();
+					e.stopPropagation();
+					e.preventDefault();
+				}
+				else if(bottom.style.display != "none")
+				{
+					if(navigables.length > 0) // not needed, but...
 					{
-						laststringinteracted = i;
-						strtablecache[i][0].scrollIntoView();
-						break;
+						navigables[navigable_index].focus({preventScroll: true});
+						e.stopPropagation();
+						e.preventDefault();
 					}
-					i = (i + 1) % strtablecache.length;
+				}
+				// back/shutdown button
+				else if(all_allowed)
+				{
+					if(top_bar_elems.back && top_bar_elems.back.style.display != "none")
+					{
+						top_bar_elems.back.click();
+						e.stopPropagation();
+						e.preventDefault();
+					}
+				}
+			}
+			break;
+		}
+		case "Enter":
+		{
+			if(!e.ctrlKey && !e.shiftKey && all_allowed && navigables.length > 0)
+			{
+				update_focus(e.target);
+				// open string
+				if(e.target.classList.contains("string-group"))
+				{
+					let idx = navigable_index - (navigables.length - strtablecache.length);
+					open_string(strtablecache[idx][0]);
+					e.stopPropagation();
+					e.preventDefault();
+				}
+				// click element
+				else if(e.target.onclick)
+				{
+					e.target.click();
+					e.stopPropagation();
+					e.preventDefault();
+				}
+			}
+			break;
+		}
+		case "F1":
+		{
+			// toggle help
+			if(!e.ctrlKey && !e.shiftKey && top_bar_elems.help && top_bar_elems.help.style.display != "none")
+			{
+				if(help.style.display != "none")
+				{
+					close_help();
+					e.stopPropagation();
+					e.preventDefault();
+				}
+				else
+				{
+					top_bar_elems.help.click();
+					e.target.blur();
+					e.stopPropagation();
+					e.preventDefault();
+				}
+			}
+			break;
+		}
+		case "e":
+		case "E":
+		{
+			// go to edit area
+			if(all_allowed && e.ctrlKey && !e.shiftKey && bottom.style.display != "none")
+			{
+				edit_tl.focus();
+				e.stopPropagation();
+				e.preventDefault();
+			}
+			break;
+		}
+		case "s":
+		case "S":
+		{
+			// save string
+			if(e.ctrlKey && !e.shiftKey && bottom.style.display != "none")
+			{
+				edit_btns.save.click();
+				e.stopPropagation();
+				e.preventDefault();
+			}
+			break;
+		}
+		case "q":
+		case "Q":
+		{
+			// cancel string
+			if(e.ctrlKey && !e.shiftKey && bottom.style.display != "none")
+			{
+				edit_btns.close.click();
+				e.stopPropagation();
+				e.preventDefault();
+			}
+			break;
+		}
+		case "d":
+		case "D":
+		{
+			// trash string
+			if(e.ctrlKey && !e.shiftKey && bottom.style.display != "none")
+			{
+				edit_btns.trash.click();
+				e.stopPropagation();
+				e.preventDefault();
+			}
+			break;
+		}
+		case "l":
+		case "L":
+		{
+			// search string
+			if(e.ctrlKey && !e.shiftKey && bottom.style.display != "none")
+			{
+				edit_btns.search.click();
+				e.stopPropagation();
+				e.preventDefault();
+			}
+			break;
+		}
+		case "k":
+		case "K":
+		{
+			// translate string
+			if(e.ctrlKey && !e.shiftKey && bottom.style.display != "none")
+			{
+				edit_btns.translate.click();
+				e.stopPropagation();
+				e.preventDefault();
+			}
+			break;
+		}
+		case "h":
+		case "H":
+		{
+			// home button
+			if(e.ctrlKey && !e.shiftKey && top_bar_elems.home && top_bar_elems.home.style.display != "none")
+			{
+				top_bar_elems.home.click();
+				e.stopPropagation();
+				e.preventDefault();
+			}
+			break;
+		}
+		case "p":
+		case "P":
+		{
+			// project button
+			if(e.ctrlKey && !e.shiftKey && top_bar_elems.project && top_bar_elems.project.style.display != "none")
+			{
+				top_bar_elems.project.click();
+				e.stopPropagation();
+				e.preventDefault();
+			}
+			break;
+		}
+		case "r":
+		case "R":
+		{
+			// refresh button
+			if(e.ctrlKey && !e.shiftKey && top_bar_elems.refresh && top_bar_elems.refresh.style.display != "none")
+			{
+				top_bar_elems.refresh.click();
+				e.stopPropagation();
+				e.preventDefault();
+			}
+			break;
+		}
+		case "m":
+		case "M":
+		{
+			// slide button
+			if(e.ctrlKey && !e.shiftKey && top_bar_elems.slider && top_bar_elems.slider.style.display != "none")
+			{
+				top_bar_elems.slider.click();
+				e.stopPropagation();
+				e.preventDefault();
+			}
+			break;
+		}
+		case "o":
+		case "O":
+		{
+			// copy original
+			if(all_allowed && e.ctrlKey && !e.shiftKey && e.target.classList.contains("string-group"))
+			{
+				update_focus(e.target);
+				let idx = navigable_index - (navigables.length - strtablecache.length);
+				copy_original(strtablecache[idx][3]);
+				e.stopPropagation();
+				e.preventDefault();
+			}
+			// click button
+			else if(e.ctrlKey && !e.shiftKey && bottom.style.display != "none")
+			{
+				edit_btns.copy.click();
+				e.stopPropagation();
+				e.preventDefault();
+			}
+			break;
+		}
+		case "i":
+		case "I":
+		{
+			// copy translation
+			if(all_allowed && e.ctrlKey && !e.shiftKey && e.target.classList.contains("string-group"))
+			{
+				update_focus(e.target);
+				let idx = navigable_index - (navigables.length - strtablecache.length);
+				copy_translated(strtablecache[idx][2]);
+				e.stopPropagation();
+				e.preventDefault();
+			}
+			break;
+		}
+		case "u":
+		case "U":
+		{
+			// unlink string
+			if(all_allowed && e.ctrlKey && !e.shiftKey && e.target.classList.contains("string-group"))
+			{
+				update_focus(e.target);
+				let idx = navigable_index - (navigables.length - strtablecache.length);
+				unlink_string(strtablecache[idx][0]);
+				e.stopPropagation();
+				e.preventDefault();
+			}
+			break;
+		}
+		case "y":
+		case "Y":
+		{
+			// disable string
+			if(all_allowed && e.ctrlKey && e.target.classList.contains("string-group"))
+			{
+				update_focus(e.target);
+				let idx = navigable_index - (navigables.length - strtablecache.length);
+				if(e.shiftKey)
+				{
+					multi_disable_string(strtablecache[idx][0]);
+				}
+				else
+				{
+					disable_string(strtablecache[idx][0]);
 				}
 				e.stopPropagation();
 				e.preventDefault();
 			}
-			else if(e.ctrlKey && e.shiftKey) // CTRL+SHIFT+space
+			break;
+		}
+		case "Tab":
+		{
+			// tab navigation
+			if(!e.ctrlKey && navigables.length > 0)
 			{
-				let i = (laststringinteracted + 1) % strtablecache.length;
-				while(i != laststringinteracted)
+				update_focus(e.target);
+				if(e.shiftKey)
 				{
-					if(strtablecache[i][2].classList.contains("disabled")) // same as above, without the enabled check
-					{
-						laststringinteracted = i;
-						strtablecache[i][0].scrollIntoView();
-						break;
-					}
-					i = (i + 1) % strtablecache.length;
+					navigable_index = (navigable_index - 1 + navigables.length) % navigables.length;
 				}
+				else
+				{
+					navigable_index = (navigable_index + 1) % navigables.length;
+				}
+				focus_and_scroll(navigables[navigable_index]);
 				e.stopPropagation();
 				e.preventDefault();
 			}
+			break;
+		}
+		case "ArrowLeft":
+		{
+			// previous file
+			if(e.ctrlKey && !e.shiftKey && top_bar_elems.prev_file && top_bar_elems.prev_file.style.display != "none")
+			{
+				top_bar_elems.prev_file.click();
+				e.stopPropagation();
+				e.preventDefault();
+			}
+			// move previous
+			else if(!e.ctrlKey && !e.shiftKey && all_allowed && navigables.length > 0)
+			{
+				update_focus(e.target);
+				navigable_index = (navigable_index - 1 + navigables.length) % navigables.length;
+				focus_and_scroll(navigables[navigable_index]);
+				e.stopPropagation();
+				e.preventDefault();
+			}
+			break;
+		}
+		case "ArrowRight":
+		{
+			// next file
+			if(e.ctrlKey && !e.shiftKey && top_bar_elems.next_file && top_bar_elems.next_file.style.display != "none")
+			{
+				top_bar_elems.next_file.click();
+				e.stopPropagation();
+				e.preventDefault();
+			}
+			// move next
+			else if(!e.ctrlKey && !e.shiftKey && all_allowed && navigables.length > 0)
+			{
+				update_focus(e.target);
+				navigable_index = (navigable_index + 1) % navigables.length;
+				focus_and_scroll(navigables[navigable_index]);
+				e.stopPropagation();
+				e.preventDefault();
+			}
+			break;
+		}
+		case "ArrowDown":
+		{
+			// move next/down
+			if(!e.ctrlKey && !e.shiftKey && all_allowed && navigables.length > 0)
+			{
+				update_focus(e.target);
+				// grid navigation
+				let is_updated = false;
+				if(navigables[navigable_index].classList.contains("grid-cell"))
+				{
+					const focused_rect = navigables[navigable_index].getBoundingClientRect();
+					let best_candidate = null;
+					let y_axis = focused_rect.y;
+					for(let i = navigable_index + 1; i < navigables.length; ++i)
+					{
+						if(!navigables[i].classList.contains("grid-cell"))
+						{
+							best_candidate = i;
+							break;
+						}
+						const rect = navigables[i].getBoundingClientRect();
+						if(rect.x >= focused_rect.x && rect.y > focused_rect.y)
+						{
+							best_candidate = i;
+							break;
+						}
+						best_candidate = i;
+					}
+					if(best_candidate != null)
+					{
+						navigable_index = best_candidate;
+						is_updated = true;
+					}
+				}
+				// fallback to normal
+				if(!is_updated)
+					navigable_index = (navigable_index + 1) % navigables.length;
+				focus_and_scroll(navigables[navigable_index]);
+				e.stopPropagation();
+				e.preventDefault();
+			}
+			break;
+		}
+		case "ArrowUp":
+		{
+			// move previous/up
+			if(!e.ctrlKey && !e.shiftKey && all_allowed && navigables.length > 0)
+			{
+				update_focus(e.target);
+				// grid navigation
+				let is_updated = false;
+				if(navigables[navigable_index].classList.contains("grid-cell"))
+				{
+					const focused_rect = navigables[navigable_index].getBoundingClientRect();
+					let best_candidate = null;
+					let y_axis = focused_rect.y;
+					for(let i = navigable_index - 1; i >= 0; --i)
+					{
+						if(!navigables[i].classList.contains("grid-cell"))
+						{
+							best_candidate = i;
+							break;
+						}
+						const rect = navigables[i].getBoundingClientRect();
+						if(rect.x <= focused_rect.x && rect.y < focused_rect.y)
+						{
+							best_candidate = i;
+							break;
+						}
+						best_candidate = i;
+					}
+					if(best_candidate != null)
+					{
+						navigable_index = best_candidate;
+						is_updated = true;
+					}
+				}
+				// fallback to normal
+				if(!is_updated)
+					navigable_index = (navigable_index - 1 + navigables.length) % navigables.length;
+				focus_and_scroll(navigables[navigable_index]);
+				e.stopPropagation();
+				e.preventDefault();
+			}
+			break;
+		}
+		case " ":
+		{
+			// next untranslated
+			if(all_allowed && e.ctrlKey && navigables.length > 0)
+			{
+				let params = new URLSearchParams(window.location.search)
+				if(params.has("page") && params.get("page") == "file")
+				{
+					let i = (navigable_index + 1) % navigables.length;
+					while(i != navigable_index)
+					{
+						if(navigables[i].classList.contains("string-group"))
+						{
+							const idx = i - (navigables.length - strtablecache.length);
+							if(
+								strtablecache[idx][2].classList.contains("disabled") &&
+								(
+									e.shiftKey ||
+									(
+										!e.shiftKey &&
+										!strtablecache[idx][0].classList.contains("disabled")
+									)
+								)
+							)
+							{
+								navigable_index = i;
+								focus_and_scroll(navigables[navigable_index]);
+								break;
+							}
+						}
+						i = (i + 1) % navigables.length;
+					}
+					e.stopPropagation();
+					e.preventDefault();
+				}
+			}
+			break;
 		}
 	}
 });
 
+document.addEventListener('keyup', function(e)
+{
+	if(loader.style.display == null || e.altKey || e.metaKey || !is_not_using_input(e.target))
+		return;
+	switch(e.code)
+	{
+		case "PageDown":
+		case "End":
+		{
+			update_focus(e.target);
+			if(!e.ctrlKey && !e.shiftKey && navigables.length > 0 && !is_element_in_viewport(navigables[navigable_index]))
+			{
+				for(let i = 0; i < navigables.length; ++i)
+				{
+					if(is_element_in_viewport(navigables[i]))
+					{
+						navigable_index = i;
+						focus_and_scroll(navigables[navigable_index]);
+						break;
+					}
+				}
+				e.stopPropagation();
+				e.preventDefault();
+			}
+			break;
+		}
+		case "PageUp":
+		case "Home":
+		{
+			update_focus(e.target);
+			if(!e.ctrlKey && !e.shiftKey && navigables.length > 0 && !is_element_in_viewport(navigables[navigable_index]))
+			{
+				for(let i = navigables.length - 1; i >= 0; --i)
+				{
+					if(is_element_in_viewport(navigables[i]))
+					{
+						navigable_index = i;
+						focus_and_scroll(navigables[navigable_index]);
+						break;
+					}
+				}
+				e.stopPropagation();
+				e.preventDefault();
+			}
+			break;
+		}
+	}
+});
+
+// return true if element is in viewport
+function is_element_in_viewport(el)
+{
+	const rect = el.getBoundingClientRect();
+	return (
+		rect.top >= 0 &&
+		rect.left >= 0 &&
+		rect.bottom <= (window.innerHeight || document.documentElement.clientHeight) &&
+		rect.right <= (window.innerWidth || document.documentElement.clientWidth)
+	);
+}
+
 // create and add a new element to a node, and return it
 // support various parameters
-function add_to(node, tagName, {cls = [], id = null, title = null, onload = null, onclick = null, onerror = null, br = true}={})
+function add_to(node, tagName, {cls = [], id = null, title = null, onload = null, onclick = null, onerror = null, navigable = false, br = true}={})
 {
 	let tag = document.createElement(tagName);
 	for(let i = 0; i < cls.length; ++i)
@@ -233,14 +773,15 @@ function add_to(node, tagName, {cls = [], id = null, title = null, onload = null
 	if(onload) tag.onload = onload;
 	if(onclick) tag.onclick = onclick;
 	if(onerror) tag.onerror = onerror;
+	if(navigable) tag.tabIndex = "0";
 	if(node) node.appendChild(tag);
 	if(br) node.appendChild(document.createElement("br"));
 	return tag;
 }
 
-function add_button(node, title, img = null, callback = null)
+function add_button(node, title, img, callback, navigable)
 {
-	let btn = add_to(node, "div", {cls:["interact", "button"], title:title, onclick:callback, br:false});
+	let btn = add_to(node, "div", {cls:["interact", "button"], title:title, onclick:callback, navigable:navigable, br:false});
 	btn.style.backgroundPosition = "6px 0px";
 	btn.style.backgroundRepeat = "no-repeat";
 	if(img != null)
@@ -250,14 +791,14 @@ function add_button(node, title, img = null, callback = null)
 
 function add_interaction(node, innerHTML, callback)
 {
-	let interaction = add_to(node, "div", {cls:["interact", "text-wrapper"], onclick:callback});
+	let interaction = add_to(node, "div", {cls:["interact", "text-wrapper"], onclick:callback, navigable:true});
 	interaction.innerHTML = innerHTML;
 	return interaction;
 }
 
 function add_grid_cell(node, innerHTML, callback)
 {
-	let cell = add_to(node, "div", {cls:["interact", "text-wrapper", "grid-cell"], onclick:callback, br:false});
+	let cell = add_to(node, "div", {cls:["interact", "text-wrapper", "grid-cell"], onclick:callback, navigable:true, br:false});
 	cell.innerHTML = innerHTML;
 	return cell;
 }
@@ -337,7 +878,7 @@ function new_page()
 }
 
 // update the main area with a fragment
-function update_main(fragment)
+function update_main(fragment, to_focus = null)
 {
 	/*
 		use requestAnimationFrame to make sure the fragment is properly calculated,
@@ -347,17 +888,27 @@ function update_main(fragment)
         requestAnimationFrame(() => {
 			main.innerHTML = "";
 			main.appendChild(fragment);
-			
+			navigables = document.querySelectorAll('[tabindex="0"]');
+			navigable_index = 0;
 			// Set initial focus
-			const firstFocusableElement = main.querySelector('input, select, textarea, [tabindex="0"], a, button');
-			if(firstFocusableElement) // Note: placeholder for future keyboard navigation
+			if(to_focus != null)
 			{
-				firstFocusableElement.focus();
+				to_focus.focus();
+				update_focus(to_focus);
+				console.log(to_focus);
 			}
 			else
 			{
-				// If no specific focusable element, try focusing the main content area
-				main.focus();
+				const firstFocusableElement = main.querySelector('[tabindex="0"]');
+				if(firstFocusableElement) // Note: placeholder for future keyboard navigation
+				{
+					firstFocusableElement.focus({preventScroll: true});
+				}
+				else
+				{
+					// If no specific focusable element, try focusing the main content area
+					main.focus();
+				}
 			}
             resolve(); 
         });
@@ -420,10 +971,10 @@ function update_top_bar(title, back_callback, help_callback = null, additions = 
 	if(!top_bar_elems.back) // meaning empty, initialization
 	{
 		let fragment = document.createDocumentFragment();
-		top_bar_elems.back = add_button(fragment, "Back", null, null);
+		top_bar_elems.back = add_button(fragment, "Back", null, null, false);
 		top_bar_elems.title = add_to(fragment, "div", {cls:["inline", "text-wrapper"], br:false});
 		top_bar_elems.spacer = add_to(fragment, "div", {cls:["barfill"], br:false});
-		top_bar_elems.help = add_button(fragment, "Help", "assets/images/help.png", null);
+		top_bar_elems.help = add_button(fragment, "Help", "assets/images/help.png", null, false);
 		bar.appendChild(fragment);
 	}
 	// set title
@@ -459,7 +1010,7 @@ function update_top_bar(title, back_callback, help_callback = null, additions = 
 			top_bar_elems.home = add_button(null, "Project Select Page", "assets/images/home.png", function(){
 				bottom.style.display = "none";
 				go_main();
-			});
+			}, false);
 			top_bar_elems.back.after(top_bar_elems.home);
 		}
 	}
@@ -480,7 +1031,7 @@ function update_top_bar(title, back_callback, help_callback = null, additions = 
 			top_bar_elems.project = add_button(null, "Project Menu", "assets/images/project.png", function(){
 				bottom.style.display = "none";
 				go_project(project.name);
-			});
+			}, false);
 			if(top_bar_elems.home)
 				top_bar_elems.home.after(top_bar_elems.project);
 			else
@@ -503,7 +1054,7 @@ function update_top_bar(title, back_callback, help_callback = null, additions = 
 		{
 			top_bar_elems.github = add_button(null, "Github Page", "assets/images/github.png", function(){
 				window.open("https://github.com/MizaGBF/RPGMTL", "_blank")
-			});
+			}, false);
 			top_bar_elems.help.before(top_bar_elems.github);
 		}
 	}
@@ -521,7 +1072,7 @@ function update_top_bar(title, back_callback, help_callback = null, additions = 
 	{
 		if(!top_bar_elems.refresh)
 		{
-			top_bar_elems.refresh = add_button(null, "Refresh", "assets/images/update.png", additions.refresh_callback);
+			top_bar_elems.refresh = add_button(null, "Refresh", "assets/images/update.png", additions.refresh_callback, false);
 			top_bar_elems.help.before(top_bar_elems.refresh);
 		}
 		else top_bar_elems.refresh.onclick = additions.refresh_callback;
@@ -548,7 +1099,7 @@ function update_top_bar(title, back_callback, help_callback = null, additions = 
 				const percents = [10, 25, 45, 65, 80];
 				document.documentElement.style.setProperty('--ori-width', percents[tl_style] + "%");
 				document.documentElement.style.setProperty('--tl-width', (90 - percents[tl_style]) + "%");
-			});
+			}, false);
 			if(top_bar_elems.refresh)
 				top_bar_elems.refresh.before(top_bar_elems.slider);
 			else
@@ -569,13 +1120,13 @@ function update_top_bar(title, back_callback, help_callback = null, additions = 
 	{
 		if(!top_bar_elems.next_file)
 		{
-			top_bar_elems.next_file = add_button(null, "Next File", "assets/images/next.png", additions.file_nav_next_callback);
+			top_bar_elems.next_file = add_button(null, "Next File", "assets/images/next.png", additions.file_nav_next_callback, false);
 			top_bar_elems.slider.before(top_bar_elems.next_file);
 		}
 		else top_bar_elems.next_file.onclick = additions.file_nav_next_callback;
 		if(!top_bar_elems.prev_file)
 		{
-			top_bar_elems.prev_file = add_button(null, "Previous File", "assets/images/previous.png", additions.file_nav_previous_callback);
+			top_bar_elems.prev_file = add_button(null, "Previous File", "assets/images/previous.png", additions.file_nav_previous_callback, false);
 			top_bar_elems.next_file.before(top_bar_elems.prev_file);
 		}
 		else top_bar_elems.prev_file.onclick = additions.file_nav_previous_callback;
@@ -620,7 +1171,14 @@ function project_list(data)
 		function(){ // help
 			help.innerHTML = "<ul>\
 				<li>Load an existing <b>Project</b> or create a new one.</li>\
-				<li>Click twice on the Shutdown button to stop RPGMTL remotely.</li>\
+				<li>Use the Shutdown button to stop RPGMTL remotely.</li>\
+			</ul>\
+			\
+			Keyboard shortcuts\
+			<ul>\
+				<li><b>F1</b> for the help.</li>\
+				<li><b>Tab/Shit+Tab</b> and various <b>Arrow keys</b> to move around.</li>\
+				<li><b>Enter</b> to interact.</li>\
 			</ul>";
 			help.style.display = "";
 		},
@@ -632,10 +1190,21 @@ function project_list(data)
 	
 	// main part
 	fragment = new_page();
+	// add buttons
+	grid = add_to(fragment, "div", {cls:["grid"]});
+	add_grid_cell(grid, '<img src="assets/images/new.png"> New Project', function(){
+		local_browse("Create a project", "Select a Game executable.", 0);
+	});
+	add_grid_cell(grid, '<img src="assets/images/setting.png"> Settings', function(){
+		go_settings(null, true);
+	});
+	add_grid_cell(grid, '<img src="assets/images/translate.png"> Translator', function(){
+		go_translator(null, true);
+	});
 	add_to(fragment, "div", {cls:["title"]}).innerHTML = "Project List";
 	if(data["list"].length > 0) // list projects
 	{
-		let grid = add_to(fragment, "div", {cls:["grid"]});
+		grid = add_to(fragment, "div", {cls:["grid"]});
 		for(let i = 0; i < data["list"].length; ++i)
 		{
 			const t = data["list"][i];
@@ -644,18 +1213,6 @@ function project_list(data)
 			});
 		}
 	}
-	add_to(fragment, "div", {cls:["spacer"]});
-	// add buttons
-	add_interaction(fragment, '<img src="assets/images/new.png"> New Project', function(){
-		local_browse("Create a project", "Select a Game executable.", 0);
-	});
-	add_interaction(fragment, '<img src="assets/images/setting.png"> Global Settings', function(){
-		go_settings(null, true);
-	});
-	add_interaction(fragment, '<img src="assets/images/translate.png"> Default Translator', function(){
-		go_translator(null, true);
-	});
-	add_to(fragment, "div", {cls:["spacer"]});
 	// quick links
 	if(data["history"].length > 0) // list last browsed Files
 	{
@@ -694,6 +1251,14 @@ function setting_menu(data)
 					<li>Some settings might require you to extract your project strings again, be careful to not lose progress.</li>\
 					<li><b>Default</b> Settings are your projects defaults.</li>\
 					<li><b>Project</b> Settings override <b>Default</b> Settings when modified.</li>\
+				</ul>\
+				\
+				Keyboard shortcuts\
+				<ul>\
+					<li><b>F1</b> for the help.</li>\
+					<li><b>Tab/Shit+Tab</b> and various <b>Arrow keys</b> to move around.</li>\
+					<li><b>Enter</b> to interact.</li>\
+					<li><b>Escape</b> to go back.</li>\
 				</ul>";
 				help.style.display = "";
 			},
@@ -748,7 +1313,7 @@ function setting_menu(data)
 						{
 							post("/api/update_settings", callback, null, {key:key, value:!elem.classList.contains("green")});
 						}
-					});
+					}, true);
 					fragment.appendChild(document.createElement("br"));
 					if(key in settings)
 						elem.classList.toggle("green", settings[key]);
@@ -768,8 +1333,8 @@ function setting_menu(data)
 						// add an input element
 						const input = (
 							fdata[1] == "text" ?
-							add_to(fragment, "div", {cls:["input", "smallinput", "inline"], br:false}) :
-							add_to(fragment, "input", {cls:["input", "smallinput"], br:false})
+							add_to(fragment, "div", {cls:["input", "smallinput", "inline"], navigable:true, br:false}) :
+							add_to(fragment, "input", {cls:["input", "smallinput"], navigable:true, br:false})
 						);
 						switch(fdata[1])
 						{
@@ -841,6 +1406,7 @@ function setting_menu(data)
 								}
 							});
 						}
+						else elem.tabIndex = "0";
 						
 						if(key in settings)
 							input.value = settings[key];
@@ -849,7 +1415,7 @@ function setting_menu(data)
 					else // choice selection
 					{
 						// add select and option elements
-						const sel = add_to(fragment, "select", {cls:["input", "smallinput"], br:false});
+						const sel = add_to(fragment, "select", {cls:["input", "smallinput"], navigable:true, br:false});
 						for(let i = 0; i < fdata[2].length; ++i)
 						{
 							let opt = add_to(sel, "option");
@@ -916,6 +1482,14 @@ function translator_menu(data)
 					<li>Select the Translator Plugin to use.</li>\
 					<li><b>Default</b> Translator is used by default.</li>\
 					<li><b>Project</b> Translator override the <b>Default</b> when modified.</li>\
+				</ul>\
+				\
+				Keyboard shortcuts\
+				<ul>\
+					<li><b>F1</b> for the help.</li>\
+					<li><b>Tab/Shit+Tab</b> and various <b>Arrow keys</b> to move around.</li>\
+					<li><b>Enter</b> to interact.</li>\
+					<li><b>Escape</b> to go back.</li>\
 				</ul>";
 				help.style.display = "";
 			},
@@ -950,7 +1524,7 @@ function translator_menu(data)
 				// add text
 				add_to(fragment, "div", {cls:["title", "left"]}).innerHTML = possibles_text[t];
 				// add select and option elements
-				const sel = add_to(fragment, "select", {cls:["input", "smallinput"], br:false});
+				const sel = add_to(fragment, "select", {cls:["input", "smallinput"], navigable:true, br:false});
 				for(let i = 0; i < list.length; ++i)
 				{
 					let opt = add_to(sel, "option");
@@ -1009,6 +1583,14 @@ function project_creation(data)
 				help.innerHTML = "<ul>\
 					<li>The Project Name has little importance, just make sure you know what it refers to.</li>\
 					<li>If already taken, a number will be added after the name.</li>\
+				</ul>\
+				\
+				Keyboard shortcuts\
+				<ul>\
+					<li><b>F1</b> for the help.</li>\
+					<li><b>Tab/Shit+Tab</b> and various <b>Arrow keys</b> to move around.</li>\
+					<li><b>Enter</b> to interact.</li>\
+					<li><b>Escape</b> to go back.</li>\
 				</ul>";
 				help.style.display = "";
 			}
@@ -1019,7 +1601,7 @@ function project_creation(data)
 		add_to(fragment, "div", {cls:["title", "left"]}).innerHTML = "Folder/Project Name";
 		
 		// project name input element
-		let input = add_to(fragment, "input", {cls:["input"]});
+		let input = add_to(fragment, "input", {cls:["input"], navigable:true});
 		input.type = "text";
 		
 		let tmp = path.split("/"); // set input default value
@@ -1056,19 +1638,27 @@ function project_menu(data = null)
 			function(){ // help
 				help.innerHTML = "<ul>\
 					<li><b>Browse Files</b> to browse and translate strings.</li>\
-					<li><b>Add a Fix</b> to add Python patches to apply during the release process (Check the README for details).</li>\
-					<li><b>Replace Strings in batch</b> open a menu to replace parts of strings by others, in your existing translations.</li>\
-					<li>Set your <b>Settings before<b/> extracting the strings.</li>\
-					<li><b>Unload the Project<b/> if you must do modifications on the local files, using external scripts or whatever.</li>\
+					<li><b>Add a Fix</b> to add Python patches (Check the README for details).</li>\
+					<li>Set your <b>Settings before</b> extracting the strings.</li>\
+					<li><b>Unload the Project</b> if you must do modifications on the local files, using external scripts or whatever.</li>\
 				</ul>\
 				<ul>\
-					<li><b>Update the Game Files</b> if it got updated or if you need to re-copy the files.</li>\
-					<li><b>Extract the Strings</b> if you need to extract them from Game Files.</li>\
+					<li><b>Update the Game Files</b> if the Game got updated or if you need to re-copy the files.</li>\
+					<li><b>Extract the Strings</b> if you need to extract them from Game files.</li>\
 					<li><b>Release a Patch</b> to create a copy of Game files with your translated strings. They will be found in the <b>release</b> folder.</li>\
 				</ul>\
 				<ul>\
 					<li><b>Import Strings from RPGMTL</b> to import strings from RPGMTL projects from any version.</li>\
 					<li><b>Strings Backups</b> to open the list of backups if you need to revert the project data to an earlier state.</li>\
+				</ul>\
+				\
+				Keyboard shortcuts\
+				<ul>\
+					<li><b>F1</b> for the help.</li>\
+					<li><b>Tab/Shit+Tab</b> and various <b>Arrow keys</b> to move around.</li>\
+					<li><b>Enter</b> to interact.</li>\
+					<li><b>Escape</b> to go back.</li>\
+					<li><b>Ctrl+H</b> to go to the home page.</li>\
 				</ul>";
 				help.style.display = "";
 			},
@@ -1144,7 +1734,7 @@ function project_menu(data = null)
 function addSearchBar(node, bp, defaultVal = null)
 {
 	// input element
-	const input = add_to(node, "input", {cls:["input", "smallinput"], br:false});
+	const input = add_to(node, "input", {cls:["input", "smallinput"], navigable:true, br:false});
 	input.placeholder = "Search a string";
 	if(defaultVal != null)
 		input.value = defaultVal;
@@ -1184,7 +1774,6 @@ function browse_files(data)
 {
 	try
 	{
-		keypressenabled = false;
 		laststringsearch = null;
 		const bp = data["path"];
 		upate_page_location("browse", project.name, bp);
@@ -1204,8 +1793,19 @@ function browse_files(data)
 			},
 			function(){ // help
 				help.innerHTML = "<ul>\
-					<li>CTRL+Click on a file to <b>disable</b> it, it won't be patched during the release process.</li>\
+					<li>Ctrl+Click on a file to <b>disable</b> it, it won't be patched during the release process.</li>\
 					<li>The string counts and completion percentages update slowly in the background, don't take them for granted.</li>\
+				</ul>\
+				\
+				Keyboard shortcuts\
+				<ul>\
+					<li><b>F1</b> for the help.</li>\
+					<li><b>Tab/Shit+Tab</b> and various <b>Arrow keys</b> to move around.</li>\
+					<li><b>Enter</b> to interact.</li>\
+					<li><b>Escape</b> to go back.</li>\
+					<li><b>Ctrl+H</b> to go to the home page.</li>\
+					<li><b>Ctrl+P</b> to go to the project page.</li>\
+					<li><b>Ctrl+R</b> to reload.</li>\
 				</ul>";
 				help.style.display = "";
 			},
@@ -1231,12 +1831,15 @@ function browse_files(data)
 		let ftotal = 0;
 		let fcount = 0;
 		
+		let first_element = null;
 		add_to(fragment, "div", {cls:["title", "left"]}).innerHTML = bp;
 		// go over folders
 		for(let i = 0; i < data["folders"].length; ++i)
 		{
 			const t = data["folders"][i];
-			let div = add_to(fragment, "div", {cls:["interact"]});
+			let div = add_to(fragment, "div", {cls:["interact"], navigable:true});
+			if(first_element == null)
+				first_element = div;
 			if(t == "..") // special one indicating we aren't on the root level
 			{
 				div.innerHTML = '<img src="assets/images/back.png"> ..';
@@ -1280,7 +1883,7 @@ function browse_files(data)
 		for(const [key, value] of Object.entries(data["files"]))
 		{
 			// add button
-			let button = add_to(fragment, "div", {cls:cls[+value], br:false, id:"text:"+key, onclick:function(){
+			let button = add_to(fragment, "div", {cls:cls[+value], br:false, id:"text:"+key, navigable:true, onclick:function(){
 				if(window.event.ctrlKey) // ignore shortcut
 				{
 					post("/api/ignore_file", update_file_list, null, {name:project.name, path:key, state:+!this.classList.contains("disabled")});
@@ -1291,6 +1894,8 @@ function browse_files(data)
 					go_file(project.name, key);
 				}
 			}});
+			if(first_element == null)
+				first_element = button;
 			// add completion indicator
 			let total = project.config["files"][key]["strings"] - project.config["files"][key]["disabled_strings"];
 			let count = project.config["files"][key]["translated"];
@@ -1317,7 +1922,16 @@ function browse_files(data)
 		completion.textContent = "Current Total: " + fstring + " strings" + percent;
 		update_main(fragment).then(() => {
 			if(scrollTo != null) // scroll to last opened file
+			{
 				scrollTo.scrollIntoView();
+				scrollTo.focus({preventScroll: true});
+				update_focus(scrollTo);
+			}
+			else if(first_element)
+			{
+				first_element.focus({preventScroll: true});
+				navigable_index = 1;
+			}
 		});
 		lastfileopened = null; // and clear it
 	}
@@ -1355,6 +1969,18 @@ function string_search(data)
 			function(){ // help
 				help.innerHTML = "<ul>\
 					<li>Your search results are displayed here.</li>\
+					<li>Ctrl+Click on a file to <b>disable</b> it, it won't be patched during the release process.</li>\
+				</ul>\
+				\
+				Keyboard shortcuts\
+				<ul>\
+					<li><b>F1</b> for the help.</li>\
+					<li><b>Tab/Shit+Tab</b> and various <b>Arrow keys</b> to move around.</li>\
+					<li><b>Enter</b> to interact.</li>\
+					<li><b>Escape</b> to go back.</li>\
+					<li><b>Ctrl+H</b> to go to the home page.</li>\
+					<li><b>Ctrl+P</b> to go to the project page.</li>\
+					<li><b>Ctrl+R</b> to reload.</li>\
 				</ul>";
 				help.style.display = "";
 			},
@@ -1375,9 +2001,10 @@ function string_search(data)
 			["interact", "text-wrapper", "disabled"]
 		];
 		// list files
+		let first_element = null;
 		for(const [key, value] of Object.entries(data["files"]))
 		{
-			let button = add_to(fragment, "div", {cls:cls[+value], br:false, id:"text:"+key, onclick:function(){
+			let button = add_to(fragment, "div", {cls:cls[+value], br:false, id:"text:"+key, navigable:true, onclick:function(){
 				if(window.event.ctrlKey) // disable shortcut
 				{
 					post("/api/ignore_file", update_file_list, null, {name:project.name, path:key, state:+!this.classList.contains("disabled")});
@@ -1388,6 +2015,8 @@ function string_search(data)
 					go_file(project.name, key);
 				}
 			}});
+			if(first_element == null)
+				first_element = button;
 			let total = project.config["files"][key]["strings"] - project.config["files"][key]["disabled_strings"];
 			let count = project.config["files"][key]["translated"];
 			let percent = total > 0 ? ', ' + (Math.round(10000 * count / total) / 100) + '%)' : ')';
@@ -1395,7 +2024,7 @@ function string_search(data)
 				button.classList.add("complete");
 			button.innerHTML = key + ' (' + total + " strings" + percent;
 		}
-		update_main(fragment);
+		update_main(fragment, first_element);
 	}
 	catch(err)
 	{
@@ -1422,8 +2051,22 @@ function browse_patches(data)
 					<li>Select an existing patch/fix or create a new one.</li>\
 					<li>The patch/fix will be applied on all files whose name contains the patch/fix name.</li>\
 					<li>The patch/fix code must be valid <b>Python</b> code, refer to the <b>README</b> for details.</li>\
+				</ul>\
+				\
+				Keyboard shortcuts\
+				<ul>\
+					<li><b>F1</b> for the help.</li>\
+					<li><b>Tab/Shit+Tab</b> and various <b>Arrow keys</b> to move around.</li>\
+					<li><b>Enter</b> to interact.</li>\
+					<li><b>Escape</b> to go back.</li>\
+					<li><b>Ctrl+H</b> to go to the home page.</li>\
+					<li><b>Ctrl+P</b> to go to the project page.</li>\
 				</ul>";
 				help.style.display = "";
+			},
+			{
+				home:1,
+				project:1
 			}
 		);
 		
@@ -1470,14 +2113,24 @@ function edit_patch(data)
 			},
 			function(){ // help
 				help.innerHTML = "<ul>\
-					<li>Select an existing patch/fix or create a new one.</li>\
 					<li>The patch/fix will be applied on all files whose name contains the patch/fix name.</li>\
 					<li>The patch/fix code must be valid <b>Python</b> code, refer to the <b>README</b> for details.</li>\
+				</ul>\
+				\
+				Keyboard shortcuts\
+				<ul>\
+					<li><b>F1</b> for the help.</li>\
+					<li><b>Tab/Shit+Tab</b> and various <b>Arrow keys</b> to move around.</li>\
+					<li><b>Enter</b> to interact.</li>\
+					<li><b>Escape</b> to go back.</li>\
+					<li><b>Ctrl+H</b> to go to the home page.</li>\
+					<li><b>Ctrl+P</b> to go to the project page.</li>\
 				</ul>";
 				help.style.display = "";
 			},
 			{
-				home:1
+				home:1,
+				project:1
 			}
 		);
 		
@@ -1486,9 +2139,9 @@ function edit_patch(data)
 		// add various input and text elements
 		add_to(fragment, "div", {cls:["title"]}).innerHTML = project.name;
 		add_to(fragment, "div", {cls:["title", "left"]}).innerHTML = "Filename match";
-		add_to(fragment, "input", {cls:["input"], id:"filter"}).type = "text";
+		add_to(fragment, "input", {cls:["input"], id:"filter", navigable:true}).type = "text";
 		add_to(fragment, "div", {cls:["title", "left"]}).innerHTML = "Python Code";
-		add_to(fragment, "div", {cls:["input"], id:"fix"}).contentEditable = "plaintext-only";
+		add_to(fragment, "div", {cls:["input"], id:"fix", navigable:true}).contentEditable = "plaintext-only";
 		// add confirm button
 		add_interaction(fragment, '<img src="assets/images/confirm.png"> Confirm', function() {
 			let newkey = document.getElementById("filter").value;
@@ -1535,13 +2188,24 @@ function backup_list(data)
 			function(){ // help
 				help.innerHTML = "<ul>\
 					<li>Select an existing backup to use it.</li>\
-					<li>Click Twice or CTRL+Click on <b>Use</b> to select the backup.</li>\
+					<li>Click on <b>Use</b> to select the backup.</li>\
 					<li>Existing strings.json and its backups will be properly kept, while the selected backup will become the new strings.json.</li>\
+				</ul>\
+				\
+				Keyboard shortcuts\
+				<ul>\
+					<li><b>F1</b> for the help.</li>\
+					<li><b>Tab/Shit+Tab</b> and various <b>Arrow keys</b> to move around.</li>\
+					<li><b>Enter</b> to interact.</li>\
+					<li><b>Escape</b> to go back.</li>\
+					<li><b>Ctrl+H</b> to go to the home page.</li>\
+					<li><b>Ctrl+P</b> to go to the project page.</li>\
 				</ul>";
 				help.style.display = "";
 			},
 			{
-				home:1
+				home:1,
+				project:1
 			}
 		);
 		
@@ -1616,7 +2280,7 @@ function prepareGroupOn(node, i)
 	// iterate over strings of this group
 	for(let j = 1; j < project.string_groups[i].length; ++j)
 	{
-		const span = add_to(base, "span", {cls:["interact", "string-group"]}); // add container
+		const span = add_to(base, "span", {cls:["interact", "string-group"], navigable:true}); // add container
 		span.group = i;
 		span.string = j;
 		
@@ -1626,36 +2290,27 @@ function prepareGroupOn(node, i)
 		original.group = i;
 		original.string = j;
 		original.textContent = project.strings[project.string_groups[i][j][0]][0];
-		const occurence = project.strings[project.string_groups[i][j][0]][2];
 		
 		let translation = add_to(span, "pre", {cls:["title", "inline", "smalltext", "string-area", "translation"], br:false}); // translated string
 		translation.group = i;
 		translation.string = j;
 		
 		strtablecache.push([span, marker, translation, original]); // add to strtablecache
-		const tsize = strtablecache.length - 1;
-		// note: laststringinteracted is set to tsize (i.e. string index in table) whether a string is interacted with
 		span.onclick = function() // add string interactions
 		{
 			if(window.event.ctrlKey && !window.event.shiftKey && !window.event.altKey) // single disable
 			{
-				laststringinteracted = tsize;
-				set_loading_text("Updating...");
-				post("/api/update_string", update_string_list, null, {setting:1, version:project.version, name:project.name, path:project.last_data["path"], group:this.group, index:this.string});
+				disable_string(this);
 			}
 			else if(window.event.ctrlKey && !window.event.shiftKey && window.event.altKey) // multi disable
 			{
-				laststringinteracted = tsize;
-				set_loading_text("Updating...");
-				post("/api/update_string", update_string_list, null, {setting:2, version:project.version, name:project.name, path:project.last_data["path"], group:this.group, index:this.string});
+				multi_disable_string(this);
 			}
 			else if(!window.event.ctrlKey && window.event.shiftKey && !window.event.altKey) // unlink
 			{
 				if(bottom.style.display == "none")
 				{
-					laststringinteracted = tsize;
-					set_loading_text("Updating...");
-					post("/api/update_string", update_string_list, null, {setting:0, version:project.version, name:project.name, path:project.last_data["path"], group:this.group, index:this.string});
+					unlink_string(this);
 				}
 			}
 		};
@@ -1663,13 +2318,8 @@ function prepareGroupOn(node, i)
 		{
 			if(!window.event.ctrlKey && !window.event.shiftKey && window.event.altKey)
 			{
-				if(navigator.clipboard != undefined)
-				{
-					laststringinteracted = tsize;
-					navigator.clipboard.writeText(original.textContent);
-					push_popup('The String has been copied');
-				}
-				else push_popup('You need to be on a secure origin to use the Copy button');
+				copy_original(this);
+				update_focus(span);
 			}
 		};
 		translation.onclick = function() // add translated string copy AND open
@@ -1678,56 +2328,98 @@ function prepareGroupOn(node, i)
 			{
 				if(window.event.altKey)
 				{
-					if(navigator.clipboard != undefined)
-					{
-						laststringinteracted = tsize;
-						navigator.clipboard.writeText(translation.textContent);
-						push_popup('The String has been copied');
-					}
-					else push_popup('You need to be on a secure origin to use the Copy button');
+					copy_translated(this);
 				}
 				else
 				{
-					laststringinteracted = tsize;
-					// string from project data
-					let ss = project.string_groups[span.group][span.string];
-					// update bottom part
-					// set occurence count
-					if(occurence > 1)
-						edit_times.textContent = occurence + " occurences of this string in the game";
-					else
-						edit_times.textContent = "";
-					// set original string text
-					edit_ori.textContent = project.strings[ss[0]][0];
-					// set textarea with current translation
-					if(ss[2]) // local/unlinked
-					{
-						if(ss[1] != null)
-							edit_tl.value = ss[1];
-						else
-							edit_tl.value = project.strings[ss[0]][0]; // default to original if not translated
-					}
-					else if(project.strings[ss[0]][1] != null) // global
-						edit_tl.value = project.strings[ss[0]][1];
-					else
-						edit_tl.value = project.strings[ss[0]][0]; // default to original if not translated
-					// update string-length indicator
-					tl_string_length.innerHTML = edit_tl.value.length;
-					// make element visible
-					bottom.style.display = "";
-					// focus
-					edit_tl.focus();
-					// set this span element as the current string being edited
-					if(currentstr != null)
-					{
-						currentstr.classList.toggle("selected-line", false);
-					}
-					currentstr = span;
-					currentstr.classList.toggle("selected-line", true);
+					open_string(span);
 				}
+				update_focus(span);
 			}
 		};
 	}
+}
+
+// string clicks:
+function disable_string(elem)
+{
+	set_loading_text("Updating...");
+	post("/api/update_string", update_string_list, null, {setting:1, version:project.version, name:project.name, path:project.last_data["path"], group:elem.group, index:elem.string});
+	update_focus(elem);
+}
+
+function multi_disable_string(elem)
+{
+	set_loading_text("Updating...");
+	post("/api/update_string", update_string_list, null, {setting:2, version:project.version, name:project.name, path:project.last_data["path"], group:elem.group, index:elem.string});
+	update_focus(elem);
+}
+
+function unlink_string(elem)
+{
+	set_loading_text("Updating...");
+	post("/api/update_string", update_string_list, null, {setting:0, version:project.version, name:project.name, path:project.last_data["path"], group:elem.group, index:elem.string});
+	update_focus(elem);
+}
+
+function copy_original(elem)
+{
+	if(navigator.clipboard != undefined)
+	{
+		navigator.clipboard.writeText(elem.textContent);
+		push_popup('The Original has been copied');
+	}
+	else push_popup('You need to be on a secure origin to copy');
+}
+
+function copy_translated(elem)
+{
+	if(navigator.clipboard != undefined)
+	{
+		navigator.clipboard.writeText(elem.textContent);
+		push_popup('The Translation has been copied');
+	}
+	else push_popup('You need to be on a secure origin to copy');
+}
+
+function open_string(elem)
+{
+	// string from project data
+	let ss = project.string_groups[elem.group][elem.string];
+	// update bottom part
+	// set occurence count
+	const occurence = project.strings[project.string_groups[elem.group][elem.string][0]][2];
+	if(occurence > 1)
+		edit_times.textContent = occurence + " occurences of this string in the game";
+	else
+		edit_times.textContent = "";
+	// set original string text
+	edit_ori.textContent = project.strings[ss[0]][0];
+	// set textarea with current translation
+	if(ss[2]) // local/unlinked
+	{
+		if(ss[1] != null)
+			edit_tl.value = ss[1];
+		else
+			edit_tl.value = project.strings[ss[0]][0]; // default to original if not translated
+	}
+	else if(project.strings[ss[0]][1] != null) // global
+		edit_tl.value = project.strings[ss[0]][1];
+	else
+		edit_tl.value = project.strings[ss[0]][0]; // default to original if not translated
+	// update string-length indicator
+	tl_string_length.innerHTML = edit_tl.value.length;
+	// make element visible
+	bottom.style.display = "";
+	// focus
+	edit_tl.focus();
+	// set this span element as the current string being edited
+	if(currentstr != null)
+	{
+		currentstr.classList.toggle("selected-line", false);
+	}
+	currentstr = elem;
+	currentstr.classList.toggle("selected-line", true);
 }
 
 // open a file content /api/file
@@ -1736,8 +2428,6 @@ function open_file(data)
 	try
 	{
 		// init stuff
-		keypressenabled = true;
-		laststringinteracted = 0;
 		project.strings = data["strings"];
 		project.string_groups = data["list"];
 		project.last_data = data;
@@ -1784,16 +2474,41 @@ function open_file(data)
 			},
 			function(){ // help
 				help.innerHTML = "<ul>\
-					<li>CTRL+Click on a line to <b>disable</b> it, it'll be skipped during the release process.</li>\
-					<li>ALT+CTRL+Click on a line to <b>disable</b> <b>ALL</b> this string occurence in this file.</li>\
-					<li>SHIFT+Click on a line to <b>unlink</b> it, if you need to set it to a translation specific to this part of the file.</li>\
-					<li>ALT+Click on the original string (on the left) to copy it.</li>\
-					<li>ALT+Click on the translated string (on the right) to copy it.</li>\
-					<li>Click on the translated string (on the right) to edit it.</li>\
-					<li>CTRL+Space to scroll to the next untranslated <b>enabled</b> string.</li>\
-					<li>SHIFT+CTRL+Space to scroll to the next untranslated string.</li>\
+					<li><b>Ctrl+Click</b> or <b>Ctrl+Y</b> on a line to make it be <b>ignored</b> during the release process.</li>\
+					<li><b>Alt+Ctrl+Click</b> or <b>Ctrl+Shift+Y</b> on a line to <b>ignore ALL</b> occurences of this string in this file.</li>\
+					<li><b>Shift+Click</b> or <b>Ctrl+U</b> on a line to <b>unlink</b> it, if you need to set it to a translation specific to this part of the file.</li>\
+					<li><b>Alt+Click</b> or <b>Ctrl+O</b> on the original string (on the left) to copy it.</li>\
+					<li><b>Alt+Click</b> or <b>Ctrl+I</b> on the translated string (on the right) to copy it.</li>\
+					<li><b>Click</b> or press <b>Enter</b> on the translated string (on the right) to edit it.</li>\
+					<li><b>Ctrl+Space</b> to scroll to the next untranslated <b>enabled</b> string.</li>\
+					<li><b>Shift+Ctrl+Space</b> to scroll to the next untranslated string.</li>\
 					<li>On top, if available, you'll find <b>Plugin Actions</b> for this file.</li>\
 					<li>You'll also find the <b>Translate the File</b> button.</li>\
+				</ul>\
+				\
+				Other shortcuts\
+				<ul>\
+					<li><b>F1</b> for the help.</li>\
+					<li><b>Tab/Shit+Tab</b> and various <b>Arrow keys</b> to move around.</li>\
+					<li><b>Enter</b> to interact.</li>\
+					<li><b>Escape</b> to go back.</li>\
+					<li><b>Ctrl+H</b> to go to the home page.</li>\
+					<li><b>Ctrl+P</b> to go to the project page.</li>\
+					<li><b>Ctrl+R</b> to reload.</li>\
+					<li><b>Ctrl+M</b> to move and slide the string areas.</li>\
+					<li><b>Ctrl+Left/Right</b> to go to the previous/next file, if available.</li>\
+					<li><b>Ctrl+E</b> to focus the edit area.</li>\
+				</ul>\
+				\
+				Edit shortcuts\
+				<ul>\
+					<li><b>Escape</b> to go back to normal navigation, during editing.</li>\
+					<li><b>Ctrl+S</b> to save and confirm the translation.</li>\
+					<li><b>Ctrl+Q</b> to cancel and close the area.</li>\
+					<li><b>Ctrl+K</b> to fetch a translation.</li>\
+					<li><b>Ctrl+L</b> to search other occurences.</li>\
+					<li><b>Ctrl+O</b> to copy the original string, during editing.</li>\
+					<li><b>Ctrl+D</b> to delete the translation.</li>\
 				</ul>";
 				help.style.display = "";
 			},
@@ -1905,7 +2620,6 @@ function open_file(data)
 	}
 	catch(err)
 	{
-		keypressenabled = false;
 		console.error("Exception thrown", err.stack);
 		push_popup("An unexpected error occured.");
 		bottom.style.display = "none";
@@ -1928,6 +2642,10 @@ function cancel_string()
 {
 	bottom.style.display = "none";
 	currentstr.classList.toggle("selected-line", false);
+	if(navigables.length > 0)
+	{
+		navigables[navigable_index].focus({preventScroll: true});
+	}
 }
 
 // send and confirm a string change, used in index.html
@@ -1949,6 +2667,10 @@ function apply_string(trash = false)
 			go_browse(project.name, returnpath);
 		}, {name:project.name, version:project.version, path:project.last_data["path"], group:currentstr.group, index:currentstr.string, string:edit_tl.value});
 	currentstr.classList.toggle("selected-line", false);
+	if(navigables.length > 0)
+	{
+		navigables[navigable_index].focus({preventScroll: true});
+	}
 }
 
 // update the string list
@@ -2080,7 +2802,6 @@ function local_browse(title, explanation, mode)
 	}
 	catch(err)
 	{
-		keypressenabled = false;
 		console.error("Exception thrown", err.stack);
 		push_popup("An unexpected error occured.");
 		bottom.style.display = "none";
@@ -2156,7 +2877,6 @@ function update_local_browse(data)
 			}
 		});
 	}
-	
 	set_loading(false);
 }
 
@@ -2185,9 +2905,9 @@ function replace_page()
 		add_to(fragment, "div", {cls:["title", "left"]}).innerText = "Replace strings by others (Case Sensitive)";
 		add_to(fragment, "div", {cls:["title", "left", "smalltext"]}).innerText = "Only translations are affected";
 		
-		const input = add_to(fragment, "input", {cls:["input", "smallinput"]});
+		const input = add_to(fragment, "input", {cls:["input", "smallinput"], navigable:true});
 		input.placeholder = "String to replace";
-		const output = add_to(fragment, "input", {cls:["input", "smallinput"]});
+		const output = add_to(fragment, "input", {cls:["input", "smallinput"], navigable:true});
 		output.placeholder = "Replace by";
 		add_to(fragment, "div", {cls:["interact", "text-button"], br:false, onclick:function(){
 			if(input.value == "")
@@ -2203,7 +2923,6 @@ function replace_page()
 	}
 	catch(err)
 	{
-		keypressenabled = false;
 		console.error("Exception thrown", err.stack);
 		push_popup("An unexpected error occured.");
 		bottom.style.display = "none";

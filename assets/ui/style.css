@@ -23,6 +23,10 @@ html, body {
 	margin: 0;
 }
 
+li {
+	text-align: justify
+}
+
 #top {
 	background: #181818;
 	color: #eeeeee;
@@ -92,12 +96,14 @@ html, body {
 	padding: 10px;
 	text-align: center;
 	font-size: 25px;
-	background: #000000c0;
+	background: #000000e0;
 	position: fixed;
 	left: 0;
 	top: 0;
 	width: 100vw;
 	height: 100vh;
+	min-height: 100vh;
+	overflow-y: scroll;
 	z-index: 100;
 }
 
@@ -227,10 +233,6 @@ html, body {
 	margin-bottom: 0px;
 	padding-top: 0px;
 	padding-bottom: 0px;
-	color: red;
-	font-size: 12px;
-	font-weight: bold;
-	text-shadow: 2px 0 #dddddd, -2px 0 #dddddd, 0 2px #dddddd, 0 -2px #dddddd, 1px 1px #dddddd, -1px -1px #dddddd, 1px -1px #dddddd, -1px 1px #dddddd;
 }
 
 .text-button {
@@ -253,6 +255,7 @@ html, body {
 	background-color: #eeeeee;
 	outline: none;
 	font-size: 20px;
+	resize: none;
 }
 
 #edit-times {
@@ -450,12 +453,18 @@ a:active {
 
 .grid {
 	display: grid;
-	grid-template-columns: repeat(auto-fit, minmax(480px, 1fr));
+	grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
 	gap: 10px;
 	padding: 0px;
+	max-width: 98%;
 }
 
 .grid-cell {
-	min-width: 450px;
+	min-width: 390px;
 	width: auto;
+}
+
+.interact:focus, .input:focus, .button:focus, #edit-tl:focus {
+	border-color: #00b0b0;
+	outline: none;
 }
