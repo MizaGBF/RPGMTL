@@ -111,6 +111,7 @@ class RPGMTL():
                 web.post('/api/update_string', self.edit_string), # Edit string values
                 web.post('/api/translate_string', self.translate_string), # Translate a string
                 web.post('/api/translate_file', self.translate_file), # Translate a file
+                web.post('/api/translate_project', self.translate_project), # Translate a project
                 web.post('/api/search_string', self.search_string), # Search a string
                 web.post('/api/local_path', self.local_path), # Browse local files
                 web.post('/api/replace_strings', self.replace_strings), # Browse local files
@@ -1870,7 +1871,7 @@ class RPGMTL():
             return web.json_response({"result":"ok", "data":{"translation":translation}})
 
     # subroutine of translate_file() for TranslatorBatchFormat.DEFAULT
-    async def default_batch_translate_file(self : RPGMTL, name : str, path : str, plugin : TranslatorPlugin) -> web.Response:
+    async def default_batch_translate_file(self : RPGMTL, name : str, path : str, plugin : TranslatorPlugin) -> tuple[bool, int|str]:
         version = self.projects[name]["version"]
         file = self.strings[name]["files"][path]
         revert_table = []
@@ -1900,10 +1901,11 @@ class RPGMTL():
             self.log.info("Batch translating " + str(len(to_translate)) + " strings for project " + name + "...")
             result = await plugin.translate_batch(to_translate, self.settings | self.projects[name]['settings'])
             if len(result) != len(to_translate):
-                return web.json_response({"result":"bad", "message":"Batch translation failed"})
+                self.log.error("Batch translation for project " + name + " failed")
+                return False, "Batch translation failed."
             if version != self.projects[name]["version"]:
                 self.log.error("Batch translation for project " + name + " has been aborted because of a version update")
-                return web.json_response({"result":"bad", "message":"The Project has been updated, the translation has been cancelled."})
+                return False, "The Project has been updated, the translation has been cancelled."
             count = 0
             for i in range(len(result)):
                 if result[i] is None or result[i].strip() == "" or result[i].lower() == to_translate[i].lower():
@@ -1918,7 +1920,7 @@ class RPGMTL():
             self.modified[name] = True
             self.start_compute_translated(name)
         # Respond
-        return web.json_response({"result":"ok", "data":{"config":self.projects[name], "name":name, "path":path, "strings":self.strings[name]["strings"], "list":self.strings[name]["files"][path]}, "message":"{} string(s) have been translated".format(count)})
+        return True, count
 
     # subroutine of translate_file() for TranslatorBatchFormat.CONTEXT
     async def context_batch_translate_file(self : RPGMTL, name : str, path : str, plugin : TranslatorPlugin) -> web.Response:
@@ -1988,7 +1990,7 @@ class RPGMTL():
             # check version
             if version != self.projects[name]["version"]:
                 self.log.error("Batch translation for project " + name + " has been aborted because of a version update")
-                return web.json_response({"result":"bad", "message":"The Project has been updated, the translation has been cancelled."})
+                return False, "The Project has been updated, the translation has been cancelled."
             # apply translated strings
             for sid, tl in translated.items():
                 try:
@@ -2014,7 +2016,7 @@ class RPGMTL():
             self.modified[name] = True
             self.start_compute_translated(name)
         # Respond
-        return web.json_response({"result":"ok", "data":{"config":self.projects[name], "name":name, "path":path, "strings":self.strings[name]["strings"], "list":self.strings[name]["files"][path]}, "message":"{} string(s) have been translated".format(count)})
+        return True, count
 
     # /api/translate_file
     async def translate_file(self : RPGMTL, request : web.Request) -> web.Response:
@@ -2038,9 +2040,62 @@ class RPGMTL():
             # Fetching strings in need of translation
             match current.get_format():
                 case TranslatorBatchFormat.CONTEXT:
-                    return await self.context_batch_translate_file(name, path, current)
+                    state, res = await self.context_batch_translate_file(name, path, current)
                 case _:
-                    return await self.default_batch_translate_file(name, path, current)
+                    state, res = await self.default_batch_translate_file(name, path, current)
+            if state:
+                return web.json_response({"result":"ok", "data":{"config":self.projects[name], "name":name, "path":path, "strings":self.strings[name]["strings"], "list":self.strings[name]["files"][path]}, "message":"{} string(s) have been translated".format(res)})
+            else:
+                return web.json_response({"result":"bad", "message":res})
+
+    # /api/translate_project
+    async def translate_project(self : RPGMTL, request : web.Request) -> web.Response:
+        payload = await request.json()
+        name = payload.get('name', None)
+        if name is None:
+            return web.json_response({"result":"bad", "message":"Bad request, missing 'name' parameter"}, status=400)
+        else:
+            self.load_project(name)
+            self.load_strings(name)
+            if name not in self.strings:
+                return web.json_response({"result":"bad", "data":{"name":name, "config":self.projects[name]}, "message":"The strings haven't been extracted."})
+            # Getting translator
+            current = self.get_current_translator(name)[3]
+            if current is None:
+                return web.json_response({"result":"bad", "data":{"name":name, "config":self.projects[name]}, "message":"No Batch Translator currently set"})
+            if name in self.computing:
+                while not self.computing[name].done(): # to make sure string counts are up to date
+                    await asyncio.sleep(1)
+            # Fetching strings in need of translation
+            count = 0
+            file_count = 0
+            error = 0
+            for path in self.strings[name]["files"]:
+                if path not in self.projects[name]["files"]:
+                    continue
+                ignored = self.projects[name]["files"][path].get("ignored", True)
+                string_count = self.projects[name]["files"][path].get("strings", 0) - self.projects[name]["files"][path].get("disabled", 0) - self.projects[name]["files"][path].get("translated", 0)
+                if not ignored and string_count > 0:
+                    file_count += 1
+                    match current.get_format():
+                        case TranslatorBatchFormat.CONTEXT:
+                            state, res =  await self.context_batch_translate_file(name, path, current)
+                        case _:
+                            state, res =  await self.default_batch_translate_file(name, path, current)
+                    if state:
+                        count += res
+                    else:
+                        error += 1
+            if count == 0:
+                if error > 0:
+                    return web.json_response({"result":"bad", "message":"{} error(s) occured, no strings have been translated in {} file(s).".format(error, file_count)})
+                else:
+                    return web.json_response({"result":"ok", "data":{"config":self.projects[name], "name":name, "path":path, "strings":self.strings[name]["strings"], "list":self.strings[name]["files"][path]}, "message":"No strings have been translated in {} file(s).".format(file_count)})
+            else:
+                if error > 0:
+                    return web.json_response({"result":"ok", "data":{"config":self.projects[name], "name":name, "path":path, "strings":self.strings[name]["strings"], "list":self.strings[name]["files"][path]}, "message":"{} string(s) have been translated in {} file(s), {} error(s) occured.".format(count, file_count, error)})
+                else:
+                    return web.json_response({"result":"ok", "data":{"config":self.projects[name], "name":name, "path":path, "strings":self.strings[name]["strings"], "list":self.strings[name]["files"][path]}, "message":"{} string(s) have been translated in {} file(s)".format(count, file_count)})
 
     # /api/search_string
     async def search_string(self : RPGMTL, request : web.Request) -> web.Response:

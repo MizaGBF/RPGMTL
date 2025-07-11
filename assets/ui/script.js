@@ -1676,25 +1676,33 @@ function project_menu(data = null)
 		fragment = new_page();
 		add_to(fragment, "div", {cls:["title"]}).innerHTML = project.name;
 		add_to(fragment, "div", {cls:["title", "left"]}).innerHTML = "Game Folder: " + project.config["path"];
+		let grid = add_to(fragment, "div", {cls:["grid"]});
 		if(project.config.files)
 		{
-			add_interaction(fragment, '<img src="assets/images/folder.png"> Browse Files', function(){
+			add_grid_cell(grid, '<img src="assets/images/folder.png"> Browse Files', function(){
 				go_browse(project.name, "");
 			});
-			add_interaction(fragment, '<img src="assets/images/bandaid.png"> Add a Fix', function(){
+			add_grid_cell(grid, '<img src="assets/images/bandaid.png"> Add a Fix', function(){
 				go_patches(project.name);
 			});
-			add_interaction(fragment, '<img src="assets/images/copy.png"> Replace Strings in batch', function(){
+			add_grid_cell(grid, '<img src="assets/images/copy.png"> Replace Strings in batch', function(){
 				replace_page();
 			});
+			add_grid_cell(grid, '<img src="assets/images/translate.png"> Translate the Game', function(){
+				if(window.event.ctrlKey || window.confirm("Are you sure you wish to translate the whole game?\nIt will be time consuming.\nMake sure your settings are set properly.")) // confirmation / shortcut to insta confirm
+				{
+					set_loading_text("Translating the whole game, be patient...");
+					post("/api/translate_project", project_menu, project_menu, {name:project.name});
+				}
+			});
 		}
-		add_interaction(fragment, '<img src="assets/images/setting.png"> Project Settings', function(){
+		add_grid_cell(grid, '<img src="assets/images/setting.png"> Project Settings', function(){
 			go_settings(project.name);
 		});
-		add_interaction(fragment, '<img src="assets/images/translate.png"> Project Translator', function(){
+		add_grid_cell(grid, '<img src="assets/images/translate.png"> Project Translator', function(){
 			go_translator(project.name);
 		});
-		add_interaction(fragment, '<img src="assets/images/cancel.png"> Unload the Project', function(){
+		add_grid_cell(grid, '<img src="assets/images/cancel.png"> Unload the Project', function(){
 			post("/api/unload", go_main, null, {name:project.name});
 		});
 		add_to(fragment, "div", {cls:["spacer"]});
@@ -1702,8 +1710,11 @@ function project_menu(data = null)
 			local_browse("Update project files", "Select the Game executable.", 1);
 		});
 		add_interaction(fragment, '<img src="assets/images/export.png"> Extract the Strings', function(){
-			set_loading_text("Extracting, be patient...");
-			post("/api/extract", project_menu, go_main, {name:project.name});
+			if(window.event.ctrlKey || window.confirm("Extract the strings?")) // confirmation / shortcut to insta confirm
+			{
+				set_loading_text("Extracting, be patient...");
+				post("/api/extract", project_menu, go_main, {name:project.name});
+			}
 		});
 		if(project.config.files)
 		{

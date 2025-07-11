@@ -222,6 +222,12 @@ Return in data: project 'name', project 'config', file 'path', project 'strings'
 ```
 
 ```
+/api/translate_project
+Payload: project 'name'
+Return in data: project 'name', project 'config'
+```
+
+```
 /api/search_string
 Payload: project 'name', file 'path' (Only used for UI purpose), 'search' string, 'case' bool, 'contains' bool
 Return in data: project 'name', project 'config', 'search' string, 'case' bool, 'contains' bool, matched 'files'
