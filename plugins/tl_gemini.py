@@ -6,6 +6,7 @@ try:
 except:
     raise Exception("Failed to import google-genai.\nMake sure it's installed using: pip install -U google-genai")
 from typing import Any
+import asyncio
 import json
 
 TL_PROMPT : str = """You are the World's best Video Game Translator.
@@ -133,17 +134,21 @@ Example:
 }
 ```
 
-Your goal is to provide a JSON list of names, for characters, items, places, etc... along their translation and additional notes which might help with the translation.
-Notes must NOT be a lenghty description.
-Notes must, for example, includes the gender of the character, if it is or has a nickname, etc... Anything which will help your future translations.
+Your goal is to provide a JSON list of names for important characters, key items, places, etc... along their translation and an additional note to help with the translation.
 An example of the output JSON is the following:
 ```json
 [
-    {"original":"ジョン", "translation":"John", "note":"Adult man. Age 24. Work at the local cinema."},
-    {"original":"ジャック", "translation":"Jack", "note":"Adult man. Age 19. Enjoy movies."}
+    {"original":"ジョン", "translation":"John", "note":"Adult man. Nickname 'Johny'. Work at the local cinema."},
+    {"original":"ジャック", "translation":"Jack", "note":"Adult man. Enjoy movies."}
 ]
 ```
-Only provide new entries or update ones if there is a need to update the notes.
+Do NOT write lenghty description into notes. Be short, concise and straight to the point.
+Notes must, for example, includes the gender of the character, if it is or has a nickname, etc... Anything which will help your future translations.
+You MUST provide an entry IF, and ONLY IF:
+- It's NOT part of the knowledge base below.
+- Or IF an existing entry's note MUST be updated.
+- It's relevant to understanding the game and its world without context.
+- It's NOT for a common term or word, nor for a commonly used onomatopoeia.
 Preserve placeholders (e.g. {playerName}, %VAR%, <tag>), punctuation, new line (e.g. \n), and code syntax.
 Do NOT include any other text or formatting outside of the JSON object.
 Provide only the JSON object. No explanations, no 'Here is the output:' or anything similar.
@@ -173,7 +178,7 @@ class TLGemini(TranslatorPlugin):
     def __init__(self : TLGemini) -> None:
         super().__init__()
         self.name : str = "TL Gemini"
-        self.description : str = " v0.7\nWrapper around the google-genai module to prompt Gemini. (EXPERIMENTAL)"
+        self.description : str = " v0.8\nWrapper around the google-genai module to prompt Gemini. (EXPERIMENTAL)"
         self.instance = None
         self.key_in_use = None
 
@@ -234,27 +239,41 @@ class TLGemini(TranslatorPlugin):
         return self.parse_model_output(response.text, batch)
 
     async def translate(self : TLGemini, string : str, settings : dict[str, Any] = {}) -> str|None:
-        try:
-            data = await self.ask_gemini({
-                    "file":"string.json","number":0,"strings":[{"id":"0-0","parent":"Group 0","source":string}]
-                },
-                settings
-            )
-            if len(data) == 1:
-                return data[list(data.keys())[0]]
-            else:
-                return None
-        except Exception as e:
-            self.instance = None
-            self.owner.log.error("[TL Gemini] Error in 'translate':\n" + self.owner.trbk(e))
-            return None
+        while True:
+            try:
+                data = await self.ask_gemini({
+                        "file":"string.json","number":0,"strings":[{"id":"0-0","parent":"Group 0","source":string}]
+                    },
+                    settings
+                )
+                if len(data) == 1:
+                    return data[list(data.keys())[0]]
+                else:
+                    return None
+            except Exception as e:
+                self.instance = None
+                self.owner.log.error("[TL Gemini] Error in 'translate':\n" + self.owner.trbk(e))
+                se : str = str(e)
+                if "JSONDecodeError" in se or "500 INTERNAL" in se:
+                    await asyncio.sleep(10)
+                elif "429 RESOURCE_EXHAUSTED" in se:
+                    raise Exception("Resource exhausted")
+                else:
+                    return None
 
     async def translate_batch(self : TLGemini, batch : dict[str, Any], settings : dict[str, Any] = {}) -> dict[str, str]:
-        try:
-            return await self.ask_gemini(batch, settings)
-        except Exception as e:
-            self.owner.log.error("[TL Gemini] Error in 'translate_batch':\n" + self.owner.trbk(e))
-            return {}
+        while True:
+            try:
+                return await self.ask_gemini(batch, settings)
+            except Exception as e:
+                self.owner.log.error("[TL Gemini] Error in 'translate_batch':\n" + self.owner.trbk(e))
+                se : str = str(e)
+                if "JSONDecodeError" in se or "500 INTERNAL" in se:
+                    await asyncio.sleep(10)
+                elif "429 RESOURCE_EXHAUSTED" in se:
+                    raise Exception("Resource exhausted")
+                else:
+                    return {}
 
     async def update_knowledge(self : TLGemini, name : str, batch : dict[str, Any], settings : dict[str, Any] = {}) -> None:
         try:

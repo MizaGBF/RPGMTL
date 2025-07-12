@@ -1704,7 +1704,7 @@ function project_menu(data = null)
 			add_grid_cell(grid, '<img src="assets/images/translate.png"> Translate the Game', function(){
 				if(window.event.ctrlKey || window.confirm("Are you sure you wish to translate the whole game?\nIt will be time consuming.\nMake sure your settings are set properly.")) // confirmation / shortcut to insta confirm
 				{
-					set_loading_text("Translating the whole game, be patient...");
+					set_loading_text("Translating the whole game, go do something else...");
 					post("/api/translate_project", project_menu, project_menu, {name:project.name});
 				}
 			});

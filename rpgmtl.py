@@ -2081,11 +2081,16 @@ class RPGMTL():
                 string_count = self.projects[name]["files"][path].get("strings", 0) - self.projects[name]["files"][path].get("disabled", 0) - self.projects[name]["files"][path].get("translated", 0)
                 if not ignored and string_count > 0:
                     file_count += 1
-                    match current.get_format():
-                        case TranslatorBatchFormat.AI:
-                            state, res =  await self.ai_batch_translate_file(name, path, current)
-                        case _:
-                            state, res =  await self.standard_batch_translate_file(name, path, current)
+                    try:
+                        match current.get_format():
+                            case TranslatorBatchFormat.AI:
+                                state, res =  await self.ai_batch_translate_file(name, path, current)
+                            case _:
+                                state, res =  await self.standard_batch_translate_file(name, path, current)
+                    except Exception as e:
+                        self.log.error("An exception has been raised and 'translate_project' has been aborted for project " + name)
+                        error += 1
+                        break
                     if state:
                         count += res
                     else:
