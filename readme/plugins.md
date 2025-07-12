@@ -199,7 +199,9 @@ Output format is:
     "STRING_ID":"TRANSLATION"
 }
 ```  
-You might also need to override `get_token_budget_threshold()` in your plugin, to set the amount of approximate maximum length of the input JSON, in tokens.  
+For additional control, you can ovveride:  
+- `get_token_budget_threshold()`, to set the amount of approximate maximum length of the input JSON, in tokens.  
+- `update_knowledge()`, to build some sort of knowledge base during translation.  
   
 ## Plugin Settings  
   

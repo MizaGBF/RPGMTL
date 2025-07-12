@@ -1871,7 +1871,7 @@ class RPGMTL():
             return web.json_response({"result":"ok", "data":{"translation":translation}})
 
     # subroutine of translate_file() for TranslatorBatchFormat.STANDARD
-    async def default_batch_translate_file(self : RPGMTL, name : str, path : str, plugin : TranslatorPlugin) -> tuple[bool, int|str]:
+    async def standard_batch_translate_file(self : RPGMTL, name : str, path : str, plugin : TranslatorPlugin) -> tuple[bool, int|str]:
         version = self.projects[name]["version"]
         file = self.strings[name]["files"][path]
         revert_table = []
@@ -1923,7 +1923,7 @@ class RPGMTL():
         return True, count
 
     # subroutine of translate_file() for TranslatorBatchFormat.AI
-    async def context_batch_translate_file(self : RPGMTL, name : str, path : str, plugin : TranslatorPlugin) -> web.Response:
+    async def ai_batch_translate_file(self : RPGMTL, name : str, path : str, plugin : TranslatorPlugin) -> web.Response:
         version = self.projects[name]["version"]
         file = self.strings[name]["files"][path]
         # list all strings and translations of the file
@@ -1984,6 +1984,7 @@ class RPGMTL():
             # get translations
             translated : dict[str, str] = {}
             for batch in batches:
+                await plugin.update_knowledge(name, batch, self.settings | self.projects[name]['settings'])
                 result = await plugin.translate_batch(batch, self.settings | self.projects[name]['settings'])
                 if result is not None:
                     translated = translated | result
@@ -2041,9 +2042,9 @@ class RPGMTL():
             # Fetching strings in need of translation
             match current.get_format():
                 case TranslatorBatchFormat.AI:
-                    state, res = await self.context_batch_translate_file(name, path, current)
+                    state, res = await self.ai_batch_translate_file(name, path, current)
                 case _:
-                    state, res = await self.default_batch_translate_file(name, path, current)
+                    state, res = await self.standard_batch_translate_file(name, path, current)
             if state:
                 return web.json_response({"result":"ok", "data":{"config":self.projects[name], "name":name, "path":path, "strings":self.strings[name]["strings"], "list":self.strings[name]["files"][path]}, "message":"{} string(s) have been translated".format(res)})
             else:
@@ -2080,9 +2081,9 @@ class RPGMTL():
                     file_count += 1
                     match current.get_format():
                         case TranslatorBatchFormat.AI:
-                            state, res =  await self.context_batch_translate_file(name, path, current)
+                            state, res =  await self.ai_batch_translate_file(name, path, current)
                         case _:
-                            state, res =  await self.default_batch_translate_file(name, path, current)
+                            state, res =  await self.standard_batch_translate_file(name, path, current)
                     if state:
                         count += res
                     else:
