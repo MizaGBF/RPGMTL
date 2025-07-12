@@ -259,7 +259,7 @@ class TLGemini(TranslatorPlugin):
     async def update_knowledge(self : TLGemini, name : str, batch : dict[str, Any], settings : dict[str, Any] = {}) -> None:
         try:
             if not settings.get("gemini_use_knowledge_base", False):
-                return
+                return 0, 0
             self._init_translator(settings)
             extra_context : str = ""
             if settings["gemini_extra_context"].strip() != "":
@@ -287,9 +287,10 @@ class TLGemini(TranslatorPlugin):
                         self.owner.projects[name]['settings']["gemini_knowledge_base"].append({"original":entry["original"], "translation":entry["translation"], "note":entry["note"]})
                         added += 1
                     self.owner.modified[name] = True
-            self.owner.log.info("[TL Gemini] Knowledge base for project {} got {} addition(s), {} updates".format(name, added, updated))
+            return updated, added
         except Exception as e:
             self.owner.log.error("[TL Gemini] Error in 'update_knowledge':\n" + self.owner.trbk(e))
+            return 0, 0
 
     def knowledge_to_text(self : TLGemini, base : list[dict]) -> str:
         result : list[str] = []

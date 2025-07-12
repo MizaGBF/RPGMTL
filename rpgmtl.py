@@ -1984,7 +1984,9 @@ class RPGMTL():
             # get translations
             translated : dict[str, str] = {}
             for batch in batches:
-                await plugin.update_knowledge(name, batch, self.settings | self.projects[name]['settings'])
+                updated, added = await plugin.update_knowledge(name, batch, self.settings | self.projects[name]['settings'])
+                if updated + added != 0:
+                    self.owner.log.info("Knowledge base for project {} got {} addition(s), {} update(s)".format(name, added, updated))
                 result = await plugin.translate_batch(batch, self.settings | self.projects[name]['settings'])
                 if result is not None:
                     translated = translated | result

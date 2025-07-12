@@ -256,13 +256,14 @@ class TranslatorPlugin:
         # If greater, it will be broken down in multiple batches
         return 10000
 
-    async def update_knowledge(self : TranslatorPlugin, name : str, batch : Any, settings : dict[str, Any] = {}) -> None:
+    async def update_knowledge(self : TranslatorPlugin, name : str, batch : Any, settings : dict[str, Any] = {}) -> tuple[int, int]:
         # Only used for TranslatorBatchFormat.AI
         # Called before translate_batch
         # The batch passed in parameter will be the exact same
         # You can use this function to run a second prompt to build some sort of knowledge base
         # name is the project name, you can use it to access self.owner.projects[name]['settings'], to store/update the knowledge base inside
-        pass
+        # Return value is number of updated entries, number of new additions
+        return 0, 0
 
     def connect(self : TranslatorPlugin, rpgmtl : RPGMTL) -> None:
         # No ned to reimplement this one
