@@ -1,7 +1,7 @@
 from __future__ import annotations
 from . import TranslatorPlugin, TranslatorBatchFormat
 try:
-    from google import genai
+    from google.genai import Client
     from pydantic import BaseModel
 except:
     raise Exception("Failed to import google-genai.\nMake sure it's installed using: pip install -U google-genai")
@@ -173,7 +173,7 @@ class TLGemini(TranslatorPlugin):
     def __init__(self : TLGemini) -> None:
         super().__init__()
         self.name : str = "TL Gemini"
-        self.description : str = " v0.7\nWrapper around the google-genai module to TL_PROMPT Gemini. (EXPERIMENTAL)"
+        self.description : str = " v0.7\nWrapper around the google-genai module to prompt Gemini. (EXPERIMENTAL)"
         self.instance = None
         self.key_in_use = None
 
@@ -198,7 +198,7 @@ class TLGemini(TranslatorPlugin):
             if self.key_in_use is not None and settings["gemini_api_key"] == self.key_in_use:
                 return
             if self.instance is None:
-                current = genai.Client(api_key=settings["gemini_api_key"])
+                current = Client(api_key=settings["gemini_api_key"])
                 self.instance = current
                 self.key_in_use = settings["gemini_api_key"]
         except Exception as e:
