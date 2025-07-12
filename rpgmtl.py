@@ -1523,9 +1523,6 @@ class RPGMTL():
             if key in self.setting_menu[f]:
                 try:
                     match self.setting_menu[f][key][1]:
-                        case "str"|"password"|"text":
-                            if not isinstance(value, str):
-                                raise Exception()
                         case "bool":
                             if not isinstance(value, bool):
                                 raise Exception()
@@ -1534,6 +1531,9 @@ class RPGMTL():
                                 value = float(value)
                             except:
                                 value = int(value)
+                        case _:
+                            if not isinstance(value, str):
+                                raise Exception()
                 except:
                     return web.json_response({"result":"bad", "message":"Invalid 'value' parameter, couldn't convert to setting type"}, status=400)
                 break

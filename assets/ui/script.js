@@ -1378,6 +1378,9 @@ function setting_menu(data)
 									}
 									val = parseFloat(input.value);
 									break;
+								case "text":
+									val = input.innerText;
+									break;
 								default:
 									val = input.value;
 									break;
@@ -1412,7 +1415,17 @@ function setting_menu(data)
 						else elem.tabIndex = "0";
 						
 						if(key in settings)
-							input.value = settings[key];
+						{
+							switch(fdata[1]) // make sure our value is what RPGMTL wants
+							{
+								case "text":
+									input.textContent = settings[key];
+									break;
+								default:
+									input.value = settings[key];
+									break;
+							}
+						}
 						++count;
 					}
 					else // choice selection
