@@ -53,14 +53,14 @@ An older version might work, but isn't supported.
 ### Install RPGMTL  
   
 Grab a copy of this repository.  
-**For the latest builds:**  
+**For the latest version:**  
 Either git clone:
 ```console
 git clone git@github.com:MizaGBF/RPGMTL.git
 ```  
 or use the **Green** Code button on top and download as ZIP (Don't forget to unzip).  
   
-**For the stable builds:**  
+**For older and stable versions:**  
 Go under the [Release](https://github.com/MizaGBF/RPGMTL/releases) tab.  
   
 ### Install Requirements  
@@ -73,6 +73,22 @@ python -m pip install -r requirements.txt
 On Windows, if you don't know how to do it, you can `SHIFT+Right Click` in the folder and select `Open in Terminal`/`Open PowerShell window here`/`Open Command prompt here`.  
   
 Additionally, if Python isn't in your `PATH`, replace `python` with the full path to its executable (for example `C:\python3\python.exe -m pip install -r requirements.txt`).  
+  
+**If you don't wish to install all the requirements:**  
+[aiohttp](https://github.com/aio-libs/aiohttp) is required for RPGMTL to function.  
+```console
+python -m pip install -U aiohttp
+```  
+  
+[Deep Translator](https://github.com/nidhaloff/deep-translator) is required for the Google Translator plugin to function.  
+```console
+python -m pip install -U deep-translator
+```  
+  
+[Google Gen AI SDK](https://github.com/googleapis/python-genai) is required for the Gemini Translator plugin to function.   
+```console
+python -m pip install -U google-genai
+```  
   
 ### Update  
   
