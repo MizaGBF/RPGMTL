@@ -1865,7 +1865,7 @@ class RPGMTL():
                 current = self.get_current_translator(name)
                 if current[1] is None:
                     return web.json_response({"result":"bad", "message":"No Single Translator currently set"})
-                translation = await current[1].translate(string, self.settings | self.projects[name]['settings'])
+                translation = await current[1].translate(name, string, self.settings | self.projects[name]['settings'])
                 if translation is not None and (translation.lower() == string.lower() or translation.strip() == ""):
                     translation = None
             return web.json_response({"result":"ok", "data":{"translation":translation}})
@@ -1899,7 +1899,7 @@ class RPGMTL():
         if len(to_translate) > 0:
             # Translating
             self.log.info("Batch translating {} strings in file '{}' for project {}...".format(len(to_translate), path, name))
-            result = await plugin.translate_batch(to_translate, self.settings | self.projects[name]['settings'])
+            result = await plugin.translate_batch(name, to_translate, self.settings | self.projects[name]['settings'])
             if len(result) != len(to_translate):
                 self.log.error("Batch translation for project " + name + " failed")
                 return False, "Batch translation failed."
@@ -1984,10 +1984,7 @@ class RPGMTL():
             # get translations
             translated : dict[str, str] = {}
             for batch in batches:
-                updated, added = await plugin.update_knowledge(name, batch, self.settings | self.projects[name]['settings'])
-                if updated + added != 0:
-                    self.log.info("Knowledge base for project {} got {} addition(s), {} update(s)".format(name, added, updated))
-                result = await plugin.translate_batch(batch, self.settings | self.projects[name]['settings'])
+                result = await plugin.translate_batch(name, batch, self.settings | self.projects[name]['settings'])
                 if result is not None:
                     translated = translated | result
             # check version

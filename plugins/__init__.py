@@ -256,15 +256,6 @@ class TranslatorPlugin:
         # If greater, it will be broken down in multiple batches
         return 10000
 
-    async def update_knowledge(self : TranslatorPlugin, name : str, batch : Any, settings : dict[str, Any] = {}) -> tuple[int, int]:
-        # Only used for TranslatorBatchFormat.AI
-        # Called before translate_batch
-        # The batch passed in parameter will be the exact same
-        # You can use this function to run a second prompt to build some sort of knowledge base
-        # name is the project name, you can use it to access self.owner.projects[name]['settings'], to store/update the knowledge base inside
-        # Return value is number of updated entries, number of new additions
-        return 0, 0
-
     def connect(self : TranslatorPlugin, rpgmtl : RPGMTL) -> None:
         # No ned to reimplement this one
         self.owner = rpgmtl
@@ -278,13 +269,15 @@ class TranslatorPlugin:
         # Work the same as for Plugin
         return {}
 
-    async def translate(self : TranslatorPlugin, string : str, settings : dict[str, Any] = {}) -> str|None:
+    async def translate(self : TranslatorPlugin, name : str, string : str, settings : dict[str, Any] = {}) -> str|None:
         # Translate a string
+        # name is the project name
         # Return the translated String or None on error
         return None
 
-    async def translate_batch(self : TranslatorPlugin, batch : Any, settings : dict[str, Any] = {}) -> dict[str, str]|list[str|None]:
+    async def translate_batch(self : TranslatorPlugin, name : str, batch : Any, settings : dict[str, Any] = {}) -> dict[str, str]|list[str|None]:
         # Translate a batch of string
+        # name is the project name
         # Return the list of translated Strings or None if errors
         # or a dictionary depending on TranslatorBatchFormat
         return []

@@ -27,7 +27,7 @@ class TLGoogle(TranslatorPlugin):
             self.instance = GoogleTranslator(source=current[0], target=current[1])
             self.past_setting = current
 
-    async def translate(self : TLGoogle, string : str, settings : dict[str, Any] = {}) -> str|None:
+    async def translate(self : TLGoogle, name : str, string : str, settings : dict[str, Any] = {}) -> str|None:
         try:
             self._init_translator(settings)
             return self.instance.translate(string)
@@ -35,7 +35,7 @@ class TLGoogle(TranslatorPlugin):
             self.owner.log.error("[TL Google] Error in 'translate':\n" + self.owner.trbk(e))
             return None
 
-    async def translate_batch(self : TLGoogle, strings : list[str], settings : dict[str, Any] = {}) -> list[str|None]:
+    async def translate_batch(self : TLGoogle, name : str, strings : list[str], settings : dict[str, Any] = {}) -> list[str|None]:
         try:
             self._init_translator(settings)
             return self.instance.translate_batch(strings)

@@ -9,8 +9,8 @@ from typing import Any
 import asyncio
 import json
 
-TL_PROMPT : str = """You are the World's best Video Game Translator.
-Your task is to take a JSON object formatted in such manner:
+PROMPT : str = """You are the World's best Video Game Translator.
+Your task is to translate the strings from $SOURCE$ to $TARGET$, provided in a JSON object of this specification:
 ```json
 {
     "file":"FILE",
@@ -30,7 +30,29 @@ Your task is to take a JSON object formatted in such manner:
     ]
 }
 ```
+The strings are in order of occurence.
+An existing translation may or may not be provided.
+If, and only if, a translation is provided in the input, do NOT re-translate unless it's incorrect.
+Preserve placeholders (e.g. {playerName}, %VAR%, <tag>), punctuation, new line (e.g. \\n), and code syntax.
+
+In the input, you must also identify important proper nouns (characters, places, key items) that are not already in the provided knowledge base below.
+Notes should be concise and help with future translations (e.g., gender, role) and NOT be lengthy descriptions.
+For example, they can includes a character gender, pronuns, specific terms relevant for the translation, and so on.
+Do NOT add general/common words, objects or onomatopoeia. Add ONLY unique, named entities, to not bloat the knowledge base.
+
+Produce a single JSON object matching this specification:
+```json
+{,
+    "new_knowledge": [
+        {"original": "TERM", "translation": "TRANSLATED_TERM", "note": "A helpful note."}
+    ],
+    "translations": [
+        {"id": "STRING_ID", "translation": "TRANSLATED_STRING"}
+    ]
+}
+````
 Example:
+Valid input:
 ```json
 {
     "file":"Game Script.json",
@@ -55,26 +77,19 @@ Example:
     ]
 }
 ```
-You must translate them from $SOURCE$ to $TARGET$.
-The strings are in order of occurence.
-An existing translation may or may not be provided.
-Don't re-translate unless it's incorrect.
-Preserve placeholders (e.g. {playerName}, %VAR%, <tag>), punctuation, new line (e.g. \n), and code syntax.
-
-Produce JSON matching this specification:
+Valid output:
 ```json
-[
-    {"id":"STRING_ID", "translation":"TRANSLATED_STRING"}
-]
+{
+    "new_knowledge": [
+        {"original": "ジョン", "translation": "John", "note": "Adult man. Nickname \"Johny\"."}
+    ],
+    "translations": [
+        {"id": "2-2", "translation": "What did you do yesterday?"},
+        {"id": "2-3", "translation": "I saw a movie."}
+    ]
+}
 ```
-Example:
-```json
-[
-    {"id":"2-2", "translation":"What did you do yesterday?"},
-    {"id":"2-3", "translation":"I saw a movie."}
-]
-```
-Do NOT include any other text or formatting outside of the JSON object.
+Do NOT include any other text or formatting OUTSIDE of the JSON object.
 Provide only the JSON object. No explanations, no 'Here is your translation:' or anything similar.
 $EXTRA$
 
@@ -86,99 +101,24 @@ $INPUT$
 Your output:
 """
 
-KB_PROMPT : str = """You are the World's best Video Game Translator.
-Your task it to update the knowledge base for the $SOURCE$ to $TARGET$ translation you're currently working on.
-The user will provide a batch of strings for matted in such manner:
-```json
-{
-    "file":"FILE",
-    "number":BATCH_NUMBER,
-    "strings":[
-        {
-            "id":"STRING_ID",
-            "parent":"GROUP OF WHICH THIS STRING IS PART OF",
-            "source":"ORIGINAL_STRING",
-            "translation":"TRANSLATED_STRING"
-        },
-        {
-            "id":"STRING_ID",
-            "parent":"GROUP OF WHICH THIS STRING IS PART OF",
-            "source":"ORIGINAL_STRING"
-        }
-    ]
-}
-```
-Example:
-```json
-{
-    "file":"Game Script.json",
-    "number":35,
-    "strings":[
-        {
-            "id":"2-1",
-            "parent":"Group 2: Message Jack",
-            "source":"昨日はすごく楽しかった！",
-            "translation":"It was so much fun yesterday!"
-        },
-        {
-            "id":"2-2",
-            "parent":"Group 2: Message John",
-            "source":"昨日何をしましたか？"
-        },
-        {
-            "id":"2-3",
-            "parent":"Group 2: Message Jack",
-            "source":"私は映画を見ました。"
-        }
-    ]
-}
-```
-
-Your goal is to provide a JSON list of names for important characters, key items, places, etc... along their translation and an additional note to help with the translation.
-An example of the output JSON is the following:
-```json
-[
-    {"original":"ジョン", "translation":"John", "note":"Adult man. Nickname 'Johny'. Work at the local cinema."},
-    {"original":"ジャック", "translation":"Jack", "note":"Adult man. Enjoy movies."}
-]
-```
-Do NOT write lenghty description into notes. Be short, concise and straight to the point.
-Notes must, for example, includes the gender of the character, if it is or has a nickname, etc... Anything which will help your future translations.
-You MUST provide an entry IF, and ONLY IF:
-- It's NOT part of the knowledge base below.
-- Or IF an existing entry's note MUST be updated.
-- It's relevant to understanding the game and its world without context.
-- It's NOT for a common term or word, nor for a commonly used onomatopoeia.
-Preserve placeholders (e.g. {playerName}, %VAR%, <tag>), punctuation, new line (e.g. \n), and code syntax.
-Do NOT include any other text or formatting outside of the JSON object.
-Provide only the JSON object. No explanations, no 'Here is the output:' or anything similar.
-$EXTRA$
-
-The existing knowledge base is the following:
-```json
-$KNOWLEDGE$
-```
-
-The user input:
-$INPUT$
-
-Your output:
-"""
-
-class GModel(BaseModel):
+class GmTranslation(BaseModel):
     id: str
     translation: str
 
-class GKbModel(BaseModel):
+class GmKnowledge(BaseModel):
     original: str
     translation: str
     note: str
+
+class GmResponse(BaseModel):
+    new_knowledge: list[GmKnowledge]
+    translations: list[GmTranslation]
 
 class TLGemini(TranslatorPlugin):
     def __init__(self : TLGemini) -> None:
         super().__init__()
         self.name : str = "TL Gemini"
-        self.description : str = " v0.8\nWrapper around the google-genai module to prompt Gemini. (EXPERIMENTAL)"
+        self.description : str = " v0.9\nWrapper around the google-genai module to prompt Gemini to generate translations. (EXPERIMENTAL)"
         self.instance = None
         self.key_in_use = None
 
@@ -194,8 +134,7 @@ class TLGemini(TranslatorPlugin):
             "gemini_model": ["Set the Gemini <a href=\"https://aistudio.google.com/changelog\">Model String</a> (<a href=\"https://ai.google.dev/gemini-api/docs/rate-limits\">Rate Limits</a>)", "str", "gemini-2.5-flash", None],
             "gemini_src_language": ["Set the Source Language", "str", "Japanese", None],
             "gemini_target_language": ["Set the Target Language", "str", "English", None],
-            "gemini_extra_context": ["Set extra informations or commands for the AI", "text", "", None],
-            "gemini_use_knowledge_base": ["Gemini will build a knowledge base (Require extra requests and tokens)", "bool", False, None]
+            "gemini_extra_context": ["Set extra informations or commands for the AI", "text", "", None]
         }
 
     def _init_translator(self : TLGemini, settings : dict[str, Any]) -> None:
@@ -209,41 +148,103 @@ class TLGemini(TranslatorPlugin):
         except Exception as e:
              self.owner.log.error("[TL Gemini] Error in '_init_translator':\n" + self.owner.trbk(e))
 
-    def parse_model_output(self : TLGemini, text : str, input_batch : dict[str, Any]) -> dict[str, str]:
+    def parse_model_output(self : TLGemini, text : str, name : str, input_batch : dict[str, Any]) -> dict[str, str]:
+        # build set of string id from batch for validation
         id_set : set[str] = set()
         for string in input_batch["strings"]:
             id_set.add(string["id"])
-        output : list[dict[str, str]] = json.loads(text)
+        # load data
+        output : dict = json.loads(text)
+        # generate dict of edited strings for RPGMTL
         parsed : dict[str, str] = {}
-        for el in output:
-            if el.get("id", None) is not None and el.get("translation", None) is not None and el["id"] in id_set:
-                parsed[el["id"]] = el["translation"]
+        if "translations" in output:
+            for string in output["translations"]:
+                if string.get("id", None) is not None and string.get("translation", None) is not None and string["id"] in id_set:
+                    parsed[string["id"]] = string["translation"]
+        # updated knowledge base
+        if "new_knowledge" in output:
+            if "gemini_knowledge_base" not in self.owner.projects[name]['settings']:
+                self.owner.projects[name]['settings']["gemini_knowledge_base"] = []
+            base_ref = self.owner.projects[name]['settings']["gemini_knowledge_base"]
+            # update last seen
+            for entry in base_ref:
+                found = False
+                for string in input_batch["strings"]:
+                    if entry["original"] in string["source"]:
+                        entry["occurence"] += 1
+                        entry["last_seen"] += 0
+                        found = True
+                        self.owner.modified[name] = True
+                        break
+                if not found:
+                    entry["last_seen"] += 1
+                    self.owner.modified[name] = True
+            # table of original : pointer to entries
+            ref = {entry["original"] : entry for entry in self.owner.projects[name]['settings'].get("gemini_knowledge_base", [])}
+            updated : int = 0
+            added : int = 0
+            deleted : int = 0
+            for entry in output["new_knowledge"]:
+                if "original" in entry and "translation" in entry and "note" in entry:
+                    if entry["original"] in ref:
+                        ref[entry["original"]]["note"] = entry["note"]
+                        if ref[entry["original"]]["last_seen"] != 0: # if not found in above loop
+                            ref[entry["original"]]["last_seen"] = 0
+                            ref[entry["original"]]["occurence"] += 1
+                        updated += 1
+                    else:
+                        base_ref.append({"original":entry["original"], "translation":entry["translation"], "note":entry["note"], "last_seen":0, "occurence":1})
+                        added += 1
+                    self.owner.modified[name] = True
+            # cleanup
+            i = 0
+            while i < len(base_ref):
+                if base_ref[i]["last_seen"] > 10: # if not seen in last 10 translations
+                    base_ref[i]["occurence"] -= 1
+                    self.owner.modified[name] = True
+                if base_ref[i]["occurence"] <= 0: # if occurence at 0, delete from base
+                    base_ref.pop(i)
+                    deleted += 1
+                else:
+                    i += 1
+            # result
+            if updated + added + deleted != 0:
+                self.owner.log.info("[TL Gemini] Knowledge base of project {}: {} update(s), {} addition(s), {} deletion(s)".format(name, updated, added, deleted))
         return parsed
 
-    async def ask_gemini(self : TLGemini, batch : dict[str, Any], settings : dict[str, Any] = {}) -> dict[str, str]:
+    async def ask_gemini(self : TLGemini, name : str, batch : dict[str, Any], settings : dict[str, Any] = {}) -> dict[str, str]:
         self._init_translator(settings)
         extra_context : str = ""
         if settings["gemini_extra_context"].strip() != "":
             extra_context = "\nThe User specified the following:\n{}".format(settings["gemini_extra_context"])
         knowledge_base : str = self.knowledge_to_text(settings.get("gemini_knowledge_base", []))
         if knowledge_base != "":
-            knowledge_base = "The following is a partial glossary of names encountered in the game.\nStrictly follow the notes mentioned inside:\n" + knowledge_base
+            knowledge_base = "The following is a glossary of names encountered in the game. Strictly follow it for your translation:\n" + knowledge_base
         response = self.instance.models.generate_content(
             model=settings["gemini_model"],
-            contents=TL_PROMPT.replace("$TARGET$", settings["gemini_target_language"]).replace("$SOURCE$", settings["gemini_src_language"]).replace("$EXTRA$", extra_context).replace("$KNOWLEDGE$", knowledge_base).replace("$INPUT$", json.dumps(batch, ensure_ascii=False, indent=4), 1),
+            contents=PROMPT.replace("$TARGET$", settings["gemini_target_language"], 1).replace("$SOURCE$", settings["gemini_src_language"], 1).replace("$EXTRA$", extra_context, 1).replace("$KNOWLEDGE$", knowledge_base, 1).replace("$INPUT$", json.dumps(batch, ensure_ascii=False, indent=4), 1),
             config={
-                "response_mime_type": "application/json",
-                "response_schema": list[GModel]
+                "response_mime_type":"application/json",
+                "response_schema":GmResponse,
+                "stop_sequences": ["}]}"]
             }
         )
-        return self.parse_model_output(response.text, batch)
+        return self.parse_model_output(response.text, name, batch)
 
-    async def translate(self : TLGemini, string : str, settings : dict[str, Any] = {}) -> str|None:
+    async def translate(self : TLGemini, name : str, string : str, settings : dict[str, Any] = {}) -> str|None:
         retry : int = 0
         while retry < 3:
             try:
-                data = await self.ask_gemini({
-                        "file":"string.json","number":0,"strings":[{"id":"0-0","parent":"Group 0","source":string}]
+                data = await self.ask_gemini(
+                    name,
+                    {
+                        "file":"string.json","number":0,"strings":[
+                            {
+                                "id":"0-0",
+                                "parent":"Group 0",
+                                "source":string
+                            }
+                        ]
                     },
                     settings
                 )
@@ -263,11 +264,11 @@ class TLGemini(TranslatorPlugin):
                 else:
                     return None
 
-    async def translate_batch(self : TLGemini, batch : dict[str, Any], settings : dict[str, Any] = {}) -> dict[str, str]:
+    async def translate_batch(self : TLGemini, name : str, batch : dict[str, Any], settings : dict[str, Any] = {}) -> dict[str, str]:
         retry : int = 0
         while retry < 3:
             try:
-                return await self.ask_gemini(batch, settings)
+                return await self.ask_gemini(name, batch, settings)
             except Exception as e:
                 self.owner.log.error("[TL Gemini] Error in 'translate_batch':\n" + self.owner.trbk(e))
                 se : str = str(e)
@@ -278,42 +279,6 @@ class TLGemini(TranslatorPlugin):
                     raise Exception("Resource exhausted")
                 else:
                     return {}
-
-    async def update_knowledge(self : TLGemini, name : str, batch : dict[str, Any], settings : dict[str, Any] = {}) -> None:
-        try:
-            if not settings.get("gemini_use_knowledge_base", False):
-                return 0, 0
-            self._init_translator(settings)
-            extra_context : str = ""
-            if settings["gemini_extra_context"].strip() != "":
-                extra_context = "\nThe User specified the following for the whole translation project:\n{}".format(settings["gemini_extra_context"])
-            if "gemini_knowledge_base" not in self.owner.projects[name]['settings']:
-                self.owner.projects[name]['settings']["gemini_knowledge_base"] = []
-            response = self.instance.models.generate_content(
-                model=settings["gemini_model"],
-                contents=KB_PROMPT.replace("$TARGET$", settings["gemini_target_language"]).replace("$SOURCE$", settings["gemini_src_language"]).replace("$EXTRA$", extra_context).replace("$KNOWLEDGE$", json.dumps(self.owner.projects[name]['settings']["gemini_knowledge_base"], ensure_ascii=False, indent=4), 1).replace("$INPUT$", json.dumps(batch, ensure_ascii=False, indent=4), 1),
-                config={
-                    "response_mime_type": "application/json",
-                    "response_schema": list[GKbModel]
-                }
-            )
-            output = json.loads(response.text)
-            ref = {entry["original"] : entry for entry in self.owner.projects[name]['settings']["gemini_knowledge_base"]}
-            updated : int = 0
-            added : int = 0
-            for entry in output:
-                if "original" in entry and "translation" in entry and "note" in entry:
-                    if entry["original"] in ref:
-                        ref[entry["original"]]["note"] = entry["note"]
-                        updated += 1
-                    else:
-                        self.owner.projects[name]['settings']["gemini_knowledge_base"].append({"original":entry["original"], "translation":entry["translation"], "note":entry["note"]})
-                        added += 1
-                    self.owner.modified[name] = True
-            return updated, added
-        except Exception as e:
-            self.owner.log.error("[TL Gemini] Error in 'update_knowledge':\n" + self.owner.trbk(e))
-            return 0, 0
 
     def knowledge_to_text(self : TLGemini, base : list[dict]) -> str:
         result : list[str] = []
