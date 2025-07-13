@@ -91,9 +91,9 @@ Valid output:
 ```
 Do NOT include any other text or formatting OUTSIDE of the JSON object.
 Provide only the JSON object. No explanations, no 'Here is your translation:' or anything similar.
-$EXTRA$
-
 $KNOWLEDGE$
+
+$EXTRA$
 
 The user input:
 $INPUT$
