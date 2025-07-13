@@ -26,7 +26,7 @@ Future (possible) improvements or bugs are noted here:
   
 - [x] Gemini: Improve JSON validation.  
 - [x] Gemini: Add some sort of automatic character/item name table.  
-- [ ] Don't make the knowledge base a separate call.  
+- [x] Don't make the knowledge base a separate call.  
 - [x] Add some sort of "Translate the whole game" button.  
 - [x] Rework the different TranslatorPlugin type into something cleaner.  
 - [ ] Test gemini with some agentic capabilities.  
