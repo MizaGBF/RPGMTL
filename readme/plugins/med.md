@@ -10,6 +10,8 @@ It **won't** extract non-japanese strings in its current state.
   
 Each file contained inside are extracted as Virtual Files, for clarity sake.  
   
+RPGMTL Fix/Patches aren't supported on this file format.  
+  
 ## File Actions  
   
 ### Adjust New Line  
