@@ -13,7 +13,7 @@ The list of supported files is currently:
 - RGSSAD Archives (.rgssad, .rgss2a, .rgss3a for RPG Maker XP to VX Ace)  
 - MED (md_scr.med archives, used by Triangle and Lusterise games)  
 - YPF Archives and YBN Scripts (YU-RIS Engine)  
-- NSA (arc.nsa archives from NScripter engine) (EXPERIMENTAL)  
+- NScripter scripts  
   
 Eventually planned (No ETA):  
 - KiriKiri Engine files  

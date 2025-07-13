@@ -19,7 +19,7 @@ Future (possible) improvements or bugs are noted here:
 - [x] Improve CSS of text setting input type.  
 - [x] Grab focus of main page upon page change.  
 - [x] Update readme screenshots.  
-- [ ] Work on ArcNSA plugin.  
+- [x] Work on NScripter plugin.  
 - [ ] Work on KiriKiri plugin.  
   
 ### Translator
