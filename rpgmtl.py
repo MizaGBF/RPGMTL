@@ -444,7 +444,7 @@ class RPGMTL():
                             # add to config.json
                             update_file_dict[fpr.as_posix()] = {
                                 "file_type":FileType.NORMAL,
-                                "ignored":False,
+                                "ignored":0, # use integer instead of boolean for file size and diff reasons
                                 "strings":0,
                                 "translated":0,
                                 "disabled_strings":0,
@@ -905,7 +905,7 @@ class RPGMTL():
                             else: # else create it
                                 self.projects[name]['files'][target_file] = {
                                     "file_type":FileType.VIRTUAL,
-                                    "ignored":False,
+                                    "ignored":0, # use integer instead of boolean for file size and diff reasons
                                     "strings":0,
                                     "translated":0,
                                     "disabled_strings":0,
@@ -920,6 +920,7 @@ class RPGMTL():
                         # process group content
                         for i in range(1, len(group)):
                             s : str = group[i]
+                            # Note: Also use integer instead of boolean to keep file size low
                             group[i] = [str(str_id), None, 0, 0, update_run_flag] # id, indiv_tl, unlinked, ignored, modified/new
                             target["strings"] += 1
                             # if string already occured
