@@ -55,6 +55,7 @@ An older version might work, but isn't supported.
   
 Grab a copy of this repository.  
 **For the latest version:**  
+*(It might be unstable, contains experimental features or unfinished features)*  
 Either git clone:
 ```console
 git clone git@github.com:MizaGBF/RPGMTL.git
