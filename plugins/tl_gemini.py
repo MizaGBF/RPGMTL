@@ -239,7 +239,8 @@ class TLGemini(TranslatorPlugin):
         return self.parse_model_output(response.text, batch)
 
     async def translate(self : TLGemini, string : str, settings : dict[str, Any] = {}) -> str|None:
-        while True:
+        retry : int = 0
+        while retry < 3:
             try:
                 data = await self.ask_gemini({
                         "file":"string.json","number":0,"strings":[{"id":"0-0","parent":"Group 0","source":string}]
@@ -256,13 +257,15 @@ class TLGemini(TranslatorPlugin):
                 se : str = str(e)
                 if "JSONDecodeError" in se or "500 INTERNAL" in se:
                     await asyncio.sleep(10)
+                    retry += 1
                 elif "429 RESOURCE_EXHAUSTED" in se:
                     raise Exception("Resource exhausted")
                 else:
                     return None
 
     async def translate_batch(self : TLGemini, batch : dict[str, Any], settings : dict[str, Any] = {}) -> dict[str, str]:
-        while True:
+        retry : int = 0
+        while retry < 3:
             try:
                 return await self.ask_gemini(batch, settings)
             except Exception as e:
@@ -270,6 +273,7 @@ class TLGemini(TranslatorPlugin):
                 se : str = str(e)
                 if "JSONDecodeError" in se or "500 INTERNAL" in se:
                     await asyncio.sleep(10)
+                    retry += 1
                 elif "429 RESOURCE_EXHAUSTED" in se:
                     raise Exception("Resource exhausted")
                 else:
