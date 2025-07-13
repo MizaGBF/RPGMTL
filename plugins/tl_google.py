@@ -10,7 +10,7 @@ class TLGoogle(TranslatorPlugin):
     def __init__(self : TLGoogle) -> None:
         super().__init__()
         self.name : str = "TL Google"
-        self.description : str = " v1.1\nWrapper around the deep-translator module\nGoogle Translator is used"
+        self.description : str = " v1.2\nWrapper around the deep-translator module\nGoogle Translator is used"
         self.instance = None
         self.past_setting = None
 
