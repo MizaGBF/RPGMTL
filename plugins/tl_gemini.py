@@ -219,7 +219,9 @@ class TLGemini(TranslatorPlugin):
             extra_context = "\nThe User specified the following:\n{}".format(settings["gemini_extra_context"])
         knowledge_base : str = self.knowledge_to_text(settings.get("gemini_knowledge_base", []))
         if knowledge_base != "":
-            knowledge_base = "The following is a glossary of names encountered in the game. Strictly follow it for your translation:\n" + knowledge_base
+            knowledge_base = "The knowledge base that you must strictly refer to for your translations is the following:\n" + knowledge_base
+        else:
+            knowledge_base = "The knowledge base is currently empty."
         response = self.instance.models.generate_content(
             model=settings["gemini_model"],
             contents=PROMPT.replace("$TARGET$", settings["gemini_target_language"], 1).replace("$SOURCE$", settings["gemini_src_language"], 1).replace("$EXTRA$", extra_context, 1).replace("$KNOWLEDGE$", knowledge_base, 1).replace("$INPUT$", json.dumps(batch, ensure_ascii=False, indent=4), 1),
