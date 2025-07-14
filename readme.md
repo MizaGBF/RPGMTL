@@ -13,11 +13,10 @@ The list of supported files is currently:
 - RGSSAD Archives (.rgssad, .rgss2a, .rgss3a for RPG Maker XP to VX Ace)  
 - MED (md_scr.med archives, used by Triangle and Lusterise games)  
 - YPF Archives and YBN Scripts (YU-RIS Engine)  
+- KiriKiri Engine scripts (.ks and .tjs)  
 - NScripter scripts  
   
-Eventually planned (No ETA):  
-- KiriKiri Engine files  
-- And more as I see fit.  
+More will be added as I see fit.  
   
 ![image](https://raw.githubusercontent.com/MizaGBF/RPGMTL/main/assets/readme/1.png)  
 *All screenshots are from version 3.25.*

@@ -6,7 +6,7 @@ class Javascript(Plugin):
     def __init__(self : Javascript) -> None:
         super().__init__()
         self.name : str = "Javascript"
-        self.description : str = " v1.5\nHandle Javascript files, including the plugins.js file from RPG Maker MV/MZ"
+        self.description : str = " v1.6\nHandle Javascript files, including the plugins.js file from RPG Maker MV/MZ"
 
     def match(self : Javascript, file_path : str, is_for_action : bool) -> bool:
         return file_path.endswith(".js")
@@ -45,6 +45,10 @@ class Javascript(Plugin):
     # If helper is not None, it will also replace the strings with translations
     # The returned value is a tuple, containing the list of group strings and the (modified or not) javascript text
     def _parse_strings(self : Javascript, js : str, helper : WalkHelper|None) -> tuple[list[list[str]], str]:
+        if helper is None:
+            entry_offset = 0
+        else:
+            entry_offset = helper.group
         entries = []
         i = 0
         funcs = ["", ""]
@@ -140,7 +144,7 @@ class Javascript(Plugin):
         if helper is not None: # write mode
             for i in range(len(string_table)-1, -1, -1):
                 st = string_table[i]
-                tmp : str = helper.apply_string(entries[st[2]][st[3]], entries[st[2]][0], loc=(st[2], st[3]))
+                tmp : str = helper.apply_string(entries[st[2]][st[3]], entries[st[2]][0], loc=(st[2]+entry_offset, st[3]))
                 if tmp != entries[st[2]][st[3]]:
                     js = js[:st[0]] + tmp.replace(st[4], '\\'+st[4]) + js[st[1]:]
         return entries, js
