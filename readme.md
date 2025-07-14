@@ -14,7 +14,7 @@ The list of supported files is currently:
 - MED (md_scr.med archives, used by Triangle and Lusterise games)  
 - YPF Archives and YBN Scripts (YU-RIS Engine)  
 - KiriKiri Engine scripts (.ks and .tjs)  
-- NScripter scripts  
+- NScripter scripts (see the [dedicated readme](https://github.com/MizaGBF/RPGMTL/blob/main/readme/plugins/nscripter.md) for details)  
   
 More will be added as I see fit.  
   
