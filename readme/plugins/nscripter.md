@@ -4,7 +4,7 @@
   
 ## Quick Overview  
   
-The NScripter Plugin targets archives from the NScripter engine.  
+The NScripter Plugin targets scripts from the NScripter engine.  
   
 ## Usage  
   
