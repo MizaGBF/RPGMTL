@@ -10,7 +10,6 @@ Future (possible) improvements or bugs are noted here:
   
 - [ ] Add a built-in note system.  
 - [ ] A comment system for each line could be nice too.  
-- [ ] Check error handling during server-side errors.  
   
 ### Translator
   
