@@ -1520,7 +1520,7 @@ function translator_menu(data)
 		fragment = new_page();
 		let list = data["list"]; // translator plugin list
 		let possibles = ["current", "batch"];
-		let possibles_text = ["Single Translation Button", "Translate this File Button"];
+		let possibles_text = ["Single Translation", "Batch Translation"];
 		for(let t = 0; t < possibles.length; ++t)
 		{
 			if(list.length == 0)
