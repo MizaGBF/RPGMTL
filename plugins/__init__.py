@@ -78,7 +78,7 @@ class FileType(IntEnum):
     VIRTUAL_UNDEFINED = 3 # virtual but existence remains to be checked
 
 class Plugin:
-    FILE_ENCODINGS : list[str] = ["utf-8", "shift_jis", "iso8859-1", "cp1251", "cp1252", "ascii"] # To cover a lot of encoding scenarios
+    FILE_ENCODINGS : list[str] = ["utf-8", "shift_jis", "cp932", "iso8859-1", "cp1251", "cp1252", "ascii"] # To cover a lot of encoding scenarios
     
     def __init__(self : Plugin) -> None:
         # Be sure to call super first, in your Plugin
