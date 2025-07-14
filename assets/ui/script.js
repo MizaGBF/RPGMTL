@@ -848,11 +848,21 @@ function post(url, success = null, failure = null, payload = {})
 			{
 				response.json().then((json) => {
 					process_call(json, success, failure);
-				});
+				}).catch(
+					error => {
+						console.error("Invalid JSON received from the server", error.stack);
+						process_call({result:"bad", message:"An Internal Server error occured"}, success, failure);
+					}
+				);
 			} catch(err) {
 				console.error("Unexpected error", err.stack);
 				set_loading_text("An unexpected error occured.<br>" + err.stack + "<br><br>Refresh the page.<br>Make sure to report the bug if the issue continue.");
 			}
+		}
+	).catch(
+		error => {
+			console.error("Unexpected error", error.stack);
+			process_call({result:"bad", message:"An Internal Server error occured"}, success, failure);
 		}
 	);
 	// note: check if catch is needed?
