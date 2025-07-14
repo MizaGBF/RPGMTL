@@ -1289,6 +1289,7 @@ function setting_menu(data)
 		// go over received setting menu layout
 		for(const [file, fsett] of Object.entries(layout))
 		{
+			fragment.appendChild(document.createElement("br"));
 			// add plugin name
 			add_to(fragment, "div", {cls:["title", "left"], br:false}).innerHTML = file + " Plugin settings";
 			// and description if it exists
@@ -1456,6 +1457,7 @@ function setting_menu(data)
 								post("/api/update_settings", callback, null, {key:key, value:sel.value});
 							}
 						});
+						fragment.appendChild(document.createElement("br"));
 						if(key in settings)
 							sel.value = settings[key];
 						++count;
