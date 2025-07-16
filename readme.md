@@ -1,4 +1,4 @@
-# RPGMTL  
+# <img src="./assets/ui/favicon.svg" width="40"> RPGMTL  
   
 Flexible Tool written in Python to create Translation Patches for games.  
 The interface runs in your Web Browser.  
