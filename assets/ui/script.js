@@ -2813,8 +2813,8 @@ function update_string_list(data)
 					}
 					else
 					{
-						if(elems[2].textContent.includes(lcstringsearch)
-							|| elems[3].textContent.includes(lcstringsearch)
+						if(elems[2].textContent.toLowerCase() == lcstringsearch
+							|| elems[3].textContent.toLowerCase() == lcstringsearch
 						)
 						{
 							searched = elems[0];
@@ -2825,8 +2825,8 @@ function update_string_list(data)
 				{
 					if(search_state.contains)
 					{
-						if(elems[2].textContent.toLowerCase() == lcstringsearch
-							|| elems[3].textContent.toLowerCase() == lcstringsearch
+						if(elems[2].textContent.includes(lcstringsearch)
+							|| elems[3].textContent.includes(lcstringsearch)
 						)
 						{
 							searched = elems[0];
