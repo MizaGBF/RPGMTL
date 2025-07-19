@@ -780,11 +780,11 @@ class RPGMTL():
                     self.strings[name] = json.load(f)
                 self.start_compute_translated(name) # force an up to date compute
             return self.strings[name]
-        except Exception as e:
-            if "JSONDecodeError" in str(e):
-                self.log.error("Failed to load strings of project " + name + "\n" + self.trbk(e))
-                raise e
+        except OSError as oe:
             return None
+        except Exception as e:
+            self.log.error("Failed to load strings of project " + name + "\n" + self.trbk(e))
+            raise e
 
     # backup a project strings.json file and backups
     def backup_strings_file(self : RPGMTL, name : str) -> None:
