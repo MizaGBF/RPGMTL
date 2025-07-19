@@ -2127,24 +2127,31 @@ class RPGMTL():
             self.load_strings(name)
             # set search term and list all string matching in set
             lsearch : str = search.lower() if not case else search
-            id_matches : set[str]
+            original_matches : set[str] # contains string id matching at original level
+            translation_matches : set[str] # contains string id matching at translation level
             if not case:
                 if contains:
-                    id_matches = {k for k, s in self.strings[name]["strings"].items() if lsearch in s[0].lower() or (s[1] is not None and lsearch in s[1].lower())}
+                    original_matches = {k for k, s in self.strings[name]["strings"].items() if lsearch in s[0].lower()}
+                    translation_matches = {k for k, s in self.strings[name]["strings"].items() if (s[1] is not None and lsearch in s[1].lower())}
                 else:
-                    id_matches = {k for k, s in self.strings[name]["strings"].items() if lsearch == s[0].lower() or (s[1] is not None and lsearch == s[1].lower())}
+                    original_matches = {k for k, s in self.strings[name]["strings"].items() if lsearch == s[0].lower()}
+                    translation_matches = {k for k, s in self.strings[name]["strings"].items() if (s[1] is not None and lsearch == s[1].lower())}
             else:
                 if contains:
-                    id_matches = {k for k, s in self.strings[name]["strings"].items() if lsearch in s[0] or (s[1] is not None and lsearch in s[1])}
+                    original_matches = {k for k, s in self.strings[name]["strings"].items() if lsearch in s[0]}
+                    translation_matches = {k for k, s in self.strings[name]["strings"].items() if (s[1] is not None and lsearch in s[1])}
                 else:
-                    id_matches = {k for k, s in self.strings[name]["strings"].items() if lsearch == s[0] or (s[1] is not None and lsearch == s[1])}
+                    original_matches = {k for k, s in self.strings[name]["strings"].items() if lsearch == s[0]}
+                    translation_matches = {k for k, s in self.strings[name]["strings"].items() if (s[1] is not None and lsearch == s[1])}
             files : set[str] = set()
             for f, groups in self.strings[name]["files"].items():
                 for g in groups:
                     if f in files:
                         break
                     for i in range(1, len(g)):
-                        if g[i][2]:
+                        if g[i][0] in original_matches:
+                            files.add(f)
+                        elif g[i][2]:
                             if g[i][1] is not None:
                                 if not case:
                                     if contains:
@@ -2164,7 +2171,7 @@ class RPGMTL():
                                         if lsearch == g[i][1]:
                                             files.add(f)
                                             break
-                        elif g[i][0] in id_matches:
+                        elif g[i][0] in translation_matches:
                             files.add(f)
                             break
             result : dict[str, bool] = {}
