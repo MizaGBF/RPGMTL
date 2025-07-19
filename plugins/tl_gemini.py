@@ -258,7 +258,7 @@ class TLGemini(TranslatorPlugin):
                 self.instance = None
                 self.owner.log.error("[TL Gemini] Error in 'translate':\n" + self.owner.trbk(e))
                 se : str = str(e)
-                if "JSONDecodeError" in se or "500 INTERNAL" in se:
+                if "JSONDecodeError" in se or "500 INTERNAL" in se or "503 " in se:
                     await asyncio.sleep(10)
                     retry += 1
                 elif "429 RESOURCE_EXHAUSTED" in se:
@@ -274,7 +274,7 @@ class TLGemini(TranslatorPlugin):
             except Exception as e:
                 self.owner.log.error("[TL Gemini] Error in 'translate_batch':\n" + self.owner.trbk(e))
                 se : str = str(e)
-                if "JSONDecodeError" in se or "500 INTERNAL" in se:
+                if "JSONDecodeError" in se or "500 INTERNAL" in se or "503 " in se:
                     await asyncio.sleep(10)
                     retry += 1
                 elif "429 RESOURCE_EXHAUSTED" in se:
