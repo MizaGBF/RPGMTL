@@ -1562,6 +1562,9 @@ class RPGMTL():
             return web.json_response({"result":"bad", "message":"Bad request, missing 'name' parameter."}, status=400)
         else:
             self.save()
+            if name in self.computing:
+                self.computing[name].cancel()
+                self.computing.pop(name)
             if name in self.strings:
                 self.strings.pop(name)
             if name in self.projects:
