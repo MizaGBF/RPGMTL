@@ -455,9 +455,7 @@ class RPGMTL():
                         copied = True
         # keep file setting if it exists
         for k, v in self.projects[pname].get("files", {}).items():
-            if k in update_file_dict:
-                update_file_dict[k] = v
-            elif v["file_type"] in (FileType.VIRTUAL, FileType.VIRTUAL_UNDEFINED):
+            if k in update_file_dict or v["file_type"] in (FileType.ARCHIVE, FileType.VIRTUAL, FileType.VIRTUAL_UNDEFINED):
                 update_file_dict[k] = v
         # update and save
         self.projects[pname]["files"] = update_file_dict
@@ -765,11 +763,11 @@ class RPGMTL():
 
     # Update the content of config.json to later formats
     def update_project_config_format(self : RPGMTL, data : dict[str, Any]) -> dict[str, Any]:
-        ver = data.get("config_version", 0)
+        ver = data.get("version", 0)
         if ver < 1: # Version 1, added file_type
             for f in data["files"]:
                 data["files"][f]["file_type"] = FileType.NORMAL
-        data["config_version"] = 1
+        data["version"] = 1
         return data
 
     # load a project strings.json file
@@ -875,7 +873,7 @@ class RPGMTL():
             reverse_strings = {}
             str_id = 0
             self.log.info("projects/" + name + "/strings.json will be generated from scratch")
-        
+        print(self.projects[name]['files'])
         # go over each files
         # ... first to set virtual as undefined
         for f in list(self.projects[name]['files'].keys()):
