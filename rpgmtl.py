@@ -873,7 +873,6 @@ class RPGMTL():
             reverse_strings = {}
             str_id = 0
             self.log.info("projects/" + name + "/strings.json will be generated from scratch")
-        print(self.projects[name]['files'])
         # go over each files
         # ... first to set virtual as undefined
         for f in list(self.projects[name]['files'].keys()):
