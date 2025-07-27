@@ -192,10 +192,21 @@ class TLGemini(TranslatorPlugin):
                             ref[entry["original"]]["last_seen"] = 0
                             ref[entry["original"]]["occurence"] += 1
                         updated += 1
+                        self.owner.modified[name] = True
                     else:
-                        base_ref.append({"original":entry["original"], "translation":entry["translation"], "note":entry["note"], "last_seen":0, "occurence":1})
-                        added += 1
-                    self.owner.modified[name] = True
+                        # Checking if the entry added by the AI is a substring of an existing one
+                        # For example: AI tris to add John, when we have John Doe in our list
+                        # Note: Current solution isn't perfect, but it's to help with the bloat
+                        # Note²: Maybe add a setting toggle?
+                        found : bool = False
+                        for k in ref:
+                            if entry["original"] in k:
+                                found = True
+                                break
+                        if not found:
+                            base_ref.append({"original":entry["original"], "translation":entry["translation"], "note":entry["note"], "last_seen":0, "occurence":1})
+                            added += 1
+                            self.owner.modified[name] = True
             # cleanup
             i = 0
             while i < len(base_ref):
