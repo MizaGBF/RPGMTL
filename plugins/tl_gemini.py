@@ -202,6 +202,9 @@ class TLGemini(TranslatorPlugin):
                         for k in ref:
                             if entry["original"] in k:
                                 found = True
+                                if ref[k]["last_seen"] != 0: # if not found in above loop
+                                    ref[k]["last_seen"] = 0
+                                    ref[k]["occurence"] += 1
                                 break
                         if not found:
                             base_ref.append({"original":entry["original"], "translation":entry["translation"], "note":entry["note"], "last_seen":0, "occurence":1})
