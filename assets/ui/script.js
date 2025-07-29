@@ -1883,9 +1883,6 @@ function browse_files(data)
 		
 		// add completion indicator (filled at the bottom)
 		let completion = add_to(fragment, "div", {cls:["title", "left"]});
-		let fstring = 0;
-		let ftotal = 0;
-		let fcount = 0;
 		
 		let first_element = null;
 		add_to(fragment, "div", {cls:["title", "left"]}).innerHTML = bp;
@@ -1957,13 +1954,6 @@ function browse_files(data)
 			let count = project.config["files"][key]["translated"];
 			let percent = total > 0 ? ", " + (Math.round(10000 * count / total) / 100) + "%)" : ")";
 			
-			if(!value) // add to folder completion indicator
-			{
-				fstring += project.config["files"][key]["strings"];
-				ftotal += total;
-				fcount += count;
-			}
-			
 			if(count == total) // add complete class if no string left to translate
 				button.classList.add("complete");
 			button.textContent = key + ' (' + project.config["files"][key]["strings"] + percent; // set text
@@ -1972,9 +1962,54 @@ function browse_files(data)
 		}
 		// add space at the bottom
 		add_to(fragment, "div", {cls:["spacer"]});
-		// set folder completion indicator
-		let percent = ftotal > 0 ? ', ' + (Math.round(10000 * fcount / ftotal) / 100) + '%' : '';
-		completion.textContent = "Current Total: " + fstring + " strings" + percent;
+		// set completion text
+		let progress = {
+			all:{
+				strings:0,
+				translated:0,
+				disabled:0
+			},
+			folder:{
+				strings:0,
+				translated:0,
+				disabled:0
+			}
+		};
+		for(const filepath in project.config["files"])
+		{
+			if(project.config["files"][filepath].ignored)
+			{
+				progress.all.disabled += project.config["files"][filepath].strings;
+				if(filepath.startsWith(bp))
+					progress.folder.disabled += project.config["files"][filepath].strings;
+			}
+			else
+			{
+				progress.all.disabled += project.config["files"][filepath].disabled_strings;
+				progress.all.strings += project.config["files"][filepath].strings - project.config["files"][filepath].disabled_strings;
+				progress.all.translated += project.config["files"][filepath].translated;
+				if(filepath.startsWith(bp))
+				{
+					progress.folder.disabled += project.config["files"][filepath].disabled_strings;
+					progress.folder.strings += project.config["files"][filepath].strings - project.config["files"][filepath].disabled_strings;
+					progress.folder.translated += project.config["files"][filepath].translated;
+				}
+			}
+		}
+		let completion_text = "Progress: " + progress.all.strings + " Strings";
+		completion_text += progress.all.strings > 0 ? ', ' + (Math.round(10000 * progress.all.translated / progress.all.strings) / 100) + '%' : '';
+		if(progress.all.disabled)
+			completion_text += " (" + progress.all.disabled + " ignored Strings)";
+		if(progress.all.strings != progress.folder.strings)
+		{
+			completion_text += "<br>Folders: " + progress.folder.strings + " Strings";
+			completion_text += progress.folder.strings > 0 ? ', ' + (Math.round(10000 * progress.folder.translated / progress.folder.strings) / 100) + '%' : '';
+			if(progress.folder.disabled)
+				completion_text += " (" + progress.folder.disabled + " ignored Strings)";
+		}
+		completion_text += "<br><i><small>(Progress isn't live updated.)</small></i>";
+		completion.innerHTML = completion_text;
+		
 		update_main(fragment).then(() => {
 			if(scrollTo != null) // scroll to last opened file
 			{
