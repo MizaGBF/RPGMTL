@@ -3071,7 +3071,7 @@ function replace_page()
 		input.placeholder = "String to replace";
 		const output = add_to(fragment, "input", {cls:["input", "smallinput"], navigable:true});
 		output.placeholder = "Replace by";
-		add_to(fragment, "div", {cls:["interact", "text-button"], br:false, onclick:function(){
+		add_to(fragment, "div", {cls:["interact", "text-button"], br:false, navigable:true, onclick:function(){
 			if(input.value == "")
 			{
 				push_popup("The input is empty.");
