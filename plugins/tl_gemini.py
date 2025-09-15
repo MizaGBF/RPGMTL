@@ -11,25 +11,9 @@ import json
 
 PROMPT : str = """You are the World's best Video Game Translator.
 Your task is to translate the strings from $SOURCE$ to $TARGET$, provided in a JSON object of this specification:
-```json
-{
-    "file":"FILE",
-    "number":BATCH_NUMBER,
-    "strings":[
-        {
-            "id":"STRING_ID",
-            "parent":"GROUP OF WHICH THIS STRING IS PART OF",
-            "source":"ORIGINAL_STRING",
-            "translation":"TRANSLATED_STRING"
-        },
-        {
-            "id":"STRING_ID",
-            "parent":"GROUP OF WHICH THIS STRING IS PART OF",
-            "source":"ORIGINAL_STRING"
-        }
-    ]
+{"file":"FILE","number":BATCH_NUMBER,"strings":[{"id":"STRING_ID","parent":"GROUP OF WHICH THIS STRING IS PART OF","source":"ORIGINAL_STRING","translation":"TRANSLATED_STRING"},{"id":"STRING_ID","parent":"GROUP OF WHICH THIS STRING IS PART OF","source":"ORIGINAL_STRING"}]
 }
-```
+
 The strings are in order of occurence.
 An existing translation may or may not be provided.
 If, and only if, a translation is provided in the input, do NOT re-translate unless it's incorrect.
@@ -41,54 +25,17 @@ For example, they can includes a character gender, pronuns, specific terms relev
 Do NOT add general/common words, objects or onomatopoeia. Add ONLY unique, named entities, to not bloat the knowledge base.
 
 Produce a single JSON object matching this specification:
-```json
-{
-    "new_knowledge": [
-        {"original": "TERM", "translation": "TRANSLATED_TERM", "note": "A helpful note."}
-    ],
-    "translations": [
-        {"id": "STRING_ID", "translation": "TRANSLATED_STRING"}
-    ]
-}
-````
+{"new_knowledge": [{"original": "TERM", "translation": "TRANSLATED_TERM", "note": "A helpful note."}],"translations": [{"id": "STRING_ID", "translation": "TRANSLATED_STRING"}]}
+
 Example:
 Valid input:
-```json
-{
-    "file":"Game Script.json",
-    "number":35,
-    "strings":[
-        {
-            "id":"2-1",
-            "parent":"Group 2: Message Jack",
-            "source":"昨日はすごく楽しかった！",
-            "translation":"It was so much fun yesterday!"
-        },
-        {
-            "id":"2-2",
-            "parent":"Group 2: Message John",
-            "source":"昨日何をしましたか？"
-        },
-        {
-            "id":"2-3",
-            "parent":"Group 2: Message Jack",
-            "source":"私は映画を見ました。"
-        }
-    ]
+{"file":"Game Script.json","number":35,"strings":[{"id":"2-1","parent":"Group 2: Message Jack","source":"昨日はすごく楽しかった！","translation":"It was so much fun yesterday!"},{"id":"2-2","parent":"Group 2: Message John","source":"昨日何をしましたか？"},{"id":"2-3","parent":"Group 2: Message Jack","source":"私は映画を見ました。"}]
 }
-```
+
 Valid output:
-```json
-{
-    "new_knowledge": [
-        {"original": "ジョン", "translation": "John", "note": "Adult man. Nickname \"Johny\"."}
-    ],
-    "translations": [
-        {"id": "2-2", "translation": "What did you do yesterday?"},
-        {"id": "2-3", "translation": "I saw a movie."}
-    ]
+{"new_knowledge": [{"original": "ジョン", "translation": "John", "note": "Adult man. Nickname \"Johny\"."}],"translations": [{"id": "2-2", "translation": "What did you do yesterday?"},{"id": "2-3", "translation": "I saw a movie."}]
 }
-```
+
 Do NOT include any other text or formatting OUTSIDE of the JSON object.
 Provide only the JSON object. No explanations, no 'Here is your translation:' or anything similar.
 $KNOWLEDGE$
@@ -118,9 +65,10 @@ class TLGemini(TranslatorPlugin):
     def __init__(self : TLGemini) -> None:
         super().__init__()
         self.name : str = "TL Gemini"
-        self.description : str = " v0.9\nWrapper around the google-genai module to prompt Gemini to generate translations. (EXPERIMENTAL)"
+        self.description : str = " v0.10\nWrapper around the google-genai module to prompt Gemini to generate translations. (EXPERIMENTAL)"
         self.instance = None
         self.key_in_use = None
+        print("Consider the various systems for AI translations deprecated. Breaking changes might be introduced in future updates.")
 
     def get_format(self : TranslatorPlugin) -> TranslatorBatchFormat:
         return TranslatorBatchFormat.AI
@@ -134,6 +82,7 @@ class TLGemini(TranslatorPlugin):
             "gemini_model": ["Set the Gemini <a href=\"https://aistudio.google.com/changelog\">Model String</a> (<a href=\"https://ai.google.dev/gemini-api/docs/rate-limits\">Rate Limits</a>)", "str", "gemini-2.5-flash", None],
             "gemini_src_language": ["Set the Source Language", "str", "Japanese", None],
             "gemini_target_language": ["Set the Target Language", "str", "English", None],
+            "gemini_temperature": ["Set the Model Temperature (Higher is more creative but less predictable)", "num", 0, None],
             "gemini_extra_context": ["Set extra informations or commands for the AI", "text", "", None]
         }
 
@@ -238,11 +187,11 @@ class TLGemini(TranslatorPlugin):
             knowledge_base = "The knowledge base is currently empty."
         response = self.instance.models.generate_content(
             model=settings["gemini_model"],
-            contents=PROMPT.replace("$TARGET$", settings["gemini_target_language"], 1).replace("$SOURCE$", settings["gemini_src_language"], 1).replace("$EXTRA$", extra_context, 1).replace("$KNOWLEDGE$", knowledge_base, 1).replace("$INPUT$", json.dumps(batch, ensure_ascii=False, indent=4), 1),
+            contents=PROMPT.replace("$TARGET$", settings["gemini_target_language"], 1).replace("$SOURCE$", settings["gemini_src_language"], 1).replace("$EXTRA$", extra_context, 1).replace("$KNOWLEDGE$", knowledge_base, 1).replace("$INPUT$", json.dumps(batch, ensure_ascii=False, separators=(',',':')), 1),
             config={
                 "response_mime_type":"application/json",
                 "response_schema":GmResponse,
-                "stop_sequences": ["}]}"]
+                "temperature":settings["gemini_temperature"],
             }
         )
         return self.parse_model_output(response.text, name, batch)
