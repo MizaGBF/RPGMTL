@@ -42,7 +42,7 @@ Do NOT add general/common words, objects or onomatopoeia. Add ONLY unique, named
 
 Produce a single JSON object matching this specification:
 ```json
-{,
+{
     "new_knowledge": [
         {"original": "TERM", "translation": "TRANSLATED_TERM", "note": "A helpful note."}
     ],
