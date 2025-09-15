@@ -702,6 +702,7 @@ class RPGMTL():
             if self.strings[name]["strings"][s][0] in default_tl:
                 self.strings[name]["strings"][s][1] = default_tl[self.strings[name]["strings"][s][0]]
                 self.modified[name] = True
+        detected_rpgmv : bool = False
         # Disabling common unrelated files by default
         ignored_files = [
             "data/Animations.json", "data/MapInfos.json", "data/Tilesets.json", "package.json", "js/plugins/", "js/libs/", "js/main.js", "js/rpg_core.js", "js/rpg_managers.js", "js/rpg_objects.js", "js/rpg_scenes.js", "js/rpg_sprites.js", "js/rpg_windows.js", "js/rmmz_core.js", "js/rmmz_managers.js", "js/rmmz_objects.js", "js/rmmz_scenes.js", "js/rmmz_sprites.js", "js/rmmz_windows.js", "js/plugins.js",
@@ -713,17 +714,25 @@ class RPGMTL():
         for f in self.projects[name]["files"]:
             for i in ignored_files:
                 if i in f:
-                    self.projects[name]["files"][f]["ignored"] = True
+                    detected_rpgmv = True
+                    self.projects[name]["files"][f]["ignored"] = 1
                     self.modified[name] = True
                     break
         # Disable RPG Maker switches, variables and others
         for f in ["www/data/System.json", "data/System.json"]:
             if f in self.strings[name]["files"]:
+                detected_rpgmv = True
                 for i, g in enumerate(self.strings[name]["files"][f]):
                     if g[0] in ['switches', 'variables', 'encryptionKey']:
                         for j in range(1, len(g)):
                             self.strings[name]["files"][f][i][j][3] = 1
                             self.modified[name] = True
+        # Disable some RPG Maker text files
+        if detected_rpgmv:
+            for f in self.projects[name]["files"]:
+                if f.startswith(("www/img/tilesets/", "img/tilesets/")):
+                    self.projects[name]["files"][f]["ignored"] = 1
+                    self.modified[name] = True
         # Disabling specific RPG maker event codes or groups
         text_codes = set(["Command: Show Text", "Command: Choices", "Command: When ..."]) # allowed ones
         other_groups = set(["battlerName", "faceName", "characterName", "switches", "variables", "encryptionKey", "formula", "note", "@icon_name", "@battler_name"])
