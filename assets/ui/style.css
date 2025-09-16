@@ -243,7 +243,9 @@ li {
 #edit-ori {
 	width: 95%;
 	font-size: 20px;
-    white-space: pre-wrap;
+	white-space: pre-wrap;
+	max-height: max(20vh, 100px);
+	overflow-y: auto;
 }
 
 #edit-tl {
