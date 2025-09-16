@@ -237,7 +237,8 @@ li {
 
 .text-button {
 	width: auto;
-	max-height:32px;
+	min-height:34px;
+	max-height:34px;
 }
 
 #edit-ori {
