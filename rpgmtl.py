@@ -483,10 +483,12 @@ class RPGMTL():
                     self.log.error("Couldn't create the following folder:" + name + k + "\n" + self.trbk(ex))
             # initialize config.json
             self.projects[name] = {
-                "version":0,
+                "format_version":1, # config.json format version
+                "version":0, # string iteration
                 "settings":{},
                 "path":path + "/",
-                "patches":{}
+                "patches":{},
+                "ai_knowledge_base":[]
             }
             # backup files
             self.backup_game_files(name)
@@ -769,11 +771,14 @@ class RPGMTL():
 
     # Update the content of config.json to later formats
     def update_project_config_format(self : RPGMTL, data : dict[str, Any]) -> dict[str, Any]:
-        ver = data.get("version", 0)
-        if ver < 1: # Version 1, added file_type
-            for f in data["files"]:
-                data["files"][f]["file_type"] = FileType.NORMAL
-        data["version"] = 1
+        ver = data.get("format_version", 0)
+        if ver < 1:
+            if "gemini_knowledge_base" in data["settings"]:
+                data["ai_knowledge_base"] = data["settings"]["gemini_knowledge_base"]
+                data["settings"].pop("gemini_knowledge_base")
+            else:
+                data["ai_knowledge_base"] = []
+        data["format_version"] = 1
         return data
 
     # load a project strings.json file

@@ -15,5 +15,5 @@ Future (possible) improvements or bugs are noted here:
   
 ### Translator
   
-- [ ] Rework the Gemini plugin(?) (Note: Might not be needed after the last fixes).  
+- [X] Rework the Gemini plugin (Note: Made the AI knowledge base common).  
   

@@ -65,10 +65,9 @@ class TLGemini(TranslatorPlugin):
     def __init__(self : TLGemini) -> None:
         super().__init__()
         self.name : str = "TL Gemini"
-        self.description : str = " v0.10\nWrapper around the google-genai module to prompt Gemini to generate translations. (EXPERIMENTAL)"
+        self.description : str = " v0.11\nWrapper around the google-genai module to prompt Gemini to generate translations. (EXPERIMENTAL)"
         self.instance = None
         self.key_in_use = None
-        print("Consider the various systems for AI translations deprecated. Breaking changes might be introduced in future updates.")
 
     def get_format(self : TranslatorPlugin) -> TranslatorBatchFormat:
         return TranslatorBatchFormat.AI
@@ -112,9 +111,7 @@ class TLGemini(TranslatorPlugin):
                     parsed[string["id"]] = string["translation"]
         # updated knowledge base
         if "new_knowledge" in output:
-            if "gemini_knowledge_base" not in self.owner.projects[name]['settings']:
-                self.owner.projects[name]['settings']["gemini_knowledge_base"] = []
-            base_ref = self.owner.projects[name]['settings']["gemini_knowledge_base"]
+            base_ref = self.owner.projects[name]["ai_knowledge_base"]
             # update last seen
             for entry in base_ref:
                 found = False
@@ -129,7 +126,7 @@ class TLGemini(TranslatorPlugin):
                     entry["last_seen"] += 1
                     self.owner.modified[name] = True
             # table of original : pointer to entries
-            ref = {entry["original"] : entry for entry in self.owner.projects[name]['settings'].get("gemini_knowledge_base", [])}
+            ref = {entry["original"] : entry for entry in self.owner.projects[name]["ai_knowledge_base"]}
             updated : int = 0
             added : int = 0
             deleted : int = 0
@@ -180,7 +177,7 @@ class TLGemini(TranslatorPlugin):
         extra_context : str = ""
         if settings["gemini_extra_context"].strip() != "":
             extra_context = "\nThe User specified the following:\n{}".format(settings["gemini_extra_context"])
-        knowledge_base : str = self.knowledge_to_text(settings.get("gemini_knowledge_base", []))
+        knowledge_base : str = self.knowledge_to_text(self.owner.projects[name]["ai_knowledge_base"])
         if knowledge_base != "":
             knowledge_base = "The knowledge base that you must strictly refer to for your translations is the following:\n" + knowledge_base
         else:
