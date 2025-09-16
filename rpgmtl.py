@@ -790,7 +790,7 @@ class RPGMTL():
                     self.strings[name] = json.load(f)
                 self.start_compute_translated(name) # force an up to date compute
             return self.strings[name]
-        except OSError as oe:
+        except OSError:
             return None
         except Exception as e:
             self.log.error("Failed to load strings of project " + name + "\n" + self.trbk(e))
@@ -1754,7 +1754,7 @@ class RPGMTL():
             try:
                 files, folders = self.get_folder_content(name, path)
                 return web.json_response({"result":"ok", "data":{"config":self.projects[name], "name":name, "path":path, "files":files, "folders":folders}})
-            except Exception as e:
+            except Exception:
                 return web.json_response({"result":"bad", "message":"Strings doesn't exist. You might have to extract them."}, status=400)
 
     # /api/ignore_file
@@ -2108,7 +2108,7 @@ class RPGMTL():
                                 state, res =  await self.ai_batch_translate_file(name, path, current)
                             case _:
                                 state, res =  await self.standard_batch_translate_file(name, path, current)
-                    except Exception as e:
+                    except Exception:
                         self.log.error("An exception has been raised and 'translate_project' has been aborted for project " + name)
                         error += 1
                         break
