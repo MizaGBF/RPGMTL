@@ -59,7 +59,7 @@ class PatcherHelper():
 ######################################################
 class RPGMTL():
     # constant
-    VERSION = "3.26"
+    VERSION = "3.27"
     CHILDREN_FILE_ID = "@__children_file__@:"
     HISTORY_LIMIT = 10
     def __init__(self : RPGMTL) -> None:
@@ -117,6 +117,7 @@ class RPGMTL():
                 web.post('/api/replace_strings', self.replace_strings), # Browse local files
         ])
         # variables
+        self.port : int = 8000 # Port to start the server with
         self.last_directory = os.getcwd() # used for file browsing
         self.is_posix = os.name != 'nt' # set to True if OS isn't windows
         self.projects : dict[str, Any] = {} # store loaded config.json
@@ -489,10 +490,6 @@ class RPGMTL():
             }
             # backup files
             self.backup_game_files(name)
-            # extract strings
-            self.generate(name)
-            # apply default translations and settings
-            self.apply_default(name)
             # save
             self.save()
             return True, name
@@ -1295,11 +1292,15 @@ class RPGMTL():
         # Parse command line
         parser : argparse.ArgumentParser = argparse.ArgumentParser(prog="rpgmtl.py")
         command = parser.add_argument_group('command', 'Optional commands')
+        command.add_argument('-p', '--port', help="set the web server port", nargs=1, type=int, metavar='PORT', default=[8000])
         command.add_argument('-s', '--https', help="provide paths to your SSL certificate and key", nargs=2, default=None)
         command.add_argument('-n', '--http', help="clear SSL certificate settings and force HTTP", action='store_const', const=True, default=False, metavar='FILES')
         command.add_argument('-i', '--ip', help="set the IP filter status. Add 1, on, enable, enabled, 0, off, disable or disabled to set it.", nargs=1, default=None, metavar='STATE')
         command.add_argument('-d', '--debug', help="remove some strings from the standard output for clarity", action='store_const', const=True, default=False, metavar='')
         args : argparse.Namespace = parser.parse_args()
+        
+        # set server port
+        self.port = args.port[0]
         
         # Remove aiohttp.access
         if args.debug:
@@ -1352,7 +1353,8 @@ class RPGMTL():
         
         # Start
         try:
-            web.run_app(self.app, port=8000, shutdown_timeout=0, ssl_context=ssl_context)
+            self.log.info("Starting RPGMTL on port {}".format(self.port))
+            web.run_app(self.app, port=self.port, shutdown_timeout=0, ssl_context=ssl_context)
         except Exception as e: # Ctrl+C is enough to trigger it
             self.log.warning("The following exception occured:\n" + self.trbk(e))
         self.log.info("RPGMTL is shutting down...")
@@ -1441,7 +1443,7 @@ class RPGMTL():
         else:
             flag, string = self.create_new_project(path, name)
             if flag:
-                return  web.json_response({"result":"ok", "data":{"name":string, "config":self.projects[string]}})
+                return  web.json_response({"result":"ok", "data":{"name":string, "config":self.projects[string]}, "message":"You can now set your Settings and Extract the strings"})
             else:
                 return  web.json_response({"result":"bad", "message":string}, status=500)
 
@@ -1743,8 +1745,11 @@ class RPGMTL():
         else:
             self.load_project(name)
             self.load_strings(name)
-            files, folders = self.get_folder_content(name, path)
-            return web.json_response({"result":"ok", "data":{"config":self.projects[name], "name":name, "path":path, "files":files, "folders":folders}})
+            try:
+                files, folders = self.get_folder_content(name, path)
+                return web.json_response({"result":"ok", "data":{"config":self.projects[name], "name":name, "path":path, "files":files, "folders":folders}})
+            except Exception as e:
+                return web.json_response({"result":"bad", "message":"Strings doesn't exist. You might have to extract them."}, status=400)
 
     # /api/ignore_file
     async def ignore_file(self : RPGMTL, request : web.Request) -> web.Response:

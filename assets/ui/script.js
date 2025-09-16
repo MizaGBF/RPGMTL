@@ -1211,7 +1211,7 @@ function project_list(data)
 	add_grid_cell(grid, '<img src="assets/images/setting.png"> Settings', function(){
 		go_settings(null, true);
 	});
-	add_grid_cell(grid, '<img src="assets/images/translate.png"> Translator', function(){
+	add_grid_cell(grid, '<img src="assets/images/translate.png"> Translators', function(){
 		go_translator(null, true);
 	});
 	add_to(fragment, "div", {cls:["title"]}).innerHTML = "Project List";
@@ -1646,6 +1646,10 @@ function project_creation(data)
 				go_new_project(path, input.value);
 			}
 		});
+		
+		// explanation
+		add_to(fragment, "div", {cls:["title", "left"]}).innerHTML = "After confirming, a backup of the game files will be made in this project folder.<br>You'll then have to set your Project Settings and Extract the strings.";
+		
 		update_main(fragment);
 	}
 }
@@ -1665,19 +1669,24 @@ function project_menu(data = null)
 			},
 			function(){ // help
 				help.innerHTML = "<ul>\
+					<li>Set your <b>Settings before</b> extracting the strings.</li>\
+				</ul>\
+				<ul>\
 					<li><b>Browse Files</b> to browse and translate strings.</li>\
 					<li><b>Add a Fix</b> to add Python patches (Check the README for details).</li>\
-					<li>Set your <b>Settings before</b> extracting the strings.</li>\
-					<li><b>Unload the Project</b> if you must do modifications on the local files, using external scripts or whatever.</li>\
+					<li><b>Batch Translate</b> will use the Batch Translator to translate all uncomplete and non-ignored files.</li>\
 				</ul>\
 				<ul>\
 					<li><b>Update the Game Files</b> if the Game got updated or if you need to re-copy the files.</li>\
 					<li><b>Extract the Strings</b> if you need to extract them from Game files.</li>\
 					<li><b>Release a Patch</b> to create a copy of Game files with your translated strings. They will be found in the <b>release</b> folder.</li>\
+					<li><b>Unload from Memory</b> if you must do modifications on the local files, using external scripts or whatever.</li>\
 				</ul>\
 				<ul>\
-					<li><b>Import Strings from RPGMTL</b> to import strings from RPGMTL projects from any version.</li>\
-					<li><b>Strings Backups</b> to open the list of backups if you need to revert the project data to an earlier state.</li>\
+					<li><b>Replace Strings in batch</b> allows you to do batch replacement of case-sensitive strings.</li>\
+					<li><b>Backup Control</b> to open the list of backups if you need to revert the project strings data to an earlier state.</li>\
+					<li><b>Import RPGMTL Strings</b> to import strings from RPGMTL projects from any version.</li>\
+					<li><b>Import RPGMakerTrans v3 Strings</b> to import strings from RPGMakerTrans v3 projects.</li>\
 				</ul>\
 				\
 				Keyboard shortcuts\
@@ -1700,20 +1709,20 @@ function project_menu(data = null)
 		// some only appear if files have been parsed
 		fragment = new_page();
 		add_to(fragment, "div", {cls:["title"]}).innerHTML = project.name;
-		add_to(fragment, "div", {cls:["title", "left"]}).innerHTML = "Game Folder: " + project.config["path"];
-		let grid = add_to(fragment, "div", {cls:["grid"]});
+		add_to(fragment, "div", {cls:["title", "left", "smalltext"]}).innerHTML = "Imported from: " + project.config["path"];
+		let grid = null;
+		// translate options
 		if(project.config.files)
 		{
+			add_to(fragment, "div", {cls:["title", "left"]}).innerHTML = "Translate";
+			grid = add_to(fragment, "div", {cls:["grid"]});
 			add_grid_cell(grid, '<img src="assets/images/folder.png"> Browse Files', function(){
 				go_browse(project.name, "");
 			});
 			add_grid_cell(grid, '<img src="assets/images/bandaid.png"> Add a Fix', function(){
 				go_patches(project.name);
 			});
-			add_grid_cell(grid, '<img src="assets/images/copy.png"> Replace Strings in batch', function(){
-				replace_page();
-			});
-			add_grid_cell(grid, '<img src="assets/images/translate.png"> Translate the Game', function(){
+			add_grid_cell(grid, '<img src="assets/images/translate.png"> Batch Translate', function(){
 				if(window.event.ctrlKey || window.confirm("Are you sure you wish to translate the whole game?\nIt will be time consuming.\nMake sure your settings are set properly.")) // confirmation / shortcut to insta confirm
 				{
 					set_loading_text("Translating the whole game, go do something else...");
@@ -1721,20 +1730,22 @@ function project_menu(data = null)
 				}
 			});
 		}
+		// settings options
+		add_to(fragment, "div", {cls:["title", "left"]}).innerHTML = "Settings";
+		grid = add_to(fragment, "div", {cls:["grid"]});
 		add_grid_cell(grid, '<img src="assets/images/setting.png"> Project Settings', function(){
 			go_settings(project.name);
 		});
-		add_grid_cell(grid, '<img src="assets/images/translate.png"> Project Translator', function(){
+		add_grid_cell(grid, '<img src="assets/images/translate.png"> Project Translators', function(){
 			go_translator(project.name);
 		});
-		add_grid_cell(grid, '<img src="assets/images/cancel.png"> Unload the Project', function(){
-			post("/api/unload", go_main, null, {name:project.name});
-		});
-		add_to(fragment, "div", {cls:["spacer"]});
-		add_interaction(fragment, '<img src="assets/images/update.png"> Update the Game Files', function(){
+		// main actions
+		add_to(fragment, "div", {cls:["title", "left"]}).innerHTML = "Actions";
+		grid = add_to(fragment, "div", {cls:["grid"]});
+		add_grid_cell(grid, '<img src="assets/images/update.png"> Update the Game Files', function(){
 			local_browse("Update project files", "Select the Game executable.", 1);
 		});
-		add_interaction(fragment, '<img src="assets/images/export.png"> Extract the Strings', function(){
+		add_grid_cell(grid, '<img src="assets/images/export.png"> Extract the Strings', function(){
 			if(window.event.ctrlKey || window.confirm("Extract the strings?")) // confirmation / shortcut to insta confirm
 			{
 				set_loading_text("Extracting, be patient...");
@@ -1743,21 +1754,30 @@ function project_menu(data = null)
 		});
 		if(project.config.files)
 		{
-			add_interaction(fragment, '<img src="assets/images/release.png"> Release a Patch', function(){
+			add_grid_cell(grid, '<img src="assets/images/release.png"> Release a Patch', function(){
 				set_loading_text("The patch is being generated in the release folder...");
 				post("/api/release", project_menu, null, {name:project.name});
 			});
-			add_to(fragment, "div", {cls:["spacer"]});
-			add_interaction(fragment, '<img src="assets/images/copy.png"> String Backups', function(){
+		}
+		add_grid_cell(grid, '<img src="assets/images/cancel.png"> Unload from Memory', function(){
+			post("/api/unload", go_main, null, {name:project.name});
+		});
+		if(project.config.files)
+		{
+			add_to(fragment, "div", {cls:["title", "left"]}).innerHTML = "Strings Manipulation";
+			grid = add_to(fragment, "div", {cls:["grid"]});
+			add_grid_cell(grid, '<img src="assets/images/copy.png"> Replace Strings in batch', function(){
+				replace_page();
+			});
+			add_grid_cell(grid, '<img src="assets/images/copy.png"> Backup Control', function(){
 				go_backups(project.name);
 			});
-			add_interaction(fragment, '<img src="assets/images/import.png"> Import Strings from RPGMTL', function(){
+			add_grid_cell(grid, '<img src="assets/images/import.png"> Import RPGMTL Strings', function(){
 				local_browse("Import RPGMTL", "Select an old RPGMTL strings file.", 2);
 			});
-			add_interaction(fragment, '<img src="assets/images/import.png"> Import Strings from RPGMakerTrans v3', function(){
+			add_grid_cell(grid, '<img src="assets/images/import.png"> Import RPGMakerTrans v3 Strings', function(){
 				local_browse("Import RPGMAKERTRANSPATCH", "Select a RPGMAKERTRANSPATCH file.", 3);
 			});
-			add_to(fragment, "div", {cls:["spacer"]});
 		}
 		update_main(fragment);
 	}
@@ -2913,19 +2933,18 @@ function local_browse(title, explanation, mode)
 		// don't update upate_page_location here
 		
 		filebrowsingmode = mode;
-		
 		// top bar
 		update_top_bar(
 			title,
 			function(){ // back callback
 				switch(filebrowsingmode)
 				{
-					case 0:
+					case 0: // new project
 						go_main();
 						break;
-					case 1:
-					case 2:
-					case 3:
+					case 1: // update game
+					case 2: // import RPGMTL
+					case 3: // import RPGMakerTrans
 						project_menu();
 						break;
 					default:
@@ -2942,6 +2961,9 @@ function local_browse(title, explanation, mode)
 		// main part
 		fragment = new_page();
 		add_to(fragment, "div", {cls:["title"]}).innerHTML = explanation;
+		add_interaction(fragment, "RPGMTL", function(){
+			post("/api/local_path", update_local_browse, null, {"path":"$$__RPGMTL_FORCE_WORKING_DIRECTORY__$$", "mode":filebrowsingmode});
+		}).classList.add("text-button");
 		add_to(fragment, "div", {cls:["left"], id:"current_path"});
 		add_to(fragment, "div", {cls:["left", "title"]}).innerHTML = "Folders";
 		add_to(fragment, "div", {id:"folder_container"});
@@ -3013,9 +3035,16 @@ function update_local_browse(data)
 	}
 	container = document.getElementById("file_container");
 	container.innerHTML = "";
-	for(let i = 0; i < data["files"].length; ++i)
+	let files = data["files"].slice();
+	// hack to add a "Select this folder button" for game selection
+	if(filebrowsingmode <= 1 && files.length == 0)
 	{
-		const t = data["files"][i];
+		files.push(data["path"] + "/Select this Folder");
+	}
+	
+	for(let i = 0; i < files.length; ++i)
+	{
+		const t = files[i];
 		add_interaction(container, t.split("/")[t.split("/").length-1], function(){
 			switch(filebrowsingmode)
 			{

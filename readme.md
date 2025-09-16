@@ -19,7 +19,7 @@ The list of supported files is currently:
 More will be added as I see fit.  
   
 ![image](https://raw.githubusercontent.com/MizaGBF/RPGMTL/main/assets/readme/1.png)  
-*All screenshots are from version 3.25.*
+*All screenshots are from version 3.27.*
   
 ## Table of contents  
   
@@ -162,6 +162,13 @@ When the edit area is open:
 - `Ctrl+O` to copy the original string, if focused.  
 - `Ctrl+D` to delete the translation.  
   
+### Port
+  
+You can change the port used by RPGMTL with the `-p/--port` parameter:   
+```console
+python rpgmtl.py --port 60000
+```  
+  
 ### HTTPS
   
 The project is intended to be used on a local network.  
@@ -213,18 +220,20 @@ will disable both those plugins.
 ### Creation  
   
 On the Home Page, click on `New Project`.  
-Select the location of the executable, of the game you wish to translate.  
+Select the location of the game you wish to translate.  
   
 ![image](https://raw.githubusercontent.com/MizaGBF/RPGMTL/main/assets/readme/2.png)
   
 You'll then be asked a project name. This name will be the one used for the project folder and in the Web UI.
-Once done, hit `Create`.  
+Once done, hit `Create`. The game files will be copied for later use and backup purpose.  
   
 > [!NOTE]  
 > Your Project files are located in the **projects** folder.  
   
 > [!IMPORTANT]  
 > The game you wish to translate must be on the same machine as RPGMTL.  
+  
+You can then modify your **Project Settings** and then **Extract the Strings**.  
   
 ![image](https://raw.githubusercontent.com/MizaGBF/RPGMTL/main/assets/readme/3.png)
   

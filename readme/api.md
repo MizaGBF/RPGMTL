@@ -235,7 +235,7 @@ Return in data: project 'name', project 'config', 'search' string, 'case' bool, 
 
 ```
 /api/local_path
-Payload: directory 'path' (Empty string equals the last used directory), 'mode' (0 and 1 for exe, 2 for JSON, 3 for RPGMAKERTRANSPATCH)
+Payload: directory 'path' (Empty string equals the last used directory, Invalid string will default to the working directory), 'mode' (0 and 1 for exe, 2 for JSON, 3 for RPGMAKERTRANSPATCH)
 Return in data: 'path', list of 'folders', list of matching 'files'
 ```
 
