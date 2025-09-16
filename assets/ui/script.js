@@ -1680,6 +1680,7 @@ function project_menu(data = null)
 					<li><b>Update the Game Files</b> if the Game got updated or if you need to re-copy the files.</li>\
 					<li><b>Extract the Strings</b> if you need to extract them from Game files.</li>\
 					<li><b>Release a Patch</b> to create a copy of Game files with your translated strings. They will be found in the <b>release</b> folder.</li>\
+					<li><b>Apply RPGMK Defaults</b> to set some default translations and file settings used for RPG Maker games.</li>\
 					<li><b>Unload from Memory</b> if you must do modifications on the local files, using external scripts or whatever.</li>\
 				</ul>\
 				<ul>\
@@ -1712,7 +1713,7 @@ function project_menu(data = null)
 		add_to(fragment, "div", {cls:["title", "left", "smalltext"]}).innerHTML = "Imported from: " + project.config["path"];
 		let grid = null;
 		// translate options
-		if(project.config.files)
+		if(project.config.version)
 		{
 			add_to(fragment, "div", {cls:["title", "left"]}).innerHTML = "Translate";
 			grid = add_to(fragment, "div", {cls:["grid"]});
@@ -1752,17 +1753,20 @@ function project_menu(data = null)
 				post("/api/extract", project_menu, go_main, {name:project.name});
 			}
 		});
-		if(project.config.files)
+		if(project.config.version)
 		{
 			add_grid_cell(grid, '<img src="assets/images/release.png"> Release a Patch', function(){
 				set_loading_text("The patch is being generated in the release folder...");
 				post("/api/release", project_menu, null, {name:project.name});
 			});
+			add_grid_cell(grid, '<img src="assets/images/bandaid.png"> Apply RPGMK Defaults', function(){
+				post("/api/apply_project_defaults", project_menu, go_main, {name:project.name});
+			});
 		}
 		add_grid_cell(grid, '<img src="assets/images/cancel.png"> Unload from Memory', function(){
 			post("/api/unload", go_main, null, {name:project.name});
 		});
-		if(project.config.files)
+		if(project.config.version)
 		{
 			add_to(fragment, "div", {cls:["title", "left"]}).innerHTML = "Strings Manipulation";
 			grid = add_to(fragment, "div", {cls:["grid"]});

@@ -115,6 +115,7 @@ class RPGMTL():
                 web.post('/api/search_string', self.search_string), # Search a string
                 web.post('/api/local_path', self.local_path), # Browse local files
                 web.post('/api/replace_strings', self.replace_strings), # Browse local files
+                web.post('/api/apply_project_defaults', self.apply_project_defaults), # Apply Project defaults
         ])
         # variables
         self.port : int = 8000 # Port to start the server with
@@ -2290,6 +2291,19 @@ class RPGMTL():
             if count > 0:
                 self.modified[name] = True
             return web.json_response({"result":"ok", "data":{"config":self.projects[name], "name":name, "count":count}, "message":"{} strings have been modified".format(count)})
+
+    # /api/apply_project_defaults
+    async def apply_project_defaults(self : RPGMTL, request : web.Request) -> web.Response:
+        payload = await request.json()
+        name = payload.get('name', None)
+        if name is None:
+            return web.json_response({"result":"bad", "message":"Bad request, missing 'name' parameter"}, status=400)
+        else:
+            self.load_strings(name) # load strings.json
+            self.apply_default(name)
+            self.start_compute_translated(name)
+            return web.json_response({"result":"ok", "data":{"config":self.projects[name], "name":name}, "message":"Applied default RPGM settings and translations"})
+            
 
 if __name__ == "__main__":
     RPGMTL().run()

@@ -244,6 +244,12 @@ Return in data: 'path', list of 'folders', list of matching 'files'
 Payload: project 'name', 'src' string to replace, 'dst' string to replace with
 Return in data: project 'name', project 'config', 'count' modified strings
 ```
+
+```
+/api/apply_project_defaults
+Payload: project 'name'
+Return in data: project 'name', project 'config'
+```
   
 ## Introduction  
   
