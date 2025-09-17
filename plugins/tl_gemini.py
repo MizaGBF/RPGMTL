@@ -17,7 +17,7 @@ Your task is to translate the strings from $SOURCE$ to $TARGET$, provided in a J
 The strings are in order of occurence.
 An existing translation may or may not be provided.
 If, and only if, a translation is provided in the input, do NOT re-translate unless it's incorrect.
-Preserve placeholders (e.g. {playerName}, %VAR%, <tag>), punctuation, new line (e.g. \\n), and code syntax.
+Preserve placeholders (e.g. {playerName}, %VAR%, <tag>), punctuation, new line (e.g. \n and \\n), and code syntax.
 
 In the input, you must also identify important proper nouns (characters, places, key items) that are not already in the provided knowledge base below.
 Notes should be concise and help with future translations (e.g., gender, role) and NOT be lengthy descriptions.
