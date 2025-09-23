@@ -131,7 +131,7 @@ class JSON(Plugin):
     def __init__(self : JSON) -> None:
         super().__init__()
         self.name : str = "JSON"
-        self.description : str = "v1.10\nHandle JSON files, including ones from RPG Maker MV/MZ"
+        self.description : str = "v1.11\nHandle JSON files, including ones from RPG Maker MV/MZ"
 
     def get_setting_infos(self : Plugin) -> dict[str, list]:
         return {
@@ -410,7 +410,7 @@ class JSON(Plugin):
                 continue
             strings = self._read_walk_event(ev["list"])
             if len(strings) > 0:
-                entries.append([self.owner.CHILDREN_FILE_ID + "{:04}".format(ev["id"]) + " " + ev["name"]])
+                entries.append([self.owner.CHILDREN_FILE_ID + "{:04}".format(ev["id"]) + " " + ev["name"].replace("/", " ")])
                 entries.extend(strings)
         return entries
 
@@ -419,7 +419,7 @@ class JSON(Plugin):
         for i in range(len(obj)):
             if obj[i] is None:
                 continue
-            evname : str = file_path + "/{:04}".format(obj[i]["id"]) + " " + obj[i]["name"]
+            evname : str = file_path + "/{:04}".format(obj[i]["id"]) + " " + obj[i]["name"].replace("/", " ")
             if evname in strings["files"] and not self.owner.projects[name]["files"][evname]["ignored"]:
                 helper : WalkHelper = WalkHelper(evname, strings)
                 self._write_walk_event(obj[i]["list"], helper)
