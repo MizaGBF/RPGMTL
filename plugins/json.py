@@ -133,7 +133,7 @@ class JSON(Plugin):
         self.name : str = "JSON"
         self.description : str = "v1.11\nHandle JSON files, including ones from RPG Maker MV/MZ"
 
-    def get_setting_infos(self : Plugin) -> dict[str, list]:
+    def get_setting_infos(self : JSON) -> dict[str, list]:
         return {
             "json_rpgm_multiline": ["Merge multiline commands into one (Require re-extract)", "bool", False, None]
         }

@@ -79,6 +79,8 @@ class FileType(IntEnum):
 
 class Plugin:
     FILE_ENCODINGS : list[str] = ["utf-8", "shift_jis", "cp932", "iso8859-1", "cp1251", "cp1252", "ascii"] # To cover a lot of encoding scenarios
+    SIMPLE_TOOL : int = 0
+    COMPLEX_TOOL : int = 1
     
     def __init__(self : Plugin) -> None:
         # Be sure to call super first, in your Plugin
@@ -120,6 +122,25 @@ class Plugin:
         # path_to_icon: A string to indicate the path to the action icon. The file must be in assets/images or assets/plugins. Can be set to None.
         # text_to_display: A string to be displayed on the UI
         # callback: A function of your callback. It must take as a parameter the project name (str), the file path (str) and a (dict) of the plugin settings. The return parameter is a string (a message to display, can be empty)
+        return {}
+
+    def get_tool_infos(self : Plugin) -> dict[str, list]:
+        # Add custom tool to a project menu
+        # Return them here
+        # Formatting Example
+        # return {
+        #    "tool_key": ["path_to_icon", "text_to_display", self.callback, {"type":TOOL_TYPE, "params":{}, "message":"OPTIONAL_CONFIRM_PROMPT", "help":"OPTIONAL_HELP_TEXT"]
+        #    ...
+        # }
+        # tool_key: must be unique among other plugin, use some unique ientifier
+        # path_to_icon: A string to indicate the path to the tool icon. The file must be in assets/images or assets/plugins. Can be set to None.
+        # text_to_display: A string to be displayed on the UI
+        # callback: A function of your callback. It must take as a parameter the project name (str) and a (dict) of the tool options. The return parameter is a string (a message to display, can be empty)
+        # data dict: A dictionary to control the tool button behavior:
+        #   - TOOL_TYPE must be either self.SIMPLE_TOOL or self.COMPLEX_TOOL. The former is activated with the button press, the later allows more complex actions
+        #   - params: A dict following the same format as get_setting_infos. Only used by self.COMPLEX_TOOL.
+        #   - message: An Optional string. If present and not empty, it'll appear when the user press a button.
+        #   - help: An Optional string. If present and not empty, it'll appear when the user press the help button.
         return {}
 
     def set_settings(self : Plugin, settings : dict[str, Any]) -> None:
@@ -266,6 +287,10 @@ class TranslatorPlugin:
         return {}
 
     def get_action_infos(self : Plugin) -> dict[str, list]:
+        # Work the same as for Plugin
+        return {}
+
+    def get_tool_infos(self : Plugin) -> dict[str, list]:
         # Work the same as for Plugin
         return {}
 

@@ -225,7 +225,7 @@ The fourth is the list of possible values. If you don't wish to provide one, set
   
 ## Plugin Actions
   
-Actions are buttons than the user can press in a file, to perform specific actions provided by File Plugins.  
+Actions are buttons than the user can press in a file, to perform specific actions provided by Plugins.  
   
 To do so, you must first implement the function `get_action_infos`.
 For example:
@@ -272,4 +272,59 @@ If you wish to restrict actions to specific files, you can either:
         # return the usual
         # ...
         #  
+```  
+  
+## Plugin Tools  
+  
+Tool are buttons than the user can press on a project's page, to perform specific actions provided by Plugins, on a Project level.  
+There are two types, Simple and Complex tools.
+Example for a Simple tool:
+
+```python
+    def get_tool_infos(self : MyPlugin) -> dict[str, list]:
+        return {
+            "myplugin_simple_tool": ["assets/images/setting.png", "Simple Tool", self.callback, {"type":self.SIMPLE_TOOL, "message":"Do something?"}]
+        }
+```  
+  
+Example for a Complex tool:
+
+```python
+    def get_tool_infos(self : MyPlugin) -> dict[str, list]:
+        return {
+            "myplugin_complex_tool": [
+                "assets/images/setting.png", "Complex Tool", self.callback,
+                {
+                    "type":self.COMPLEX_TOOL,
+                    "params":{
+                        "myplugin_complex_tool_A":["Checkbox", "bool", True, None],
+                        "myplugin_complex_tool_B":["Integer", "int", -1, None],
+                        "myplugin_complex_tool_C":["Float", "float", 1.0, None],
+                        "myplugin_complex_tool_D":["Text", "str", "RPGMTL", None],
+                        "myplugin_complex_tool_E":["Paragrah", "text", "Hello\nworld!", None],
+                        "myplugin_complex_tool_F":["Password", "password", "12345", None],
+                        "myplugin_complex_tool_G":["Selection", "int", 3, [1, 2, 3, 4, 5, 6]]
+                    },
+                    "help":"This tool does something"
+                }
+            ]
+        }
+```  
+  
+When used, both will trigger the callback. Callbacks have the same format for both types:  
+```python
+    def callback(self : MyPlugin, name : str, params : dict[str, Any]) -> str:
+        """
+            name: Project name
+            params: The parameters. Empty dict for a Simple tool.
+            return value: A string displayed to the user
+        """
+        try:
+            #  
+            # Do stuff...
+            #  
+            return "Hello world!"
+        except Exception as e:
+            self.owner.log.error("[MyPlugin] Tool 'callback' failed with error:\n" + self.owner.trbk(e))
+            return "An error occured."
 ```  

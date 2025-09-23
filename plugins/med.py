@@ -27,7 +27,7 @@ class MED(Plugin):
 
     def get_action_infos(self : MED) -> dict[str, list]:
         return {
-            "med_adjust_line": ["assets/plugins/med_adjust_line.png", "Adjust New Line", self.adjust_new_line],
+            "med_adjust_line": ["assets/images/text_wrap.png", "Adjust New Line", self.adjust_new_line],
             "med_check_ascii": ["assets/plugins/med_ascii_check.png", "Look for invalid characters", self.look_non_ascii]
         }
 

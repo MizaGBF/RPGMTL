@@ -105,7 +105,13 @@ Return in data: project 'name', project 'config'
 ```
 /api/new_project
 Payload: project 'name', game 'path'
-Return in data: project 'name', project 'config'
+Return in data: project 'name', project 'config', RPGMTL 'tools'
+```
+  
+```
+/api/open_project
+Payload: project 'name'
+Return in data: project 'name', project 'config', RPGMTL 'tools'
 ```
   
 ```
@@ -224,6 +230,12 @@ Return in data: project 'name', project 'config', file 'path', project 'strings'
 ```
 /api/translate_project
 Payload: project 'name'
+Return in data: project 'name', project 'config'
+```
+
+```
+/api/use_tool
+Payload: project 'name', 'tool' key, tool 'params'
 Return in data: project 'name', project 'config'
 ```
 

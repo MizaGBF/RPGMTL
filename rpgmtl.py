@@ -116,6 +116,7 @@ class RPGMTL():
                 web.post('/api/local_path', self.local_path), # Browse local files
                 web.post('/api/replace_strings', self.replace_strings), # Browse local files
                 web.post('/api/apply_project_defaults', self.apply_project_defaults), # Apply Project defaults
+                web.post('/api/use_tool', self.use_tool), # Use a tool
         ])
         # variables
         self.port : int = 8000 # Port to start the server with
@@ -127,11 +128,13 @@ class RPGMTL():
         self.computing : dict[str, asyncio.Task] = {} # store state for compute_translated
         self.setting_key_set : set[str] = set(["rpgmtl_current_translator", "rpgmtl_current_batch_translator"]) # store existing setting keys
         self.action_key_set : set[str] = set() # store existing action keys
+        self.tool_key_set : set[str] = set() # store existing tool keys
         self.settings : dict[str, Any] = {} # store global plugins setting
         self.settings_modified : bool = False
         self.setting_menu : dict[str, dict[str, list]] = {} # store info for setting menu, per plugin file
         self.plugin_descriptions : dict[str, str] = {} # store plugin descriptions
         self.actions : dict[str, list] = {} # store plugin actions
+        self.tools : dict[str, list] = {} # store plugin tools
         self.history : list[list[str]] = [] # store link to last ten accessed files
         self.allowed_ips : list[str] = [] # allowed ips
         # loaded plugins
@@ -195,7 +198,17 @@ class RPGMTL():
                 self.log.warning("Format of action {} in plugin {} is deprecated. Icon is missing.".format(k, plugin.name))
                 self.actions[k] = [plugin.name, None, v[0], v[1]] # plugin name (for reverse lookup), UI text, no icon and callback
             else:
-                self.actions[k] = [plugin.name, v[0], v[1], v[2]] # plugin name (for reverse lookup), UI text, icon path and callback
+                self.actions[k] = [plugin.name, v[0], v[1], v[2]] # plugin name (for reverse lookup), icon path, UI text, and callback
+
+        # Process tool actions
+        for k, v in plugin.get_tool_infos().items(): # same principle
+            if len(v) != 4: # check the format
+                raise Exception("[{}] Expected 4 values for tool key {}".format(plugin.name, k))
+            if k in self.tool_key_set: # check if key is already set
+                raise Exception("[{}] Action key {} is already in use by another Plugin".format(plugin.name, k))
+            self.tool_key_set.add(k)
+            # add tool
+            self.tools[k] = [plugin.name, v[0], v[1], v[2], v[3]] # plugin name (for reverse lookup), icon path, UI text, callback and params
 
     # Add a plugin to RPGMTL
     def add_plugin(self : RPGMTL, plugin : plugins.Plugin) -> None:
@@ -259,6 +272,20 @@ class RPGMTL():
             return "", None, bname, self.translators[bname]
         # default not found result
         return "", None, "", None
+
+    def get_tools(self : RPGMTL) -> list[Any]:
+        formatted : list[Any] = []
+        for key, data in self.tools.items():
+            formatted.append(
+                [
+                    key,
+                    data[0],
+                    data[1],
+                    data[2],
+                    data[4]
+                ]
+            )
+        return formatted
 
     # load settings.json
     def load_settings(self : RPGMTL) -> None:
@@ -1460,7 +1487,7 @@ class RPGMTL():
         if name is None:
             return web.json_response({"result":"bad", "message":"Bad request, missing 'name' parameter."}, status=400)
         else:
-            return web.json_response({"result":"ok", "data":{"name":name, "config":self.load_project(name)}})
+            return web.json_response({"result":"ok", "data":{"name":name, "config":self.load_project(name), "tools":self.get_tools()}})
 
     # /api/translator
     async def get_translator(self : RPGMTL, request : web.Request) -> web.Response:
@@ -2304,6 +2331,25 @@ class RPGMTL():
             self.start_compute_translated(name)
             return web.json_response({"result":"ok", "data":{"config":self.projects[name], "name":name}, "message":"Applied default RPGM settings and translations"})
             
+    # /api/use_tool
+    async def use_tool(self : RPGMTL, request : web.Request) -> web.Response:
+        payload = await request.json()
+        name = payload.get('name', None)
+        tool = payload.get('tool', None)
+        params = payload.get('params', None)
+        if name is None:
+            return web.json_response({"result":"bad", "message":"Bad request, missing 'name' parameter"}, status=400)
+        elif tool is None:
+            return web.json_response({"result":"bad", "message":"Bad request, missing 'tool' parameter"}, status=400)
+        elif params is None:
+            return web.json_response({"result":"bad", "message":"Bad request, missing 'params' parameter"}, status=400)
+        else:
+            return web.json_response(
+                {
+                    "result":"ok", "data":{"config":self.projects[name], "name":name},
+                    "message":self.tools[tool][3](name, params)
+                }
+            )
 
 if __name__ == "__main__":
     RPGMTL().run()

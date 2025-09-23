@@ -16,6 +16,8 @@ var tl_string_length = null;
 // global variables
 var path = null;
 var project = {}; // current project
+var tools = []; // RPGMTL tools
+var tool_params = null;
 var currentstr = null;
 var strtablecache = [];
 var lastfileopened = null;
@@ -807,6 +809,46 @@ function add_grid_cell(node, innerHTML, callback)
 	return cell;
 }
 
+function add_tools(grid)
+{
+	for(const tool of tools)
+	{
+		switch(tool[4].type)
+		{
+			case 0:
+			{
+				add_grid_cell(
+					grid, '<img src="' + tool[2] + '"> ' + tool[3],
+					function()
+					{
+						if((tool[4].message ?? "") == "" || window.confirm(tool[4].message))
+						{
+							post("/api/use_tool", project_menu, project_menu, {name:project.name, tool:tool[0], params:{}});
+						}
+					}
+				);
+				break;
+			}
+			case 1:
+			{
+				add_grid_cell(
+					grid, '<img src="' + tool[2] + '"> ' + tool[3],
+					function()
+					{
+						open_tool(tool[0], tool[3]);
+					}
+				);
+				break;
+			}
+			default:
+			{
+				console.warning("Unknown tool type");
+				continue;
+			}
+		}
+	}
+}
+
 // set the loading element visibility
 function set_loading(state)
 {
@@ -933,7 +975,7 @@ function process_call(json, success, failure)
 {
 	try
 	{
-		if("message" in json)
+		if("message" in json && json["message"] != "")
 			push_popup(json["message"]);
 		if(json["result"] == "ok") // good result
 		{
@@ -943,6 +985,10 @@ function process_call(json, success, failure)
 				project.name = json["data"]["name"];
 				project.config = json["data"]["config"];
 				project.version = json["data"]["config"]["version"];
+				if("tools" in json["data"])
+				{
+					tools = json["data"]["tools"];
+				}
 			}
 			if(success) // call success callback if it exists
 				success(json["data"]);
@@ -1255,7 +1301,7 @@ function setting_menu(data)
 			(is_project ? project.name + " Settings" : "Default Settings"),
 			function(){ // back callback
 				if(is_project)
-					project_menu();
+					go_project(project.name);
 				else
 					go_main();
 			},
@@ -1290,7 +1336,7 @@ function setting_menu(data)
 			add_interaction(fragment, '<img src="assets/images/trash.png"> Reset All Settings to Global', function(){
 				post("/api/update_settings", function(result_data) {
 					push_popup("The Project Settings have been reset to Global Settings.");
-					project_menu();
+					go_project(project.name);
 				}, null, {name:project.name});
 			});
 		}
@@ -1487,6 +1533,153 @@ function setting_menu(data)
 	}
 }
 
+// Tool functions
+function get_tool(tool_key)
+{
+	for(const t of tools)
+	{
+		if(t[0] == tool_key)
+			return t;
+	}
+	return null;
+}
+
+function open_tool(tool_key, tool_name)
+{
+	try
+	{
+		const tool = get_tool(tool_key);
+		// top bar
+		update_top_bar(
+			"Tool " + tool_name,
+			function(){ // back callback
+				go_project(project.name);
+			},
+			function(){ // help
+				help.innerHTML = (tool[3]["help"] ?? "There is no help for this Tool.");
+				help.style.display = "";
+			},
+			{
+				home:1
+			}
+		);
+		
+		// main part
+		fragment = new_page();
+		// add tool parameters
+		for(const [key, fdata] of Object.entries(tool[4]["params"]))
+		{
+			if(fdata[1] == "bool")
+			{
+				add_to(fragment, "div", {cls:["settingtext"], br:false}).innerHTML = fdata[0];
+				// add a simple toggle
+				const elem = add_button(fragment, "Set", "assets/images/confirm.png", null, true);
+				elem.onclick = function(){
+					elem.classList.toggle("green");
+				}
+				elem.id = key;
+				if(fdata[2])
+				{
+					elem.classList.toggle("green", true);
+				}
+				fragment.appendChild(document.createElement("br"));
+			}
+			else // other text/number types
+			{
+				add_to(fragment, "div", {cls:["settingtext"]}).innerHTML = fdata[0];
+				if(fdata[3] == null) // text input
+				{
+					/*
+						text: div (not textarea, we want resize) & no return key validation
+						str: standard input text
+						password: input password
+						int/float: standard input text
+					*/
+					// add an input element
+					const input = (
+						fdata[1] == "text" ?
+						add_to(fragment, "div", {cls:["input", "smallinput", "inline"], navigable:true, br:false, id:key}) :
+						add_to(fragment, "input", {cls:["input", "smallinput"], navigable:true, br:false, id:key})
+					);
+					switch(fdata[1])
+					{
+						case "password":
+						{
+							input.type = "password";
+							break;
+						}
+						case "str":
+						{
+							input.type = "text";
+							break;
+						}
+						case "text":
+						{
+							input.contentEditable="plaintext-only";
+							break;
+						}
+					}
+					fragment.appendChild(document.createElement("br"));
+					if(fdata[1] == "text")
+					{
+						input.tabIndex = "0";
+						input.textContent = fdata[2];
+					}
+					else
+					{
+						input.value = fdata[2];
+					}
+				}
+				else // choice selection
+				{
+					// add select and option elements
+					const sel = add_to(fragment, "select", {cls:["input", "smallinput"], navigable:true, br:false, id:key});
+					for(let i = 0; i < fdata[3].length; ++i)
+					{
+						let opt = add_to(sel, "option");
+						opt.value = fdata[3][i];
+						opt.textContent = fdata[3][i];
+						if(fdata[3][i] == fdata[2])
+						{
+							opt.selected = "selected";
+						}
+					}
+					fragment.appendChild(document.createElement("br"));
+				}
+			}
+		}
+		// confirm button
+		add_interaction(fragment, '<img src="assets/images/confirm.png"> Confirm', function(){
+			let params = {};
+			for(const [key, fdata] of Object.entries(tool[4]["params"]))
+			{
+				let elem = document.getElementById(key);
+				if(fdata[1] == "bool")
+				{
+					params[key] = elem.classList.contains("green");
+				}
+				else if(fdata[1] == "text")
+				{
+					params[key] = elem.textContent;
+				}
+				else
+				{
+					params[key] = elem.value;
+				}
+			}
+			post("/api/use_tool", null, null, {name:project.name, tool:tool[0], params:params});
+		});
+		
+		update_main(fragment);
+	}
+	catch(err)
+	{
+		console.error("Exception thrown", err.stack);
+		push_popup("An unexpected error occured.");
+		go_project();
+	}
+}
+
 // translator pick menu /api/translator
 function translator_menu(data)
 {
@@ -1501,7 +1694,7 @@ function translator_menu(data)
 			(is_project ? project.name + " Translators" : "Global Translators"),
 			function(){ // back callback
 				if(is_project)
-					project_menu();
+					go_project(project.name);
 				else
 					go_main();
 			},
@@ -1545,7 +1738,7 @@ function translator_menu(data)
 					add_interaction(fragment, '<img src="assets/images/trash.png"> Use RPGMTL Default', function(){
 						post("/api/update_translator", function(result_data) {
 							push_popup("The Project Translator have been reset to the default.");
-							project_menu();
+							go_project(project.name);
 						}, null, {name:project.name});
 					});
 				}
@@ -1768,6 +1961,12 @@ function project_menu(data = null)
 		});
 		if(project.config.version)
 		{
+			if(tools.length > 0)
+			{
+				add_to(fragment, "div", {cls:["title", "left"]}).innerHTML = "Tools";
+				grid = add_to(fragment, "div", {cls:["grid"]});
+				add_tools(grid);
+			}
 			add_to(fragment, "div", {cls:["title", "left"]}).innerHTML = "Strings Manipulation";
 			grid = add_to(fragment, "div", {cls:["grid"]});
 			add_grid_cell(grid, '<img src="assets/images/copy.png"> Replace Strings in batch', function(){
@@ -1864,7 +2063,7 @@ function browse_files(data)
 				let returnpath = bp.includes('/') ? bp.split('/').slice(0, bp.split('/').length-2).join('/')+'/' : "";
 				// returnpath is the path of the parent folder
 				if(bp == "") // current folder is the root, so back to menu
-					project_menu();
+					go_project(project.name);
 				else
 				{
 					if(returnpath == '/') returnpath = ''; // if return path is a single slash, set to empty first
@@ -2054,7 +2253,7 @@ function browse_files(data)
 		lastfileopened = null;
 		console.error("Exception thrown", err.stack);
 		push_popup("An unexpected error occured.");
-		project_menu();
+		go_project(project.name);
 	}
 }
 
@@ -2146,7 +2345,7 @@ function string_search(data)
 	{
 		console.error("Exception thrown", err.stack);
 		push_popup("An unexpected error occured.");
-		project_menu();
+		go_project(project.name);
 	}
 }
 
@@ -2160,7 +2359,7 @@ function browse_patches(data)
 		update_top_bar(
 			project.name,
 			function(){ // back callback
-				project_menu();
+				go_project(project.name);
 			},
 			function(){ // help
 				help.innerHTML = "<ul>\
@@ -2209,7 +2408,7 @@ function browse_patches(data)
 	{
 		console.error("Exception thrown", err.stack);
 		push_popup("An unexpected error occured.");
-		project_menu();
+		go_project(project.name);
 	}
 }
 
@@ -2285,7 +2484,7 @@ function edit_patch(data)
 	{
 		console.error("Exception thrown", err.stack);
 		push_popup("An unexpected error occured.");
-		project_menu();
+		go_project(project.name);
 	}
 }
 
@@ -2299,7 +2498,7 @@ function backup_list(data)
 		update_top_bar(
 			project.name,
 			function(){ // back callback
-				project_menu();
+				go_project(project.name);
 			},
 			function(){ // help
 				help.innerHTML = "<ul>\
@@ -2356,7 +2555,7 @@ function backup_list(data)
 	{
 		console.error("Exception thrown", err.stack);
 		push_popup("An unexpected error occured.");
-		project_menu();
+		go_project(project.name);
 	}
 }
 
@@ -2380,7 +2579,7 @@ function update_file_list(data)
 	{
 		console.error("Exception thrown", err.stack);
 		push_popup("An unexpected error occured.");
-		project_menu();
+		go_project(project.name);
 	}
 }
 
@@ -2746,7 +2945,7 @@ function open_file(data)
 		console.error("Exception thrown", err.stack);
 		push_popup("An unexpected error occured.");
 		bottom.style.display = "none";
-		project_menu();
+		go_project(project.name);
 	}
 }
 
@@ -2909,7 +3108,7 @@ function update_string_list(data)
 	{
 		console.error("Exception thrown", err.stack);
 		push_popup("An unexpected error occured.");
-		project_menu();
+		go_project(project.name);
 	}
 	// return searched, which contains either null OR a string to scroll to
 	return searched;
@@ -2949,7 +3148,7 @@ function local_browse(title, explanation, mode)
 					case 1: // update game
 					case 2: // import RPGMTL
 					case 3: // import RPGMakerTrans
-						project_menu();
+						go_project(project.name);
 						break;
 					default:
 						// TODO
@@ -2982,7 +3181,7 @@ function local_browse(title, explanation, mode)
 		console.error("Exception thrown", err.stack);
 		push_popup("An unexpected error occured.");
 		bottom.style.display = "none";
-		project_menu();
+		go_project(project.name);
 	}
 }
 
@@ -3084,7 +3283,7 @@ function replace_page()
 		update_top_bar(
 			"Replace strings",
 			function(){ // back callback
-				project_menu();
+				go_project(project.name);
 			},
 			function(){
 				help.innerHTML = "<ul>\
@@ -3121,7 +3320,7 @@ function replace_page()
 		console.error("Exception thrown", err.stack);
 		push_popup("An unexpected error occured.");
 		bottom.style.display = "none";
-		project_menu();
+		go_project(project.name);
 	}
 }
 
