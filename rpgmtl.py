@@ -1373,7 +1373,7 @@ class RPGMTL():
     ######################################################
 
     @web.middleware
-    async def ip_whitelist(self, request, handler):
+    async def ip_whitelist(self : RPGMTL, request, handler):
         """
         This middleware checks if the client's IP address is in the whitelist.
         """
