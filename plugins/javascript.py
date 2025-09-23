@@ -6,7 +6,7 @@ class Javascript(Plugin):
     def __init__(self : Javascript) -> None:
         super().__init__()
         self.name : str = "Javascript"
-        self.description : str = " v1.6\nHandle Javascript files, including the plugins.js file from RPG Maker MV/MZ"
+        self.description : str = " v1.7\nHandle Javascript files, including the plugins.js file from RPG Maker MV/MZ"
 
     def match(self : Javascript, file_path : str, is_for_action : bool) -> bool:
         return file_path.endswith(".js")
@@ -156,9 +156,9 @@ class Javascript(Plugin):
             entries : list[list[str]] = []
             for i in range(len(plugins)):
                 p = plugins[i]
-                if p is None:
+                if p is None or p.get("name", "") == "":
                     continue
-                pluginname : str = self.owner.CHILDREN_FILE_ID + p.get("name", "")
+                pluginname : str = self.owner.CHILDREN_FILE_ID + p["name"].replace("/", " ")
                 group : list[str] = [""]
                 if 'parameters' in p:
                     for k, v in p['parameters'].items():
@@ -190,9 +190,9 @@ class Javascript(Plugin):
         modified : bool = False
         for i in range(len(plugins)):
             p = plugins[i]
-            if p is None:
+            if p is None or p.get("name", "") == "":
                 continue
-            pluginname : str = file_path + "/" + p.get("name", "")
+            pluginname : str = file_path + "/" + p["name"].replace("/", " ")
             if pluginname in strings["files"] and not self.owner.projects[name]["files"][pluginname]["ignored"]:
                 helper : WalkHelper = WalkHelper(pluginname, strings)
                 group : list[str] = [""]
@@ -233,8 +233,10 @@ class Javascript(Plugin):
         if start == -1:
             raise Exception("Not the expected RPGMK plugins.js file")
         end = len(js) - 1
-        while js[end] != ';':
+        while js[end] not in {';', ']'}:
             end -= 1
             if end <= start:
                 raise Exception("Not the expected RPGMK plugins.js file")
+        if js[end] == ']':
+            end += 1
         return json.loads(js[start:end])
