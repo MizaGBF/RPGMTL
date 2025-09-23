@@ -22,11 +22,11 @@ class Renpy(Plugin):
             return content, False
 
     # Standard Renpy
-    def _read_walk(self : Renpy, js : str) -> list[list[str]]:
-        return self._parse_strings(js, None)[0]
+    def _read_walk(self : Renpy, content : str) -> list[list[str]]:
+        return self._parse_strings(content, None)[0]
 
-    def _write_walk(self : Renpy, js : str, helper : WalkHelper) -> str:
-        return self._parse_strings(js, helper)[1]
+    def _write_walk(self : Renpy, content : str, helper : WalkHelper) -> str:
+        return self._parse_strings(content, helper)[1]
 
     # Detect strings in the given Renpy text
     # If helper is not None, it will also replace the strings with translations
