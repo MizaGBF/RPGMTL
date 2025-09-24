@@ -840,7 +840,7 @@ function add_tools(node, callback, filter, bookmark) // callback is intended to 
 					{
 						if((tool[4].message ?? "") == "" || window.confirm(tool[4].message))
 						{
-							post("/api/use_tool", project_menu, project_menu, {name:project.name, tool:tool[0], params:{}});
+							post("/api/use_tool", null, null, {name:project.name, tool:tool[0], params:{}});
 						}
 					}
 				);
