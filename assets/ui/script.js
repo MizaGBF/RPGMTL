@@ -2070,15 +2070,26 @@ function project_menu(data = null)
 function addSearchBar(node, bp, defaultVal = null)
 {
 	// input element
-	const input = add_to(node, "input", {cls:["input", "smallinput"], navigable:true, br:false});
+	add_to(node, "div", {cls:["title", "left", "smalltext", "inline"], br:false}).innerText = "Search";
+	const input = add_to(node, "div", {cls:["input", "smallinput", "inline"], navigable:true, br:false});
+	input.contentEditable = "plaintext-only";
 	input.placeholder = "Search a string";
 	if(defaultVal != null)
-		input.value = defaultVal;
+		input.innerText = defaultVal;
 	else if(search_state.string != null) // set last string searched if not null
-		input.value = search_state.string;
+		input.innerText = search_state.string;
 	else
-		input.value = "";
+		input.innerText = "";
+	// add confirm button
+	const button = add_button(node, "Search", "assets/images/search.png", function(){
+		if(input.innerText != "")
+		{
+			go_search(project.name, bp, input.innerText, casesensi.classList.contains("green"), !contains.classList.contains("green"));
+		}
+	}, true);
+	node.appendChild(document.createElement("br"));
 	// setting buttons
+	add_to(node, "div", {cls:["title", "left", "smalltext", "inline"], br:false}).innerText = "Search settings";
 	const casesensi = add_button(fragment, "Case Sensitive", "assets/images/search_case.png", function(){
 		this.classList.toggle("green");
 	}, true);
@@ -2089,21 +2100,6 @@ function addSearchBar(node, bp, defaultVal = null)
 	}, true);
 	if(!search_state.contains)
 		contains.classList.toggle("green", true);
-	// add confirm button
-	const button = add_button(node, "Search", "assets/images/search.png", function(){
-		if(input.value != "")
-		{
-			go_search(project.name, bp, input.value, casesensi.classList.contains("green"), !contains.classList.contains("green"));
-		}
-	}, true);
-	// and listener for return key
-	input.addEventListener('keypress', function(event) {
-		if (event.key === 'Enter')
-		{
-			event.preventDefault();
-			button.click();
-		}
-	});
 }
 
 // search original button, used in index.html
@@ -2384,7 +2380,7 @@ function string_search(data)
 		add_to(fragment, "div", {cls:["title"]}).innerHTML = project.name;
 		addSearchBar(fragment, bp, data["search"]);
 		
-		add_to(fragment, "div", {cls:["title", "left"]}).innerHTML = "Search Results";
+		add_to(fragment, "div", {cls:["title", "left"]}).innerHTML = "Results";
 		let cls = [
 			["interact", "text-wrapper"],
 			["interact", "text-wrapper", "disabled"]
