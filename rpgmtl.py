@@ -575,7 +575,7 @@ class RPGMTL():
                 pass
 
     # extract the strings from given file
-    def extract_game_file(self : RPGMTL, name : str, filename : str) -> tuple[bool, list[list[str]]]:
+    def extract_game_file(self : RPGMTL, name : str, filename : str) -> tuple[bool, list[list[str]], str]:
         p_path : Path = Path('projects', name, 'originals')
         for p in self.plugins.values():
             if p.match(filename, False): # this file match with the plugin
@@ -588,8 +588,8 @@ class RPGMTL():
                 else:
                     with open((p_path / filename).as_posix(), mode="rb") as infile:
                         content = infile.read()
-                return True, p.read(filename, content)
-        return False, []
+                return True, p.read(filename, content), p.name
+        return False, [], ""
 
     # patch the strings from given file, and write to the release folder
     # return value is a tuple of counts, for successfully patched files and errors
@@ -661,6 +661,7 @@ class RPGMTL():
                 self.projects[name]['files'][f]["file_type"] = FileType.VIRTUAL_UNDEFINED
         # ... next to extract the strings
         err : int = 0
+        used_plugins : set[str] = set()
         for f in list(self.projects[name]['files'].keys()):
             try:
                 # references
@@ -673,8 +674,10 @@ class RPGMTL():
                 # reset string
                 target["strings"] = 0
                 # extract strings
-                extracted, groups = self.extract_game_file(name, f)
+                extracted, groups, plugin_name = self.extract_game_file(name, f)
                 if extracted:
+                    if plugin_name != "":
+                        used_plugins.add(plugin_name)
                     index["files"][target_file] = []
                     for group in groups:
                         if len(group) == 1 and group[0].startswith(self.CHILDREN_FILE_ID):
@@ -752,7 +755,14 @@ class RPGMTL():
         # set new string table
         self.strings[name] = index
         # increase project version
-        self.projects[name]["version"] = self.projects[name].get("version", -1) + 1
+        self.projects[name]["version"] = self.projects[name].get("version", 0) + 1
+        # auto bookmark tools for starting projects
+        self.projects[name]["bookmarked_tools"] = []
+        if self.projects[name]["version"] == 1:
+            for p in used_plugins:
+                if p in self.plugins:
+                    for t in self.plugins[p].get_tool_infos():
+                        self.projects[name]["bookmarked_tools"].append(t)
         # start computing completion
         self.start_compute_translated(name)
         # set save flag
