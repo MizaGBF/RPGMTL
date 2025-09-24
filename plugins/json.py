@@ -136,6 +136,8 @@ class JSON(Plugin):
 
     def get_setting_infos(self : JSON) -> dict[str, list]:
         return {
+            "json_rpgm_text": ["Hello World!", "display", None, None],
+            "json_rpgm_text2": ["How are you today? This is a long text to test stuff and see if it works very well as expected!", "display", None, None],
             "json_rpgm_multiline": ["Merge multiline commands into one (Require re-extract)", "bool", False, None]
         }
 
@@ -150,10 +152,21 @@ class JSON(Plugin):
                         "_t_text":["Apply on Show Text commands", "bool", True, None],
                         "_t_name":["Ignore single-word first lines in Show Text commands", "bool", True, None],
                         "_t_desc":["Apply on Item/Equipment descriptions", "bool", False, None],
-                        "_t_start":["Ignore starts of string, starting with:", "str", "", None],
+                        "_t_0000":["You can ignore the start of a string:", "display", None, None],
+                        "_t_start":["Starting with (Optional):", "str", "", None],
                         "_t_end":["and ending with:", "str", "", None],
                     },
                     "help":"Tool to automatically wrap texts of RPG Maker games."
+                }
+            ],
+            "json_rpgm_default_setup": [
+                "assets/images/bandaid.png", "RPGM Default Setup", self.apply_default,
+                {
+                    "type":self.COMPLEX_TOOL,
+                    "params":{
+                        "_t_tl":["Apply Default Translations", "bool", True, None]
+                    },
+                    "help":"Tool to automatically setup RPGM Projects and more. Optionally, you can set common japanese strings to be set to some pre-translated english variants."
                 }
             ]
         }
@@ -267,6 +280,152 @@ class JSON(Plugin):
         p = textwrap.wrap(" ".join(p), width=limit, break_on_hyphens=False)
         string = start + "\n".join(p)
         return string, string != old
+
+    def apply_default(self : JSON, name : str, params : dict[str, Any]) -> str:
+        try:
+            self.owner.save() # save first!
+            self.owner.backup_strings_file(name) # backup strings.json
+            self.owner.load_strings(name)
+            modified_string : int = 0
+            modified_file : int = 0
+            # Applying default translation of common terms
+            if params["_t_tl"]:
+                default_tl = {
+                    'レベル': 'Level', 'Lv': 'Lv', 'ＨＰ': 'HP', 'HP': 'HP', 'ＭＰ': 'MP', 'MP': 'MP',
+                    'ＳＰ': 'SP', 'SP': 'SP', 'ＴＰ': 'TP', 'TP': 'TP', '経験値': 'Experience',
+                    'EXP': 'EXP', '戦う': 'Fight', '逃げる': 'Run away', '攻撃': 'Attack',
+                    'の攻撃！': ' attacked!', '%1の攻撃！': '%1 attacked!', '防御': 'Defend',
+                    '連続攻撃': 'Continuous Attacks', '２回攻撃': 'Attack 2 times', '３回攻撃': 'Attack 3 times',
+                    '様子を見る': 'Observe', '様子見': 'Wait and See', 'アイテム': 'Items', 'スキル': 'Skill',
+                    '必殺技': 'Special', '装備': 'Equipment', 'ステータス': 'Status', '並び替え': 'Sort',
+                    'セーブ': 'Save', 'ゲーム終了': 'To Title', 'オプション': 'Settings', '大事なもの': 'Key Items',
+                    'ニューゲーム': 'New Game', 'コンティニュー': 'Continue', 'タイトルへ': 'Go to Title', 'やめる': 'Stop',
+                    '購入する': 'Buy', '売却する': 'Sell', '最大ＨＰ': 'Max HP', '最大ＭＰ': 'Max MP', '最大ＳＰ': 'Max SP',
+                    '最大ＴＰ': 'Max TP', '攻撃力': 'ATK', '防御力': 'DEF', '魔法力': 'M.ATK.', '魔法防御': 'M.DEF',
+                    '敏捷性': 'AGI', '運': 'Luck', '命中率': 'ACC', '回避率': 'EVA', '持っている数': 'Owned',
+                    'ヒール': 'Heal', 'ファイア': 'Fire', 'スパーク': 'Spark', '火魔法': 'Fire Magic', '氷魔法': 'Ice Magic',
+                    '雷魔法': 'Thunder Magic', '水魔法': 'Water Magic', '土魔法': 'Earth Magic', '風魔法': 'Wind Magic',
+                    '光魔法': 'Light Magic', '闇魔法': 'Dark Magic', '常時ダッシュ': 'Always run',
+                    'コマンド記憶': 'Command Memory', 'タッチUI': 'Touch UI', 'BGM 音量': 'BGM volume',
+                    'BGS 音量': 'BGS volume', 'ME 音量': 'ME Volume', 'SE 音量': 'SE volume', '所持数': 'Owned',
+                    '現在の%1': 'Current %1', '次の%1まで': 'Until next %1',
+                    'どのファイルにセーブしますか？': 'Which file do you want to save it to?',
+                    'どのファイルをロードしますか？': 'Which file do you want to load?',
+                    'ファイル': 'File', 'オートセーブ': 'Auto Save', '%1たち': '%1', '%1が出現！': '%1 appeared!',
+                    '%1は先手を取った！': '%1 took the initiative!', '%1は不意をつかれた！': '%1 was caught off guard!',
+                    '%1は逃げ出した！': '%1 ran away!', 'は逃げてしまった。': ' is running away.',
+                    'は身を守っている。': ' is on guard.', 'は様子を見ている。': ' is watching the situation.',
+                    'は%1を唱えた！': ' casted %1!', 'しかし逃げることはできなかった！': 'But escape is impossible!',
+                    '%1の勝利！': '%1 wins!', '%1は戦いに敗れた。': '%1 lost the battle.', '%1 の%2を獲得！': 'Obtained %1 %2s!',
+                    'お金を %1\\G 手に入れた！': 'Obtained %1 \\G!', '%1を手に入れた！': 'Obtained %1!',
+                    '%1は%2 %3 に上がった！': '%1 rose to %2 %3!', '%1を覚えた！': 'Learned %1!', '%1は%2を使った！': '%1 used %2!',
+                    '%1は身を守っている。': '%1 is defending.', '会心の一撃！！': 'A decisive blow!!',
+                    '痛恨の一撃！！': 'A painful blow!!', '%1は %2 のダメージを受けた！': '%1 received %2 damage!',
+                    '%1の%2が %3 回復した！': '%1\'s %2 recovered by %3!', '%1の%2が %3 増えた！': '%1\'s %2 increased by %3!',
+                    '%1の%2が %3 減った！': '%1\'s %2 decreased %3!', '%1は%2を %3 奪われた！': '%1 was robbed of %2 %3!',
+                    '%1はダメージを受けていない！': '%1 didn\'t receive any damage!',
+                    'ミス！\u3000%1はダメージを受けていない！': 'Miss! %1 didn\'t receive any damage!',
+                    '%1に %2 のダメージを与えた！': 'Inflicted %2 damage to %1!',
+                    '%1の%2を %3 奪った！': '%2 of %1 was stolen from %3!',
+                    '%1にダメージを与えられない！': 'Cannot damage %1!',
+                    'ミス！\u3000%1にダメージを与えられない！': 'Miss! Can\'t damage %1!',
+                    '%1は攻撃をかわした！': '%1 dodged the attack!', '%1は魔法を打ち消した！': '%1 canceled the magic!',
+                    '%1は魔法を跳ね返した！': '%1 reflected the magic!', '%1の反撃！': "%1's counterattack!",
+                    '%1が%2をかばった！': '%1 protected %2!', '%1の%2が上がった！': '%1\'s %2 increased!',
+                    '%1の%2が下がった！': '%1\'s %2 decreased!', '%1の%2が元に戻った！': '%1\'s %2 is back to normal!',
+                    '%1には効かなかった！': '%1 is unaffected!', 'は倒れた！': ' has fallen!',
+                    'を倒した！': ' has been defeated!', '%1を倒した！': '%1 has been defeated!',
+                    '%1は倒れた！': '%1 has collapsed!', 'は立ち上がった！': ' has stood up!',
+                    '%1は立ち上がった！': '%1 has stood up!', '戦闘不能': 'Incapacited', '不死身': 'Immortality',
+                    'は毒にかかった！': ' is poisoned!', 'に毒をかけた！': ' has been poisoned!',
+                    'の毒が消えた！': ' isn\'t poisoned anymore!', '毒': 'Poison', 'は暗闇に閉ざされた！': ' is engulfed in darkness!',
+                    'を暗闇に閉ざした！': ' has been engulfed in darkness!', 'の暗闇が消えた！': ' is free from the darkness!',
+                    '暗闇': 'Darkness', 'は沈黙した！': ' is silenced!', 'を沈黙させた！': ' has been silenced!',
+                    'の沈黙が解けた！': ' isn\'t silenced anymore!', '沈黙': 'Silence', 'は激昂した！': ' is enraged!',
+                    'を激昂させた！': ' has been enraged!', 'は我に返った！': ' got their senses back!', '激昂': 'Enraged',
+                    'は魅了された！': ' is captivated!', 'を魅了した！': ' has been charmed!', '魅了': 'Charm',
+                    'は眠った！': ' is asleep!', 'を眠らせた！': ' has been put to sleep!', 'は眠っている。': ' is asleep.',
+                    'は目を覚ました！': ' woke up!', '睡眠': 'Sleep', 'はい': 'Yes', 'いいえ': 'No', '一般防具':'Medium Armor',
+                    '魔法防具':'Magic Armor', '軽装防具':'Light Armor', '重装防具':'Heavy Armor', '小型盾':'Small Shield',
+                    '大型盾':'Large Shield', '短剣':'Dagger', '剣':'Sword', 'フレイル':'Flail', '斧':'Axe', 'ムチ':'Whip',
+                    '杖':'Staff', '弓':'Bow', 'クロスボウ':'Crossbow', '銃':'Gun', '爪':'Claw', 'グローブ':'Gloves', '槍':'Spear',
+                    'Ｇ':'G', '物理':'Physics', '炎':'Fire', '氷':'Ice', '雷':'Thunder', '水':'Water', '土':'Earth', '風':'Wind',
+                    '光':'Light', '闇':'Dark', '盾':'Shield', '武器':'Weapon', '頭':'Head', '身体':'Body', '装飾品':'Accessories',
+                    '魔法':'Magic', '特殊行動':'Special', 'ステート':'State', 'レベル':'Level', '気力':'Energy', '並び替え':'Sort',
+                    '防具':'Armor', '最強装備':'Optimize', '全て外す':'Remove all', 'ja_JP':'en_US'
+                }
+                for s in self.owner.strings[name]["strings"]:
+                    if self.owner.strings[name]["strings"][s][0] in default_tl and self.owner.strings[name]["strings"][s][0] is None:
+                        self.owner.strings[name]["strings"][s][1] = default_tl[self.owner.strings[name]["strings"][s][0]]
+                        self.owner.modified[name] = True
+                        modified_string += 1
+            detected_rpgmv : bool = False
+            # Disabling common unrelated files by default
+            ignored_files = [
+                "data/Animations.json", "data/MapInfos.json", "data/Tilesets.json", "package.json", "js/plugins/", "js/libs/", "js/main.js", "js/rpg_core.js", "js/rpg_managers.js", "js/rpg_objects.js", "js/rpg_scenes.js", "js/rpg_sprites.js", "js/rpg_windows.js", "js/rmmz_core.js", "js/rmmz_managers.js", "js/rmmz_objects.js", "js/rmmz_scenes.js", "js/rmmz_sprites.js", "js/rmmz_windows.js", "js/plugins.js/",
+                "www/data/Animations.json", "www/data/MapInfos.json", "www/data/Tilesets.json", "www/package.json", "www/js/plugins/", "www/js/libs/", "www/js/main.js", "www/js/rpg_core.js", "www/js/rpg_managers.js", "www/js/rpg_objects.js", "www/js/rpg_scenes.js", "www/js/rpg_sprites.js", "www/js/rpg_windows.js", "www/js/rmmz_core.www/js", "www/js/rmmz_managers.www/js", "www/js/rmmz_objects.www/js", "www/js/rmmz_scenes.www/js", "www/js/rmmz_sprites.www/js", "www/js/rmmz_windows.www/js", "www/js/plugins.js/",
+                "Data/Animations.rxdata", "Data/MapInfos.rxdata", "Data/Tilesets.rxdata", "Data/Scripts.rxdata",
+                "Data/Animations.rvdata", "Data/MapInfos.rvdata", "Data/Tilesets.rvdata", "Data/Scripts.rvdata",
+                "Data/Animations.rvdata2", "Data/MapInfos.rvdata2", "Data/Tilesets.rvdata2", "Data/Scripts.rvdata2"
+            ]
+            for f in self.projects[name]["files"]:
+                for i in ignored_files:
+                    if i in f:
+                        detected_rpgmv = True
+                        self.projects[name]["files"][f]["ignored"] = 1
+                        self.owner.modified[name] = True
+                        modified_file += 1
+                        break
+            # Disable RPG Maker switches, variables and others
+            for f in ["www/data/System.json", "data/System.json"]:
+                if f in self.owner.strings[name]["files"]:
+                    detected_rpgmv = True
+                    for i, g in enumerate(self.owner.strings[name]["files"][f]):
+                        if g[0] in ['switches', 'variables', 'encryptionKey']:
+                            for j in range(1, len(g)):
+                                self.owner.strings[name]["files"][f][i][j][3] = 1
+                                self.owner.modified[name] = True
+                                modified_string += 1
+            # Disable some RPG Maker text files
+            if detected_rpgmv:
+                for f in self.projects[name]["files"]:
+                    if f.startswith(("www/img/tilesets/", "img/tilesets/")):
+                        self.projects[name]["files"][f]["ignored"] = 1
+                        self.owner.modified[name] = True
+                        modified_file += 1
+            # Disabling specific RPG maker event codes or groups
+            text_codes = set(["Command: Show Text", "Command: Choices", "Command: When ..."]) # allowed ones
+            other_groups = set(["battlerName", "faceName", "characterName", "switches", "variables", "encryptionKey", "formula", "note", "@icon_name", "@battler_name"])
+            for f in self.owner.strings[name]["files"]:
+                for i, group in enumerate(self.owner.strings[name]["files"][f]):
+                    if (group[0].startswith("Command: ") and group[0] not in text_codes) or group[0] in other_groups:
+                        for j in range(1, len(group)):
+                            self.owner.strings[name]["files"][f][i][j][3] = 1
+                            self.owner.modified[name] = True
+                            modified_string += 1
+            # Disable number/boolean strings
+            strids = set()
+            for k, v in self.owner.strings[name]["strings"].items():
+                if v[0] in ["True", "true", "False", "false"]: # bool check
+                    strids.add(k)
+                    continue
+                try: # number check
+                    float(v[0])
+                    strids.add(k)
+                except:
+                    pass
+            for f in self.owner.strings[name]["files"]:
+                for i, group in enumerate(self.owner.strings[name]["files"][f]):
+                    for j in range(1, len(group)):
+                        if group[j][0] in strids:
+                            self.owner.strings[name]["files"][f][i][j][3] = 1
+                            self.owner.modified[name] = True
+                            modified_string += 1
+            self.owner.start_compute_translated(name)
+            return "{} modifications applied".format(modified_string + modified_file)
+        except Exception as e:
+            self.owner.log.error("[JSON] Tool 'tool_text_wrap' failed with error:\n" + self.owner.trbk(e))
+            return "An unexpected error occured"
 
     def match(self : JSON, file_path : str, is_for_action : bool) -> bool:
         return file_path.endswith(".json")

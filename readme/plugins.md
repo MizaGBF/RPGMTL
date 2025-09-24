@@ -219,7 +219,7 @@ For example:
   
 This add one setting to RPGMTL.  
 The first parameter is the description.  
-The second is the type of the setting. It can be `"str"`, `"password"`, `"text"`, `"bool"`, `"num"` (Which can be either a Python Integer or Float).  
+The second is the type of the setting. It can be `"str"`, `"password"`, `"text"`, `"bool"`, `"num"` (Which can be either a Python Integer or Float) or `"display"` (which is used purely to display the first parameter).  
 The third is the default value.  
 The fourth is the list of possible values. If you don't wish to provide one, set it to None.  
   
@@ -297,9 +297,10 @@ Example for a Complex tool:
                 {
                     "type":self.COMPLEX_TOOL,
                     "params":{
+                        "myplugin_complex_tool_0":["Some text", "display", None, None],
                         "myplugin_complex_tool_A":["Checkbox", "bool", True, None],
-                        "myplugin_complex_tool_B":["Integer", "int", -1, None],
-                        "myplugin_complex_tool_C":["Float", "float", 1.0, None],
+                        "myplugin_complex_tool_B":["Integer", "num", -1, None],
+                        "myplugin_complex_tool_C":["Float", "num", 1.0, None],
                         "myplugin_complex_tool_D":["Text", "str", "RPGMTL", None],
                         "myplugin_complex_tool_E":["Paragrah", "text", "Hello\nworld!", None],
                         "myplugin_complex_tool_F":["Password", "password", "12345", None],
@@ -310,6 +311,7 @@ Example for a Complex tool:
             ]
         }
 ```  
+The parameters follow the same format as for the settings.  
   
 When used, both will trigger the callback. Callbacks have the same format for both types:  
 ```python

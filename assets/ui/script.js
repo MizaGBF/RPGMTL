@@ -809,16 +809,33 @@ function add_grid_cell(node, innerHTML, callback)
 	return cell;
 }
 
-function add_tools(grid)
+function add_tools(node, callback, filter, bookmark) // callback is intended to be either add_interaction or add_grid_cell
 {
 	for(const tool of tools)
 	{
+		if(bookmark)
+		{
+			const btn = add_button(node, "Set", "assets/images/star.png", null, true);
+			const tkey = tool[0];
+			if((project.config.bookmarked_tools ?? []).includes(tkey))
+				btn.classList.toggle("green", true);
+			btn.id = tkey;
+			btn.onclick = function(){
+				post("/api/bookmark_tool", function() {
+					btn.classList.toggle("green", project.config.bookmarked_tools.includes(tkey));
+					set_loading(false);
+				}, null, {name:project.name, tool:tkey, value:!btn.classList.contains("green")});
+			}
+		}
+		if(filter != null && !filter.includes(tool[0]))
+			continue;
+		let elem = null;
 		switch(tool[4].type)
 		{
 			case 0:
 			{
-				add_grid_cell(
-					grid, '<img src="' + tool[2] + '"> ' + tool[3],
+				elem = callback(
+					node, '<img src="' + tool[2] + '"> ' + tool[3],
 					function()
 					{
 						if((tool[4].message ?? "") == "" || window.confirm(tool[4].message))
@@ -831,11 +848,11 @@ function add_tools(grid)
 			}
 			case 1:
 			{
-				add_grid_cell(
-					grid, '<img src="' + tool[2] + '"> ' + tool[3],
+				elem = callback(
+					node, '<img src="' + tool[2] + '"> ' + tool[3],
 					function()
 					{
-						open_tool(tool[0], tool[3]);
+						open_tool(tool[0], tool[3], bookmark);
 					}
 				);
 				break;
@@ -845,6 +862,10 @@ function add_tools(grid)
 				console.warning("Unknown tool type");
 				continue;
 			}
+		}
+		if(bookmark)
+		{
+			elem.classList.toggle("sideinput", true); // reduce width
 		}
 	}
 }
@@ -1379,6 +1400,11 @@ function setting_menu(data)
 						elem.classList.toggle("green", settings[key]);
 					++count;
 				}
+				else if(fdata[1] == "display")
+				{
+					add_to(fragment, "div", {cls:["settingtext"]}).innerHTML = fdata[0];
+					++count;
+				}
 				else // other text/number types
 				{
 					add_to(fragment, "div", {cls:["settingtext"]}).innerHTML = fdata[0];
@@ -1544,7 +1570,7 @@ function get_tool(tool_key)
 	return null;
 }
 
-function open_tool(tool_key, tool_name)
+function open_tool(tool_key, tool_name, from_tool_list)
 {
 	try
 	{
@@ -1553,13 +1579,21 @@ function open_tool(tool_key, tool_name)
 		update_top_bar(
 			"Tool " + tool_name,
 			function(){ // back callback
-				go_project(project.name);
+				if(from_tool_list)
+				{
+					open_tool_list();
+				}
+				else
+				{
+					go_project(project.name);
+				}
 			},
 			function(){ // help
 				help.innerHTML = (tool[3]["help"] ?? "There is no help for this Tool.");
 				help.style.display = "";
 			},
 			{
+				project:from_tool_list,
 				home:1
 			}
 		);
@@ -1583,6 +1617,10 @@ function open_tool(tool_key, tool_name)
 					elem.classList.toggle("green", true);
 				}
 				fragment.appendChild(document.createElement("br"));
+			}
+			else if(fdata[1] == "display")
+			{
+				add_to(fragment, "div", {cls:["settingtext"]}).innerHTML = fdata[0];
 			}
 			else // other text/number types
 			{
@@ -1669,6 +1707,40 @@ function open_tool(tool_key, tool_name)
 			}
 			post("/api/use_tool", null, null, {name:project.name, tool:tool[0], params:params});
 		});
+		
+		update_main(fragment);
+	}
+	catch(err)
+	{
+		console.error("Exception thrown", err.stack);
+		push_popup("An unexpected error occured.");
+		go_project();
+	}
+}
+
+function open_tool_list()
+{
+	try
+	{
+		// top bar
+		update_top_bar(
+			"Tool List",
+			function(){ // back callback
+				go_project(project.name);
+			},
+			function(){ // help
+				help.innerHTML = "You can use a Tool or bookmark it for the project page.";
+				help.style.display = "";
+			},
+			{
+				home:1
+			}
+		);
+		
+		// main part
+		fragment = new_page();
+		
+		add_tools(fragment, add_interaction, null, true);
 		
 		update_main(fragment);
 	}
@@ -1873,7 +1945,6 @@ function project_menu(data = null)
 					<li><b>Update the Game Files</b> if the Game got updated or if you need to re-copy the files.</li>\
 					<li><b>Extract the Strings</b> if you need to extract them from Game files.</li>\
 					<li><b>Release a Patch</b> to create a copy of Game files with your translated strings. They will be found in the <b>release</b> folder.</li>\
-					<li><b>Apply RPGMK Defaults</b> to set some default translations and file settings used for RPG Maker games.</li>\
 					<li><b>Unload from Memory</b> if you must do modifications on the local files, using external scripts or whatever.</li>\
 				</ul>\
 				<ul>\
@@ -1952,22 +2023,12 @@ function project_menu(data = null)
 				set_loading_text("The patch is being generated in the release folder...");
 				post("/api/release", project_menu, null, {name:project.name});
 			});
-			add_grid_cell(grid, '<img src="assets/images/bandaid.png"> Apply RPGMK Defaults', function(){
-				post("/api/apply_project_defaults", project_menu, go_main, {name:project.name});
-			});
 		}
 		add_grid_cell(grid, '<img src="assets/images/cancel.png"> Unload from Memory', function(){
 			post("/api/unload", go_main, null, {name:project.name});
 		});
 		if(project.config.version)
 		{
-			if(tools.length > 0)
-			{
-				add_to(fragment, "div", {cls:["title", "left"]}).innerHTML = "Tools";
-				grid = add_to(fragment, "div", {cls:["grid"]});
-				add_tools(grid);
-			}
-			add_to(fragment, "div", {cls:["title", "left"]}).innerHTML = "Strings Manipulation";
 			grid = add_to(fragment, "div", {cls:["grid"]});
 			add_grid_cell(grid, '<img src="assets/images/copy.png"> Replace Strings in batch', function(){
 				replace_page();
@@ -1981,6 +2042,15 @@ function project_menu(data = null)
 			add_grid_cell(grid, '<img src="assets/images/import.png"> Import RPGMakerTrans v3 Strings', function(){
 				local_browse("Import RPGMAKERTRANSPATCH", "Select a RPGMAKERTRANSPATCH file.", 3);
 			});
+			if(tools.length > 0)
+			{
+				add_to(fragment, "div", {cls:["title", "left"]}).innerHTML = "Tools";
+				grid = add_to(fragment, "div", {cls:["grid"]});
+				add_tools(grid, add_grid_cell, (project.config.bookmarked_tools ?? []), false);
+				add_grid_cell(grid, '<img src="assets/images/star.png"> All Tools', function(){
+					open_tool_list();
+				});
+			}
 		}
 		update_main(fragment);
 	}
