@@ -137,8 +137,6 @@ class JSON(Plugin):
 
     def get_setting_infos(self : JSON) -> dict[str, list]:
         return {
-            "json_rpgm_text": ["Hello World!", "display", None, None],
-            "json_rpgm_text2": ["How are you today? This is a long text to test stuff and see if it works very well as expected!", "display", None, None],
             "json_rpgm_multiline": ["Merge multiline commands into one (Require re-extract)", "bool", False, None]
         }
 
