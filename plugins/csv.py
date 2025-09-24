@@ -8,6 +8,7 @@ class CSV(Plugin):
         super().__init__()
         self.name : str = "CSV"
         self.description : str = " v1.4\nHandle CSV files, including externMessage files from RPG Maker MV/MZ"
+        self.related_tool_plugins : list[str] = [self.name]
 
     def match(self : CSV, file_path : str, is_for_action : bool) -> bool:
         return file_path.endswith(".csv")

@@ -6,6 +6,7 @@ class Renpy(Plugin):
         super().__init__()
         self.name : str = "Renpy"
         self.description : str = " v1.0\nHandle RPY files"
+        self.related_tool_plugins : list[str] = [self.name]
 
     def match(self : Renpy, file_path : str, is_for_action : bool) -> bool:
         return file_path.endswith(".rpy")

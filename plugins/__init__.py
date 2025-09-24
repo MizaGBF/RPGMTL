@@ -87,6 +87,7 @@ class Plugin:
         self.owner : RPGMTL|None = None
         self.name : str = "__undefined__"
         self.description : str = "__undefined__"
+        self.related_tool_plugins : list[str] = [] # list itself and other plugin names, for the auto tool detection
         self.settings : dict[str, Any] = {} # internal variable containing current settings
         self._enc_cur_ : int = 0 # internal variable to keep track of what encoding was used
         self._enc_set_ : bool = False # internal variable keeping track if the above has been set
@@ -266,6 +267,7 @@ class TranslatorPlugin:
         self.owner : RPGMTL|None = None
         self.name : str = "__undefined__"
         self.description : str = "__undefined__"
+        self.related_tool_plugins : list[str] = [] # list itself and other plugin names, for the auto tool detection
 
     def get_format(self : TranslatorPlugin) -> TranslatorBatchFormat:
         return TranslatorBatchFormat.STANDARD

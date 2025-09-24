@@ -7,6 +7,7 @@ class GeneralActions(Plugin):
         super().__init__()
         self.name : str = "General Actions"
         self.description : str = "v1.1\nAdd specific file actions on all files and tools."
+        self.related_tool_plugins : list[str] = [self.name]
 
     def get_setting_infos(self : GeneralActions) -> dict[str, list]:
         return {

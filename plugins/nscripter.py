@@ -12,6 +12,7 @@ class NScripter(Plugin):
         super().__init__()
         self.name : str = "NScripter"
         self.description : str = " v1.0\nHandle NScripter scripts"
+        self.related_tool_plugins : list[str] = [self.name]
 
     def get_setting_infos(self : NScripter) -> dict[str, list]:
         return {

@@ -131,6 +131,7 @@ class RM_Marshal(Plugin):
         self.name : str = "RPG Maker Marshal"
         self.description : str = "v3.5\nHandle files from RPG Maker XP, VX and VX Ace"
         self.allow_ruby_plugin : bool = True # Leave it on by default
+        self.related_tool_plugins : list[str] = [self.name, "JSON", "Ruby"]
 
     def get_setting_infos(self : RM_Marshal) -> dict[str, list]:
         return {

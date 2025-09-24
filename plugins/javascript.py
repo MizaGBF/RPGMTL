@@ -7,6 +7,7 @@ class Javascript(Plugin):
         super().__init__()
         self.name : str = "Javascript"
         self.description : str = " v1.7\nHandle Javascript files, including the plugins.js file from RPG Maker MV/MZ"
+        self.related_tool_plugins : list[str] = [self.name]
 
     def match(self : Javascript, file_path : str, is_for_action : bool) -> bool:
         return file_path.endswith(".js")

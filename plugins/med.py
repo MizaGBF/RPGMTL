@@ -13,6 +13,7 @@ class MED(Plugin):
         super().__init__()
         self.name : str = "MED"
         self.description : str = "v1.7\nHandle md_scr.med MED files"
+        self.related_tool_plugins : list[str] = [self.name]
 
     def match(self : MED, file_path : str, is_for_action : bool) -> bool:
         if is_for_action:

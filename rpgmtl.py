@@ -135,6 +135,7 @@ class RPGMTL():
         self.plugin_descriptions : dict[str, str] = {} # store plugin descriptions
         self.actions : dict[str, list] = {} # store plugin actions
         self.tools : dict[str, list] = {} # store plugin tools
+        self.tool_list_info : list[Any] = [] # used to pass the tool list to the client
         self.history : list[list[str]] = [] # store link to last ten accessed files
         self.allowed_ips : list[str] = [] # allowed ips
         # loaded plugins
@@ -146,6 +147,17 @@ class RPGMTL():
         self.parse_command_line()
         # load the plugins (see plugins/__init__.py )
         plugins.load(self)
+        # preset tool_list_info
+        for key, data in self.tools.items():
+            self.tool_list_info.append(
+                [
+                    key,
+                    data[0],
+                    data[1],
+                    data[2],
+                    data[4]
+                ]
+            )
 
     # Function to format an exception into something readable
     def trbk(self : RPGMTL, e : Exception) -> str:
@@ -274,20 +286,6 @@ class RPGMTL():
             return "", None, bname, self.translators[bname]
         # default not found result
         return "", None, "", None
-
-    def get_tools(self : RPGMTL) -> list[Any]:
-        formatted : list[Any] = []
-        for key, data in self.tools.items():
-            formatted.append(
-                [
-                    key,
-                    data[0],
-                    data[1],
-                    data[2],
-                    data[4]
-                ]
-            )
-        return formatted
 
     # load settings.json
     def load_settings(self : RPGMTL) -> None:
@@ -575,7 +573,7 @@ class RPGMTL():
                 pass
 
     # extract the strings from given file
-    def extract_game_file(self : RPGMTL, name : str, filename : str) -> tuple[bool, list[list[str]], str]:
+    def extract_game_file(self : RPGMTL, name : str, filename : str) -> tuple[bool, list[list[str]], list[str]]:
         p_path : Path = Path('projects', name, 'originals')
         for p in self.plugins.values():
             if p.match(filename, False): # this file match with the plugin
@@ -588,8 +586,8 @@ class RPGMTL():
                 else:
                     with open((p_path / filename).as_posix(), mode="rb") as infile:
                         content = infile.read()
-                return True, p.read(filename, content), p.name
-        return False, [], ""
+                return True, p.read(filename, content), p.related_tool_plugins
+        return False, [], []
 
     # patch the strings from given file, and write to the release folder
     # return value is a tuple of counts, for successfully patched files and errors
@@ -674,10 +672,10 @@ class RPGMTL():
                 # reset string
                 target["strings"] = 0
                 # extract strings
-                extracted, groups, plugin_name = self.extract_game_file(name, f)
+                extracted, groups, related_plugins = self.extract_game_file(name, f)
                 if extracted:
-                    if plugin_name != "":
-                        used_plugins.add(plugin_name)
+                    for related in related_plugins:
+                        used_plugins.add(related)
                     index["files"][target_file] = []
                     for group in groups:
                         if len(group) == 1 and group[0].startswith(self.CHILDREN_FILE_ID):
@@ -1239,7 +1237,7 @@ class RPGMTL():
         if name is None:
             return web.json_response({"result":"bad", "message":"Bad request, missing 'name' parameter."}, status=400)
         else:
-            return web.json_response({"result":"ok", "data":{"name":name, "config":self.load_project(name), "tools":self.get_tools()}})
+            return web.json_response({"result":"ok", "data":{"name":name, "config":self.load_project(name), "tools":self.tool_list_info}})
 
     # /api/translator
     async def get_translator(self : RPGMTL, request : web.Request) -> web.Response:

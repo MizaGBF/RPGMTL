@@ -6,6 +6,7 @@ class INI(Plugin):
         super().__init__()
         self.name : str = "INI"
         self.description : str = " v1.3\nHandle INI files"
+        self.related_tool_plugins : list[str] = [self.name]
 
     def match(self : INI, file_path : str, is_for_action : bool) -> bool:
         return file_path.endswith(".ini")

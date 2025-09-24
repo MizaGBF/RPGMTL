@@ -66,6 +66,7 @@ class TLGemini(TranslatorPlugin):
         super().__init__()
         self.name : str = "TL Gemini"
         self.description : str = " v0.11\nWrapper around the google-genai module to prompt Gemini to generate translations. (EXPERIMENTAL)"
+        self.related_tool_plugins : list[str] = [self.name]
         self.instance = None
         self.key_in_use = None
 

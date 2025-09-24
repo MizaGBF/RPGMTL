@@ -6,6 +6,7 @@ class KiriKiri(Plugin):
         super().__init__()
         self.name : str = "KiriKiri"
         self.description : str = " v1.0\nHandle KiriKiri KAG and script files"
+        self.related_tool_plugins : list[str] = [self.name]
 
     def get_setting_infos(self : KiriKiri) -> dict[str, list]:
         return {

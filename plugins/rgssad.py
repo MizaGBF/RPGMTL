@@ -10,6 +10,7 @@ class RGSSAD(Plugin):
         super().__init__()
         self.name : str = "RGSSAD"
         self.description : str = " v1.0\nExtract content from RGSSAD files"
+        self.related_tool_plugins : list[str] = [self.name]
 
     def extract(
         self : RGSSAD,

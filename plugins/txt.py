@@ -6,6 +6,7 @@ class TXT(Plugin):
         super().__init__()
         self.name : str = "TXT"
         self.description : str = " v1.0\nHandle TXT files"
+        self.related_tool_plugins : list[str] = [self.name]
 
     def match(self : TXT, file_path : str, is_for_action : bool) -> bool:
         lowerpath : str = file_path.lower()

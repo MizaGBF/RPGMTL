@@ -5,6 +5,8 @@ from collections import Counter
 from io import BytesIO
 from pathlib import Path
 import json
+from typing import Any
+import textwrap
 
 # Ported and adapted from https://github.com/regomne/chinesize/blob/master/yuris/extYbn/extYbn.go
 
@@ -181,12 +183,136 @@ class YBN(Plugin):
     def __init__(self : YBN) -> None:
         super().__init__()
         self.name : str = "YBN"
-        self.description : str = " v1.0\nHandle YBN files."
+        self.description : str = " v1.1\nHandle YBN files."
+        self.related_tool_plugins : list[str] = [self.name]
         self.last_ypf_path : Path|None = None
         self.last_ypf_data : dict[str, str|int] = {}
 
     def match(self : YBN, file_path : str, is_for_action : bool) -> bool:
         return file_path.endswith("ybn")
+
+    def get_tool_infos(self : YBN) -> dict[str, list]:
+        return {
+            "ybn_text_wrap": [
+                "assets/images/text_wrap.png", "ExS-TIA (YU-RIS) Text wrap", self.lusterise_text_wrap,
+                {
+                    "type":self.COMPLEX_TOOL,
+                    "params":{
+                        "_t_0000":["This Text Wrap is DESTRUCTIVE, as it relies on spaces. It's recommended to backup strings.bak-1.json after.", "display", None, None],
+                        "_t_0001":["Non-ASCII or special characters might also cause issues.", "display", None, None],
+                        "_t_0002":["If you want to manually wrap some strings beforehand, do it and add 3 spaces at the end.", "display", None, None],
+                        "_t_game_type":[
+                            "Character per line",
+                            "str",
+                            "ExS-TIA Parallel/R (60~61)",
+                            [
+                                "ExS-TIA Parallel/R (60~61)",
+                                "ExS-TIA Concerto 1~4 (66~67)",
+                                "Magie Ritter (78~79)"
+                            ]
+                        ]
+                    },
+                    "help":"Tool to automatically wrap texts.<br>Only used and tested on newer games from Lusterise.<br>(ExS-TIA Parallel, R, Concerto 1~4 and Magie Ritter)<br>Character names are expected to be between 【This】 at the start of dialog strings."
+                }
+            ]
+        }
+
+    def lusterise_text_wrap(self : YBN, name : str, params : dict[str, Any]) -> str:
+        """
+        Notes:
+            Games that I tested don't support new lines so the text wrap works as such:
+            - First, check if the string is bigger than N characters
+            - Use textwrap with N characters, break_on_hyphens set to False (to avoid new lines on - for example)
+            - Pad the strings with space until size N
+            - Join the strings
+            
+            As such, the logic break is the function is ran again on an already processed line.
+            To counter this, three spaces are added at the end, to be used as padding.
+        """
+        limit : int
+        match params["_t_game_type"]:
+            case "ExS-TIA Parallel/R (60~61)":
+                limit = 60
+            case "ExS-TIA Concerto 1~4 (66~67)":
+                limit = 66
+            case "Magie Ritter (78~79)":
+                limit = 78
+            case _:
+                return "Invalid selection"
+        try:
+            self.owner.save() # save first!
+            self.owner.backup_strings_file(name) # backup strings.json
+            self.owner.load_strings(name) # if not loaded
+            names : dict[str, str] = self.lusterise_load_names(name)
+            modified : int = 0
+            for sid, sd in self.owner.strings[name]["strings"].items():
+                if self.owner.strings[name]["strings"][sid][1] is not None and not self.owner.strings[name]["strings"][sid][1].endswith("   "):
+                    s, b = self.textwrap_string(names, self.owner.strings[name]["strings"][sid][1], limit)
+                    if b:
+                        self.owner.strings[name]["strings"][sid][1] = s
+                        modified += 1
+
+            for file in self.owner.strings[name]["files"]:
+                for i, group in enumerate(self.owner.strings[name]["files"][file]):
+                    for j in range(1, len(group)):
+                        if self.owner.strings[name]["files"][file][i][j][1] is not None and not self.owner.strings[name]["files"][file][i][j][1].endswith("   "):
+                            s, b = self.textwrap_string(names, self.owner.strings[name]["files"][file][i][j][1], limit)
+                            if b:
+                                self.owner.strings[name]["files"][file][i][j][1] = s
+                                modified += 1
+            if modified:
+                self.owner.modified[name] = True
+                return "Text wrap applied to {} strings, make sure to backup strings.bak-1.json!".format(modified)
+            else:
+                return "No strings in need of text wrapping."
+        except Exception as e:
+            self.owner.log.error("[YBN] Action 'lusterise_text_wrap' failed with error:\n" + self.owner.trbk(e))
+            return "An error occured."
+
+    def lusterise_load_names(self : YBN, name : str) -> dict[str, str]:
+        # Specific to their games
+        # One file store the character names in a specific format
+        names = {}
+        for f in self.owner.strings[name]["files"]:
+            for g in self.owner.strings[name]["files"][f]:
+                if g[0] != "Function":
+                    continue
+                current_names = {}
+                for i in range(1, len(g)):
+                    s = self.owner.strings[name]["strings"][g[i][0]]
+                    if s[0].startswith('"【') and s[0].endswith('】"'):
+                        if s[1] is not None:
+                            current_names[s[1][1:-1]] = s[0][1:-1]
+                if len(current_names) > 0:
+                    names = names | current_names
+        return names
+
+    def textwrap_string(self : YBN, names : dict[str, str], string : str, limit : int) -> tuple[str, bool]:
+        # separate the name
+        name : str = ""
+        if string.startswith("【"):
+            t = tuple(string.split("】", 1))
+            if len(t) != 2: # Potential error, abort
+                return string, False
+            name, string = t
+            name += "】"
+            if string != "":
+                # move first character to name, so it doesn't count
+                name += string[0]
+                string = string[1:]
+        else:
+            limit += 1 # one more character for narration
+        if len(string) > limit:
+            # ＃ is used for heart character in newer games and takes 2 characters
+            lines = textwrap.wrap(string.replace("##", "＃"), width=limit, break_on_hyphens=False)
+            for i in range(len(lines) - 1):
+                lines[i] = lines[i].ljust(limit).replace("##", "＃")
+            lines[i-1] = lines[i-1].replace("##", "＃")
+            wrapped = "".join(lines)
+            if wrapped != string:
+                wrapped += "   " # wrapped marker
+                return name + wrapped, True
+        return name + string, False
 
     def reset(self : YBN, project_path : Path = Path(), filename : str = "") -> None:
         # Kinda hacky way to share the decrypt key and opcodes between files

@@ -11,6 +11,7 @@ class TLGoogle(TranslatorPlugin):
         super().__init__()
         self.name : str = "TL Google"
         self.description : str = " v1.2\nWrapper around the deep-translator module\nGoogle Translator is used"
+        self.related_tool_plugins : list[str] = [self.name]
         self.instance = None
         self.past_setting = None
 

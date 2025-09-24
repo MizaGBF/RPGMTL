@@ -242,7 +242,8 @@ class YPF(Plugin):
     def __init__(self : YPF):
         super().__init__()
         self.name : str = "YPF"
-        self.description : str = " v1.2\nExtract content from YPF files"
+        self.description : str = " v1.3\nExtract content from YPF files"
+        self.related_tool_plugins : list[str] = [self.name]
 
     def extract(
         self : YPF,

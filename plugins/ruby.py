@@ -6,6 +6,7 @@ class Ruby(Plugin):
         super().__init__()
         self.name : str = "Ruby"
         self.description : str = " v1.5\nHandle Ruby files"
+        self.related_tool_plugins : list[str] = [self.name]
 
     def match(self : Ruby, file_path : str, is_for_action : bool) -> bool:
         return file_path.endswith(".rb")
