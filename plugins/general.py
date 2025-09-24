@@ -6,7 +6,7 @@ class GeneralActions(Plugin):
     def __init__(self : GeneralActions) -> None:
         super().__init__()
         self.name : str = "General Actions"
-        self.description : str = "v1.0\nAdd specific file actions on all files."
+        self.description : str = "v1.1\nAdd specific file actions on all files and tools."
 
     def get_setting_infos(self : GeneralActions) -> dict[str, list]:
         return {
@@ -18,6 +18,11 @@ class GeneralActions(Plugin):
         return {
             "char_limit_check": ["assets/plugins/char_limit_check.png", "Check the Character Limit", self.check_limit],
             "clear_modified_flag": ["assets/images/update.png", "Clear the Modified String indicators", self.clear_modified],
+        }
+
+    def get_tool_infos(self : GeneralActions) -> dict[str, list]:
+        return {
+            "general_clear_all_modified": ["assets/images/update.png", "Clear All Modified flags", self.clear_all, {"type":self.SIMPLE_TOOL}]
         }
 
     def match(self : GeneralActions, file_path : str, is_for_action : bool) -> bool:
@@ -56,10 +61,8 @@ class GeneralActions(Plugin):
     def clear_modified(self : GeneralActions, name : str, file_path : str, settings : dict[str, Any] = {}) -> str:
         try:
             limit : int = int(settings.get("char_limit_count", 0))
-            rpgonly : bool = settings.get("char_limit_rpgmaker", True)
             if limit <= 0:
                 return "Please set a positive limit in this plugin settings"
-            count : int = 0
             for g, group in enumerate(self.owner.strings[name]["files"][file_path]):
                 for i in range(1, len(group)):
                     if self.owner.strings[name]["files"][file_path][g][i][4]:
@@ -68,4 +71,17 @@ class GeneralActions(Plugin):
             return "Modified Flags have been cleared."
         except Exception as e:
             self.owner.log.error("[General Actions] Action 'clear_modified' failed with error:\n" + self.owner.trbk(e))
+            return "An error occured."
+
+    def clear_all(self : GeneralActions, name : str, params : dict[str, Any]) -> str:
+        try:
+            self.owner.load_strings(name)
+            for file in self.owner.strings[name]["files"]:
+                for i, group in enumerate(self.owner.strings[name]["files"][file]):
+                    for j in range(1, len(group)):
+                        self.owner.strings[name]["files"][file][i][j][4] = 0
+            self.owner.modified[name] = True
+            return "Modified Flags have been cleared."
+        except Exception as e:
+            self.owner.log.error("[General Actions] Action 'clear_all' failed with error:\n" + self.owner.trbk(e))
             return "An error occured."
