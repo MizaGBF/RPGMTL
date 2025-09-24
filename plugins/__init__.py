@@ -77,25 +77,18 @@ class FileType(IntEnum):
     VIRTUAL = 2 # file contained in an archive
     VIRTUAL_UNDEFINED = 3 # virtual but existence remains to be checked
 
-class Plugin:
-    FILE_ENCODINGS : list[str] = ["utf-8", "shift_jis", "cp932", "iso8859-1", "cp1251", "cp1252", "ascii"] # To cover a lot of encoding scenarios
+class BasePlugin:
     SIMPLE_TOOL : int = 0
     COMPLEX_TOOL : int = 1
-    
-    def __init__(self : Plugin) -> None:
+    def __init__(self : BasePlugin) -> None:
         # Be sure to call super first, in your Plugin
         self.owner : RPGMTL|None = None
         self.name : str = "__undefined__"
         self.description : str = "__undefined__"
         self.related_tool_plugins : list[str] = [] # list itself and other plugin names, for the auto tool detection
-        self.settings : dict[str, Any] = {} # internal variable containing current settings
-        self._enc_cur_ : int = 0 # internal variable to keep track of what encoding was used
-        self._enc_set_ : bool = False # internal variable keeping track if the above has been set
 
-    def connect(self : Plugin, rpgmtl : RPGMTL) -> None:
-        # No ned to reimplement this one
-        self.owner = rpgmtl
-        self.owner.log.info("Plugin " + self.name + " has been loaded")
+    def connect(self : BasePlugin, rpgmtl : RPGMTL) -> None:
+        raise Exception("Unimplemented in BasePlugin")
 
     def get_setting_infos(self : Plugin) -> dict[str, list]:
         # If your plugins need editable settings, return them here
@@ -143,6 +136,20 @@ class Plugin:
         #   - message: An Optional string. If present and not empty, it'll appear when the user press a button.
         #   - help: An Optional string. If present and not empty, it'll appear when the user press the help button.
         return {}
+
+class Plugin(BasePlugin):
+    FILE_ENCODINGS : list[str] = ["utf-8", "shift_jis", "cp932", "iso8859-1", "cp1251", "cp1252", "ascii"] # To cover a lot of encoding scenarios
+    def __init__(self : Plugin) -> None:
+        # Be sure to call super first, in your Plugin
+        super().__init__()
+        self.settings : dict[str, Any] = {} # internal variable containing current settings
+        self._enc_cur_ : int = 0 # internal variable to keep track of what encoding was used
+        self._enc_set_ : bool = False # internal variable keeping track if the above has been set
+
+    def connect(self : Plugin, rpgmtl : RPGMTL) -> None:
+        # No ned to reimplement this one
+        self.owner = rpgmtl
+        self.owner.log.info("Plugin " + self.name + " has been loaded")
 
     def set_settings(self : Plugin, settings : dict[str, Any]) -> None:
         self.settings = settings
@@ -261,13 +268,10 @@ The TranslatorFormat will determine what input the translator plugin receives in
         The function must return a dict[str, str] where keys are string id (like given above) and values are the translated strings.
 """
 
-class TranslatorPlugin:
+class TranslatorPlugin(BasePlugin):
     def __init__(self : TranslatorPlugin) -> None:
         # Be sure to call super first, in your TranslatorPlugin
-        self.owner : RPGMTL|None = None
-        self.name : str = "__undefined__"
-        self.description : str = "__undefined__"
-        self.related_tool_plugins : list[str] = [] # list itself and other plugin names, for the auto tool detection
+        super().__init__()
 
     def get_format(self : TranslatorPlugin) -> TranslatorBatchFormat:
         return TranslatorBatchFormat.STANDARD
@@ -283,18 +287,6 @@ class TranslatorPlugin:
         # No ned to reimplement this one
         self.owner = rpgmtl
         self.owner.log.info("Translator " + self.name + " has been loaded")
-
-    def get_setting_infos(self : TranslatorPlugin) -> dict[str, list]:
-        # Work the same as for Plugin
-        return {}
-
-    def get_action_infos(self : Plugin) -> dict[str, list]:
-        # Work the same as for Plugin
-        return {}
-
-    def get_tool_infos(self : Plugin) -> dict[str, list]:
-        # Work the same as for Plugin
-        return {}
 
     async def translate(self : TranslatorPlugin, name : str, string : str, settings : dict[str, Any] = {}) -> str|None:
         # Translate a string

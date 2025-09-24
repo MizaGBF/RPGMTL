@@ -65,7 +65,7 @@ class TLGemini(TranslatorPlugin):
     def __init__(self : TLGemini) -> None:
         super().__init__()
         self.name : str = "TL Gemini"
-        self.description : str = " v0.11\nWrapper around the google-genai module to prompt Gemini to generate translations. (EXPERIMENTAL)"
+        self.description : str = " v0.12\nWrapper around the google-genai module to prompt Gemini to generate translations. (EXPERIMENTAL)"
         self.related_tool_plugins : list[str] = [self.name]
         self.instance = None
         self.key_in_use = None
@@ -85,6 +85,66 @@ class TLGemini(TranslatorPlugin):
             "gemini_temperature": ["Set the Model Temperature (Higher is more creative but less predictable)", "num", 0, None],
             "gemini_extra_context": ["Set extra informations or commands for the AI", "text", "", None]
         }
+
+    def get_tool_infos(self : TLGemini) -> dict[str, list]:
+        return {
+            "tl_ai_add_knowledge": [
+                "assets/images/new.png", "Add AI Knowledge", self.add_knowledge,
+                {
+                    "type":self.COMPLEX_TOOL,
+                    "params":{
+                        "_t_og":["Original String", "text", "", None],
+                        "_t_tl":["Translation", "text", "", None],
+                        "_t_desc":["Information / Note / Description", "text", None, None],
+                        "_t_prst":["Persistance", "str", "Standard", ["Standard", "Long", "Near-Permanent"]],
+                        "_t_ovwt":["Replace if it already exists?", "bool", False, None]
+                    },
+                    "help":"Add a knowledge entry for the AI to use.<br>The persistance determines how long it'll stay in the base.<br>More entries increases the token count."
+                }
+            ]
+        }
+
+    def add_knowledge(self : TLGemini, name : str, params : dict[str, Any]) -> str:
+        try:
+            match params["_t_prst"]:
+                case "Standard":
+                    last_seen = 0
+                    occurence = 1
+                case "Long":
+                    last_seen = 0
+                    occurence = 15
+                case "Near-Permanent":
+                    last_seen = 0
+                    occurence = 100000
+                case _:
+                    return "Invalid persistence value."
+            if params["_t_og"].strip() == "":
+                return "Error, original string is empty"
+            if params["_t_tl"].strip() == "":
+                return "Error, translation is empty"
+            for entry in self.owner.projects[name]["ai_knowledge_base"]:
+                if entry["original"] == params["_t_og"]:
+                    if params["_t_ovwt"]:
+                        entry["translation"] = params["_t_tl"]
+                        entry["note"] = params["_t_desc"]
+                        entry["last_seen"] = last_seen
+                        entry["occurence"] = occurence
+                        self.owner.modified[name] = True
+                        return "The corresponding entry has been updated."
+                    else:
+                        return "The entry already exists."
+            self.owner.projects[name]["ai_knowledge_base"].append({
+                "original":params["_t_og"],
+                "translation":params["_t_tl"],
+                "note":params["_t_desc"],
+                "last_seen":last_seen,
+                "occurence":occurence
+            })
+            self.owner.modified[name] = True
+            return "The entry has been added."
+        except Exception as e:
+            self.owner.log.error("[Gemini] Tool 'add_knowledge' failed with error:\n" + self.owner.trbk(e))
+            return "An unexpected error occured"
 
     def _init_translator(self : TLGemini, settings : dict[str, Any]) -> None:
         try:

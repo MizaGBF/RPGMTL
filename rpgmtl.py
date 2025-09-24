@@ -17,7 +17,7 @@ import argparse
 import ssl
 
 import plugins
-from plugins import TranslatorPlugin, TranslatorBatchFormat, FileType
+from plugins import BasePlugin, TranslatorPlugin, TranslatorBatchFormat, FileType
 
 ######################################################
 # A simple helper class for the patch system
@@ -164,7 +164,7 @@ class RPGMTL():
         return "".join(traceback.format_exception(type(e), e, e.__traceback__))
 
     # Generic function used by add_plugin and add_translator
-    def process_infos(self : RPGMTL, plugin : Any) -> None:
+    def process_infos(self : RPGMTL, plugin : BasePlugin) -> None:
         # Process plugin settings
         for k, v in plugin.get_setting_infos().items(): # go over returned settings
             if len(v) != 4: # error if invalid format
