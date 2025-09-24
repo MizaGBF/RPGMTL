@@ -1589,7 +1589,7 @@ function open_tool(tool_key, tool_name, from_tool_list)
 				}
 			},
 			function(){ // help
-				help.innerHTML = (tool[3]["help"] ?? "There is no help for this Tool.");
+				help.innerHTML = (tool[4]["help"] ?? "There is no help for this Tool.");
 				help.style.display = "";
 			},
 			{

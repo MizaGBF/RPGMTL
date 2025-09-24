@@ -12,7 +12,7 @@ class MED(Plugin):
     def __init__(self : MED) -> None:
         super().__init__()
         self.name : str = "MED"
-        self.description : str = "v1.6\nHandle md_scr.med MED files"
+        self.description : str = "v1.7\nHandle md_scr.med MED files"
 
     def match(self : MED, file_path : str, is_for_action : bool) -> bool:
         if is_for_action:
@@ -27,11 +27,27 @@ class MED(Plugin):
 
     def get_action_infos(self : MED) -> dict[str, list]:
         return {
-            "med_adjust_line": ["assets/images/text_wrap.png", "Adjust New Line", self.adjust_new_line],
             "med_check_ascii": ["assets/plugins/med_ascii_check.png", "Look for invalid characters", self.look_non_ascii]
         }
 
-    def adjust_new_line(self : MED, name : str, file_path : str, settings : dict[str, Any] = {}) -> str:
+    def get_tool_infos(self : MED) -> dict[str, list]:
+        return {
+            "med_text_wrap": [
+                "assets/images/text_wrap.png", "ExS-TIA 1~3 Text wrap", self.lusterise_text_wrap,
+                {
+                    "type":self.COMPLEX_TOOL,
+                    "params":{
+                        "_t_0000":["This Text Wrap is DESTRUCTIVE, as it relies on spaces. It's recommended to backup strings.bak-1.json after.", "display", None, None],
+                        "_t_0001":["Non-ASCII or special characters might also cause issues.", "display", None, None],
+                        "_t_0002":["If you want to manually wrap some strings beforehand, do it and add 3 spaces at the end.", "display", None, None],
+                        "_t_char_limit":["Character per line", "num", 64, None]
+                    },
+                    "help":"Tool to automatically wrap texts.<br>Only used and tested on the ExS-TIA Game series from Lusterise.<br>(Episode 1, 2, A, 3 and sides)"
+                }
+            ]
+        }
+
+    def lusterise_text_wrap(self : MED, name : str, params : dict[str, Any]) -> str:
         """
         Notes:
             Games that I tested don't support new lines so the text wrap works as such:
@@ -44,59 +60,51 @@ class MED(Plugin):
             To counter this, three spaces are added at the end, to be used as padding.
         """
         try:
-            limit : int = int(settings.get("med_char_per_line", 0))
-            if limit <= 0:
-                return "Please set a positive limit in this plugin settings"
-            count : int = 0
-            ignored : int = 0
-            modifieds : set[str] = set()
-            for g, group in enumerate(self.owner.strings[name]["files"][file_path]):
-                for i in range(1, len(group)):
-                    lc = group[i]
-                    gl = self.owner.strings[name]["strings"][lc[0]]
-                    is_local : bool = False
-                    if lc[2] and lc[1] is not None:
-                        s = lc[1]
-                        is_local = True
-                    elif gl[1] is not None:
-                        s = gl[1]
-                    else:
-                        continue
-                    if len(s) > limit and not s.endswith("   "):
-                        r : list[str] = textwrap.wrap(s, width=limit, break_on_hyphens=False)
-                        for j in range(len(r) - 1):
-                            r[j] = r[j].ljust(limit)
-                        n = "".join(r)
-                        if s != n:
-                            n += "   " # the ending spaces are used as a marker
-                            count += 1
-                            if is_local:
-                                self.owner.strings[name]["files"][file_path][g][i][2] = n
-                            else:
-                                self.owner.strings[name]["strings"][lc[0]][1] = n
-                                modifieds.add(lc[0])
-                            self.owner.strings[name]["files"][file_path][g][i][4] = 1 # Modified set to true
-                            self.owner.modified[name] = True
-            # set modified flag in other files, for consistency
-            for f in self.owner.strings[name]["files"]:
-                if f != file_path:
-                    for g, group in enumerate(self.owner.strings[name]["files"][f]):
-                        for i in range(1, len(group)):
-                            lc = group[i]
-                            if lc[0] in modifieds and lc[1] is None: # not local and matching id
-                                self.owner.strings[name]["files"][f][g][i][4] = 1 # Modified set to true
-            # prepare return_msg
-            return_msg : str
-            if count > 0:
-                return_msg = "{} strings have been updated".format(count)
+            limit : int = int(params["_t_char_limit"])
+            if limit < 1:
+                raise Exception()
+        except:
+            return "Invalid character limit, it must be a positive integer."
+        try:
+            self.owner.save() # save first!
+            self.owner.backup_strings_file(name) # backup strings.json
+            self.owner.load_strings(name) # if not loaded
+            modified : int = 0
+            for sid, sd in self.owner.strings[name]["strings"].items():
+                if self.owner.strings[name]["strings"][sid][1] is not None and not self.owner.strings[name]["strings"][sid][1].endswith("   "):
+                    s, b = self.textwrap_string(self.owner.strings[name]["strings"][sid][1], limit)
+                    if b:
+                        self.owner.strings[name]["strings"][sid][1] = s
+                        modified += 1
+
+            for file in self.owner.strings[name]["files"]:
+                for i, group in enumerate(self.owner.strings[name]["files"][file]):
+                    for j in range(1, len(group)):
+                        if self.owner.strings[name]["files"][file][i][j][1] is not None and not self.owner.strings[name]["files"][file][i][j][1].endswith("   "):
+                            s, b = self.textwrap_string(self.owner.strings[name]["files"][file][i][j][1], limit)
+                            if b:
+                                self.owner.strings[name]["files"][file][i][j][1] = s
+                                modified += 1
+            if modified:
+                self.owner.modified[name] = True
+                return "Text wrap applied to {} strings, make sure to backup strings.bak-1.json!".format(modified)
             else:
-                return_msg = "No strings have been modified"
-            if ignored > 0:
-                return_msg += ", {} strings have been ignored".format(ignored)
-            return return_msg
+                return "No strings in need of text wrapping."
         except Exception as e:
-            self.owner.log.error("[MED] Action 'med_adjust_line' failed with error:\n" + self.owner.trbk(e))
+            self.owner.log.error("[MED] Action 'lusterise_text_wrap' failed with error:\n" + self.owner.trbk(e))
             return "An error occured."
+
+    def textwrap_string(self : MED, string : str, limit : int) -> tuple[str, bool]:
+        if len(string) > limit:
+            lines = textwrap.wrap(string, width=limit, break_on_hyphens=False)
+            for i in range(len(lines) - 1):
+                lines[i] = lines[i].ljust(limit)
+            lines[i-1] = lines[i-1]
+            wrapped = "".join(lines)
+            if wrapped != string:
+                wrapped += "   " # wrapped marker
+                return wrapped, True
+        return string, False
 
     def look_non_ascii(self : MED, name : str, file_path : str, settings : dict[str, Any] = {}) -> str:
         try:
