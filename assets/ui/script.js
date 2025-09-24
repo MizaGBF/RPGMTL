@@ -2073,7 +2073,6 @@ function addSearchBar(node, bp, defaultVal = null)
 	add_to(node, "div", {cls:["title", "left", "smalltext", "inline"], br:false}).innerText = "Search";
 	const input = add_to(node, "div", {cls:["input", "smallinput", "inline"], navigable:true, br:false});
 	input.contentEditable = "plaintext-only";
-	input.placeholder = "Search a string";
 	if(defaultVal != null)
 		input.innerText = defaultVal;
 	else if(search_state.string != null) // set last string searched if not null
@@ -3367,20 +3366,21 @@ function replace_page()
 		// main part
 		fragment = new_page();
 		add_to(fragment, "div", {cls:["title", "left"]}).innerText = "Replace strings by others (Case Sensitive)";
-		add_to(fragment, "div", {cls:["title", "left", "smalltext"]}).innerText = "Only translations are affected";
 		
-		const input = add_to(fragment, "input", {cls:["input", "smallinput"], navigable:true});
-		input.placeholder = "String to replace";
-		const output = add_to(fragment, "input", {cls:["input", "smallinput"], navigable:true});
-		output.placeholder = "Replace by";
+		add_to(fragment, "div", {cls:["title", "left", "smalltext"]}).innerText = "String to replace";
+		const input = add_to(fragment, "div", {cls:["input", "smallinput"], navigable:true});
+		input.contentEditable = "plaintext-only";
+		add_to(fragment, "div", {cls:["title", "left", "smalltext"]}).innerText = "Replacement";
+		const output = add_to(fragment, "div", {cls:["input", "smallinput"], navigable:true});
+		output.contentEditable = "plaintext-only";
 		add_to(fragment, "div", {cls:["interact", "text-button"], br:false, navigable:true, onclick:function(){
 			if(input.value == "")
 			{
 				push_popup("The input is empty.");
 			}
-			else if(window.event.ctrlKey || window.confirm("Replace '" + input.value + "'\nby '" + output.value + "'?"))
+			else if(window.event.ctrlKey || window.confirm("Replace '" + input.innerText + "'\nby '" + output.innerText + "'?"))
 			{
-				post("/api/replace_strings", null, null, {name:project.name, src:input.value, dst:output.value});
+				post("/api/replace_strings", null, null, {name:project.name, src:input.innerText, dst:output.innerText});
 			}
 		}}).innerHTML = '<img src="assets/images/copy.png"> Replace';
 		update_main(fragment);
