@@ -1700,6 +1700,10 @@ function open_tool(tool_key, tool_name, from_tool_list)
 				{
 					params[key] = elem.textContent;
 				}
+				else if(fdata[1] == "display")
+				{
+					// nothing
+				}
 				else
 				{
 					params[key] = elem.value;
