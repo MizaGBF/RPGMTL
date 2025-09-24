@@ -148,7 +148,7 @@ class JSON(Plugin):
                 {
                     "type":self.COMPLEX_TOOL,
                     "params":{
-                        "_t_char_limit":["Character Limit", "int", 60, None],
+                        "_t_char_limit":["Character Limit", "num", 60, None],
                         "_t_text":["Apply on Show Text commands", "bool", True, None],
                         "_t_name":["Ignore single-word first lines in Show Text commands", "bool", True, None],
                         "_t_desc":["Apply on Item/Equipment descriptions", "bool", False, None],
