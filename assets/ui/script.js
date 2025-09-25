@@ -1903,7 +1903,7 @@ function open_knowledge()
 				}, null, {name:project.name, entry:selected.original_string});
 			}
 		});
-		let select_callback = function() {
+		selection.onchange = function() {
 			selected.innerText = "Selected: " + project.config.ai_knowledge_base[this.value]["original"] + " / " + project.config.ai_knowledge_base[this.value]["translation"];
 			selected.original_string = project.config.ai_knowledge_base[this.value]["original"];
 			base_ori.textContent = project.config.ai_knowledge_base[this.value]["original"];
@@ -1912,8 +1912,6 @@ function open_knowledge()
 			base_seen.value = "" + project.config.ai_knowledge_base[this.value]["last_seen"];
 			base_occu.value = "" + project.config.ai_knowledge_base[this.value]["occurence"];
 		};
-		selection.onchange = select_callback;
-		selection.onchange = select_callback;
 		update_main(fragment);
 	}
 	catch(err)
