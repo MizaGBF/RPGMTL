@@ -1419,8 +1419,8 @@ function setting_menu(data)
 						// add an input element
 						const input = (
 							fdata[1] == "text" ?
-							add_to(fragment, "div", {cls:["input", "smallinput", "inline"], navigable:true, br:false}) :
-							add_to(fragment, "input", {cls:["input", "smallinput"], navigable:true, br:false})
+							add_to(fragment, "div", {cls:["input", "settinginput", "inline"], navigable:true, br:false}) :
+							add_to(fragment, "input", {cls:["input", "settinginput"], navigable:true, br:false})
 						);
 						switch(fdata[1])
 						{
@@ -1514,7 +1514,7 @@ function setting_menu(data)
 					else // choice selection
 					{
 						// add select and option elements
-						const sel = add_to(fragment, "select", {cls:["input", "smallinput"], navigable:true, br:false});
+						const sel = add_to(fragment, "select", {cls:["input", "settinginput"], navigable:true, br:false});
 						for(let i = 0; i < fdata[2].length; ++i)
 						{
 							let opt = add_to(sel, "option");
@@ -2033,7 +2033,6 @@ function project_menu(data = null)
 		});
 		if(project.config.version)
 		{
-			grid = add_to(fragment, "div", {cls:["grid"]});
 			add_grid_cell(grid, '<img src="assets/images/copy.png"> Replace Strings in batch', function(){
 				replace_page();
 			});
@@ -2071,7 +2070,7 @@ function addSearchBar(node, bp, defaultVal = null)
 {
 	// input element
 	add_to(node, "div", {cls:["title", "left", "smalltext", "inline"], br:false}).innerText = "Search";
-	const input = add_to(node, "div", {cls:["input", "smallinput", "inline"], navigable:true, br:false});
+	const input = add_to(node, "div", {cls:["input", "searchinput", "inline"], navigable:true, br:false});
 	input.contentEditable = "plaintext-only";
 	if(defaultVal != null)
 		input.innerText = defaultVal;
@@ -3368,10 +3367,10 @@ function replace_page()
 		add_to(fragment, "div", {cls:["title", "left"]}).innerText = "Replace strings by others (Case Sensitive)";
 		
 		add_to(fragment, "div", {cls:["title", "left", "smalltext"]}).innerText = "String to replace";
-		const input = add_to(fragment, "div", {cls:["input", "smallinput"], navigable:true});
+		const input = add_to(fragment, "div", {cls:["input", "searchinput"], navigable:true});
 		input.contentEditable = "plaintext-only";
 		add_to(fragment, "div", {cls:["title", "left", "smalltext"]}).innerText = "Replacement";
-		const output = add_to(fragment, "div", {cls:["input", "smallinput"], navigable:true});
+		const output = add_to(fragment, "div", {cls:["input", "searchinput"], navigable:true});
 		output.contentEditable = "plaintext-only";
 		add_to(fragment, "div", {cls:["interact", "text-button"], br:false, navigable:true, onclick:function(){
 			if(input.value == "")

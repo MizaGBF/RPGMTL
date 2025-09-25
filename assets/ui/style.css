@@ -380,8 +380,17 @@ li {
 	width: 50%;
 }
 
+.settinginput {
+	width: calc(100vw - 200px);
+	max-width:1200px;
+}
+
+.searchinput {
+	width: calc(100vw - 200px);
+}
+
 .sideinput {
-	width: calc(90vw - 40px);
+	width: calc(100vw - 100px);
 }
 
 .text-wrapper {
