@@ -211,7 +211,7 @@ Return in data: project 'name', project 'config', file 'path', project 'strings'
 
 ```
 /api/update_string (Toggle Unlink/Ignore)
-Payload: project 'name', file 'path', project 'version', 'group' index, string 'index', toggle 'setting' (0 for unlink, 1 for ignore, 2 for ignore all occurence in file)
+Payload: project 'name', file 'path', project 'version', 'group' index, string 'index', toggle 'setting' (0 for unlink, 1 for ignore, 2 for ignore all occurence in file, 3 for ignore all project-wide)
 Return in data: project 'name', project 'config', file 'path', project 'strings', 'list' of strings in file
 ```
 

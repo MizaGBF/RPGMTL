@@ -1636,6 +1636,14 @@ class RPGMTL():
                             for j in range(1, len(self.strings[name]["files"][path][i])):
                                 if self.strings[name]["files"][path][i][j][0] == sid: # for all matching id, disable
                                     self.strings[name]["files"][path][i][j][3] = state
+                    case 3: # Disable all occurences in project
+                        sid : str = self.strings[name]["files"][path][group][index][0] # retrieve id
+                        state : int = (self.strings[name]["files"][path][group][index][3] + 1) % 2
+                        for file in self.strings[name]["files"]:
+                            for i in range(len(self.strings[name]["files"][file])):
+                                for j in range(1, len(self.strings[name]["files"][file][i])):
+                                    if self.strings[name]["files"][file][i][j][0] == sid: # for all matching id, disable
+                                        self.strings[name]["files"][file][i][j][3] = state
                     case _: # Change string
                         if self.strings[name]["files"][path][group][index][2]:
                             self.strings[name]["files"][path][group][index][1] = string

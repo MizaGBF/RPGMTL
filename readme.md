@@ -151,6 +151,7 @@ In the file page:
 - `Ctrl+U` to unlink/link back the string from/to its global translation.  
 - `Ctrl+Y` to ignore the string.  
 - `Ctrl+Shift+Y` to ignore all the occurences of this string.  
+- `Ctrl+Alt+Y` to ignore all the occurences of this project.  
 - `Ctrl+Left/Right` to go to the previous/next file, if available.  
 - `Ctrl+E` to focus the edit area, if open.  
   
@@ -162,6 +163,8 @@ When the edit area is open:
 - `Ctrl+L` to search the original string.  
 - `Ctrl+O` to copy the original string, if focused.  
 - `Ctrl+D` to delete the translation.  
+  
+Some shortcuts have alternatives. Click the Help button for a reminder.
   
 ### Port
   

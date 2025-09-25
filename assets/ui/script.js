@@ -247,14 +247,14 @@ function focus_and_scroll(el)
 // for keyboard shortcut and navigation
 document.addEventListener('keydown', function(e)
 {
-	if(loader.style.display != "none" || e.altKey || e.metaKey)
+	if(loader.style.display != "none" || e.metaKey)
 		return;
 	let all_allowed = is_not_using_input(e.target);
 	switch(e.key)
 	{
 		case "Escape":
 		{
-			if(!e.ctrlKey && !e.shiftKey)
+			if(!e.ctrlKey && !e.shiftKey && !e.altKey)
 			{
 				// close help
 				if(help.style.display != "none")
@@ -287,7 +287,7 @@ document.addEventListener('keydown', function(e)
 		}
 		case "Enter":
 		{
-			if(!e.ctrlKey && !e.shiftKey && all_allowed && navigables.length > 0)
+			if(!e.ctrlKey && !e.shiftKey && !e.altKey && all_allowed && navigables.length > 0)
 			{
 				update_focus(e.target);
 				// open string
@@ -311,7 +311,7 @@ document.addEventListener('keydown', function(e)
 		case "F1":
 		{
 			// toggle help
-			if(!e.ctrlKey && !e.shiftKey && top_bar_elems.help && top_bar_elems.help.style.display != "none")
+			if(!e.ctrlKey && !e.shiftKey && !e.altKey && top_bar_elems.help && top_bar_elems.help.style.display != "none")
 			{
 				if(help.style.display != "none")
 				{
@@ -333,7 +333,7 @@ document.addEventListener('keydown', function(e)
 		case "E":
 		{
 			// go to edit area
-			if(all_allowed && e.ctrlKey && !e.shiftKey && bottom.style.display != "none")
+			if(all_allowed && e.ctrlKey && !e.shiftKey && !e.altKey && bottom.style.display != "none")
 			{
 				edit_tl.focus();
 				e.stopPropagation();
@@ -345,7 +345,7 @@ document.addEventListener('keydown', function(e)
 		case "S":
 		{
 			// save string
-			if(e.ctrlKey && !e.shiftKey && bottom.style.display != "none")
+			if(e.ctrlKey && !e.shiftKey && !e.altKey && bottom.style.display != "none")
 			{
 				edit_btns.save.click();
 				e.stopPropagation();
@@ -357,7 +357,7 @@ document.addEventListener('keydown', function(e)
 		case "Q":
 		{
 			// cancel string
-			if(e.ctrlKey && !e.shiftKey && bottom.style.display != "none")
+			if(e.ctrlKey && !e.shiftKey && !e.altKey && bottom.style.display != "none")
 			{
 				edit_btns.close.click();
 				e.stopPropagation();
@@ -369,7 +369,7 @@ document.addEventListener('keydown', function(e)
 		case "D":
 		{
 			// trash string
-			if(e.ctrlKey && !e.shiftKey && bottom.style.display != "none")
+			if(e.ctrlKey && !e.shiftKey && !e.altKey && bottom.style.display != "none")
 			{
 				edit_btns.trash.click();
 				e.stopPropagation();
@@ -381,7 +381,7 @@ document.addEventListener('keydown', function(e)
 		case "L":
 		{
 			// search string
-			if(e.ctrlKey && !e.shiftKey && bottom.style.display != "none")
+			if(e.ctrlKey && !e.shiftKey && !e.altKey && bottom.style.display != "none")
 			{
 				edit_btns.search.click();
 				e.stopPropagation();
@@ -393,7 +393,7 @@ document.addEventListener('keydown', function(e)
 		case "K":
 		{
 			// translate string
-			if(e.ctrlKey && !e.shiftKey && bottom.style.display != "none")
+			if(e.ctrlKey && !e.shiftKey && !e.altKey && bottom.style.display != "none")
 			{
 				edit_btns.translate.click();
 				e.stopPropagation();
@@ -405,7 +405,7 @@ document.addEventListener('keydown', function(e)
 		case "H":
 		{
 			// home button
-			if(e.ctrlKey && !e.shiftKey && top_bar_elems.home && top_bar_elems.home.style.display != "none")
+			if(e.ctrlKey && !e.shiftKey && !e.altKey && top_bar_elems.home && top_bar_elems.home.style.display != "none")
 			{
 				top_bar_elems.home.click();
 				e.stopPropagation();
@@ -417,7 +417,7 @@ document.addEventListener('keydown', function(e)
 		case "P":
 		{
 			// project button
-			if(e.ctrlKey && !e.shiftKey && top_bar_elems.project && top_bar_elems.project.style.display != "none")
+			if(e.ctrlKey && !e.shiftKey && !e.altKey && top_bar_elems.project && top_bar_elems.project.style.display != "none")
 			{
 				top_bar_elems.project.click();
 				e.stopPropagation();
@@ -429,7 +429,7 @@ document.addEventListener('keydown', function(e)
 		case "R":
 		{
 			// refresh button
-			if(e.ctrlKey && !e.shiftKey && top_bar_elems.refresh && top_bar_elems.refresh.style.display != "none")
+			if(e.ctrlKey && !e.shiftKey && !e.altKey && top_bar_elems.refresh && top_bar_elems.refresh.style.display != "none")
 			{
 				top_bar_elems.refresh.click();
 				e.stopPropagation();
@@ -441,7 +441,7 @@ document.addEventListener('keydown', function(e)
 		case "M":
 		{
 			// slide button
-			if(e.ctrlKey && !e.shiftKey && top_bar_elems.slider && top_bar_elems.slider.style.display != "none")
+			if(e.ctrlKey && !e.shiftKey && !e.altKey && top_bar_elems.slider && top_bar_elems.slider.style.display != "none")
 			{
 				top_bar_elems.slider.click();
 				e.stopPropagation();
@@ -453,7 +453,7 @@ document.addEventListener('keydown', function(e)
 		case "O":
 		{
 			// copy original
-			if(all_allowed && e.ctrlKey && !e.shiftKey && e.target.classList.contains("string-group"))
+			if(all_allowed && e.ctrlKey && !e.altKey && !e.shiftKey && e.target.classList.contains("string-group"))
 			{
 				update_focus(e.target);
 				let idx = navigable_index - (navigables.length - strtablecache.length);
@@ -462,7 +462,7 @@ document.addEventListener('keydown', function(e)
 				e.preventDefault();
 			}
 			// click button
-			else if(e.ctrlKey && !e.shiftKey && bottom.style.display != "none")
+			else if(e.ctrlKey && !e.shiftKey && !e.altKey && bottom.style.display != "none")
 			{
 				edit_btns.copy.click();
 				e.stopPropagation();
@@ -474,7 +474,7 @@ document.addEventListener('keydown', function(e)
 		case "I":
 		{
 			// copy translation
-			if(all_allowed && e.ctrlKey && !e.shiftKey && e.target.classList.contains("string-group"))
+			if(all_allowed && e.ctrlKey && !e.shiftKey && !e.altKey && e.target.classList.contains("string-group"))
 			{
 				update_focus(e.target);
 				let idx = navigable_index - (navigables.length - strtablecache.length);
@@ -488,7 +488,7 @@ document.addEventListener('keydown', function(e)
 		case "U":
 		{
 			// unlink string
-			if(all_allowed && e.ctrlKey && !e.shiftKey && e.target.classList.contains("string-group"))
+			if(all_allowed && e.ctrlKey && !e.shiftKey && !e.altKey && e.target.classList.contains("string-group"))
 			{
 				update_focus(e.target);
 				let idx = navigable_index - (navigables.length - strtablecache.length);
@@ -506,9 +506,13 @@ document.addEventListener('keydown', function(e)
 			{
 				update_focus(e.target);
 				let idx = navigable_index - (navigables.length - strtablecache.length);
-				if(e.shiftKey)
+				if(e.shiftKey && !e.altKey)
 				{
 					multi_disable_string(strtablecache[idx][0]);
+				}
+				else if(!e.shiftKey && e.altKey)
+				{
+					all_disable_string(strtablecache[idx][0]);
 				}
 				else
 				{
@@ -522,7 +526,7 @@ document.addEventListener('keydown', function(e)
 		case "Tab":
 		{
 			// tab navigation
-			if(!e.ctrlKey && navigables.length > 0)
+			if(!e.ctrlKey && !e.altKey && navigables.length > 0)
 			{
 				update_focus(e.target);
 				if(e.shiftKey)
@@ -542,14 +546,14 @@ document.addEventListener('keydown', function(e)
 		case "ArrowLeft":
 		{
 			// previous file
-			if(e.ctrlKey && !e.shiftKey && top_bar_elems.prev_file && top_bar_elems.prev_file.style.display != "none")
+			if(e.ctrlKey && !e.shiftKey && !e.altKey && top_bar_elems.prev_file && top_bar_elems.prev_file.style.display != "none")
 			{
 				top_bar_elems.prev_file.click();
 				e.stopPropagation();
 				e.preventDefault();
 			}
 			// move previous
-			else if(!e.ctrlKey && !e.shiftKey && all_allowed && navigables.length > 0)
+			else if(!e.ctrlKey && !e.shiftKey && !e.altKey && all_allowed && navigables.length > 0)
 			{
 				update_focus(e.target);
 				navigable_index = (navigable_index - 1 + navigables.length) % navigables.length;
@@ -562,14 +566,14 @@ document.addEventListener('keydown', function(e)
 		case "ArrowRight":
 		{
 			// next file
-			if(e.ctrlKey && !e.shiftKey && top_bar_elems.next_file && top_bar_elems.next_file.style.display != "none")
+			if(e.ctrlKey && !e.shiftKey && !e.altKey && top_bar_elems.next_file && top_bar_elems.next_file.style.display != "none")
 			{
 				top_bar_elems.next_file.click();
 				e.stopPropagation();
 				e.preventDefault();
 			}
 			// move next
-			else if(!e.ctrlKey && !e.shiftKey && all_allowed && navigables.length > 0)
+			else if(!e.ctrlKey && !e.shiftKey && !e.altKey && all_allowed && navigables.length > 0)
 			{
 				update_focus(e.target);
 				navigable_index = (navigable_index + 1) % navigables.length;
@@ -582,7 +586,7 @@ document.addEventListener('keydown', function(e)
 		case "ArrowDown":
 		{
 			// move next/down
-			if(!e.ctrlKey && !e.shiftKey && all_allowed && navigables.length > 0)
+			if(!e.ctrlKey && !e.shiftKey && !e.altKey && all_allowed && navigables.length > 0)
 			{
 				update_focus(e.target);
 				// grid navigation
@@ -625,7 +629,7 @@ document.addEventListener('keydown', function(e)
 		case "ArrowUp":
 		{
 			// move previous/up
-			if(!e.ctrlKey && !e.shiftKey && all_allowed && navigables.length > 0)
+			if(!e.ctrlKey && !e.shiftKey && !e.altKey && all_allowed && navigables.length > 0)
 			{
 				update_focus(e.target);
 				// grid navigation
@@ -668,7 +672,7 @@ document.addEventListener('keydown', function(e)
 		case " ":
 		{
 			// next untranslated
-			if(all_allowed && e.ctrlKey && navigables.length > 0)
+			if(all_allowed && e.ctrlKey && !e.altKey && navigables.length > 0)
 			{
 				let params = new URLSearchParams(window.location.search)
 				if(params.has("page") && params.get("page") == "file")
@@ -2684,25 +2688,42 @@ function prepareGroupOn(node, i)
 			if(window.event.ctrlKey && !window.event.shiftKey && !window.event.altKey) // single disable
 			{
 				disable_string(this);
+				window.event.stopPropagation();
+				window.event.preventDefault();
 			}
 			else if(window.event.ctrlKey && !window.event.shiftKey && window.event.altKey) // multi disable
 			{
 				multi_disable_string(this);
+				window.event.stopPropagation();
+				window.event.preventDefault();
 			}
 			else if(!window.event.ctrlKey && window.event.shiftKey && !window.event.altKey) // unlink
 			{
 				if(bottom.style.display == "none")
 				{
 					unlink_string(this);
+					window.event.stopPropagation();
+					window.event.preventDefault();
 				}
 			}
 		};
+		span.oncontextmenu = function() // right click interaction
+		{
+			if(window.event.ctrlKey && !window.event.shiftKey && !window.event.altKey) // single disable
+			{
+				all_disable_string(this);
+				window.event.stopPropagation();
+				window.event.preventDefault();
+			}
+		}
 		original.onclick = function() // add original string copy
 		{
 			if(!window.event.ctrlKey && !window.event.shiftKey && window.event.altKey)
 			{
 				copy_original(this);
 				update_focus(span);
+				window.event.stopPropagation();
+				window.event.preventDefault();
 			}
 		};
 		translation.onclick = function() // add translated string copy AND open
@@ -2718,6 +2739,8 @@ function prepareGroupOn(node, i)
 					open_string(span);
 				}
 				update_focus(span);
+				window.event.stopPropagation();
+				window.event.preventDefault();
 			}
 		};
 	}
@@ -2735,6 +2758,13 @@ function multi_disable_string(elem)
 {
 	set_loading_text("Updating...");
 	post("/api/update_string", update_string_list, null, {setting:2, version:project.version, name:project.name, path:project.last_data["path"], group:elem.group, index:elem.string});
+	update_focus(elem);
+}
+
+function all_disable_string(elem)
+{
+	set_loading_text("Updating...");
+	post("/api/update_string", update_string_list, null, {setting:3, version:project.version, name:project.name, path:project.last_data["path"], group:elem.group, index:elem.string});
 	update_focus(elem);
 }
 
@@ -2859,6 +2889,7 @@ function open_file(data)
 				help.innerHTML = "<ul>\
 					<li><b>Ctrl+Click</b> or <b>Ctrl+Y</b> on a line to make it be <b>ignored</b> during the release process.</li>\
 					<li><b>Alt+Ctrl+Click</b> or <b>Ctrl+Shift+Y</b> on a line to <b>ignore ALL</b> occurences of this string in this file.</li>\
+					<li><b>Ctrl+Right Click</b> or <b>Ctrl+Alt+Y</b> on a line to <b>ignore ALL</b> occurences of this string in this project.</li>\
 					<li><b>Shift+Click</b> or <b>Ctrl+U</b> on a line to <b>unlink</b> it, if you need to set it to a translation specific to this part of the file.</li>\
 					<li><b>Alt+Click</b> or <b>Ctrl+O</b> on the original string (on the left) to copy it.</li>\
 					<li><b>Alt+Click</b> or <b>Ctrl+I</b> on the translated string (on the right) to copy it.</li>\
