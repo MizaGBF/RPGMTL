@@ -258,7 +258,13 @@ Return in data: 'path', list of 'folders', list of matching 'files'
 ```
 
 ```
-/api/replace_strings
-Payload: project 'name', 'src' string to replace, 'dst' string to replace with
-Return in data: project 'name', project 'config', 'count' modified strings
+/api/delete_knowledge
+Payload: project 'name', 'entry' original string to delete
+Return in data: project 'name', project 'config'
+```
+
+```
+/api/update_knowledge
+Payload: project 'name', 'entry' to update or null, 'original' string to set/update, 'translation' string, 'note', 'last_seen', 'occurence'
+Return in data: project 'name', project 'config'
 ```

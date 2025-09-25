@@ -1760,6 +1760,170 @@ function open_tool_list()
 	}
 }
 
+function open_knowledge()
+{
+	try
+	{
+		// top bar
+		update_top_bar(
+			"Knowledge Base",
+			function(){ // back callback
+				go_project(project.name);
+			},
+			function(){ // help
+				help.innerHTML = "Consult or edit the Knowledge Base for AI translations";
+				help.style.display = "";
+			},
+			{
+				home:1
+			}
+		);
+		
+		// main part
+		fragment = new_page();
+		add_to(fragment, "div", {cls:["title"], br:true}).innerText = "Knowledge Base";
+		add_to(fragment, "div", {cls:["title", "left", "smalltext", "inline"], br:false}).innerText = "Entry";
+		const selection = add_to(fragment, "select", {cls:["input", "searchinput", "inline"], id:"base-select", navigable:true, br:false});
+		let opt = add_to(selection, "option", {br:false});
+		opt.value = -1;
+		opt.selected = true;
+		opt.disabled = true;
+		opt.textContent = "Select an entry";
+		for(let i = 0; i < project.config.ai_knowledge_base.length; ++i)
+		{
+			opt = add_to(selection, "option", {br:false});
+			opt.value = i;
+			opt.textContent = project.config.ai_knowledge_base[i]["original"] + " / " + project.config.ai_knowledge_base[i]["translation"];
+		}
+		const selected = add_to(fragment, "div", {cls:["title", "left"], id:"base-selected", br:false})
+		selected.innerText = "None selected";
+		selected.original_string = null;
+		add_to(fragment, "div", {cls:["title", "left", "smalltext"], br:false}).innerText = "Original";
+		const base_ori = add_to(fragment, "div", {cls:["input", "searchinput", "inline"], id:"base-ori", navigable:true, br:false});
+		base_ori.contentEditable = "plaintext-only";
+		add_to(fragment, "div", {cls:["title", "left", "smalltext"], br:false}).innerText = "Translation";
+		const base_tl = add_to(fragment, "div", {cls:["input", "searchinput", "inline"], id:"base-tl", navigable:true, br:false});
+		base_tl.contentEditable = "plaintext-only";
+		add_to(fragment, "div", {cls:["title", "left", "smalltext"], br:false}).innerText = "Note";
+		const base_note = add_to(fragment, "div", {cls:["input", "searchinput", "inline"], id:"base-note", navigable:true, br:false});
+		base_note.contentEditable = "plaintext-only";
+		add_to(fragment, "div", {cls:["title", "left", "smalltext"], br:false}).innerText = "Last seen (# of Translation ago)";
+		const base_seen = add_to(fragment, "input", {cls:["input", "searchinput", "inline"], id:"base-seen", navigable:true, br:false});
+		base_seen.value = "0";
+		add_to(fragment, "div", {cls:["title", "left", "smalltext"], br:false}).innerText = "# of Recent occurences";
+		const base_occu = add_to(fragment, "input", {cls:["input", "searchinput", "inline"], id:"base-occu", navigable:true, br:false});
+		base_occu.value = "0";
+		grid = add_to(fragment, "div", {cls:["grid"]});
+		add_grid_cell(grid, '<img src="assets/images/new.png"> New', function(){
+			selected.innerText = "None selected";
+			selected.original_string = null;
+			base_ori.textContent = "";
+			base_tl.textContent = "";
+			base_note.textContent = "";
+			base_seen.value = "0";
+			base_occu.value = "1";
+		});
+		add_grid_cell(grid, '<img src="assets/images/confirm.png"> Update', function(){
+			if(selected.original_string == null || selected.original_string != base_ori.textContent)
+			{
+				for(let i = 0; i < project.config.ai_knowledge_base.length; ++i)
+				{
+					if(project.config.ai_knowledge_base[i]["original"] == base_ori.textContent)
+					{
+						if(!window.confirm("Another entry exists for this original string, this will replace it.\nConfirm?"))
+						{
+							return;
+						}
+					}
+				}
+			}
+			if(!/^[+-]?\d+$/.test(base_seen.value))
+			{
+				push_popup("\"Last seen\" isn't a valid integer");
+				return;
+			}
+			if(!/^[+-]?\d+$/.test(base_occu.value))
+			{
+				push_popup("\"Occurences\" isn't a valid integer");
+				return;
+			}
+			if(base_ori.textContent.trim() == "" || base_tl.textContent.textContent.trim() == "")
+			{
+				push_popup("The Original and Translations strings can't be empty");
+				return;
+			}
+			post("/api/update_knowledge", function(result_data) {
+				set_loading(false);
+				for(let i = selection.options.length - 1; i >= 1; i--)
+				{
+					selection.remove(i);
+				}
+				for(let i = 0; i < project.config.ai_knowledge_base.length; ++i)
+				{
+					let opt = add_to(selection, "option", {br:false});
+					opt.value = i;
+					opt.textContent = project.config.ai_knowledge_base[i]["original"] + " / " + project.config.ai_knowledge_base[i]["translation"];
+					if(project.config.ai_knowledge_base[i]["original"] == base_ori.textContent)
+						opt.selected = true;
+				}
+				selected.innerText = "Selected: " + base_ori.textContent + " / " + base_tl.textContent;
+				selected.original_string = base_ori.textContent;
+			}, null, {
+				name:project.name,
+				entry:selected.original_string,
+				original:base_ori.textContent,
+				translation:base_tl.textContent,
+				note:base_note.textContent,
+				last_seen:base_seen.value,
+				occurence:base_occu.value
+			});
+		});
+		add_grid_cell(grid, '<img src="assets/images/trash.png"> Delete', function(){
+			if(selected.original_string == null)
+			{
+				push_popup("No entry selected");
+			}
+			else
+			{
+				post("/api/delete_knowledge", function(result_data) {
+					set_loading(false);
+					for(let i = selection.options.length - 1; i >= 1; i--)
+					{
+						selection.remove(i);
+					}
+					for(let i = 0; i < project.config.ai_knowledge_base.length; ++i)
+					{
+						let opt = add_to(selection, "option", {br:false});
+						opt.value = i;
+						opt.textContent = project.config.ai_knowledge_base[i]["original"] + " / " + project.config.ai_knowledge_base[i]["translation"];
+					}
+					selection.options[0].selected = true;
+					selected.innerText = "None selected";
+					selected.original_string = null;
+				}, null, {name:project.name, entry:selected.original_string});
+			}
+		});
+		let select_callback = function() {
+			selected.innerText = "Selected: " + project.config.ai_knowledge_base[this.value]["original"] + " / " + project.config.ai_knowledge_base[this.value]["translation"];
+			selected.original_string = project.config.ai_knowledge_base[this.value]["original"];
+			base_ori.textContent = project.config.ai_knowledge_base[this.value]["original"];
+			base_tl.textContent = project.config.ai_knowledge_base[this.value]["translation"];
+			base_note.textContent = project.config.ai_knowledge_base[this.value]["note"];
+			base_seen.value = "" + project.config.ai_knowledge_base[this.value]["last_seen"];
+			base_occu.value = "" + project.config.ai_knowledge_base[this.value]["occurence"];
+		};
+		selection.onchange = select_callback;
+		selection.onchange = select_callback;
+		update_main(fragment);
+	}
+	catch(err)
+	{
+		console.error("Exception thrown", err.stack);
+		push_popup("An unexpected error occured.");
+		go_project();
+	}
+	}
+
 // translator pick menu /api/translator
 function translator_menu(data)
 {
@@ -1958,6 +2122,7 @@ function project_menu(data = null)
 				<ul>\
 					<li><b>Replace Strings in batch</b> allows you to do batch replacement of case-sensitive strings.</li>\
 					<li><b>Backup Control</b> to open the list of backups if you need to revert the project strings data to an earlier state.</li>\
+					<li><b>Knowledge Base</b> to open the list of knowledge entries for AI translations.</li>\
 					<li><b>Import RPGMTL Strings</b> to import strings from RPGMTL projects from any version.</li>\
 					<li><b>Import RPGMakerTrans v3 Strings</b> to import strings from RPGMakerTrans v3 projects.</li>\
 				</ul>\
@@ -2042,6 +2207,9 @@ function project_menu(data = null)
 			});
 			add_grid_cell(grid, '<img src="assets/images/copy.png"> Backup Control', function(){
 				go_backups(project.name);
+			});
+			add_grid_cell(grid, '<img src="assets/images/ai.png"> Knowledge Base', function(){
+				open_knowledge();
 			});
 			add_grid_cell(grid, '<img src="assets/images/import.png"> Import RPGMTL Strings', function(){
 				local_browse("Import RPGMTL", "Select an old RPGMTL strings file.", 2);

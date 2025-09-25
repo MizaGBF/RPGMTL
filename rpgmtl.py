@@ -117,6 +117,8 @@ class RPGMTL():
                 web.post('/api/replace_strings', self.replace_strings), # Browse local files
                 web.post('/api/use_tool', self.use_tool), # Use a tool
                 web.post('/api/bookmark_tool', self.bookmark_tool), # Bookmark a tool
+                web.post('/api/delete_knowledge', self.delete_knowledge), # delete a knowledge base entry
+                web.post('/api/update_knowledge', self.update_knowledge), # update a knowledge base entry
         ])
         # variables
         self.port : int = 8000 # Port to start the server with
@@ -511,7 +513,7 @@ class RPGMTL():
                     self.log.error("Couldn't create the following folder:" + name + k + "\n" + self.trbk(ex))
             # initialize config.json
             self.projects[name] = {
-                "format_version":1, # config.json format version
+                "format_version":2, # config.json format version
                 "version":0, # string iteration
                 "settings":{},
                 "path":path + "/",
@@ -541,12 +543,16 @@ class RPGMTL():
     def update_project_config_format(self : RPGMTL, data : dict[str, Any]) -> dict[str, Any]:
         ver = data.get("format_version", 0)
         if ver < 1:
-            if "gemini_knowledge_base" in data["settings"]:
-                data["ai_knowledge_base"] = data["settings"]["gemini_knowledge_base"]
-                data["settings"].pop("gemini_knowledge_base")
+            if "ai_knowledge_base" in data["settings"]:
+                data["ai_knowledge_base"] = data["settings"]["ai_knowledge_base"]
+                data["settings"].pop("ai_knowledge_base")
             else:
                 data["ai_knowledge_base"] = []
-        data["format_version"] = 1
+        if ver < 2:
+            if "gemini_knowledge_base" in data:
+                data["ai_knowledge_base"] = data["gemini_knowledge_base"]
+                data["settings"].pop("gemini_knowledge_base")
+        data["format_version"] = 2
         return data
 
     # load a project strings.json file
@@ -2125,6 +2131,93 @@ class RPGMTL():
                 {
                     "result":"ok", "data":{"config":self.projects[name], "name":name},
                     "message":msg
+                }
+            )
+            
+    # /api/delete_knowledge
+    async def delete_knowledge(self : RPGMTL, request : web.Request) -> web.Response:
+        payload = await request.json()
+        name = payload.get('name', None)
+        entry = payload.get('entry', None)
+        if name is None:
+            return web.json_response({"result":"bad", "message":"Bad request, missing 'name' parameter"}, status=400)
+        elif entry is None:
+            return web.json_response({"result":"bad", "message":"Bad request, missing 'entry' parameter"}, status=400)
+        else:
+            for i  in range(len(self.projects[name]["ai_knowledge_base"])):
+                if self.projects[name]["ai_knowledge_base"][i]["original"] == entry:
+                    del self.projects[name]["ai_knowledge_base"][i]
+                    self.modified[name] = True
+                    return web.json_response({"result":"ok", "data":{"config":self.projects[name], "name":name}, "message":"The entry has been deleted"})
+            return web.json_response({"result":"ok", "data":{"config":self.projects[name], "name":name}, "message":"The entry isn't found, nothing has been deleted"})
+            
+    # /api/update_knowledge
+    async def update_knowledge(self : RPGMTL, request : web.Request) -> web.Response:
+        payload = await request.json()
+        name = payload.get('name', None)
+        entry = payload.get('entry', None)
+        original = payload.get('original', None)
+        translation = payload.get('translation', None)
+        note = payload.get('note', None)
+        last_seen = payload.get('last_seen', None)
+        occurence = payload.get('occurence', None)
+        if name is None:
+            return web.json_response({"result":"bad", "message":"Bad request, missing 'name' parameter"}, status=400)
+        elif original is None:
+            return web.json_response({"result":"bad", "message":"Bad request, missing 'original' parameter"}, status=400)
+        elif translation is None:
+            return web.json_response({"result":"bad", "message":"Bad request, missing 'translation' parameter"}, status=400)
+        elif note is None:
+            return web.json_response({"result":"bad", "message":"Bad request, missing 'note' parameter"}, status=400)
+        elif last_seen is None:
+            return web.json_response({"result":"bad", "message":"Bad request, missing 'last_seen' parameter"}, status=400)
+        elif occurence is None:
+            return web.json_response({"result":"bad", "message":"Bad request, missing 'occurence' parameter"}, status=400)
+        else:
+            try:
+                last_seen = int(last_seen)
+                if last_seen < 0:
+                    raise Exception()
+            except:
+                return web.json_response({"result":"ok", "data":{"config":self.projects[name], "name":name}, "message":"Error, 'Last Seen' isn't a positive integer"})
+            try:
+                occurence = int(occurence)
+                if occurence < 0:
+                    raise Exception()
+            except:
+                return web.json_response({"result":"ok", "data":{"config":self.projects[name], "name":name}, "message":"Error, 'Occurence' isn't a positive integer"})
+            updated : bool = False
+            index : int = -1
+            # check existing entries to replace if needed
+            i : int = 0
+            while i < len(self.projects[name]["ai_knowledge_base"]):
+                if (
+                    self.projects[name]["ai_knowledge_base"][i]["original"] == entry or
+                    self.projects[name]["ai_knowledge_base"][i]["original"] == original
+                ):
+                    if index == -1:
+                        index = i
+                        i += 1
+                    else:
+                        del self.projects[name]["ai_knowledge_base"][i]
+                    updated = True
+                else:
+                    i += 1
+            if index == -1:
+                self.projects[name]["ai_knowledge_base"].append(None)
+            self.projects[name]["ai_knowledge_base"][index] = {
+                "original":original,
+                "translation":translation,
+                "note":note,
+                "last_seen":last_seen,
+                "occurence":occurence
+            }
+            self.modified[name] = True
+            return web.json_response(
+                {
+                    "result":"ok",
+                    "data":{"config":self.projects[name], "name":name},
+                    "message":("The entry has been added" if not updated else "The entry has been updated")
                 }
             )
 
