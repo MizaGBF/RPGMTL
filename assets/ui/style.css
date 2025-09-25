@@ -1,6 +1,6 @@
 :root {
-  --ori-width: 45%;
-  --tl-width: 45%;
+  --ori-width: 50%;
+  --tl-width: 50%;
 }
 
 @keyframes animation-button-press {
@@ -311,6 +311,7 @@ li {
 
 .string-group {
 	padding: 0px;
+	width: calc(100% - 18px);
 }
 
 .marker {
@@ -319,20 +320,50 @@ li {
 	padding-bottom: 5px;
 	margin-top: 5px;
 	margin-bottom: 5px;
-	margin-left: 4px;
-	margin-right: 0px;
 	
 	display: inline-block;
 	vertical-align: top;
-	min-width: 1%;
-	max-width: 1%;
+	min-width: 20px;
+	max-width: 20px;
 	min-height: 30px;
 	border: 1px solid;
 	border-color: #000000;
 }
 
+.marker-pad-left {
+	margin-left: 4px;
+}
+
+.marker-pad-right {
+	margin-right: 4px;
+}
+
 .modified {
 	background: #ffbb00;
+}
+
+.marker-red {
+	background: #ff0000;
+}
+
+.marker-green {
+	background: #00ff00;
+}
+
+.marker-blue {
+	background: #0000ff;
+}
+
+.marker-yellow {
+	background: #ffff00;
+}
+
+.marker-pink {
+	background: #ff00ff;
+}
+
+.marker-cyan {
+	background: #00ffff;
 }
 
 .complete {
@@ -467,11 +498,11 @@ a:active {
 }
 
 .original {
-	width: var(--ori-width);
+	width: calc(var(--ori-width) - 36px);
 }
 
 .translation {
-	width: var(--tl-width);
+	width: calc(var(--tl-width) - 36px);
 }
 
 .grid {

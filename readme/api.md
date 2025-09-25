@@ -204,6 +204,12 @@ Return in data: project 'name', project 'config'
 ```
 
 ```
+/api/update_marker
+Payload: project 'name', current file 'path', string global 'id', marker 'value' (0-6)
+Return in data: project 'name', project 'config', file 'path', project 'strings', 'list' of strings in file
+```
+
+```
 /api/update_string (Edit Translation)
 Payload: project 'name', file 'path', project 'version', 'group' index, string 'index', 'string' translation
 Return in data: project 'name', project 'config', file 'path', project 'strings', 'list' of strings in file

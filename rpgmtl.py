@@ -108,6 +108,7 @@ class RPGMTL():
                 web.post('/api/ignore_file', self.ignore_file), # Toggle File ignore value
                 web.post('/api/file', self.open_file), # Open File
                 web.post('/api/file_action', self.run_action), # Run file action
+                web.post('/api/update_marker', self.update_marker), # Edit string marker
                 web.post('/api/update_string', self.edit_string), # Edit string values
                 web.post('/api/translate_string', self.translate_string), # Translate a string
                 web.post('/api/translate_file', self.translate_file), # Translate a file
@@ -562,7 +563,7 @@ class RPGMTL():
         try:
             if name not in self.strings:
                 with open('projects/' + name + '/strings.json', mode='r', encoding='utf-8') as f:
-                    self.strings[name] = json.load(f)
+                    self.strings[name] = self.update_string_format(json.load(f))
                 self.start_compute_translated(name) # force an up to date compute
             return self.strings[name]
         except OSError:
@@ -570,6 +571,15 @@ class RPGMTL():
         except Exception as e:
             self.log.error("Failed to load strings of project " + name + "\n" + self.trbk(e))
             raise e
+
+    # Update the content of strings.json to later formats
+    def update_string_format(self : RPGMTL, strings : dict[str, Any]) -> dict[str, Any]:
+        ver = strings.get("version", 0)
+        if ver < 1:
+            for sid in strings["strings"]:
+                strings["strings"][sid].insert(3, 0)
+        strings["version"] = 1
+        return strings
 
     # backup a project strings.json file and backups
     def backup_strings_file(self : RPGMTL, name : str) -> None:
@@ -719,7 +729,8 @@ class RPGMTL():
                                 index["strings"][reverse_strings[s]][2] += 1 # increase occurence count
                             else:
                                 reverse_strings[s] = str(str_id) # new id
-                                index["strings"][str(str_id)] = [s, None, 1]
+                                # base string, global translation, occurence count, color marker
+                                index["strings"][str(str_id)] = [s, None, 1, 0]
                                 str_id += 1 # increase for next id
                         index["files"][target_file].append(group)
             except Exception as e:
@@ -1605,6 +1616,27 @@ class RPGMTL():
                 return web.json_response({"result":"ok", "data":{}, "message":message})
             else:
                 return web.json_response({"result":"ok", "data":{}})
+
+    # /api/update_marker
+    async def update_marker(self : RPGMTL, request : web.Request) -> web.Response:
+        payload = await request.json()
+        name = payload.get('name', None)
+        sid = payload.get('id', None)
+        value = payload.get('value', None)
+        path = payload.get('path', None)
+        if name is None:
+            return web.json_response({"result":"bad", "message":"Bad request, missing 'name' parameter"}, status=400)
+        elif sid is None:
+            return web.json_response({"result":"bad", "message":"Bad request, missing 'sid' parameter"}, status=400)
+        elif value is None:
+            return web.json_response({"result":"bad", "message":"Bad request, missing 'value' parameter"}, status=400)
+        elif path is None:
+            return web.json_response({"result":"bad", "message":"Bad request, missing 'path' parameter"}, status=400)
+        else:
+            self.strings[name]["strings"][sid][2] = 0
+            self.strings[name]["strings"][sid][3] = value
+            self.modified[name] = True
+            return web.json_response({"result":"ok", "data":{"config":self.projects[name], "name":name, "path":path, "strings":self.strings[name]["strings"], "list":self.strings[name]["files"][path]}})
 
     # /api/update_string
     async def edit_string(self : RPGMTL, request : web.Request) -> web.Response:

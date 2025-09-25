@@ -449,6 +449,20 @@ document.addEventListener('keydown', function(e)
 			}
 			break;
 		}
+		case "b":
+		case "B":
+		{
+			// cycle the color
+			if(all_allowed && e.ctrlKey && !e.shiftKey && !e.altKey && e.target.classList.contains("string-group"))
+			{
+				update_focus(e.target);
+				let idx = navigable_index - (navigables.length - strtablecache.length);
+				cycle_marker(strtablecache[idx][0]);
+				e.stopPropagation();
+				e.preventDefault();
+			}
+			break;
+		}
 		case "o":
 		case "O":
 		{
@@ -1178,11 +1192,11 @@ function update_top_bar(title, back_callback, help_callback = null, additions = 
 			top_bar_elems.slider = add_button(null, "Slide String Areas", "assets/images/tl_slide.png", function(){
 				tl_style = (tl_style + 1) % 5;
 				/* Positions
-					10% 25% 45% 65% 80%
+					10% 25% 50% 75% 90%
 				*/
-				const percents = [10, 25, 45, 65, 80];
+				const percents = [10, 25, 50, 75, 90];
 				document.documentElement.style.setProperty('--ori-width', percents[tl_style] + "%");
-				document.documentElement.style.setProperty('--tl-width', (90 - percents[tl_style]) + "%");
+				document.documentElement.style.setProperty('--tl-width', (100 - percents[tl_style]) + "%");
 			}, false);
 			if(top_bar_elems.refresh)
 				top_bar_elems.refresh.before(top_bar_elems.slider);
@@ -2882,7 +2896,8 @@ function prepareGroupOn(node, i)
 		span.group = i;
 		span.string = j;
 		
-		let marker = add_to(span, "div", {cls:["marker", "inline"], br:false}); // left marker (modified, plugins...)
+		let marker = add_to(span, "div", {cls:["marker", "inline", "marker-pad-left"], br:false}); // left marker (modified, plugins...)
+		let user_marker = add_to(span, "div", {cls:["marker", "inline", "marker-pad-right"], br:false}); // second marker (user color marker)
 		
 		let original = add_to(span, "pre", {cls:["title", "inline", "smalltext", "string-area", "original"], br:false}); // original string
 		original.group = i;
@@ -2893,7 +2908,7 @@ function prepareGroupOn(node, i)
 		translation.group = i;
 		translation.string = j;
 		
-		strtablecache.push([span, marker, translation, original]); // add to strtablecache
+		strtablecache.push([span, marker, translation, original, user_marker]); // add to strtablecache
 		span.onclick = function() // add string interactions
 		{
 			if(window.event.ctrlKey && !window.event.shiftKey && !window.event.altKey) // single disable
@@ -2923,6 +2938,12 @@ function prepareGroupOn(node, i)
 			if(window.event.ctrlKey && !window.event.shiftKey && !window.event.altKey) // single disable
 			{
 				all_disable_string(this);
+				window.event.stopPropagation();
+				window.event.preventDefault();
+			}
+			else if(!window.event.ctrlKey && !window.event.shiftKey && !window.event.altKey) // marker toggle
+			{
+				cycle_marker(this);
 				window.event.stopPropagation();
 				window.event.preventDefault();
 			}
@@ -2984,6 +3005,16 @@ function unlink_string(elem)
 	set_loading_text("Updating...");
 	post("/api/update_string", update_string_list, null, {setting:0, version:project.version, name:project.name, path:project.last_data["path"], group:elem.group, index:elem.string});
 	update_focus(elem);
+}
+
+function cycle_marker(elem)
+{
+	post("/api/update_marker", update_string_list, null, {
+		name:project.name,
+		path:project.last_data["path"],
+		id:project.string_groups[elem.group][elem.string][0],
+		value:(project.strings[project.string_groups[elem.group][elem.string][0]][3] + 1) % 7
+	});
 }
 
 function copy_original(elem)
@@ -3098,6 +3129,7 @@ function open_file(data)
 			},
 			function(){ // help
 				help.innerHTML = "<ul>\
+					<li><b>Right Click</b> or <b>Ctrl+B</b> on a line to cycle the global marker.</li>\
 					<li><b>Ctrl+Click</b> or <b>Ctrl+Y</b> on a line to make it be <b>ignored</b> during the release process.</li>\
 					<li><b>Alt+Ctrl+Click</b> or <b>Ctrl+Shift+Y</b> on a line to <b>ignore ALL</b> occurences of this string in this file.</li>\
 					<li><b>Ctrl+Right Click</b> or <b>Ctrl+Alt+Y</b> on a line to <b>ignore ALL</b> occurences of this string in this project.</li>\
@@ -3329,6 +3361,52 @@ function update_string_list(data)
 			const elems = strtablecache[i];
 			// retrieve string details
 			const s = project.string_groups[elems[0].group][elems[0].string];
+			const g = project.strings[s[0]];
+			// color marker
+			switch(g[3])
+			{
+				case 1:
+				{
+					elems[4].classList.remove("marker-green", "marker-blue", "marker-pink", "marker-yellow", "marker-cyan");
+					elems[4].classList.add("marker-red");
+					break;
+				}
+				case 2:
+				{
+					elems[4].classList.remove("marker-red", "marker-blue", "marker-pink", "marker-yellow", "marker-cyan");
+					elems[4].classList.add("marker-green");
+					break;
+				}
+				case 3:
+				{
+					elems[4].classList.remove("marker-red", "marker-green", "marker-pink", "marker-yellow", "marker-cyan");
+					elems[4].classList.add("marker-blue");
+					break;
+				}
+				case 4:
+				{
+					elems[4].classList.remove("marker-red", "marker-green", "marker-blue",  "marker-yellow", "marker-cyan");
+					elems[4].classList.add("marker-pink");
+					break;
+				}
+				case 5:
+				{
+					elems[4].classList.remove("marker-red", "marker-green", "marker-blue", "marker-pink", "marker-cyan");
+					elems[4].classList.add("marker-yellow");
+					break;
+				}
+				case 6:
+				{
+					elems[4].classList.remove("marker-red", "marker-green", "marker-blue", "marker-pink", "marker-yellow");
+					elems[4].classList.add("marker-cyan");
+					break;
+				}
+				default:
+				{
+					elems[4].classList.remove("marker-red", "marker-green", "marker-blue", "marker-pink", "marker-yellow", "marker-cyan");
+					break;
+				}
+			}
 			if(s[2]) // local/linked check
 			{
 				elems[0].classList.toggle("unlinked", true);
@@ -3348,7 +3426,6 @@ function update_string_list(data)
 			else // global
 			{
 				elems[0].classList.toggle("unlinked", false);
-				const g = project.strings[s[0]];
 				if(g[1] == null)
 				{
 					if(elems[2].textContent != "")

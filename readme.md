@@ -146,6 +146,7 @@ In the file page:
 - `Ctrl+P` to go back to the project page, if available.  
 - `Ctrl+R` to reload the page, if available.  
 - `Ctrl+M` to move and slide the original and translated string areas.  
+- `Ctrl+B` to cycle the selected string marker color. Markers are at the global level.  
 - `Ctrl+O` to copy the selected string original version.  
 - `Ctrl+I` to copy the selected string translated version.  
 - `Ctrl+U` to unlink/link back the string from/to its global translation.  
