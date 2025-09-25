@@ -268,3 +268,9 @@ Return in data: project 'name', project 'config'
 Payload: project 'name', 'entry' to update or null, 'original' string to set/update, 'translation' string, 'note', 'last_seen', 'occurence'
 Return in data: project 'name', project 'config'
 ```
+
+```
+/api/update_notes
+Payload: project 'name', 'notes'
+Return in data: project 'name', project 'config'
+```

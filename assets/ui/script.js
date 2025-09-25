@@ -1922,7 +1922,45 @@ function open_knowledge()
 		push_popup("An unexpected error occured.");
 		go_project();
 	}
+}
+
+function open_notes()
+{
+	try
+	{
+		// top bar
+		update_top_bar(
+			"Notes",
+			function(){ // back callback
+				go_project(project.name);
+			},
+			function(){ // help
+				help.innerHTML = "Take notes.";
+				help.style.display = "";
+			},
+			{
+				home:1
+			}
+		);
+		
+		// main part
+		fragment = new_page();
+		add_to(fragment, "div", {cls:["title"], br:true}).innerText = "Notepad";
+		const notepad = add_to(fragment, "div", {cls:["input", "noteinput"], navigable:true});
+		notepad.contentEditable = "plaintext-only";
+		notepad.textContent = project.config.notes;
+		add_interaction(fragment, '<img src="assets/images/confirm.png"> Save', function(){
+			post("/api/update_notes", null, null, {name:project.name, notes:notepad.textContent});
+		});
+		update_main(fragment);
 	}
+	catch(err)
+	{
+		console.error("Exception thrown", err.stack);
+		push_popup("An unexpected error occured.");
+		go_project();
+	}
+}
 
 // translator pick menu /api/translator
 function translator_menu(data)
@@ -2123,6 +2161,7 @@ function project_menu(data = null)
 					<li><b>Replace Strings in batch</b> allows you to do batch replacement of case-sensitive strings.</li>\
 					<li><b>Backup Control</b> to open the list of backups if you need to revert the project strings data to an earlier state.</li>\
 					<li><b>Knowledge Base</b> to open the list of knowledge entries for AI translations.</li>\
+					<li><b>Notepad</b> is used to note things.</li>\
 					<li><b>Import RPGMTL Strings</b> to import strings from RPGMTL projects from any version.</li>\
 					<li><b>Import RPGMakerTrans v3 Strings</b> to import strings from RPGMakerTrans v3 projects.</li>\
 				</ul>\
@@ -2208,9 +2247,15 @@ function project_menu(data = null)
 			add_grid_cell(grid, '<img src="assets/images/copy.png"> Backup Control', function(){
 				go_backups(project.name);
 			});
-			add_grid_cell(grid, '<img src="assets/images/ai.png"> Knowledge Base', function(){
-				open_knowledge();
-			});
+		}
+		add_grid_cell(grid, '<img src="assets/images/ai.png"> Knowledge Base', function(){
+			open_knowledge();
+		});
+		add_grid_cell(grid, '<img src="assets/images/note.png"> Notepad', function(){
+			open_notes();
+		});
+		if(project.config.version)
+		{
 			add_grid_cell(grid, '<img src="assets/images/import.png"> Import RPGMTL Strings', function(){
 				local_browse("Import RPGMTL", "Select an old RPGMTL strings file.", 2);
 			});

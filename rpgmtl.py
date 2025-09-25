@@ -119,6 +119,7 @@ class RPGMTL():
                 web.post('/api/bookmark_tool', self.bookmark_tool), # Bookmark a tool
                 web.post('/api/delete_knowledge', self.delete_knowledge), # delete a knowledge base entry
                 web.post('/api/update_knowledge', self.update_knowledge), # update a knowledge base entry
+                web.post('/api/update_notes', self.update_notes), # update project notes
         ])
         # variables
         self.port : int = 8000 # Port to start the server with
@@ -552,6 +553,7 @@ class RPGMTL():
             if "gemini_knowledge_base" in data:
                 data["ai_knowledge_base"] = data["gemini_knowledge_base"]
                 data["settings"].pop("gemini_knowledge_base")
+            data["notes"] = ""
         data["format_version"] = 2
         return data
 
@@ -2220,6 +2222,20 @@ class RPGMTL():
                     "message":("The entry has been added" if not updated else "The entry has been updated")
                 }
             )
+            
+    # /api/update_notes
+    async def update_notes(self : RPGMTL, request : web.Request) -> web.Response:
+        payload = await request.json()
+        name = payload.get('name', None)
+        notes = payload.get('notes', None)
+        if name is None:
+            return web.json_response({"result":"bad", "message":"Bad request, missing 'name' parameter"}, status=400)
+        elif notes is None:
+            return web.json_response({"result":"bad", "message":"Bad request, missing 'notes' parameter"}, status=400)
+        else:
+            self.projects[name]["notes"] = notes
+            self.modified[name] = True
+            return web.json_response({"result":"ok", "data":{"config":self.projects[name], "name":name}, "message":"Saved"})
 
 if __name__ == "__main__":
     RPGMTL().run()

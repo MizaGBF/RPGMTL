@@ -8,7 +8,7 @@ Future (possible) improvements or bugs are noted here:
   
 ### UI / QoL  
   
-- [ ] Add a built-in note/comment system.  
+- [X] Add a built-in note system.  
 - [X] Add a way (shortcut?) to toggle strings accross all files.  
 - [ ] A comment system for each line could be nice too.  
 - [X] A general tool/action page, with perhaps a way for plugins to register their own.  

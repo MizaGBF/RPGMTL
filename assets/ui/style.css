@@ -393,6 +393,11 @@ li {
 	width: calc(100vw - 100px);
 }
 
+.noteinput {
+	width: 95vw;
+	min-height: 300px;
+}
+
 .text-wrapper {
 	direction: rtl;
 	unicode-bidi: plaintext;
