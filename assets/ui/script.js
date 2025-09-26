@@ -2323,6 +2323,13 @@ function addSearchBar(node, bp, defaultVal = null)
 			);
 		}
 	}, true);
+	input.addEventListener('keypress', function(event) {
+		if(event.key === 'Enter' && event.shiftKey)
+		{
+			event.preventDefault();
+			button.click();
+		}
+	});
 	node.appendChild(document.createElement("br"));
 	// setting buttons
 	add_to(node, "div", {cls:["title", "left", "smalltext", "inline"], br:false}).innerText = "Search settings";
