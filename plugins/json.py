@@ -392,7 +392,7 @@ class JSON(Plugin):
                         self.owner.modified[name] = True
                         modified_file += 1
             # Disabling specific RPG maker event codes or groups
-            text_codes = set(["Command: Show Text", "Command: Choices", "Command: When ..."]) # allowed ones
+            text_codes = set(["Command: Show Text", "Command: Choices", "Command: When ...", "Command: Name Change"]) # allowed ones
             other_groups = set(["battlerName", "faceName", "characterName", "switches", "variables", "encryptionKey", "formula", "note", "@icon_name", "@battler_name"])
             for f in self.owner.strings[name]["files"]:
                 for i, group in enumerate(self.owner.strings[name]["files"][f]):
