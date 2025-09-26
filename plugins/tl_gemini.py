@@ -65,7 +65,7 @@ class TLGemini(TranslatorPlugin):
     def __init__(self : TLGemini) -> None:
         super().__init__()
         self.name : str = "TL Gemini"
-        self.description : str = " v0.11\nWrapper around the google-genai module to prompt Gemini to generate translations. (EXPERIMENTAL)"
+        self.description : str = " v0.13\nWrapper around the google-genai module to prompt Gemini to generate translations. (EXPERIMENTAL)"
         self.related_tool_plugins : list[str] = [self.name]
         self.instance = None
         self.key_in_use = None
@@ -103,7 +103,18 @@ class TLGemini(TranslatorPlugin):
         for string in input_batch["strings"]:
             id_set.add(string["id"])
         # load data
-        output : dict = json.loads(text)
+        err = 0
+        cur = len(text)
+        while err < 3:
+            try:
+                output : dict = json.loads(text)
+                break
+            except:
+                err += 1
+                cur = text.rfind("},", 0, cur)
+                if cur == -1:
+                    raise Exception("Text isn't valid JSON")
+                text = text[:cur+1] + "]}"
         # generate dict of edited strings for RPGMTL
         parsed : dict[str, str] = {}
         if "translations" in output:
