@@ -258,7 +258,6 @@ class JSON(Plugin):
         p : list[str] = string.split("\n")
         # remove name
         if mode == 0 and first_line:
-            print("hi")
             if " " not in p[0] and len(p[0]) <= limit:
                 start += p[0]
                 p = p[1:]
