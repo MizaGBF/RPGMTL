@@ -503,11 +503,11 @@ a:active {
 }
 
 .original {
-	width: calc(var(--ori-width) - 36px);
+	width: calc(var(--ori-width) - 50px);
 }
 
 .translation {
-	width: calc(var(--tl-width) - 36px);
+	width: calc(var(--tl-width) - 50px);
 }
 
 .grid {
