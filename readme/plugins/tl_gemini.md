@@ -17,4 +17,8 @@ Recommended models are:
 - `gemini-2.5-flash`: Moderate quality, moderate free requests per day.  
 - `gemini-2.5-flash-lite`: Lowest quality, highest free requests per day.  
   
+You can also use experimental preview models when available.  
+Consult the changelog here: https://ai.google.dev/gemini-api/docs/changelog  
+It's untested with the Gemma model family (the context window in particular might cause issues).
+  
 Check rate limits here: https://ai.google.dev/gemini-api/docs/rate-limits  

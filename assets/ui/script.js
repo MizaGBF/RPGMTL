@@ -2299,19 +2299,28 @@ function addSearchBar(node, bp, defaultVal = null)
 {
 	// input element
 	add_to(node, "div", {cls:["title", "left", "smalltext", "inline"], br:false}).innerText = "Search";
-	const input = add_to(node, "div", {cls:["input", "searchinput", "inline"], navigable:true, br:false});
-	input.contentEditable = "plaintext-only";
+	const input = add_to(node, "textarea", {cls:["input", "searchinput", "inline", "customarea"], navigable:true, br:false});
 	if(defaultVal != null)
-		input.innerText = defaultVal;
+		input.value = defaultVal;
 	else if(search_state.string != null) // set last string searched if not null
-		input.innerText = search_state.string;
+		input.value = search_state.string;
 	else
-		input.innerText = "";
+		input.value = "";
+	input.rows = "" + input.value.split("\n").length;
+	input.addEventListener('input', () => { // auto update rows on input
+		input.rows = "" + input.value.split("\n").length;
+	});
+	
 	// add confirm button
 	const button = add_button(node, "Search", "assets/images/search.png", function(){
-		if(input.innerText != "")
+		if(input.value != "")
 		{
-			go_search(project.name, bp, input.innerText, casesensi.classList.contains("green"), !contains.classList.contains("green"));
+			go_search(
+				project.name, bp,
+				input.value,
+				casesensi.classList.contains("green"),
+				!contains.classList.contains("green")
+			);
 		}
 	}, true);
 	node.appendChild(document.createElement("br"));
@@ -3686,19 +3695,27 @@ function replace_page()
 		add_to(fragment, "div", {cls:["title", "left"]}).innerText = "Replace strings by others (Case Sensitive)";
 		
 		add_to(fragment, "div", {cls:["title", "left", "smalltext"]}).innerText = "String to replace";
-		const input = add_to(fragment, "div", {cls:["input", "searchinput"], navigable:true});
-		input.contentEditable = "plaintext-only";
+		const input = add_to(fragment, "textarea", {cls:["input", "searchinput", "customarea"], navigable:true});
+		input.rows = "1";
+		input.addEventListener('input', () => { // auto update rows on input
+			input.rows = "" + input.value.split("\n").length;
+		});
+		
 		add_to(fragment, "div", {cls:["title", "left", "smalltext"]}).innerText = "Replacement";
-		const output = add_to(fragment, "div", {cls:["input", "searchinput"], navigable:true});
-		output.contentEditable = "plaintext-only";
+		const output = add_to(fragment, "textarea", {cls:["input", "searchinput", "customarea"], navigable:true});
+		output.rows = "1";
+		output.addEventListener('input', () => { // auto update rows on input
+			output.rows = "" + output.value.split("\n").length;
+		});
+		
 		add_to(fragment, "div", {cls:["interact", "text-button"], br:false, navigable:true, onclick:function(){
 			if(input.value == "")
 			{
 				push_popup("The input is empty.");
 			}
-			else if(window.event.ctrlKey || window.confirm("Replace '" + input.innerText + "'\nby '" + output.innerText + "'?"))
+			else if(window.event.ctrlKey || window.confirm("Replace '" + input.value + "'\nby '" + output.value + "'?"))
 			{
-				post("/api/replace_strings", null, null, {name:project.name, src:input.innerText, dst:output.innerText});
+				post("/api/replace_strings", null, null, {name:project.name, src:input.value, dst:output.value});
 			}
 		}}).innerHTML = '<img src="assets/images/copy.png"> Replace';
 		update_main(fragment);

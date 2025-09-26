@@ -429,6 +429,11 @@ li {
 	min-height: 300px;
 }
 
+.customarea {
+	overflow-y: hidden;
+	resize: none; 
+}
+
 .text-wrapper {
 	direction: rtl;
 	unicode-bidi: plaintext;
