@@ -132,7 +132,7 @@ class JSON(Plugin):
     def __init__(self : JSON) -> None:
         super().__init__()
         self.name : str = "JSON"
-        self.description : str = "v1.11\nHandle JSON files, including ones from RPG Maker MV/MZ"
+        self.description : str = "v1.12\nHandle JSON files, including ones from RPG Maker MV/MZ"
         self.related_tool_plugins : list[str] = [self.name]
 
     def get_setting_infos(self : JSON) -> dict[str, list]:
@@ -367,11 +367,11 @@ class JSON(Plugin):
                 "Data/Animations.rvdata", "Data/MapInfos.rvdata", "Data/Tilesets.rvdata", "Data/Scripts.rvdata",
                 "Data/Animations.rvdata2", "Data/MapInfos.rvdata2", "Data/Tilesets.rvdata2", "Data/Scripts.rvdata2"
             ]
-            for f in self.projects[name]["files"]:
+            for f in self.owner.projects[name]["files"]:
                 for i in ignored_files:
                     if i in f:
                         detected_rpgmv = True
-                        self.projects[name]["files"][f]["ignored"] = 1
+                        self.owner.projects[name]["files"][f]["ignored"] = 1
                         self.owner.modified[name] = True
                         modified_file += 1
                         break
@@ -387,9 +387,9 @@ class JSON(Plugin):
                                 modified_string += 1
             # Disable some RPG Maker text files
             if detected_rpgmv:
-                for f in self.projects[name]["files"]:
+                for f in self.owner.projects[name]["files"]:
                     if f.startswith(("www/img/tilesets/", "img/tilesets/")):
-                        self.projects[name]["files"][f]["ignored"] = 1
+                        self.owner.projects[name]["files"][f]["ignored"] = 1
                         self.owner.modified[name] = True
                         modified_file += 1
             # Disabling specific RPG maker event codes or groups
