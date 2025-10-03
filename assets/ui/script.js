@@ -1861,7 +1861,7 @@ function open_knowledge()
 				push_popup("\"Occurences\" isn't a valid integer");
 				return;
 			}
-			if(base_ori.textContent.trim() == "" || base_tl.textContent.textContent.trim() == "")
+			if(base_ori.textContent.trim() == "" || base_tl.textContent.trim() == "")
 			{
 				push_popup("The Original and Translations strings can't be empty");
 				return;
