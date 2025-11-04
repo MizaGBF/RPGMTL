@@ -311,7 +311,6 @@ class RPGMTL():
             if v: # if raised
                 folder = 'projects/' + k + '/'
                 try:
-                    self.modified[k] = False # reset it
                     # write config.json
                     with open(folder + "_tmp_config_.json", mode='w', encoding='utf-8') as f: # file is written to temporary location in case of issue
                         json.dump(self.projects[k], f, ensure_ascii=False, indent=4)
@@ -330,14 +329,15 @@ class RPGMTL():
                         self.log.info("Updated projects/" + k + "/strings.json")
                 except Exception as e:
                     self.log.error("Failed to update projects/" + k + "/strings.json:\n" + self.trbk(e))
+                self.modified[k] = False # reset it
         if self.settings_modified: # write settings if flag is set
             try:
-                self.settings_modified = False
                 with open('settings.json', mode='w', encoding='utf-8') as f:
                     json.dump({"version":1, "settings":self.settings, "history":self.history}, f, ensure_ascii=False, indent=0, separators=(',', ':'))
                 self.log.info("Updated settings.json")
             except Exception as e:
                 self.log.error("Failed to update settings.json:\n" + self.trbk(e))
+            self.settings_modified = False
 
     # Utility recursive function to format strings.json in a certain way, to make it humanly readable and easy to pick apart by git
     def serialize_format_json(self : RPGMTL, d : Any, level : int = 0, parent_is_list : bool = False) -> str|list[str]:
