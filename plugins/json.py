@@ -350,7 +350,8 @@ class JSON(Plugin):
                     'Ｇ':'G', '物理':'Physics', '炎':'Fire', '氷':'Ice', '雷':'Thunder', '水':'Water', '土':'Earth', '風':'Wind',
                     '光':'Light', '闇':'Dark', '盾':'Shield', '武器':'Weapon', '頭':'Head', '身体':'Body', '装飾品':'Accessories',
                     '魔法':'Magic', '特殊行動':'Special', 'ステート':'State', 'レベル':'Level', '気力':'Energy', '並び替え':'Sort',
-                    '防具':'Armor', '最強装備':'Optimize', '全て外す':'Remove all', 'ja_JP':'en_US'
+                    '防具':'Armor', '最強装備':'Optimize', '全て外す':'Remove all', 'ja_JP':'en_US',
+                    'はい':'Yes', 'いいえ':'No'
                 }
                 for s in self.owner.strings[name]["strings"]:
                     if self.owner.strings[name]["strings"][s][0] in default_tl and self.owner.strings[name]["strings"][s][0] is None:
@@ -393,14 +394,20 @@ class JSON(Plugin):
                         modified_file += 1
             # Disabling specific RPG maker event codes or groups
             text_codes = set(["Command: Show Text", "Command: Choices", "Command: When ...", "Command: Name Change"]) # allowed ones
-            other_groups = set(["battlerName", "faceName", "characterName", "switches", "variables", "encryptionKey", "formula", "note", "@icon_name", "@battler_name"])
+            other_groups = set(["battlerName", "faceName", "characterName", "parallaxName", "switches", "variables", "encryptionKey", "formula", "note", "@icon_name", "@battler_name", "numberFontFilename", "fallbackFonts", "mainFontFilename", "title1Name", "title2Name"])
             for f in self.owner.strings[name]["files"]:
                 for i, group in enumerate(self.owner.strings[name]["files"][f]):
-                    if (group[0].startswith("Command: ") and group[0] not in text_codes) or group[0] in other_groups:
+                    if (
+                        (group[0].startswith("Command: ") and group[0] not in text_codes) or
+                        (group[0] == "name" and ("/Map" in f or f.endswith("System.json"))) or # disable specific map/system name
+                        group[0] in other_groups
+                            ):
                         for j in range(1, len(group)):
                             self.owner.strings[name]["files"][f][i][j][3] = 1
                             self.owner.modified[name] = True
                             modified_string += 1
+                            
+                            
             # Disable number/boolean strings
             strids = set()
             for k, v in self.owner.strings[name]["strings"].items():
