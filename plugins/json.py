@@ -354,7 +354,7 @@ class JSON(Plugin):
                     'はい':'Yes', 'いいえ':'No'
                 }
                 for s in self.owner.strings[name]["strings"]:
-                    if self.owner.strings[name]["strings"][s][0] in default_tl and self.owner.strings[name]["strings"][s][0] is None:
+                    if self.owner.strings[name]["strings"][s][0] in default_tl and self.owner.strings[name]["strings"][s][1] is None:
                         self.owner.strings[name]["strings"][s][1] = default_tl[self.owner.strings[name]["strings"][s][0]]
                         self.owner.modified[name] = True
                         modified_string += 1
@@ -394,7 +394,7 @@ class JSON(Plugin):
                         modified_file += 1
             # Disabling specific RPG maker event codes or groups
             text_codes = set(["Command: Show Text", "Command: Choices", "Command: When ...", "Command: Name Change"]) # allowed ones
-            other_groups = set(["battlerName", "faceName", "characterName", "parallaxName", "switches", "variables", "encryptionKey", "formula", "note", "@icon_name", "@battler_name", "numberFontFilename", "fallbackFonts", "mainFontFilename", "title1Name", "title2Name"])
+            other_groups = set(["battlerName", "faceName", "characterName", "parallaxName", "switches", "variables", "encryptionKey", "formula", "note", "@icon_name", "@battler_name", "numberFontFilename", "fallbackFonts", "mainFontFilename", "title1Name", "title2Name", "battleback1Name", "battleback2Name"])
             for f in self.owner.strings[name]["files"]:
                 for i, group in enumerate(self.owner.strings[name]["files"][f]):
                     if (
