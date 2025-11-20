@@ -8,8 +8,8 @@ The TL Gemini Plugin is a Translator Plugin.
 It's a wrapper around the `google-genai` module.  
 The later Python module must be installed for the Plugin to load.  
   
-The plugin is currently in an experimental state, so the requirement isn't installed by default via `python -m pip install -r requirements.txt`.  
-It's also quite slow if you're on the free tier. This plugin is best suited for Batch Translation (using the `Translate this File` button).  
+Do note that the plugin can be slow, especially on the free tier.  
+This plugin is best suited for Batch Translation (using the `Translate this File` or `Batch Translate` buttons).  
   
 You can generate an API key at https://aistudio.google.com/apikey  
 Recommended models are:  

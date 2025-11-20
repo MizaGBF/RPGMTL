@@ -18,11 +18,12 @@ The strings are in order of occurence.
 An existing translation may or may not be provided.
 If, and only if, a translation is provided in the input, do NOT re-translate unless it's incorrect.
 Preserve placeholders (e.g. {playerName}, %VAR%, <tag>), punctuation, new line (e.g. \n and \\n), and code syntax.
+In regard to new lines, make sure to preserve the \n or \\n in the syntax they're written (i.e. the number of backslash used).
 
-In the input, you must also identify important proper nouns (characters, places, key items) that are not already in the provided knowledge base below.
+In the input, you must also identify important proper nouns (characters, places or key items) that are not already in the provided knowledge base below.
 Notes should be concise and help with future translations (e.g., gender, role) and NOT be lengthy descriptions.
 For example, they can includes a character gender, pronuns, specific terms relevant for the translation, and so on.
-Do NOT add general/common words, objects or onomatopoeia. Add ONLY unique, named entities, to not bloat the knowledge base.
+Do NOT add general/common words or expressions, objects or onomatopoeia. Add ONLY unique, named entities, to not bloat the knowledge base.
 
 Produce a single JSON object matching this specification:
 {"new_knowledge": [{"original": "TERM", "translation": "TRANSLATED_TERM", "note": "A helpful note."}],"translations": [{"id": "STRING_ID", "translation": "TRANSLATED_STRING"}]}
@@ -65,7 +66,7 @@ class TLGemini(TranslatorPlugin):
     def __init__(self : TLGemini) -> None:
         super().__init__()
         self.name : str = "TL Gemini"
-        self.description : str = " v0.13\nWrapper around the google-genai module to prompt Gemini to generate translations. (EXPERIMENTAL)"
+        self.description : str = " v1.0\nWrapper around the google-genai module to prompt Gemini to generate translations."
         self.related_tool_plugins : list[str] = [self.name]
         self.instance = None
         self.key_in_use = None
@@ -97,6 +98,72 @@ class TLGemini(TranslatorPlugin):
         except Exception as e:
              self.owner.log.error("[TL Gemini] Error in '_init_translator':\n" + self.owner.trbk(e))
 
+    def update_knowledge_base(
+        self : TLGemini,
+        name : str,
+        input_strings : list[dict[str, str]],
+        new_knowledge : list[dict[str, str]]
+    ) -> None:
+        base_ref = self.owner.projects[name]["ai_knowledge_base"]
+        # update last seen
+        for entry in base_ref:
+            found = False
+            for string in input_strings:
+                if entry["original"] in string["source"]:
+                    entry["occurence"] += 1
+                    entry["last_seen"] += 0
+                    found = True
+                    self.owner.modified[name] = True
+                    break
+            if not found:
+                entry["last_seen"] += 1
+                self.owner.modified[name] = True
+        # table of original : pointer to entries
+        ref = {entry["original"] : entry for entry in self.owner.projects[name]["ai_knowledge_base"]}
+        updated : int = 0
+        added : int = 0
+        deleted : int = 0
+        for entry in new_knowledge:
+            if "original" in entry and "translation" in entry and "note" in entry:
+                if entry["original"] in ref:
+                    ref[entry["original"]]["note"] = entry["note"]
+                    if ref[entry["original"]]["last_seen"] != 0: # if not found in above loop
+                        ref[entry["original"]]["last_seen"] = 0
+                        ref[entry["original"]]["occurence"] += 1
+                    updated += 1
+                    self.owner.modified[name] = True
+                else:
+                    # Checking if the entry added by the AI is a substring of an existing one
+                    # For example: AI tris to add John, when we have John Doe in our list
+                    # Note: Current solution isn't perfect, but it's to help with the bloat
+                    # Note²: Maybe add a setting toggle?
+                    found : bool = False
+                    for k in ref:
+                        if entry["original"] in k:
+                            found = True
+                            if ref[k]["last_seen"] != 0: # if not found in above loop
+                                ref[k]["last_seen"] = 0
+                                ref[k]["occurence"] += 1
+                            break
+                    if not found:
+                        base_ref.append({"original":entry["original"], "translation":entry["translation"], "note":entry["note"], "last_seen":0, "occurence":1})
+                        added += 1
+                        self.owner.modified[name] = True
+        # cleanup
+        i = 0
+        while i < len(base_ref):
+            if base_ref[i]["last_seen"] > 10: # if not seen in last 10 translations
+                base_ref[i]["occurence"] -= 1
+                self.owner.modified[name] = True
+            if base_ref[i]["occurence"] <= 0: # if occurence at 0, delete from base
+                base_ref.pop(i)
+                deleted += 1
+            else:
+                i += 1
+        # result
+        if updated + added + deleted != 0:
+            self.owner.log.info("[TL Gemini] Knowledge base of project {}: {} update(s), {} addition(s), {} deletion(s)".format(name, updated, added, deleted))
+
     def parse_model_output(self : TLGemini, text : str, name : str, input_batch : dict[str, Any]) -> dict[str, str]:
         # build set of string id from batch for validation
         id_set : set[str] = set()
@@ -113,7 +180,7 @@ class TLGemini(TranslatorPlugin):
                 err += 1
                 cur = text.rfind("},", 0, cur)
                 if cur == -1:
-                    raise Exception("Text isn't valid JSON")
+                    raise Exception("[TL Gemini] Text isn't valid JSON")
                 text = text[:cur+1] + "]}"
         # generate dict of edited strings for RPGMTL
         parsed : dict[str, str] = {}
@@ -123,65 +190,7 @@ class TLGemini(TranslatorPlugin):
                     parsed[string["id"]] = string["translation"]
         # updated knowledge base
         if "new_knowledge" in output:
-            base_ref = self.owner.projects[name]["ai_knowledge_base"]
-            # update last seen
-            for entry in base_ref:
-                found = False
-                for string in input_batch["strings"]:
-                    if entry["original"] in string["source"]:
-                        entry["occurence"] += 1
-                        entry["last_seen"] += 0
-                        found = True
-                        self.owner.modified[name] = True
-                        break
-                if not found:
-                    entry["last_seen"] += 1
-                    self.owner.modified[name] = True
-            # table of original : pointer to entries
-            ref = {entry["original"] : entry for entry in self.owner.projects[name]["ai_knowledge_base"]}
-            updated : int = 0
-            added : int = 0
-            deleted : int = 0
-            for entry in output["new_knowledge"]:
-                if "original" in entry and "translation" in entry and "note" in entry:
-                    if entry["original"] in ref:
-                        ref[entry["original"]]["note"] = entry["note"]
-                        if ref[entry["original"]]["last_seen"] != 0: # if not found in above loop
-                            ref[entry["original"]]["last_seen"] = 0
-                            ref[entry["original"]]["occurence"] += 1
-                        updated += 1
-                        self.owner.modified[name] = True
-                    else:
-                        # Checking if the entry added by the AI is a substring of an existing one
-                        # For example: AI tris to add John, when we have John Doe in our list
-                        # Note: Current solution isn't perfect, but it's to help with the bloat
-                        # Note²: Maybe add a setting toggle?
-                        found : bool = False
-                        for k in ref:
-                            if entry["original"] in k:
-                                found = True
-                                if ref[k]["last_seen"] != 0: # if not found in above loop
-                                    ref[k]["last_seen"] = 0
-                                    ref[k]["occurence"] += 1
-                                break
-                        if not found:
-                            base_ref.append({"original":entry["original"], "translation":entry["translation"], "note":entry["note"], "last_seen":0, "occurence":1})
-                            added += 1
-                            self.owner.modified[name] = True
-            # cleanup
-            i = 0
-            while i < len(base_ref):
-                if base_ref[i]["last_seen"] > 10: # if not seen in last 10 translations
-                    base_ref[i]["occurence"] -= 1
-                    self.owner.modified[name] = True
-                if base_ref[i]["occurence"] <= 0: # if occurence at 0, delete from base
-                    base_ref.pop(i)
-                    deleted += 1
-                else:
-                    i += 1
-            # result
-            if updated + added + deleted != 0:
-                self.owner.log.info("[TL Gemini] Knowledge base of project {}: {} update(s), {} addition(s), {} deletion(s)".format(name, updated, added, deleted))
+            self.update_knowledge_base(name, input_batch["strings"], output["new_knowledge"])
         return parsed
 
     async def ask_gemini(self : TLGemini, name : str, batch : dict[str, Any], settings : dict[str, Any] = {}) -> dict[str, str]:
