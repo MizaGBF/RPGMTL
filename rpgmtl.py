@@ -480,9 +480,9 @@ class RPGMTL():
                             update_file_dict[fpr.as_posix()] = {
                                 "file_type":FileType.NORMAL,
                                 "ignored":IntBool.FALSE,
-                                "strings":IntBool.FALSE,
-                                "translated":IntBool.FALSE,
-                                "disabled_strings":IntBool.FALSE
+                                "strings":0,
+                                "translated":0,
+                                "disabled_strings":0
                             }
                             self.log.info(fpr.as_posix() + " has been copied to project folder " + pname)
                         except Exception as e:

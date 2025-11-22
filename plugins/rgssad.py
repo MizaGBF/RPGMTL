@@ -1,5 +1,5 @@
 from __future__ import annotations
-from . import Plugin, FileType
+from . import Plugin, FileType, IntBool
 from pathlib import PurePath
 import struct
 import os
@@ -54,7 +54,7 @@ class RGSSAD(Plugin):
                             # add to update_file_dict
                             update_file_dict[(file_path.relative_to(backup_path)).as_posix()] = {
                                 "file_type":FileType.NORMAL,
-                                "ignored":False,
+                                "ignored":IntBool.FALSE,
                                 "strings":0,
                                 "translated":0,
                                 "disabled_strings":0,
