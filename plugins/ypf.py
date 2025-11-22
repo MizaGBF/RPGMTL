@@ -295,7 +295,7 @@ class YPF(Plugin):
                                 "ignored":False,
                                 "strings":0,
                                 "translated":0,
-                                "disabled_strings":0,
+                                "disabled_strings":0
                             }
                             # retrieve data to help with parsing later
                             if p.name == "YBN":

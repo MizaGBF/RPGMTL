@@ -1,5 +1,5 @@
 from __future__ import annotations
-from . import TranslatorPlugin, TranslatorBatchFormat
+from . import TranslatorPlugin
 try:
     from google.genai import Client
     from pydantic import BaseModel
@@ -71,8 +71,8 @@ class TLGemini(TranslatorPlugin):
         self.instance = None
         self.key_in_use = None
 
-    def get_format(self : TranslatorPlugin) -> TranslatorBatchFormat:
-        return TranslatorBatchFormat.AI
+    def get_format(self : TranslatorPlugin) -> TranslatorPlugin.TranslatorBatchFormat:
+        return TranslatorPlugin.TranslatorBatchFormat.AI
 
     def get_token_budget_threshold(self : TranslatorPlugin) -> int:
         return 20000

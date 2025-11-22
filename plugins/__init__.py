@@ -10,6 +10,32 @@ from typing import TYPE_CHECKING, Any
 if TYPE_CHECKING:
     from ..rpgmtl import RPGMTL
 
+# An enum used for project files
+class FileType(IntEnum):
+    NORMAL = 0 # any file
+    ARCHIVE = 1 # file containing other files
+    VIRTUAL = 2 # file contained in an archive
+    VIRTUAL_UNDEFINED = 3 # virtual but existence remains to be checked
+# An enum used for global string entry indexes
+class GloIndex(IntEnum):
+    ORI = 0 # original string
+    TL = 1 # translation
+    COUNT = 2 # occurence
+    COLOR = 3 # color marker
+# An enum used for file local string entry indexes
+class LocIndex(IntEnum):
+    ID = 0 # global string ID
+    TL = 1 # local translation
+    LOCAL = 2 # is local flag
+    IGNORED = 3 # is ignored flag
+    MODIFIED = 4 # is modified flag
+# An enum for string flags
+# We use integer instead of actual booleans to reduce file sizes on disk
+class IntBool(IntEnum):
+    FALSE = 0
+    TRUE = 1
+
+
 def get_plugin_from_ast(tree : ast.Module) -> tuple[list[ast.ClassDef], list[ast.ClassDef]]:
     classes : list[ast.ClassDef] = ([], [])
     for node in tree.body:
@@ -69,13 +95,6 @@ def load(rpgmtl : RPGMTL) -> None:
         path_filename = os.path.join('plugins/', filename)
         if filename not in ['__init__.py'] and filename.endswith('.py') and os.path.isfile(path_filename):
             _loadPlugin_(rpgmtl, path_filename, filename, relative=".", package='plugins')
-
-# An enum used for project files
-class FileType(IntEnum):
-    NORMAL = 0 # any file
-    ARCHIVE = 1 # file containing other files
-    VIRTUAL = 2 # file contained in an archive
-    VIRTUAL_UNDEFINED = 3 # virtual but existence remains to be checked
 
 class BasePlugin:
     SIMPLE_TOOL : int = 0
@@ -241,40 +260,34 @@ class Plugin(BasePlugin):
                 if self._enc_cur_ >= len(self.FILE_ENCODINGS):
                     raise Exception("Couldn't determine encoding of file content")
 
-class TranslatorBatchFormat(IntEnum):
-    STANDARD = 0 # string or list of string
-    AI = 1 # formatted for AI translation
-
-"""
-The TranslatorFormat will determine what input the translator plugin receives in translate_batch()
-    0 (STANDARD):
-        - translate_batch(): A list of string
-    1 (AI):
-        - translate_batch(): The following structure will be given:
-            {
-                "file":"FILE",
-                "number":BATCH_NUMBER,
-                "strings":[
-                    {
-                        "id":"GROUPINDEX-STRINGINDEX",
-                        "parent":"Group INDEX: GROUP_NAME",
-                        "source":"ORIGINAL_STRING",
-                        "translation":"TRANSLATED_STRING"
-                    }
-                ]
-            }
-        "translation" key is optional.
-        
-        The function must return a dict[str, str] where keys are string id (like given above) and values are the translated strings.
-"""
-
 class TranslatorPlugin(BasePlugin):
+    class TranslatorBatchFormat(IntEnum):
+        # The TranslatorFormat will determine what input the translator plugin receives in translate_batch()
+        STANDARD = 0
+        # translate_batch(): A list of string
+        AI = 1
+        # translate_batch(): The following structure will be given:
+        #    {
+        #        "file":"FILE",
+        #        "number":BATCH_NUMBER,
+        #        "strings":[
+        #            {
+        #                "id":"GROUPINDEX-STRINGINDEX",
+        #                "parent":"Group INDEX: GROUP_NAME",
+        #                "source":"ORIGINAL_STRING",
+        #                "translation":"TRANSLATED_STRING"
+        #            }
+        #        ]
+        #    }
+        #"translation" key is optional.
+        #The function must return a dict[str, str] where keys are string id (like given above) and values are the translated strings.
+
     def __init__(self : TranslatorPlugin) -> None:
         # Be sure to call super first, in your TranslatorPlugin
         super().__init__()
 
-    def get_format(self : TranslatorPlugin) -> TranslatorBatchFormat:
-        return TranslatorBatchFormat.STANDARD
+    def get_format(self : TranslatorPlugin) -> TranslatorPlugin.TranslatorBatchFormat:
+        return TranslatorPlugin.TranslatorBatchFormat.STANDARD
 
     def get_token_budget_threshold(self : TranslatorPlugin) -> int:
         # Only used for TranslatorBatchFormat.AI
@@ -352,16 +365,16 @@ class WalkHelper():
         local = self.groups[self.group][self.index]
         if auto_go_next:
             self._goNext()
-        if not local[3]:
-            glbal = self.strings[local[0]]
-            if glbal[0] != string:
+        if not local[LocIndex.IGNORED]:
+            glbal = self.strings[local[LocIndex.ID]]
+            if glbal[GloIndex.ORI] != string:
                 raise Exception("[WalkHelper] Invalid string match at (" + str(loc[0]) + "," + str(loc[1]) + ")")
-            if local[2]:
-                if local[1] is not None and local[1] != string: # patch if exists ANd different from original
-                    self.str_store = local[1]
+            if local[LocIndex.LOCAL]:
+                if local[LocIndex.TL] is not None and local[LocIndex.TL] != string: # patch if exists ANd different from original
+                    self.str_store = local[LocIndex.TL]
                     self.str_modified = True
-            elif glbal[1] is not None and glbal[1] != string: # patch if exists ANd different from original
-                self.str_store = glbal[1]
+            elif glbal[GloIndex.TL] is not None and glbal[GloIndex.TL] != string: # patch if exists ANd different from original
+                self.str_store = glbal[GloIndex.TL]
                 self.str_modified = True
 
     # Simple function to do all the needed step to update a string

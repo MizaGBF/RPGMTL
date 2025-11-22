@@ -1,5 +1,5 @@
 from __future__ import annotations
-from . import Plugin, WalkHelper
+from . import Plugin, WalkHelper, GloIndex, LocIndex, IntBool
 import json
 import io
 from pathlib import PurePath
@@ -197,13 +197,13 @@ class JSON(Plugin):
                     else:
                         continue
                     for j in range(1, len(group)):
-                        sid : str = self.owner.strings[name]["files"][file][i][j][0]
-                        if self.owner.strings[name]["strings"][sid][1] is not None:
+                        sid : str = self.owner.strings[name]["files"][file][i][j][LocIndex.ID]
+                        if self.owner.strings[name]["strings"][sid][GloIndex.TL] is not None:
                             if sid not in seen:
                                 seen.add(sid)
                                 s, b = self._tool_text_wrap_sub(
                                     limit,
-                                    self.owner.strings[name]["strings"][sid][1],
+                                    self.owner.strings[name]["strings"][sid][GloIndex.TL],
                                     mode,
                                     params["_t_name"],
                                     params["_t_start"],
@@ -211,13 +211,13 @@ class JSON(Plugin):
                                 )
                                 if b:
                                     self.owner.modified[name] = True
-                                    self.owner.strings[name]["strings"][sid][1] = s
+                                    self.owner.strings[name]["strings"][sid][GloIndex.TL] = s
                                     count += 1
                         
-                        if self.owner.strings[name]["files"][file][i][j][1] is not None:
+                        if self.owner.strings[name]["files"][file][i][j][LocIndex.TL] is not None:
                             s, b = self._tool_text_wrap_sub(
                                 limit,
-                                self.owner.strings[name]["strings"][sid][1],
+                                self.owner.strings[name]["strings"][sid][LocIndex.TL],
                                 mode,
                                 params["_t_name"],
                                 params["_t_start"],
@@ -225,7 +225,7 @@ class JSON(Plugin):
                             )
                             if b:
                                 self.owner.modified[name] = True
-                                self.owner.strings[name]["files"][file][i][j][1] = s
+                                self.owner.strings[name]["files"][file][i][j][LocIndex.TL] = s
                                 count += 1
             if count == 0:
                 return "No strings have been modified"
@@ -354,8 +354,11 @@ class JSON(Plugin):
                     'はい':'Yes', 'いいえ':'No'
                 }
                 for s in self.owner.strings[name]["strings"]:
-                    if self.owner.strings[name]["strings"][s][0] in default_tl and self.owner.strings[name]["strings"][s][1] is None:
-                        self.owner.strings[name]["strings"][s][1] = default_tl[self.owner.strings[name]["strings"][s][0]]
+                    if (
+                        self.owner.strings[name]["strings"][s][GloIndex.ORI] in default_tl and
+                        self.owner.strings[name]["strings"][s][GloIndex.TL] is None
+                            ):
+                        self.owner.strings[name]["strings"][s][GloIndex.TL] = default_tl[self.owner.strings[name]["strings"][s][GloIndex.ORI]]
                         self.owner.modified[name] = True
                         modified_string += 1
             detected_rpgmv : bool = False
@@ -382,14 +385,14 @@ class JSON(Plugin):
                     for i, g in enumerate(self.owner.strings[name]["files"][f]):
                         if g[0] in ['switches', 'variables', 'encryptionKey']:
                             for j in range(1, len(g)):
-                                self.owner.strings[name]["files"][f][i][j][3] = 1
+                                self.owner.strings[name]["files"][f][i][j][LocIndex.IGNORED] = IntBool.TRUE
                                 self.owner.modified[name] = True
                                 modified_string += 1
             # Disable some RPG Maker text files
             if detected_rpgmv:
                 for f in self.owner.projects[name]["files"]:
                     if f.startswith(("www/img/tilesets/", "img/tilesets/")):
-                        self.owner.projects[name]["files"][f]["ignored"] = 1
+                        self.owner.projects[name]["files"][f]["ignored"] = IntBool.TRUE
                         self.owner.modified[name] = True
                         modified_file += 1
             # Disabling specific RPG maker event codes or groups
@@ -403,7 +406,7 @@ class JSON(Plugin):
                         group[0] in other_groups
                             ):
                         for j in range(1, len(group)):
-                            self.owner.strings[name]["files"][f][i][j][3] = 1
+                            self.owner.strings[name]["files"][f][i][j][LocIndex.IGNORED] = IntBool.TRUE
                             self.owner.modified[name] = True
                             modified_string += 1
                             
@@ -422,8 +425,8 @@ class JSON(Plugin):
             for f in self.owner.strings[name]["files"]:
                 for i, group in enumerate(self.owner.strings[name]["files"][f]):
                     for j in range(1, len(group)):
-                        if group[j][0] in strids:
-                            self.owner.strings[name]["files"][f][i][j][3] = 1
+                        if group[j][LocIndex.ID] in strids:
+                            self.owner.strings[name]["files"][f][i][j][LocIndex.IGNORED] = IntBool.TRUE
                             self.owner.modified[name] = True
                             modified_string += 1
             self.owner.start_compute_translated(name)

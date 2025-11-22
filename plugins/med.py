@@ -1,5 +1,5 @@
 from __future__ import annotations
-from . import Plugin, WalkHelper
+from . import Plugin, WalkHelper, GloIndex, LocIndex, IntBool
 from typing import Any
 import io
 import textwrap
@@ -72,19 +72,25 @@ class MED(Plugin):
             self.owner.load_strings(name) # if not loaded
             modified : int = 0
             for sid, sd in self.owner.strings[name]["strings"].items():
-                if self.owner.strings[name]["strings"][sid][1] is not None and not self.owner.strings[name]["strings"][sid][1].endswith("   "):
-                    s, b = self.textwrap_string(self.owner.strings[name]["strings"][sid][1], limit)
+                if (
+                    self.owner.strings[name]["strings"][sid][GloIndex.TL] is not None and
+                    not self.owner.strings[name]["strings"][sid][GloIndex.TL].endswith("   ")
+                        ):
+                    s, b = self.textwrap_string(self.owner.strings[name]["strings"][sid][GloIndex.TL], limit)
                     if b:
-                        self.owner.strings[name]["strings"][sid][1] = s
+                        self.owner.strings[name]["strings"][sid][GloIndex.TL] = s
                         modified += 1
 
             for file in self.owner.strings[name]["files"]:
                 for i, group in enumerate(self.owner.strings[name]["files"][file]):
                     for j in range(1, len(group)):
-                        if self.owner.strings[name]["files"][file][i][j][1] is not None and not self.owner.strings[name]["files"][file][i][j][1].endswith("   "):
-                            s, b = self.textwrap_string(self.owner.strings[name]["files"][file][i][j][1], limit)
+                        if (
+                            self.owner.strings[name]["files"][file][i][j][LocIndex.TL] is not None and
+                            not self.owner.strings[name]["files"][file][i][j][LocIndex.TL].endswith("   ")
+                                ):
+                            s, b = self.textwrap_string(self.owner.strings[name]["files"][file][i][j][LocIndex.TL], limit)
                             if b:
-                                self.owner.strings[name]["files"][file][i][j][1] = s
+                                self.owner.strings[name]["files"][file][i][j][LocIndex.TL] = s
                                 modified += 1
             if modified:
                 self.owner.modified[name] = True
@@ -113,15 +119,25 @@ class MED(Plugin):
             for g, group in enumerate(self.owner.strings[name]["files"][file_path]):
                 for i in range(1, len(group)):
                     lc = group[i]
-                    gl = self.owner.strings[name]["strings"][lc[0]]
-                    if lc[2] and lc[1] is not None:
-                        if "[" in lc[1] or "]" in lc[1] or "♪" in lc[1] or any(ord(ch) > 0x7F for ch in lc[1]): # check if has non-ASCII character
+                    gl = self.owner.strings[name]["strings"][lc[LocIndex.ID]]
+                    if lc[LocIndex.LOCAL] and lc[LocIndex.TL] is not None:
+                        if (
+                            "[" in lc[LocIndex.TL] or
+                            "]" in lc[LocIndex.TL] or
+                            "♪" in lc[LocIndex.TL] or
+                            any(ord(ch) > 0x7F for ch in lc[LocIndex.TL])
+                                ): # check if has non-ASCII character
                             count += 1
-                            self.owner.strings[name]["files"][file_path][g][i][4] = 1
-                    elif gl[1] is not None:
-                        if "[" in gl[1] or "]" in gl[1] or "♪" in gl[1] or any(ord(ch) > 0x7F for ch in gl[1]): # check if has non-ASCII character
+                            self.owner.strings[name]["files"][file_path][g][i][LocIndex.MODIFIED] = IntBool.TRUE
+                    elif gl[GloIndex.TL] is not None:
+                        if (
+                            "[" in gl[GloIndex.TL] or
+                            "]" in gl[GloIndex.TL] or
+                            "♪" in gl[GloIndex.TL] or
+                            any(ord(ch) > 0x7F for ch in gl[GloIndex.TL])
+                                ): # check if has non-ASCII character
                             count += 1
-                            self.owner.strings[name]["files"][file_path][g][i][4] = 1
+                            self.owner.strings[name]["files"][file_path][g][i][LocIndex.MODIFIED] = IntBool.TRUE
                     else:
                         continue
             if count > 0:

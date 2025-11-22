@@ -17,7 +17,7 @@ import argparse
 import ssl
 
 import plugins
-from plugins import BasePlugin, TranslatorPlugin, TranslatorBatchFormat, FileType
+from plugins import BasePlugin, TranslatorPlugin, FileType, GloIndex, LocIndex, IntBool
 
 ######################################################
 # A simple helper class for the patch system
@@ -62,7 +62,9 @@ class RPGMTL():
     VERSION = "3.27"
     CHILDREN_FILE_ID = "@__children_file__@:"
     HISTORY_LIMIT = 10
+
     def __init__(self : RPGMTL) -> None:
+        plugins.RPGMTL_ref = RPGMTL
         # Setting up logging
         handler = RotatingFileHandler(filename="rpgmtl.log", encoding='utf-8', mode='w', maxBytes=51200, backupCount=3)
         handler.setFormatter(logging.Formatter("%(asctime)s|%(levelname)s|%(name)s : %(message)s"))
@@ -477,10 +479,10 @@ class RPGMTL():
                             # add to config.json
                             update_file_dict[fpr.as_posix()] = {
                                 "file_type":FileType.NORMAL,
-                                "ignored":0, # use integer instead of boolean for file size and diff reasons
-                                "strings":0,
-                                "translated":0,
-                                "disabled_strings":0,
+                                "ignored":IntBool.FALSE,
+                                "strings":IntBool.FALSE,
+                                "translated":IntBool.FALSE,
+                                "disabled_strings":IntBool.FALSE
                             }
                             self.log.info(fpr.as_posix() + " has been copied to project folder " + pname)
                         except Exception as e:
@@ -577,7 +579,7 @@ class RPGMTL():
         ver = strings.get("version", 0)
         if ver < 1:
             for sid in strings["strings"]:
-                strings["strings"][sid].insert(3, 0)
+                strings["strings"][sid].insert(LocIndex.IGNORED, IntBool.FALSE)
         strings["version"] = 1
         return strings
 
@@ -654,8 +656,8 @@ class RPGMTL():
             index = copy.deepcopy(self.strings[name])
             for k in index["strings"]:
                 str_id = max(str_id, int(k)+1) # calculate last id
-                reverse_strings[index["strings"][k][0]] = k # keep track of string and its id in a reverse lookup table
-                index["strings"][k][2] = 0 # set occurence to 0
+                reverse_strings[index["strings"][k][GloIndex.ORI]] = k # keep track of string and its id in a reverse lookup table
+                index["strings"][k][GloIndex.COUNT] = 0 # set occurence to 0
             old = index["files"] # put old files here
             index["files"] = {}
             self.log.info("Previous copy of projects/" + name + "/strings.json will be used")
@@ -705,10 +707,10 @@ class RPGMTL():
                             else: # else create it
                                 self.projects[name]['files'][target_file] = {
                                     "file_type":FileType.VIRTUAL,
-                                    "ignored":0, # use integer instead of boolean for file size and diff reasons
-                                    "strings":0,
-                                    "translated":0,
-                                    "disabled_strings":0,
+                                    "ignored":IntBool.FALSE,
+                                    "strings":IntBool.FALSE,
+                                    "translated":IntBool.FALSE,
+                                    "disabled_strings":IntBool.FALSE
                                 }
                             self.projects[name]['files'][target_file]["parent"] = f
                             if target_file not in index["files"]: # add to index too
@@ -726,7 +728,7 @@ class RPGMTL():
                             # if string already occured
                             if s in reverse_strings:
                                 group[i][0] = reverse_strings[s] # get its id
-                                index["strings"][reverse_strings[s]][2] += 1 # increase occurence count
+                                index["strings"][reverse_strings[s]][GloIndex.COUNT] += 1 # increase occurence count
                             else:
                                 reverse_strings[s] = str(str_id) # new id
                                 # base string, global translation, occurence count, color marker
@@ -753,14 +755,14 @@ class RPGMTL():
                     A_index : list[tuple[int, int]] = []
                     for i, g in enumerate(index["files"][k]):
                         for j in range(1, len(g)):
-                            A.append(g[j][0])
+                            A.append(g[j][LocIndex.ID])
                             A_index.append((i, j))
                     # list old strings
                     B : list[str] = []
                     B_index : list[tuple[int, int]] = []
                     for i, g in enumerate(old[k]):
                         for j in range(1, len(g)):
-                            B.append(g[j][0])
+                            B.append(g[j][LocIndex.ID])
                             B_index.append((i, j))
                     # compare the lists
                     blocks = difflib.SequenceMatcher(a=A, b=B).get_matching_blocks()
@@ -795,16 +797,16 @@ class RPGMTL():
     # calculate number of translated lines
     async def compute_translated(self : RPGMTL, name : str) -> None:
         try:
-            tl_table : dict[str, bool] = {s : self.strings[name]["strings"][s][1] is not None for s in self.strings[name]["strings"]}
+            tl_table : dict[str, bool] = {s : self.strings[name]["strings"][s][LocIndex.TL] is not None for s in self.strings[name]["strings"]}
             for f in self.strings[name]["files"]:
                 await asyncio.sleep(0.005) # i.e 5s for 1000 files
                 counts = [0, 0, 0]
                 for g in self.strings[name]["files"][f]:
                     counts[2] += len(g) - 1
                     for i in range(1, len(g)):
-                        if g[i][3]:
+                        if g[i][LocIndex.IGNORED]:
                             counts[1] += 1 # disabled count
-                        elif (g[i][2] and g[i][1] is not None) or tl_table[g[i][0]]:
+                        elif (g[i][LocIndex.LOCAL] and g[i][LocIndex.TL] is not None) or tl_table[g[i][LocIndex.ID]]:
                             counts[0] += 1 # translated count
                 if f not in self.projects[name]['files']:
                     return
@@ -927,8 +929,8 @@ class RPGMTL():
                 return
             # go over our strings and match the strings we found
             for k, v in self.strings[name]["strings"].items():
-                if v[1] is None and isinstance(ref.get(v[0], None), str):
-                    self.strings[name]["strings"][k][1] = ref[v[0]]
+                if v[GloIndex.TL] is None and isinstance(ref.get(v[GloIndex.ORI], None), str):
+                    self.strings[name]["strings"][k][LocIndex.TL] = ref[v[GloIndex.ORI]]
                     count += 1
             if count > 0:
                 # increase project version
@@ -1019,22 +1021,22 @@ class RPGMTL():
             for f in self.strings[name]["files"]:
                 for g, group in enumerate(self.strings[name]["files"][f]):
                     for i in range(1, len(group)):
-                        sid = group[i][0]
+                        sid = group[i][LocIndex.ID]
                         if sid not in checked:
                             checked.add(sid)
-                            if self.strings[name]["strings"][sid][1] is None:
-                                if self.strings[name]["strings"][sid][0] in table:
-                                    self.strings[name]["strings"][sid][1] = table[self.strings[name]["strings"][sid][0]]
+                            if self.strings[name]["strings"][sid][GloIndex.TL] is None:
+                                if self.strings[name]["strings"][sid][GloIndex.ORI] in table:
+                                    self.strings[name]["strings"][sid][GloIndex.TL] = table[self.strings[name]["strings"][sid][GloIndex.ORI]]
                                     count += 1
                                 elif group[0] == "Command: Script": # inline Script
-                                    s : list[str] = self.strings[name]["strings"][sid][0].split('"')
+                                    s : list[str] = self.strings[name]["strings"][sid][GloIndex.ORI].split('"')
                                     changed : bool = False
                                     for j in range(1, len(s), 2):
                                         if s[j] in table:
                                             s[j] = table[s[j]]
                                             changed = True
                                     if changed:
-                                        self.strings[name]["strings"][sid][1] = '"'.join(s)
+                                        self.strings[name]["strings"][sid][GloIndex.TL] = '"'.join(s)
                                         count += 1
             if count > 0:
                 # increase project version
@@ -1633,8 +1635,7 @@ class RPGMTL():
         elif path is None:
             return web.json_response({"result":"bad", "message":"Bad request, missing 'path' parameter"}, status=400)
         else:
-            self.strings[name]["strings"][sid][2] = 0
-            self.strings[name]["strings"][sid][3] = value
+            self.strings[name]["strings"][sid][GloIndex.COLOR] = value
             self.modified[name] = True
             return web.json_response({"result":"ok", "data":{"config":self.projects[name], "name":name, "path":path, "strings":self.strings[name]["strings"], "list":self.strings[name]["files"][path]}})
 
@@ -1664,33 +1665,34 @@ class RPGMTL():
             if path not in self.strings[name]["files"]:
                 return web.json_response({"result":"bad", "message":"Bad request, invalid 'path' parameter"}, status=400)
             else:
+                ref = self.strings[name]["files"][path][group][index] # reference
                 match setting:
                     case 0: # Unlink
-                        self.strings[name]["files"][path][group][index][2] = (self.strings[name]["files"][path][group][index][2] + 1) % 2
+                        ref[LocIndex.LOCAL] = (ref[LocIndex.LOCAL] + 1) % 2
                     case 1: # Disable
-                        self.strings[name]["files"][path][group][index][3] = (self.strings[name]["files"][path][group][index][3] + 1) % 2
+                        ref[LocIndex.IGNORED] = (ref[LocIndex.IGNORED] + 1) % 2
                     case 2: # Disable all occurences in file
-                        sid : str = self.strings[name]["files"][path][group][index][0] # retrieve id
-                        state : int = (self.strings[name]["files"][path][group][index][3] + 1) % 2
+                        sid : str = ref[0] # retrieve id
+                        state : int = (ref[LocIndex.IGNORED] + 1) % 2
                         for i in range(len(self.strings[name]["files"][path])):
                             for j in range(1, len(self.strings[name]["files"][path][i])):
-                                if self.strings[name]["files"][path][i][j][0] == sid: # for all matching id, disable
-                                    self.strings[name]["files"][path][i][j][3] = state
+                                if self.strings[name]["files"][path][i][j][LocIndex.ID] == sid: # for all matching id, disable
+                                    self.strings[name]["files"][path][i][j][LocIndex.IGNORED] = state
                     case 3: # Disable all occurences in project
-                        sid : str = self.strings[name]["files"][path][group][index][0] # retrieve id
-                        state : int = (self.strings[name]["files"][path][group][index][3] + 1) % 2
+                        sid : str = ref[LocIndex.ID] # retrieve id
+                        state : int = (ref[LocIndex.IGNORED] + 1) % 2
                         for file in self.strings[name]["files"]:
                             for i in range(len(self.strings[name]["files"][file])):
                                 for j in range(1, len(self.strings[name]["files"][file][i])):
-                                    if self.strings[name]["files"][file][i][j][0] == sid: # for all matching id, disable
-                                        self.strings[name]["files"][file][i][j][3] = state
+                                    if self.strings[name]["files"][file][i][j][LocIndex.ID] == sid: # for all matching id, disable
+                                        self.strings[name]["files"][file][i][j][LocIndex.IGNORED] = state
                     case _: # Change string
-                        if self.strings[name]["files"][path][group][index][2]:
-                            self.strings[name]["files"][path][group][index][1] = string
+                        if ref[LocIndex.LOCAL]:
+                            ref[LocIndex.TL] = string
                         else:
-                            self.strings[name]["strings"][self.strings[name]["files"][path][group][index][0]][1] = string
+                            self.strings[name]["strings"][ref[LocIndex.ID]][GloIndex.TL] = string
                 # Remove modified flag
-                self.strings[name]["files"][path][group][index][4] = 0
+                ref[LocIndex.MODIFIED] = 0
                 self.modified[name] = True
                 # Start computation
                 self.start_compute_translated(name)
@@ -1730,20 +1732,20 @@ class RPGMTL():
             await asyncio.sleep(0)
             for j in range(1, len(group)):
                 lc = group[j]
-                gl = self.strings[name]["strings"][lc[0]]
-                if gl[0].strip() == "" or lc[3]:
+                gl = self.strings[name]["strings"][lc[LocIndex.ID]]
+                if gl[GloIndex.ORI].strip() == "" or lc[LocIndex.IGNORED]:
                     continue
-                if lc[2]:
-                    if lc[1] is not None:
+                if lc[LocIndex.LOCAL]:
+                    if lc[LocIndex.TL] is not None:
                         continue
-                    to_translate.append(gl[0])
+                    to_translate.append(gl[GloIndex.ORI])
                     revert_table.append((group[j], group[j]))
                 else:
-                    if gl[1] is not None or lc[0] in global_ids:
+                    if gl[GloIndex.TL] is not None or lc[LocIndex.ID] in global_ids:
                         continue
-                    global_ids.add(lc[0])
-                    to_translate.append(gl[0])
-                    revert_table.append((group[j], self.strings[name]["strings"][lc[0]]))
+                    global_ids.add(lc[LocIndex.ID])
+                    to_translate.append(gl[GloIndex.ORI])
+                    revert_table.append((group[j], self.strings[name]["strings"][lc[LocIndex.ID]]))
         count : int
         if len(to_translate) > 0:
             # Translating
@@ -1759,8 +1761,8 @@ class RPGMTL():
             for i in range(len(result)):
                 if result[i] is None or result[i].strip() == "" or result[i].lower() == to_translate[i].lower():
                     continue
-                revert_table[i][1][1] = result[i]
-                revert_table[i][0][4] = 0
+                revert_table[i][1][1] = result[i] # 1 is the TL index, can be either global or local
+                revert_table[i][0][LocIndex.MODIFIED] = IntBool.FALSE
                 count += 1
             self.log.info("{} strings have been translated in file '{}' for project {}...".format(count, path, name))
         else:
@@ -1782,15 +1784,15 @@ class RPGMTL():
         for i, group in enumerate(file):
             for j in range(1, len(group)):
                 lc = group[j]
-                if lc[3]:
+                if lc[LocIndex.IGNORED]:
                     continue
-                gl = self.strings[name]["strings"][lc[0]]
-                if gl[0].strip() == "" or lc[3]:
+                gl = self.strings[name]["strings"][lc[LocIndex.ID]]
+                if gl[GloIndex.ORI].strip() == "" or lc[LocIndex.IGNORED]:
                     continue
-                if lc[2]:
-                    table.append((i, j, gl[0], lc[1]))
+                if lc[LocIndex.LOCAL]:
+                    table.append((i, j, gl[GloIndex.ORI], lc[LocIndex.TL]))
                 else:
-                    table.append((i, j, gl[0], gl[1]))
+                    table.append((i, j, gl[GloIndex.ORI], gl[GloIndex.TL]))
                 check.add("{}-{}".format(i, j))
                 if table[-1][3] is None:
                     untranslated += 1
@@ -1849,15 +1851,17 @@ class RPGMTL():
                     i = int(split_sid[0])
                     j = int(split_sid[1])
                     lc = file[i][j]
-                    gl = self.strings[name]["strings"][lc[0]]
-                    if gl[1] is None:
-                        gl[1] = tl
-                    elif gl[1] == tl:
+                    gl = self.strings[name]["strings"][lc[LocIndex.ID]]
+                    if lc[LocIndex.LOCAL]:
+                        lc[LocIndex.TL] = tl
+                    elif gl[GloIndex.TL] is None:
+                        gl[GloIndex.TL] = tl
+                    elif gl[GloIndex.TL] == tl:
                         continue
                     else:
-                        lc[1] = tl
-                        lc[2] = 1
-                    lc[4] = 0
+                        lc[LocIndex.TL] = tl
+                        lc[LocIndex.LOCAL] = IntBool.TRUE
+                    lc[LocIndex.MODIFIED] = IntBool.FALSE
                     count += 1
                 except:
                     pass
@@ -1889,7 +1893,7 @@ class RPGMTL():
                 return web.json_response({"result":"bad", "message":"No Batch Translator currently set"})
             # Fetching strings in need of translation
             match current.get_format():
-                case TranslatorBatchFormat.AI:
+                case TranslatorPlugin.TranslatorBatchFormat.AI:
                     state, res = await self.ai_batch_translate_file(name, path, current)
                 case _:
                     state, res = await self.standard_batch_translate_file(name, path, current)
@@ -1924,12 +1928,16 @@ class RPGMTL():
                 if path not in self.projects[name]["files"]:
                     continue
                 ignored = self.projects[name]["files"][path].get("ignored", True)
-                string_count = self.projects[name]["files"][path].get("strings", 0) - self.projects[name]["files"][path].get("disabled", 0) - self.projects[name]["files"][path].get("translated", 0)
+                string_count = (
+                    self.projects[name]["files"][path].get("strings", 0)
+                    - self.projects[name]["files"][path].get("disabled", 0)
+                    - self.projects[name]["files"][path].get("translated", 0)
+                )
                 if not ignored and string_count > 0:
                     file_count += 1
                     try:
                         match current.get_format():
-                            case TranslatorBatchFormat.AI:
+                            case TranslatorPlugin.TranslatorBatchFormat.AI:
                                 state, res =  await self.ai_batch_translate_file(name, path, current)
                             case _:
                                 state, res =  await self.standard_batch_translate_file(name, path, current)
@@ -1979,47 +1987,47 @@ class RPGMTL():
             translation_matches : set[str] # contains string id matching at translation level
             if not case:
                 if contains:
-                    original_matches = {k for k, s in self.strings[name]["strings"].items() if lsearch in s[0].lower()}
-                    translation_matches = {k for k, s in self.strings[name]["strings"].items() if (s[1] is not None and lsearch in s[1].lower())}
+                    original_matches = {k for k, s in self.strings[name]["strings"].items() if lsearch in s[GloIndex.ORI].lower()}
+                    translation_matches = {k for k, s in self.strings[name]["strings"].items() if (s[GloIndex.TL] is not None and lsearch in s[GloIndex.TL].lower())}
                 else:
-                    original_matches = {k for k, s in self.strings[name]["strings"].items() if lsearch == s[0].lower()}
-                    translation_matches = {k for k, s in self.strings[name]["strings"].items() if (s[1] is not None and lsearch == s[1].lower())}
+                    original_matches = {k for k, s in self.strings[name]["strings"].items() if lsearch == s[GloIndex.ORI].lower()}
+                    translation_matches = {k for k, s in self.strings[name]["strings"].items() if (s[GloIndex.TL] is not None and lsearch == s[GloIndex.TL].lower())}
             else:
                 if contains:
-                    original_matches = {k for k, s in self.strings[name]["strings"].items() if lsearch in s[0]}
-                    translation_matches = {k for k, s in self.strings[name]["strings"].items() if (s[1] is not None and lsearch in s[1])}
+                    original_matches = {k for k, s in self.strings[name]["strings"].items() if lsearch in s[GloIndex.ORI]}
+                    translation_matches = {k for k, s in self.strings[name]["strings"].items() if (s[GloIndex.TL] is not None and lsearch in s[GloIndex.TL])}
                 else:
-                    original_matches = {k for k, s in self.strings[name]["strings"].items() if lsearch == s[0]}
-                    translation_matches = {k for k, s in self.strings[name]["strings"].items() if (s[1] is not None and lsearch == s[1])}
+                    original_matches = {k for k, s in self.strings[name]["strings"].items() if lsearch == s[GloIndex.ORI]}
+                    translation_matches = {k for k, s in self.strings[name]["strings"].items() if (s[GloIndex.TL] is not None and lsearch == s[GloIndex.TL])}
             files : set[str] = set()
             for f, groups in self.strings[name]["files"].items():
                 for g in groups:
                     if f in files:
                         break
                     for i in range(1, len(g)):
-                        if g[i][0] in original_matches:
+                        if g[i][LocIndex.ID] in original_matches:
                             files.add(f)
-                        elif g[i][2]:
-                            if g[i][1] is not None:
+                        elif g[i][LocIndex.LOCAL]:
+                            if g[i][LocIndex.TL] is not None:
                                 if not case:
                                     if contains:
-                                        if lsearch in g[i][1].lower():
+                                        if lsearch in g[i][LocIndex.TL].lower():
                                             files.add(f)
                                             break
                                     else:
-                                        if lsearch == g[i][1].lower():
+                                        if lsearch == g[i][LocIndex.TL].lower():
                                             files.add(f)
                                             break
                                 else:
                                     if contains:
-                                        if lsearch in g[i][1]:
+                                        if lsearch in g[i][LocIndex.TL]:
                                             files.add(f)
                                             break
                                     else:
-                                        if lsearch == g[i][1]:
+                                        if lsearch == g[i][LocIndex.TL]:
                                             files.add(f)
                                             break
-                        elif g[i][0] in translation_matches:
+                        elif g[i][LocIndex.ID] in translation_matches:
                             files.add(f)
                             break
             result : dict[str, bool] = {}
@@ -2095,23 +2103,23 @@ class RPGMTL():
             count : int = 0
             modified : set[str] = set()
             for k, v in self.strings[name]["strings"].items():
-                if v[1] is not None:
-                    s : str = v[1].replace(src, dst)
-                    if s != v[1]:
+                if v[GloIndex.TL] is not None:
+                    s : str = v[GloIndex.TL].replace(src, dst)
+                    if s != v[GloIndex.TL]:
                         modified.add(k)
-                        self.strings[name]["strings"][k][1] = s
+                        self.strings[name]["strings"][k][GloIndex.TL] = s
             for f, data in self.strings[name]["files"].items():
                 for g in range(len(data)):
                     for i in range(1, len(data[g])):
-                        if data[g][i][2]: # is local
-                            if data[g][i][1] is not None:
-                                s : str = data[g][i][1].replace(src, dst)
-                                if s != data[g][i][1]:
-                                    data[g][i][1] = s
-                                    data[g][i][4] = 1
+                        if data[g][i][LocIndex.LOCAL]: # is local
+                            if data[g][i][LocIndex.TL] is not None:
+                                s : str = data[g][i][LocIndex.TL].replace(src, dst)
+                                if s != data[g][i][LocIndex.TL]:
+                                    data[g][i][LocIndex.TL] = s
+                                    data[g][i][LocIndex.MODIFIED] = IntBool.TRUE
                                     count += 1
-                        elif data[g][i][0] in modified:
-                            data[g][i][4] = 1
+                        elif data[g][i][LocIndex.ID] in modified:
+                            data[g][i][LocIndex.MODIFIED] = IntBool.TRUE
                             count += 1
             if count > 0:
                 self.modified[name] = True

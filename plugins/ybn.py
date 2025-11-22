@@ -1,5 +1,5 @@
 from __future__ import annotations
-from . import Plugin, WalkHelper
+from . import Plugin, WalkHelper, GloIndex, LocIndex
 import struct
 from collections import Counter
 from io import BytesIO
@@ -246,19 +246,25 @@ class YBN(Plugin):
             names : dict[str, str] = self.lusterise_load_names(name)
             modified : int = 0
             for sid, sd in self.owner.strings[name]["strings"].items():
-                if self.owner.strings[name]["strings"][sid][1] is not None and not self.owner.strings[name]["strings"][sid][1].endswith("   "):
-                    s, b = self.textwrap_string(names, self.owner.strings[name]["strings"][sid][1], limit)
+                if (
+                    self.owner.strings[name]["strings"][sid][GloIndex.TL] is not None and
+                    not self.owner.strings[name]["strings"][sid][GloIndex.TL].endswith("   ")
+                        ):
+                    s, b = self.textwrap_string(names, self.owner.strings[name]["strings"][sid][GloIndex.TL], limit)
                     if b:
-                        self.owner.strings[name]["strings"][sid][1] = s
+                        self.owner.strings[name]["strings"][sid][GloIndex.TL] = s
                         modified += 1
 
             for file in self.owner.strings[name]["files"]:
                 for i, group in enumerate(self.owner.strings[name]["files"][file]):
                     for j in range(1, len(group)):
-                        if self.owner.strings[name]["files"][file][i][j][1] is not None and not self.owner.strings[name]["files"][file][i][j][1].endswith("   "):
-                            s, b = self.textwrap_string(names, self.owner.strings[name]["files"][file][i][j][1], limit)
+                        if (
+                            self.owner.strings[name]["files"][file][i][j][LocIndex.TL] is not None and
+                            not self.owner.strings[name]["files"][file][i][j][LocIndex.TL].endswith("   ")
+                                ):
+                            s, b = self.textwrap_string(names, self.owner.strings[name]["files"][file][i][j][LocIndex.TL], limit)
                             if b:
-                                self.owner.strings[name]["files"][file][i][j][1] = s
+                                self.owner.strings[name]["files"][file][i][j][LocIndex.TL] = s
                                 modified += 1
             if modified:
                 self.owner.modified[name] = True
@@ -279,10 +285,13 @@ class YBN(Plugin):
                     continue
                 current_names = {}
                 for i in range(1, len(g)):
-                    s = self.owner.strings[name]["strings"][g[i][0]]
-                    if s[0].startswith('"【') and s[0].endswith('】"'):
-                        if s[1] is not None:
-                            current_names[s[1][1:-1]] = s[0][1:-1]
+                    s = self.owner.strings[name]["strings"][g[i][LocIndex.ID]]
+                    if (
+                        s[GloIndex.ORI].startswith('"【') and
+                        s[GloIndex.ORI].endswith('】"')
+                            ):
+                        if s[GloIndex.TL] is not None:
+                            current_names[s[GloIndex.TL][1:-1]] = s[GloIndex.ORI][1:-1]
                 if len(current_names) > 0:
                     names = names | current_names
         return names

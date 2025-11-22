@@ -1,5 +1,5 @@
 from __future__ import annotations
-from . import Plugin
+from . import Plugin, GloIndex, LocIndex, IntBool
 from typing import Any
 
 class GeneralActions(Plugin):
@@ -40,16 +40,16 @@ class GeneralActions(Plugin):
                 if (rpgonly and group[0] == "Command: Show Text") or not rpgonly:
                     for i in range(1, len(group)):
                         lc = group[i]
-                        gl = self.owner.strings[name]["strings"][lc[0]]
-                        if lc[2] and lc[1] is not None:
-                            s = lc[1]
+                        gl = self.owner.strings[name]["strings"][lc[LocIndex.ID]]
+                        if lc[LocIndex.LOCAL] and lc[LocIndex.TL] is not None:
+                            s = lc[LocIndex.TL]
                         elif gl[1] is not None:
-                            s = gl[1]
+                            s = gl[GloIndex.TL]
                         else:
                             continue
                         if max([len(line) for line in s.split('\n')]) > limit:
                             count += 1
-                            self.owner.strings[name]["files"][file_path][g][i][4] = 1
+                            self.owner.strings[name]["files"][file_path][g][i][LocIndex.MODIFIED] = IntBool.TRUE
                             self.owner.modified[name] = True
             if count > 0:
                 return "{} strings are over the limit and have been marked".format(count)
@@ -66,8 +66,8 @@ class GeneralActions(Plugin):
                 return "Please set a positive limit in this plugin settings"
             for g, group in enumerate(self.owner.strings[name]["files"][file_path]):
                 for i in range(1, len(group)):
-                    if self.owner.strings[name]["files"][file_path][g][i][4]:
-                        self.owner.strings[name]["files"][file_path][g][i][4] = 0
+                    if self.owner.strings[name]["files"][file_path][g][i][LocIndex.MODIFIED]:
+                        self.owner.strings[name]["files"][file_path][g][i][LocIndex.MODIFIED] = IntBool.FALSE
                         self.owner.modified[name] = True
             return "Modified Flags have been cleared."
         except Exception as e:
@@ -80,7 +80,7 @@ class GeneralActions(Plugin):
             for file in self.owner.strings[name]["files"]:
                 for i, group in enumerate(self.owner.strings[name]["files"][file]):
                     for j in range(1, len(group)):
-                        self.owner.strings[name]["files"][file][i][j][4] = 0
+                        self.owner.strings[name]["files"][file][i][j][LocIndex.MODIFIED] = IntBool.FALSE
             self.owner.modified[name] = True
             return "Modified Flags have been cleared."
         except Exception as e:
