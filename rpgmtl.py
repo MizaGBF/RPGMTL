@@ -1395,7 +1395,7 @@ class RPGMTL():
             err = self.generate(name)
             self.save()
             message = "Strings extracted, but {} error(s) occured.".format(err) if err > 0 else "Strings extracted with success."
-            return web.json_response({"result":"ok", "data":{"name":name, "config":self.projects[name]}, "message":message})
+            return web.json_response({"result":"ok", "data":{"name":name, "config":self.projects[name], "tools":self.tool_list_info}, "message":message})
 
     # /api/release
     async def release(self : RPGMTL, request : web.Request) -> web.Response:

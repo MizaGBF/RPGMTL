@@ -117,7 +117,7 @@ Return in data: project 'name', project 'config', RPGMTL 'tools'
 ```
 /api/extract
 Payload: project 'name'
-Return in data: project 'name', project 'config'
+Return in data: project 'name', project 'config', RPGMTL 'tools'
 ```
   
 ```
