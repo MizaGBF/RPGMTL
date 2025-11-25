@@ -64,7 +64,6 @@ class RPGMTL():
     HISTORY_LIMIT = 10
 
     def __init__(self : RPGMTL) -> None:
-        plugins.RPGMTL_ref = RPGMTL
         # Setting up logging
         handler = RotatingFileHandler(filename="rpgmtl.log", encoding='utf-8', mode='w', maxBytes=51200, backupCount=3)
         handler.setFormatter(logging.Formatter("%(asctime)s|%(levelname)s|%(name)s : %(message)s"))
@@ -579,7 +578,8 @@ class RPGMTL():
         ver = strings.get("version", 0)
         if ver < 1:
             for sid in strings["strings"]:
-                strings["strings"][sid].insert(LocIndex.IGNORED, IntBool.FALSE)
+                # adding color marker
+                strings["strings"][sid].insert(GloIndex.COLOR, IntBool.FALSE)
         strings["version"] = 1
         return strings
 
@@ -727,7 +727,7 @@ class RPGMTL():
                             target["strings"] += 1
                             # if string already occured
                             if s in reverse_strings:
-                                group[i][0] = reverse_strings[s] # get its id
+                                group[i][LocIndex.ID] = reverse_strings[s] # get its id
                                 index["strings"][reverse_strings[s]][GloIndex.COUNT] += 1 # increase occurence count
                             else:
                                 reverse_strings[s] = str(str_id) # new id
@@ -797,7 +797,7 @@ class RPGMTL():
     # calculate number of translated lines
     async def compute_translated(self : RPGMTL, name : str) -> None:
         try:
-            tl_table : dict[str, bool] = {s : self.strings[name]["strings"][s][LocIndex.TL] is not None for s in self.strings[name]["strings"]}
+            tl_table : dict[str, bool] = {s : self.strings[name]["strings"][s][GloIndex.TL] is not None for s in self.strings[name]["strings"]}
             for f in self.strings[name]["files"]:
                 await asyncio.sleep(0.005) # i.e 5s for 1000 files
                 counts = [0, 0, 0]
@@ -930,7 +930,7 @@ class RPGMTL():
             # go over our strings and match the strings we found
             for k, v in self.strings[name]["strings"].items():
                 if v[GloIndex.TL] is None and isinstance(ref.get(v[GloIndex.ORI], None), str):
-                    self.strings[name]["strings"][k][LocIndex.TL] = ref[v[GloIndex.ORI]]
+                    self.strings[name]["strings"][k][GloIndex.TL] = ref[v[GloIndex.ORI]]
                     count += 1
             if count > 0:
                 # increase project version
