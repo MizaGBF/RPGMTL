@@ -68,10 +68,14 @@ class RPGMTL():
         handler = RotatingFileHandler(filename="rpgmtl.log", encoding='utf-8', mode='w', maxBytes=51200, backupCount=3)
         handler.setFormatter(logging.Formatter("%(asctime)s|%(levelname)s|%(name)s : %(message)s"))
         logging.basicConfig(level=logging.INFO)
+        # add loggers to our RotatingFileHandler
         self.loggers = {}
         for l in ['rpgmtl', 'aiohttp.access','aiohttp.client','aiohttp.internal','aiohttp.server','aiohttp.web','aiohttp.websocket']:
             self.loggers[l] = logging.getLogger(l)
             self.loggers[l].addHandler(handler)
+        # Disable other loggers
+        for l in ['httpx']:
+            logging.getLogger(l).setLevel(logging.DEBUG)
         self.log = self.loggers['rpgmtl']
         self.log.info("RPGMTL v{} is starting up...".format(self.VERSION))
         # Web server
@@ -1774,70 +1778,43 @@ class RPGMTL():
         return True, count
 
     # subroutine of translate_file() for TranslatorBatchFormat.AI
-    async def ai_batch_translate_file(self : RPGMTL, name : str, path : str, plugin : TranslatorPlugin) -> web.Response:
+    async def ai_batch_translate_file(self : RPGMTL, name : str, path : str, plugin : TranslatorPlugin) -> tuple[int, bool]:
         version = self.projects[name]["version"]
         file = self.strings[name]["files"][path]
-        # list all strings and translations of the file
-        table : list[tuple[int, int, str, str|None]] = [] # table of string to translate with indexes and existing translation
-        check : set[str] = set() # contain indexes to access the string, to list the ones we can modify
         untranslated : int = 0
+        batch : dict[str, Any] = {"file":path, "groups":[]}
+        ignore : set[str] = set()
         for i, group in enumerate(file):
+            batch["groups"].append({"name":group[0], "strings":[]})
             for j in range(1, len(group)):
                 lc = group[j]
-                if lc[LocIndex.IGNORED]:
-                    continue
                 gl = self.strings[name]["strings"][lc[LocIndex.ID]]
-                if gl[GloIndex.ORI].strip() == "" or lc[LocIndex.IGNORED]:
-                    continue
+                
+                s : dict[str, Any] = {}
+                s["id"] = "{}-{}".format(i, j)
+                s["ignore"] = lc[LocIndex.IGNORED] == IntBool.TRUE
+                if s["ignore"]:
+                    ignore.add(s["id"])
+                s["original"] = gl[GloIndex.ORI]
                 if lc[LocIndex.LOCAL]:
-                    table.append((i, j, gl[GloIndex.ORI], lc[LocIndex.TL]))
+                    if lc[LocIndex.TL] is not None:
+                        s["translation"] = lc[LocIndex.TL]
+                    elif not s["ignore"]:
+                        untranslated += 1
                 else:
-                    table.append((i, j, gl[GloIndex.ORI], gl[GloIndex.TL]))
-                check.add("{}-{}".format(i, j))
-                if table[-1][3] is None:
-                    untranslated += 1
-        await asyncio.sleep(0)
+                    if gl[GloIndex.TL] is not None:
+                        s["translation"] = gl[GloIndex.TL]
+                    elif not s["ignore"]:
+                        untranslated += 1
+                batch["groups"][-1]["strings"].append(s)
+        
+        if untranslated == 0:
+            return True, 0
+        
+        self.log.info("Batch translating {} strings in file '{}' for project {}...".format(untranslated, path, name))
         count : int = 0
-        if untranslated > 0:
-            self.log.info("Batch translating {} strings in file '{}' for project {}...".format(untranslated, path, name))
-            # create batches
-            batches : list[dict[str, Any]] = []
-            batch : dict[str, Any] = {
-                "file":path,
-                "number":len(batches),
-                "strings":[]
-            }
-            token_estimation : int = 0
-            batch_has_untranslated : bool = False
-            for i, t in enumerate(table):
-                batch["strings"].append({
-                    "id":"{}-{}".format(t[0], t[1]),
-                    "parent":"Group {}{}{}".format(i, ": " if file[t[0]][0].strip() != "" else "", file[t[0]][0].strip()),
-                    "source":t[2]
-                })
-                if t[3] is not None:
-                    batch["strings"][-1]["translation"] = t[3]
-                else:
-                    batch_has_untranslated = True
-                token_estimation += len(str(batch["strings"][-1])) / 4 # number of characters / 4
-                if token_estimation >= plugin.get_token_budget_threshold(): # attempt to separate in multiple batches according to estimated token size
-                    token_estimation = 0
-                    if batch_has_untranslated:
-                        batches.append(batch)
-                    batch_has_untranslated = False
-                    batch = {
-                        "file":path,
-                        "id":len(batches),
-                        "strings":[]
-                    }
-            if batch_has_untranslated and len(batch["strings"]) > 0:
-                batches.append(batch)
-            # get translations
-            translated : dict[str, str] = {}
-            for batch in batches:
-                result = await plugin.translate_batch(name, batch, self.settings | self.projects[name]['settings'])
-                if result is not None:
-                    translated = translated | result
+        translated = await plugin.translate_batch(name, batch, self.settings | self.projects[name]['settings'])
+        if translated is not None:
             # check version
             if version != self.projects[name]["version"]:
                 self.log.error("Batch translation for project " + name + " has been aborted because of a version update")
@@ -1845,7 +1822,7 @@ class RPGMTL():
             # apply translated strings
             for sid, tl in translated.items():
                 try:
-                    if sid not in check: # Don't modify strings not part of our modifications
+                    if sid in ignore: # Don't modify strings not part of our modifications
                         continue
                     split_sid = sid.split("-")
                     i = int(split_sid[0])
@@ -1863,13 +1840,12 @@ class RPGMTL():
                         lc[LocIndex.LOCAL] = IntBool.TRUE
                     lc[LocIndex.MODIFIED] = IntBool.FALSE
                     count += 1
-                except:
-                    pass
+                except Exception as e:
+                    self.log.error("Exception: " + self.trbk(e))
         if count > 0:
             self.log.info("{} strings have been translated in file '{}' for project {}...".format(count, path, name))
             self.modified[name] = True
             self.start_compute_translated(name)
-        # Respond
         return True, count
 
     # /api/translate_file
@@ -1941,7 +1917,8 @@ class RPGMTL():
                                 state, res =  await self.ai_batch_translate_file(name, path, current)
                             case _:
                                 state, res =  await self.standard_batch_translate_file(name, path, current)
-                    except Exception:
+                    except Exception as e:
+                        self.log.error("Exception: " + self.trbk(e))
                         self.log.error("An exception has been raised and 'translate_project' has been aborted for project " + name)
                         error += 1
                         break

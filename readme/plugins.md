@@ -175,24 +175,24 @@ If set with `TranslatorBatchFormat.AI`:
 Input format is the following:  
 ```json
 {
-    "file":"FILE",
-    "number":BATCH_NUMBER,
-    "strings":[
+    "file":"FILE_NAME",
+    "groups":[
         {
-            "id":"STRING_ID",
-            "parent":"GROUP OF WHICH THIS STRING IS PART OF",
-            "source":"ORIGINAL_STRING",
-            "translation":"TRANSLATED_STRING"
-        },
-        {
-            "id":"STRING_ID",
-            "parent":"GROUP OF WHICH THIS STRING IS PART OF",
-            "source":"ORIGINAL_STRING"
+            "name":"GROUP_NAME",
+            "strings":[
+                {
+                    "id":"STRING_ID", // unique to the batch
+                    "ignore":False, // True if the string must be ignored
+                    "original":"ORIGINAL_STRING",
+                    "translation":"TRANSLATED_STRING"
+                }
+            ]
         }
     ]
 }
 ```  
 It contains even translated strings, for context.  
+If you need to broke it down to fit in a token budget, it's up to the plugin to handle it.  
   
 Output format is:  
 ```json
@@ -200,8 +200,7 @@ Output format is:
     "STRING_ID":"TRANSLATION"
 }
 ```  
-For additional control, you can ovveride:  
-- `get_token_budget_threshold()`, to set the amount of approximate maximum length of the input JSON, in tokens.  
+For additional control, you can ovveride:   
 - `update_knowledge()`, to build some sort of knowledge base during translation.  
   
 ## Plugin Settings  

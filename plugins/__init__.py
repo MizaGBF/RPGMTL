@@ -268,14 +268,17 @@ class TranslatorPlugin(BasePlugin):
         AI = 1
         # translate_batch(): The following structure will be given:
         #    {
-        #        "file":"FILE",
-        #        "number":BATCH_NUMBER,
-        #        "strings":[
+        #        "file":"FILE_NAME":
+        #        "group":[
         #            {
-        #                "id":"GROUPINDEX-STRINGINDEX",
-        #                "parent":"Group INDEX: GROUP_NAME",
-        #                "source":"ORIGINAL_STRING",
-        #                "translation":"TRANSLATED_STRING"
+        #                "name":"GROUP_NAME",
+        #                "strings":[
+        #                    {
+        #                        "id":"0-0",
+        #                        "ignore":False,
+        #                        "original":string
+        #                    }
+        #                ]
         #            }
         #        ]
         #    }
@@ -288,13 +291,6 @@ class TranslatorPlugin(BasePlugin):
 
     def get_format(self : TranslatorPlugin) -> TranslatorPlugin.TranslatorBatchFormat:
         return TranslatorPlugin.TranslatorBatchFormat.STANDARD
-
-    def get_token_budget_threshold(self : TranslatorPlugin) -> int:
-        # Only used for TranslatorBatchFormat.AI
-        # Return the threshold for the number of token of the JSON input
-        # It doesn't count the rest of the prompt you might use, etc...
-        # If greater, it will be broken down in multiple batches
-        return 10000
 
     def connect(self : TranslatorPlugin, rpgmtl : RPGMTL) -> None:
         # No ned to reimplement this one
