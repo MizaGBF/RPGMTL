@@ -274,7 +274,7 @@ class TranslatorPlugin(BasePlugin):
         #                "name":"GROUP_NAME",
         #                "strings":[
         #                    {
-        #                        "id":"0-0",
+        #                        "id":"GROUPINDEX-STRINGINDEX",
         #                        "ignore":False,
         #                        "original":string
         #                    }

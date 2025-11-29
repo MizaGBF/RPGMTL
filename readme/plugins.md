@@ -181,7 +181,7 @@ Input format is the following:
             "name":"GROUP_NAME",
             "strings":[
                 {
-                    "id":"STRING_ID", // unique to the batch
+                    "id":"GROUPINDEX-STRINGINDEX",
                     "ignore":False, // True if the string must be ignored
                     "original":"ORIGINAL_STRING",
                     "translation":"TRANSLATED_STRING"
