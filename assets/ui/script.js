@@ -1736,7 +1736,7 @@ function open_tool(tool_key, tool_name, from_tool_list)
 	{
 		console.error("Exception thrown", err.stack);
 		push_popup("An unexpected error occured.");
-		go_project();
+		go_project(project.name);
 	}
 }
 
@@ -1770,7 +1770,7 @@ function open_tool_list()
 	{
 		console.error("Exception thrown", err.stack);
 		push_popup("An unexpected error occured.");
-		go_project();
+		go_project(project.name);
 	}
 }
 
@@ -1932,7 +1932,7 @@ function open_knowledge()
 	{
 		console.error("Exception thrown", err.stack);
 		push_popup("An unexpected error occured.");
-		go_project();
+		go_project(project.name);
 	}
 }
 
@@ -1970,7 +1970,7 @@ function open_notes()
 	{
 		console.error("Exception thrown", err.stack);
 		push_popup("An unexpected error occured.");
-		go_project();
+		go_project(project.name);
 	}
 }
 
@@ -2215,7 +2215,7 @@ function project_menu(data = null)
 				if(window.event.ctrlKey || window.confirm("Are you sure you wish to translate the whole game?\nIt will be time consuming.\nMake sure your settings are set properly.")) // confirmation / shortcut to insta confirm
 				{
 					set_loading_text("Translating the whole game, go do something else...");
-					post("/api/translate_project", go_project, go_project, {name:project.name});
+					post("/api/translate_project", redirect, redirect, {name:project.name});
 				}
 			});
 		}
@@ -2238,14 +2238,14 @@ function project_menu(data = null)
 			if(window.event.ctrlKey || window.confirm("Extract the strings?")) // confirmation / shortcut to insta confirm
 			{
 				set_loading_text("Extracting, be patient...");
-				post("/api/extract", go_project, go_main, {name:project.name});
+				post("/api/extract", redirect, go_main, {name:project.name});
 			}
 		});
 		if(project.config.version)
 		{
 			add_grid_cell(grid, '<img src="assets/images/release.png"> Release a Patch', function(){
 				set_loading_text("The patch is being generated in the release folder...");
-				post("/api/release", go_project, null, {name:project.name});
+				post("/api/release", redirect, null, {name:project.name});
 			});
 		}
 		add_grid_cell(grid, '<img src="assets/images/cancel.png"> Unload from Memory', function(){
@@ -2850,7 +2850,7 @@ function backup_list(data)
 			add_to(fragment, "div", {cls:["interact", "text-button", "inline"], br:false, onclick:function(){
 				if(window.event.ctrlKey || window.confirm("Load this backup?")) // confirmation / shortcut to insta confirm
 				{
-					post("/api/load_backup", go_project, null, {name:project.name, file:elem[0]});
+					post("/api/load_backup", redirect, null, {name:project.name, file:elem[0]});
 				}
 			}}).innerHTML = '<img src="assets/images/copy.png"> Use';
 			add_to(fragment, "div", {cls:["title", "left", "block", "inline"], br:false}).innerHTML = elem[0];
@@ -3658,13 +3658,13 @@ function update_local_browse(data)
 					post("/api/update_location", project_creation, null, {"path":t});
 					break;
 				case 1:
-					post("/api/update_location", go_project, null, {"name":project.name, "path":t});
+					post("/api/update_location", redirect, null, {"name":project.name, "path":t});
 					break;
 				case 2:
-					post("/api/import", go_project, null, {name:project.name, path:t});
+					post("/api/import", redirect, null, {name:project.name, path:t});
 					break;
 				case 3:
-					post("/api/import_rpgmtrans", go_project, null, {name:project.name, path:t});
+					post("/api/import_rpgmtrans", redirect, null, {name:project.name, path:t});
 					break;
 				default:
 					break;
@@ -3737,6 +3737,14 @@ function replace_page()
 }
 
 // wrappers around API calls
+function redirect()
+{
+	if(typeof(project.name) == "undefined" || project.name == null)
+		go_main()
+	else
+		go_project(project.name)
+}
+
 function go_main()
 {
 	post("/api/main", project_list);
@@ -3744,7 +3752,7 @@ function go_main()
 
 function go_new_project(at_path, name)
 {
-	post("/api/new_project", go_project, go_main, {path:at_path, name:name});
+	post("/api/new_project", redirect, go_main, {path:at_path, name:name});
 }
 
 function go_project(name)
