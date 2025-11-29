@@ -75,7 +75,7 @@ class RPGMTL():
             self.loggers[l].addHandler(handler)
         # Disable other loggers
         for l in ['httpx']:
-            logging.getLogger(l).setLevel(logging.DEBUG)
+            logging.getLogger(l).setLevel(logging.FATAL)
         self.log = self.loggers['rpgmtl']
         self.log.info("RPGMTL v{} is starting up...".format(self.VERSION))
         # Web server
