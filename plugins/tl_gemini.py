@@ -81,7 +81,6 @@ class GmResponse(BaseModel):
     translations: list[GmTranslation]
 
 class TLGemini(TranslatorPlugin):
-    RATE_LIMIT_TIME : float = 6.0 # seconds
     INPUT_TOKEN_THRESHOLD : int = 50000
     
     def __init__(self : TLGemini) -> None:
@@ -102,8 +101,9 @@ class TLGemini(TranslatorPlugin):
             "gemini_model": ["Set the Gemini <a href=\"https://aistudio.google.com/changelog\">Model String</a> (<a href=\"https://ai.google.dev/gemini-api/docs/rate-limits\">Rate Limits</a>)", "str", "gemini-2.5-flash", None],
             "gemini_src_language": ["Set the Source Language", "str", "Japanese", None],
             "gemini_target_language": ["Set the Target Language", "str", "English", None],
+            "gemini_rate_limit": ["Set the minimum wait time between requests (in seconds)", "num", 6, None],
             "gemini_temperature": ["Set the Model Temperature (Higher is more creative but less predictable)", "num", 0, None],
-            "gemini_extra_context": ["Set extra informations or commands for the AI", "text", "", None]
+            "gemini_extra_context": ["Set extra informations or commands for the AI", "text", "", None],
         }
 
     def _init_translator(self : TLGemini, settings : dict[str, Any]) -> None:
@@ -281,7 +281,7 @@ class TLGemini(TranslatorPlugin):
         # rate limit safety
         current_time = time.monotonic()
         elapsed_time = current_time - self.time
-        time_to_wait = self.RATE_LIMIT_TIME - elapsed_time
+        time_to_wait = settings["gemini_rate_limit"] - elapsed_time
         if time_to_wait > 0:
             await asyncio.sleep(time_to_wait)
         self.time = time.monotonic()
@@ -335,7 +335,7 @@ class TLGemini(TranslatorPlugin):
                 retry += 1
                 if "429 RESOURCE_EXHAUSTED" in se:
                     raise Exception("Resource exhausted")
-                await asyncio.sleep(self.RATE_LIMIT_TIME)
+                await asyncio.sleep(settings["gemini_rate_limit"])
         return None
 
     async def translate_batch(self : TLGemini, name : str, batch : dict[str, Any], settings : dict[str, Any] = {}) -> dict[str, str]:
@@ -354,7 +354,7 @@ class TLGemini(TranslatorPlugin):
                     retry += 1
                     if "429 RESOURCE_EXHAUSTED" in se:
                         raise Exception("Resource exhausted")
-                    await asyncio.sleep(self.RATE_LIMIT_TIME)
+                    await asyncio.sleep(settings["gemini_rate_limit"])
         return result
 
     def knowledge_to_text(self : TLGemini, base : list[dict]) -> str:
