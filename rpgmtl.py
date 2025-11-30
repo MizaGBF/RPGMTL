@@ -780,7 +780,6 @@ class RPGMTL():
             self.projects[name]["bookmarked_tools"] = []
             for p in used_plugins:
                 if p in self.plugins:
-                    print(p, self.plugins[p].get_tool_infos())
                     for t in self.plugins[p].get_tool_infos():
                         self.projects[name]["bookmarked_tools"].append(t)
         # set new string table
