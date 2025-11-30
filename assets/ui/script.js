@@ -1463,21 +1463,13 @@ function setting_menu(data)
 							let val = "";
 							switch(fdata[1]) // make sure our value is what RPGMTL wants
 							{
-								case "int":
+								case "num":
 									if(isNaN(input.value) || isNaN(parseFloat(input.value)))
 									{
-										push_popup("The value isn't a valid integer.");
+										push_popup("The value isn't a valid number.");
 										return;
 									}
 									val = Math.floor(parseFloat(input.value));
-									break;
-								case "float":
-									if(isNaN(input.value) || isNaN(parseFloat(input.value)))
-									{
-										push_popup("The value isn't a valid floating number.");
-										return;
-									}
-									val = parseFloat(input.value);
 									break;
 								case "text":
 									val = input.innerText;
