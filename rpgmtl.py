@@ -775,17 +775,18 @@ class RPGMTL():
                             xyA : tuple[int, int] = A_index[block.a+i]
                             xyB : tuple[int, int] = B_index[block.b+i]
                             index["files"][k][xyA[0]][xyA[1]] = old[k][xyB[0]][xyB[1]] # match old to new (to keep individual translations and settings)
+        else:
+            # auto bookmark tools for starting projects
+            self.projects[name]["bookmarked_tools"] = []
+            for p in used_plugins:
+                if p in self.plugins:
+                    print(p, self.plugins[p].get_tool_infos())
+                    for t in self.plugins[p].get_tool_infos():
+                        self.projects[name]["bookmarked_tools"].append(t)
         # set new string table
         self.strings[name] = index
         # increase project version
         self.projects[name]["version"] = self.projects[name].get("version", 0) + 1
-        # auto bookmark tools for starting projects
-        self.projects[name]["bookmarked_tools"] = []
-        if self.projects[name]["version"] == 1:
-            for p in used_plugins:
-                if p in self.plugins:
-                    for t in self.plugins[p].get_tool_infos():
-                        self.projects[name]["bookmarked_tools"].append(t)
         # start computing completion
         self.start_compute_translated(name)
         # set save flag
