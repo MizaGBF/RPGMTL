@@ -216,25 +216,55 @@ class TLGemini(TranslatorPlugin):
         return parsed
 
     def format_batch(self : TLGemini, batch : dict[str, Any]) -> list[str]:
-        inputs : list[str] = [["# " + batch["file"]]]
+        inputs : list = [["# " + batch["file"]]]
         chara_count : int = len(inputs[-1][-1]) + 1
+        # last group will be a copy of the end of the previous batch
+        # to provide the AI with context
+        last_group : list[str] = []
+        last_group_size : int = 0
         for group in batch["groups"]:
             # create new input if over limit
             if chara_count / 4 > self.INPUT_TOKEN_THRESHOLD:
                 inputs.append(["# " + batch["file"]])
                 chara_count = len(inputs[-1][-1]) + 1
+                last_group = last_group.copy()
+                for i in range(len(last_group)):
+                    last_group[i].replace( # set those copy to ignore:true
+                        '"ignore":false,"original"',
+                        '"ignore":true,"original"',
+                    )
+                inputs[-1].extend(last_group)
+                chara_count += last_group_size
+                last_group = []
+                last_group_size = 0
             # add group
             if group["name"] == "":
                 if len(group["strings"]) > 0:
                     inputs[-1].append("## Group")
                     chara_count += 9
+                    # reset last group
+                    last_group = [inputs[-1][-1]]
+                    last_group_size = 9
             else:
                 inputs[-1].append("## " + group["name"])
-                chara_count += len(inputs[-1][-1]) + 1
+                le = len(inputs[-1][-1]) + 1
+                chara_count += le
+                # reset last group
+                last_group = [inputs[-1][-1]]
+                last_group_size = le
             for string in group["strings"]:
+                # add string json
                 inputs[-1].append(json.dumps(string, ensure_ascii=False, separators=(',',':')))
-                chara_count += len(inputs[-1][-1]) + 1
+                last_group.append(inputs[-1][-1])
+                # and chara length
+                le = len(inputs[-1][-1]) + 1
+                chara_count += le
+                last_group_size += le
+        if len(inputs) > 1:
+            for i in range(len(inputs)): # add batch count to file name
+                inputs[i][0] += " (Part {}/{})".format(i + 1, len(inputs))
         for i in range(len(inputs)):
+            # convert the content to strings
             inputs[i] = "\n".join(inputs[i])
         return inputs
 
