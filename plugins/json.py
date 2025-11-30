@@ -300,7 +300,7 @@ class JSON(Plugin):
                     'ニューゲーム': 'New Game', 'コンティニュー': 'Continue', 'タイトルへ': 'Go to Title', 'やめる': 'Stop',
                     '購入する': 'Buy', '売却する': 'Sell', '最大ＨＰ': 'Max HP', '最大ＭＰ': 'Max MP', '最大ＳＰ': 'Max SP',
                     '最大ＴＰ': 'Max TP', '攻撃力': 'ATK', '防御力': 'DEF', '魔法力': 'M.ATK.', '魔法防御': 'M.DEF',
-                    '敏捷性': 'AGI', '運': 'Luck', '命中率': 'ACC', '回避率': 'EVA', '持っている数': 'Owned',
+                    '敏捷性': 'AGI', '運': 'Luck', '命中率': 'ACC', '回避率': 'EVA', '持っている数': 'Owned', '買い物': 'Shop',
                     'ヒール': 'Heal', 'ファイア': 'Fire', 'スパーク': 'Spark', '火魔法': 'Fire Magic', '氷魔法': 'Ice Magic',
                     '雷魔法': 'Thunder Magic', '水魔法': 'Water Magic', '土魔法': 'Earth Magic', '風魔法': 'Wind Magic',
                     '光魔法': 'Light Magic', '闇魔法': 'Dark Magic', '常時ダッシュ': 'Always run',
@@ -370,13 +370,44 @@ class JSON(Plugin):
                 "Data/Animations.rvdata", "Data/MapInfos.rvdata", "Data/Tilesets.rvdata", "Data/Scripts.rvdata",
                 "Data/Animations.rvdata2", "Data/MapInfos.rvdata2", "Data/Tilesets.rvdata2", "Data/Scripts.rvdata2"
             ]
+            file_end_exceptions = [ # some common plugin settings which need to be enabled
+                "js/plugins.js/MasterVolumeOption",
+                "js/plugins.js/CTRS_TradeShop",
+                "js/plugins.js/ExtraWindow",
+                "js/plugins.js/MAT_LoadComSim",
+                "js/plugins.js/NRP_CustomOptimize",
+                "js/plugins.js/NRP_ShopCustomize",
+                "js/plugins.js/NRP_CombinationSkill",
+                "js/plugins.js/NoEquipmentText",
+                "js/plugins.js/AnotherNewGame",
+                "js/plugins.js/LL_MenuScreenCustom",
+                "js/plugins.js/MNKR_AltMenuScreen2MZ",
+                "js/plugins.js/MPP_ResistMessage",
+                "js/plugins.js/NUUN_Result",
+                "js/plugins.js/NUUN_SaveScreen",
+                "js/plugins.js/SunD_Input",
+                "js/plugins.js/TorigoyaMZ_Achievement2",
+                "js/plugins.js/TorigoyaMZ_Achievement2_AddonCategory",
+                "js/plugins.js/TorigoyaMZ_CommonMenu",
+                "js/plugins.js/TorigoyaMZ_EasyStaffRoll",
+                "js/plugins.js/OptionEx",
+                "js/plugins.js/utility OptionEx",
+                "js/plugins.js/SceneGlossary",
+                "js/plugins.js/utility SceneGlossary"
+            ]
             for f in self.owner.projects[name]["files"]:
                 for i in ignored_files:
                     if i in f:
-                        detected_rpgmv = True
-                        self.owner.projects[name]["files"][f]["ignored"] = 1
-                        self.owner.modified[name] = True
-                        modified_file += 1
+                        passed = True
+                        for j in file_end_exceptions:
+                            if f.endswith(j):
+                                passed = False
+                                break
+                        if passed:
+                            detected_rpgmv = True
+                            self.owner.projects[name]["files"][f]["ignored"] = 1
+                            self.owner.modified[name] = True
+                            modified_file += 1
                         break
             # Disable RPG Maker switches, variables and others
             for f in ["www/data/System.json", "data/System.json"]:
@@ -396,7 +427,7 @@ class JSON(Plugin):
                         self.owner.modified[name] = True
                         modified_file += 1
             # Disabling specific RPG maker event codes or groups
-            text_codes = set(["Command: Show Text", "Command: Choices", "Command: When ...", "Command: Name Change"]) # allowed ones
+            text_codes = {"Command: Show Text", "Command: Choices", "Command: When ...", "Command: Name Change", "Command: Variable Control"} # allowed ones
             other_groups = set(["battlerName", "faceName", "characterName", "parallaxName", "switches", "variables", "encryptionKey", "formula", "note", "@icon_name", "@battler_name", "numberFontFilename", "fallbackFonts", "mainFontFilename", "title1Name", "title2Name", "battleback1Name", "battleback2Name"])
             for f in self.owner.strings[name]["files"]:
                 for i, group in enumerate(self.owner.strings[name]["files"][f]):
@@ -406,6 +437,11 @@ class JSON(Plugin):
                         group[0] in other_groups
                             ):
                         for j in range(1, len(group)):
+                            if (
+                                group[0] == "note" and
+                                "<SG説明" in self.owner.strings[name]["strings"][group[j][LocIndex.ID]][GloIndex.ORI]
+                                    ): # ignore this specific case
+                                continue
                             self.owner.strings[name]["files"][f][i][j][LocIndex.IGNORED] = IntBool.TRUE
                             self.owner.modified[name] = True
                             modified_string += 1
