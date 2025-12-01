@@ -1,11 +1,9 @@
-# <img src="./assets/ui/favicon.svg" width="40"> RPGMTL  
+# Getting started with your translation project  
   
 Please refer to the main readme for installation.  
 This assumes you have RPGMTL working and can access it through [localhost](http://localhost:8000) in your Internet Browser.  
   
 Other readme files might go into deeper details into some aspects discussed below.  
-  
-## Getting started with your translation project  
   
 If it's your first time ever launching RPGMTL, you can start by accessing the settings if you wish.  
 Most of them probably don't need to be changed, except for the Translators'.  
