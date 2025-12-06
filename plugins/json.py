@@ -347,7 +347,7 @@ class JSON(Plugin):
                     '魔法防具':'Magic Armor', '軽装防具':'Light Armor', '重装防具':'Heavy Armor', '小型盾':'Small Shield',
                     '大型盾':'Large Shield', '短剣':'Dagger', '剣':'Sword', 'フレイル':'Flail', '斧':'Axe', 'ムチ':'Whip',
                     '杖':'Staff', '弓':'Bow', 'クロスボウ':'Crossbow', '銃':'Gun', '爪':'Claw', 'グローブ':'Gloves', '槍':'Spear',
-                    'Ｇ':'G', '物理':'Physics', '炎':'Fire', '氷':'Ice', '雷':'Thunder', '水':'Water', '土':'Earth', '風':'Wind',
+                    'Ｇ':'G', '物理':'Physical', '炎':'Fire', '氷':'Ice', '雷':'Thunder', '水':'Water', '土':'Earth', '風':'Wind',
                     '光':'Light', '闇':'Dark', '盾':'Shield', '武器':'Weapon', '頭':'Head', '身体':'Body', '装飾品':'Accessories',
                     '魔法':'Magic', '特殊行動':'Special', 'ステート':'State', 'レベル':'Level', '気力':'Energy', '並び替え':'Sort',
                     '防具':'Armor', '最強装備':'Optimize', '全て外す':'Remove all', 'ja_JP':'en_US',
