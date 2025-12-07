@@ -81,8 +81,6 @@ class GmResponse(BaseModel):
     translations: list[GmTranslation]
 
 class TLGemini(TranslatorPlugin):
-    INPUT_TOKEN_THRESHOLD : int = 50000
-    
     def __init__(self : TLGemini) -> None:
         super().__init__()
         self.name : str = "TL Gemini"
@@ -102,6 +100,7 @@ class TLGemini(TranslatorPlugin):
             "gemini_src_language": ["Set the Source Language", "str", "Japanese", None],
             "gemini_target_language": ["Set the Target Language", "str", "English", None],
             "gemini_rate_limit": ["Set the minimum wait time between requests (in seconds)", "num", 6, None],
+            "gemini_token_limit": ["Set the minimum token count per translation batch (Minimum is 2000)", "num", 30000, None],
             "gemini_temperature": ["Set the Model Temperature (Higher is more creative but less predictable)", "num", 0, None],
             "gemini_extra_context": ["Set extra informations or commands for the AI", "text", "", None],
         }
@@ -171,7 +170,7 @@ class TLGemini(TranslatorPlugin):
         # cleanup
         i = 0
         while i < len(base_ref):
-            if base_ref[i]["last_seen"] > 10: # if not seen in last 10 translations
+            if base_ref[i]["last_seen"] > 15: # if not seen in last 15 translations
                 base_ref[i]["occurence"] -= 1
                 self.owner.modified[name] = True
             if base_ref[i]["occurence"] <= 0: # if occurence at 0, delete from base
@@ -215,44 +214,46 @@ class TLGemini(TranslatorPlugin):
             self.update_knowledge_base(name, string_list, output["new_knowledge"])
         return parsed
 
-    def format_batch(self : TLGemini, batch : dict[str, Any]) -> list[str]:
+    def _format_batch_group_name(self : TLGemini, group_name : str) -> tuple[str, int]:
+        if group_name == "":
+            return "## Group", 9
+        else:
+            return "## " + group_name, 3 + len(group_name)
+
+    def format_batch(self : TLGemini, batch : dict[str, Any], token_limit : int) -> list[str]:
         inputs : list = [["# " + batch["file"]]]
         chara_count : int = len(inputs[-1][-1]) + 1
         # last group will be a copy of the end of the previous batch
         # to provide the AI with context
         last_group : list[str] = []
         last_group_size : int = 0
+        need_translation : bool = False
         for group in batch["groups"]:
-            # create new input if over limit
-            if chara_count / 4 > self.INPUT_TOKEN_THRESHOLD:
-                inputs.append(["# " + batch["file"]])
-                chara_count = len(inputs[-1][-1]) + 1
-                last_group = last_group.copy()
-                for i in range(len(last_group)):
-                    last_group[i].replace( # set those copy to ignore:true
-                        '"ignore":false,"original"',
-                        '"ignore":true,"original"',
-                    )
-                inputs[-1].extend(last_group)
-                chara_count += last_group_size
-                last_group = []
-                last_group_size = 0
-            # add group
-            if group["name"] == "":
-                if len(group["strings"]) > 0:
-                    inputs[-1].append("## Group")
-                    chara_count += 9
-                    # reset last group
-                    last_group = [inputs[-1][-1]]
-                    last_group_size = 9
-            else:
-                inputs[-1].append("## " + group["name"])
-                le = len(inputs[-1][-1]) + 1
-                chara_count += le
-                # reset last group
-                last_group = [inputs[-1][-1]]
-                last_group_size = le
+            g, l = self._format_batch_group_name(group["name"])
+            inputs[-1].append(g)
+            chara_count += l
             for string in group["strings"]:
+                if chara_count / 4 > max(2000, token_limit):
+                    next_batch = ["# " + batch["file"]]
+                    next_batch.append("## Preview of previous batch")
+                    for i in range(max(0, len(inputs[-1]) - 10), len(inputs[-1])):
+                        next_batch.append(inputs[-1][i].replace( # set those copy to ignore:true
+                                '"ignore":false,"original"',
+                                '"ignore":true,"original"',
+                            )
+                        )
+                    next_batch.append("## End of previous batch")
+                    g, l = self._format_batch_group_name(group["name"])
+                    next_batch.append(g)
+                    chara_count = 0
+                    for s in next_batch:
+                        chara_count += len(s)
+                    if not need_translation:
+                        inputs.pop() # discard previous
+                    inputs.append(next_batch)
+                    need_translation = False
+                if string.get("ignore", False) is False and string.get("translation", None) is None:
+                    need_translation = True
                 # add string json
                 inputs[-1].append(json.dumps(string, ensure_ascii=False, separators=(',',':')))
                 last_group.append(inputs[-1][-1])
@@ -260,6 +261,8 @@ class TLGemini(TranslatorPlugin):
                 le = len(inputs[-1][-1]) + 1
                 chara_count += le
                 last_group_size += le
+        if not need_translation and len(inputs) > 0:
+            inputs.pop()
         if len(inputs) > 1:
             for i in range(len(inputs)): # add batch count to file name
                 inputs[i][0] += " (Part {}/{})".format(i + 1, len(inputs))
@@ -320,7 +323,7 @@ class TLGemini(TranslatorPlugin):
             try:
                 output : str = await self.ask_gemini(
                     name,
-                    self.format_batch(batch)[0],
+                    self.format_batch(batch, settings["gemini_token_limit"])[0],
                     settings
                 )
                 data : dict[str, str] = self.parse_model_output(output, name, batch)
@@ -339,10 +342,12 @@ class TLGemini(TranslatorPlugin):
         return None
 
     async def translate_batch(self : TLGemini, name : str, batch : dict[str, Any], settings : dict[str, Any] = {}) -> dict[str, str]:
-        inputs : list[str] = self.format_batch(batch)
+        inputs : list[str] = self.format_batch(batch, settings["gemini_token_limit"])
         result : dict[str, str] = {}
-        for input_batch in inputs:
+        for i, input_batch in enumerate(inputs):
             retry : int = 0
+            if len(inputs) > 1:
+                self.owner.log.info("[TL Gemini] Batch {} of {}...".format(i + 1, len(inputs)))
             while retry < 3:
                 try:
                     output : str = await self.ask_gemini(name, input_batch, settings)
