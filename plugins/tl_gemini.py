@@ -213,63 +213,90 @@ class TLGemini(TranslatorPlugin):
         if "new_knowledge" in output:
             self.update_knowledge_base(name, string_list, output["new_knowledge"])
         return parsed
-
-    def _format_batch_group_name(self : TLGemini, group_name : str) -> tuple[str, int]:
-        if group_name == "":
-            return "## Group", 9
-        else:
-            return "## " + group_name, 3 + len(group_name)
-
-    def format_batch(self : TLGemini, batch : dict[str, Any], token_limit : int) -> list[str]:
-        inputs : list = [["# " + batch["file"]]]
-        chara_count : int = len(inputs[-1][-1]) + 1
-        # last group will be a copy of the end of the previous batch
-        # to provide the AI with context
-        last_group : list[str] = []
-        last_group_size : int = 0
-        need_translation : bool = False
-        for group in batch["groups"]:
-            g, l = self._format_batch_group_name(group["name"])
-            inputs[-1].append(g)
-            chara_count += l
-            for string in group["strings"]:
-                if chara_count / 4 > max(2000, token_limit):
-                    next_batch = ["# " + batch["file"]]
-                    next_batch.append("## Preview of previous batch")
-                    for i in range(max(0, len(inputs[-1]) - 10), len(inputs[-1])):
-                        next_batch.append(inputs[-1][i].replace( # set those copy to ignore:true
+    
+    def _format_batch_to_text(
+        self : TLGemini,
+        path : str,
+        inter : list[dict],
+        batch_ranges : list[tuple[int, int]]
+    ) -> list[str]:
+        # cut the batches according to content of batch_ranges
+        batch_texts : list[str] = []
+        for (start, end) in batch_ranges:
+            group : int = None
+            batch : list[str] = [
+                "# " + (
+                    path
+                    if len(batch_ranges) == 1
+                    else path + " " + str(len(batch_texts) + 1)
+                )
+            ]
+            for i in range(max(0, start - 10), end):
+                if group != inter[i]["group_id"]:
+                    group = inter[i]["group_id"]
+                    batch.append(inter[i]["group"])
+                if "json" in inter[i]:
+                    if i < start:
+                        batch.append(inter[i]["dump"].replace( # set those copy to ignore:true
                                 '"ignore":false,"original"',
                                 '"ignore":true,"original"',
                             )
                         )
-                    next_batch.append("## End of previous batch")
-                    g, l = self._format_batch_group_name(group["name"])
-                    next_batch.append(g)
-                    chara_count = 0
-                    for s in next_batch:
-                        chara_count += len(s)
-                    if not need_translation:
-                        inputs.pop() # discard previous
-                    inputs.append(next_batch)
-                    need_translation = False
-                if string.get("ignore", False) is False and string.get("translation", None) is None:
-                    need_translation = True
-                # add string json
-                inputs[-1].append(json.dumps(string, ensure_ascii=False, separators=(',',':')))
-                last_group.append(inputs[-1][-1])
-                # and chara length
-                le = len(inputs[-1][-1]) + 1
-                chara_count += le
-                last_group_size += le
-        if not need_translation and len(inputs) > 0:
-            inputs.pop()
-        if len(inputs) > 1:
-            for i in range(len(inputs)): # add batch count to file name
-                inputs[i][0] += " (Part {}/{})".format(i + 1, len(inputs))
-        for i in range(len(inputs)):
-            # convert the content to strings
-            inputs[i] = "\n".join(inputs[i])
-        return inputs
+                    else:
+                        batch.append(inter[i]["dump"])
+            if len(batch) > 1:
+                batch_texts.append("\n".join(batch))
+        return batch_texts
+
+    def format_batch(self : TLGemini, batch : dict[str, Any], token_limit : int) -> list[str]:
+        inter : list[dict] = []
+        char_count : int = 0
+        for gi, group in enumerate(batch["groups"]):
+            if group["name"] == "":
+                gname = "## Group"
+                gname_len = 9
+            else:
+                gname = "## " + group["name"]
+                gname_len = 3 + len(group["name"])
+            char_count += gname_len + 1
+            if len(group["strings"]) == 0:
+                # for lone groups
+                # they can be important for context
+                inter.append({
+                    "group_id":gi,
+                    "group":gname
+                })
+            for string in group["strings"]:
+                inter.append({
+                    "group_id":gi,
+                    "group":gname,
+                    "json":string,
+                    "dump":json.dumps(string, ensure_ascii=False, separators=(',',':')),
+                    "need_translation":string.get("ignore", False) is False and string.get("translation", None) is None
+                })
+                char_count += len(inter[-1]["dump"]) + 1
+        batch_ranges : list[tuple[int, int]] = []
+        if char_count // 4 > token_limit:
+            char_count = 0
+            start : int = 0
+            searching_start : bool = True
+            for i in range(len(inter)):
+                if searching_start:
+                    if "json" in inter[i] and inter[i]["need_translation"]:
+                        start = i
+                        tstart : int = max(0, i - 10)
+                        searching_start = False
+                        for j in range(tstart, i + 1):
+                            char_count += len(inter[j]["dump"]) + 1
+                elif "json" in inter[i]:
+                    char_count += len(inter[i]["dump"]) + 1
+                    if char_count // 4 > token_limit - 50:
+                        batch_ranges.append((start, i + 1))
+                        char_count = 0
+                        searching_start = True
+        else:
+            batch_ranges.append((0, len(inter)))
+        return self._format_batch_to_text(batch["file"], inter, batch_ranges)
 
     async def ask_gemini(self : TLGemini, name : str, batch : str, settings : dict[str, Any] = {}) -> str:
         self._init_translator(settings)
