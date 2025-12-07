@@ -290,7 +290,7 @@ class TLGemini(TranslatorPlugin):
                             char_count += len(inter[j]["dump"]) + 1
                 elif "json" in inter[i]:
                     char_count += len(inter[i]["dump"]) + 1
-                    if char_count // 4 > token_limit - 50:
+                    if i == len(inter) -1 or char_count // 4 > token_limit - 50:
                         batch_ranges.append((start, i + 1))
                         char_count = 0
                         searching_start = True
