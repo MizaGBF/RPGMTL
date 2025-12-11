@@ -52,7 +52,7 @@ class Subtitle(Plugin):
     def read_srt(self : Subtitle, content : str) -> list[list[str]]:
         state : int = 0
         entries : list[list[str]] = []
-        string : len(str) = []
+        string : list[str] = []
         group_name : str = ""
         for line in content.splitlines():
             match state:
@@ -74,7 +74,7 @@ class Subtitle(Plugin):
                                 group_name,
                                 "\n".join(string)
                             ])
-                            string = []
+                            string.clear()
                             group_name = ""
                     else:
                         string.append(line)
@@ -83,7 +83,7 @@ class Subtitle(Plugin):
     def write_srt(self : Subtitle, content : str, helper : WalkHelper) -> tuple[bytes, bool]:
         state : int = 0
         string_start : int = -1
-        string : len(str) = []
+        string : list[str] = []
         group_name : str = ""
         lines = content.splitlines()
         i : int = 0
@@ -112,7 +112,7 @@ class Subtitle(Plugin):
                                     lines[i:]
                                 )
                                 i -= (i - string_start) - 1
-                            string = []
+                            string.clear()
                             group_name = ""
                     else:
                         string.append(lines[i])

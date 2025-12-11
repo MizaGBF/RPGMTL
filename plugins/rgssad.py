@@ -102,7 +102,7 @@ class RGSSAD(Plugin):
 
     def read_rgssad_v1(self : RGSSAD, handle):
         # for .rgssad and .rgss2a
-        archived_files = []
+        archived_files : list[dict] = []
         handle.seek(8)
         key = 0xDEADCAFE # key is fixed
         
@@ -127,7 +127,7 @@ class RGSSAD(Plugin):
 
     def read_rgssad_v3(self : RGSSAD, handle):
         # for .rgss3a
-        archived_files = []
+        archived_files : list[dict] = []
         handle.seek(8)
         key = (self.read_int(handle) * 9 + 3) & 0xFFFFFFFF # key is at the beginning of the file
         

@@ -37,7 +37,7 @@ class Renpy(Plugin):
             entry_offset = 0
         else:
             entry_offset = helper.group
-        entries = []
+        entries : list[list[str]] = []
         i = 0
         group = [""]
         string_table : list[tuple] = []

@@ -45,7 +45,7 @@ class NScripter(Plugin):
         return string
 
     def extract_string_from_cmd(self : NScripter, params : str) -> list[str]:
-        strings = []
+        strings : list[str] = []
         i = 0
         while i < len(params):
             if params[i] == '"':

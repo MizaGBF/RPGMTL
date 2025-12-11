@@ -50,7 +50,7 @@ class Javascript(Plugin):
             entry_offset = 0
         else:
             entry_offset = helper.group
-        entries = []
+        entries : list[list[str]] = []
         i = 0
         funcs = ["", ""]
         func_pos = [None, None]

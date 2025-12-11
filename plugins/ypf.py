@@ -177,7 +177,6 @@ class YPFHeader:
         if self.archived_files_header_size <= 0:
             raise Exception("[YPF] Invalid Archived Files Header Size")
 
-        self.archived_files = []
         for _ in range(files_count):
             entry = self._read_next_entry(stream)
             self.archived_files.append(entry)

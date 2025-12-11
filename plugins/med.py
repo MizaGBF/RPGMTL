@@ -356,7 +356,7 @@ class MED(Plugin):
                 
                 offset = 0x10 + en_count * enlen
                 
-                file_data = []
+                file_data : list[bytearray] = []
                 for f, data in files.items():
                     p = len(f) - 1
                     while f[p] != "_": # ???
