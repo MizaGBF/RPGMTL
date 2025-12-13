@@ -1778,7 +1778,7 @@ class RPGMTL():
         return True, count
 
     # subroutine of translate_file() for TranslatorBatchFormat.AI
-    async def ai_batch_translate_file(self : RPGMTL, name : str, path : str, plugin : TranslatorPlugin) -> tuple[int, bool]:
+    async def ai_batch_translate_file(self : RPGMTL, name : str, path : str, plugin : TranslatorPlugin) -> tuple[bool, int|str]:
         version = self.projects[name]["version"]
         file = self.strings[name]["files"][path]
         untranslated : int = 0
@@ -1813,7 +1813,11 @@ class RPGMTL():
         
         self.log.info("Batch translating {} strings in file '{}' for project {}...".format(untranslated, path, name))
         count : int = 0
-        translated = await plugin.translate_batch(name, batch, self.settings | self.projects[name]['settings'])
+        try:
+            translated = await plugin.translate_batch(name, batch, self.settings | self.projects[name]['settings'])
+        except Exception as e:
+            self.log.error("File translation aborted due to the following exception:\n" + self.trbk(e))
+            return False, str(e)
         if translated is not None:
             # check version
             if version != self.projects[name]["version"]:
@@ -1876,7 +1880,7 @@ class RPGMTL():
             if state:
                 return web.json_response({"result":"ok", "data":{"config":self.projects[name], "name":name, "path":path, "strings":self.strings[name]["strings"], "list":self.strings[name]["files"][path]}, "message":"{} string(s) have been translated".format(res)})
             else:
-                return web.json_response({"result":"bad", "message":res})
+                return web.json_response({"result":"ok", "message":"An error occured: " + res})
 
     # /api/translate_project
     async def translate_project(self : RPGMTL, request : web.Request) -> web.Response:
