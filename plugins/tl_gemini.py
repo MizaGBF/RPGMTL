@@ -314,7 +314,6 @@ class TLGemini(TranslatorPlugin):
         time_to_wait = settings["gemini_rate_limit"] - elapsed_time
         if time_to_wait > 0:
             await asyncio.sleep(time_to_wait)
-        self.time = time.monotonic()
         # make the request
         response = self.instance.models.generate_content(
             model=settings["gemini_model"],
@@ -325,6 +324,7 @@ class TLGemini(TranslatorPlugin):
                 "temperature":settings["gemini_temperature"],
             }
         )
+        self.time = time.monotonic()
         if response.prompt_feedback and response.prompt_feedback.block_reason:
             raise Exception("Request has been blocked: " + response.prompt_feedback.block_reason.name)
         return response.text
