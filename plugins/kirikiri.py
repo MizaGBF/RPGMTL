@@ -5,7 +5,7 @@ class KiriKiri(Plugin):
     def __init__(self : KiriKiri) -> None:
         super().__init__()
         self.name : str = "KiriKiri"
-        self.description : str = " v1.0\nHandle KiriKiri KAG and script files"
+        self.description : str = " v1.1\nHandle KiriKiri KAG and script files"
         self.related_tool_plugins : list[str] = [self.name]
 
     def get_setting_infos(self : KiriKiri) -> dict[str, list]:
@@ -167,7 +167,24 @@ class KiriKiri(Plugin):
                         lines[i] = tmp
             i += 1
         if helper.modified:
-            return "\r\n".join(lines).encode(encoding), True
+            combined : str = "\r\n".join(lines)
+            try:
+                return combined.encode(encoding), True
+            except Exception as e:
+                se : str = str(e)
+                if "codec can't encode character" in se:
+                    try:
+                        pos : int = int(se.split("in position ")[1].split(":")[0])
+                        raise Exception(
+                            "Invalid character for encoding '{}'. Part: {}".format(
+                                encoding,
+                                combined[max(0, pos - 10):pos + 10]
+                            )
+                        ) from e
+                    except:
+                        raise e
+                else:
+                    raise e
         else:
             return content, False
 
