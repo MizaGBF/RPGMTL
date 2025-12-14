@@ -32,14 +32,15 @@ class GeneralActions(Plugin):
                 {
                     "type":self.COMPLEX_TOOL,
                     "params":{
+                        "_t_0000":["This Text Wrap can be DESTRUCTIVE. It's recommended to backup strings.bak-1.json after.", "display", None, None],
                         "_t_char_limit":["Character Limit", "num", 60, None],
                         "_t_space":["Fill with spaces instead of using a newline:", "bool", False, None],
                         "_t_file_ext":["Only on files ending with (Separate by ,)(Optional):", "str", "", None],
-                        "_t_0000":["You can ignore the start of a string:", "display", None, None],
+                        "_t_0001":["You can ignore the start of a string:", "display", None, None],
                         "_t_start":["Starting with (Optional):", "str", "", None],
                         "_t_end":["and ending with:", "str", "", None],
                     },
-                    "help":"Tool to automatically wrap texts of RPG Maker games."
+                    "help":"Tool to automatically wrap texts."
                 }
             ],
         }
