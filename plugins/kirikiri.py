@@ -176,7 +176,7 @@ class KiriKiri(Plugin):
                     try:
                         pos : int = int(se.split("in position ")[1].split(":")[0])
                         raise Exception(
-                            "Invalid character for encoding '{}'. Part: {}".format(
+                            "Invalid character for encoding '{}'. Part: '{}'".format(
                                 encoding,
                                 combined[max(0, pos - 10):pos + 10]
                             )
