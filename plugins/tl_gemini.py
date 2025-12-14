@@ -1,7 +1,7 @@
 from __future__ import annotations
 from . import TranslatorPlugin
 try:
-    from google.genai import Client
+    from google.genai import Client, types
     from pydantic import BaseModel
 except:
     raise Exception("Failed to import google-genai.\nMake sure it's installed using: pip install -U google-genai")
@@ -331,6 +331,24 @@ class TLGemini(TranslatorPlugin):
                 "response_mime_type":"application/json",
                 "response_schema":GmResponse,
                 "temperature":settings["gemini_temperature"],
+                "safety_settings":[
+                    types.SafetySetting(
+                        category=types.HarmCategory.HARM_CATEGORY_HARASSMENT,
+                        threshold=types.HarmBlockThreshold.BLOCK_NONE,
+                    ),
+                    types.SafetySetting(
+                        category=types.HarmCategory.HARM_CATEGORY_HATE_SPEECH,
+                        threshold=types.HarmBlockThreshold.BLOCK_NONE,
+                    ),
+                    types.SafetySetting(
+                        category=types.HarmCategory.HARM_CATEGORY_SEXUALLY_EXPLICIT,
+                        threshold=types.HarmBlockThreshold.BLOCK_NONE,
+                    ),
+                    types.SafetySetting(
+                        category=types.HarmCategory.HARM_CATEGORY_DANGEROUS_CONTENT,
+                        threshold=types.HarmBlockThreshold.BLOCK_NONE,
+                    ),
+                ]
             }
         )
         self.time = time.monotonic()
