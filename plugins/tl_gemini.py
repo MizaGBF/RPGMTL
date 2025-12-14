@@ -298,6 +298,15 @@ class TLGemini(TranslatorPlugin):
             batch_ranges.append((0, len(inter)))
         return self._format_batch_to_text(batch["file"], inter, batch_ranges)
 
+    def knowledge_to_text(self : TLGemini, base : list[dict]) -> str:
+        result : list[str] = []
+        for entry in base:
+            if entry["note"].strip() != "":
+                result.append("- {} ({}): {}".format(entry["original"], entry["translation"], entry["note"]))
+            else:
+                result.append("- {} ({})".format(entry["original"], entry["translation"]))
+        return "\n".join(result).strip()
+
     async def ask_gemini(self : TLGemini, name : str, batch : str, settings : dict[str, Any] = {}) -> str:
         self._init_translator(settings)
         extra_context : str = ""
@@ -327,6 +336,20 @@ class TLGemini(TranslatorPlugin):
         self.time = time.monotonic()
         if response.prompt_feedback and response.prompt_feedback.block_reason:
             raise Exception("Request has been blocked: " + response.prompt_feedback.block_reason.name)
+
+        if not response.candidates:
+            raise Exception("No candidates returned. The response might have been filtered completely.")
+
+        candidate = response.candidates[0]
+        if candidate.finish_reason.name != "STOP":
+            match candidate.finish_reason.name:
+                case "SAFETY":
+                    raise Exception("Generation blocked by safety settings. Ratings: {}".format(candidate.safety_ratings))
+                case "RECITATION":
+                    raise Exception("Blocked due to recitation (copyright/verbatim check).")
+                case _:
+                    raise Exception("Generation blocked. Cause: {}".format(candidate.finish_reason.name))
+
         return response.text
 
     async def translate(self : TLGemini, name : str, string : str, settings : dict[str, Any] = {}) -> str|None:
@@ -360,17 +383,17 @@ class TLGemini(TranslatorPlugin):
                     return None
             except Exception as e:
                 self.instance = None
-                self.owner.log.error("[TL Gemini] Error in 'translate':\n" + self.owner.trbk(e))
-                se : str = str(e)
                 retry += 1
-                if "429 RESOURCE_EXHAUSTED" in se:
+                if "429 RESOURCE_EXHAUSTED" in str(e):
                     raise Exception("Resource exhausted")
+                self.owner.log.error("[TL Gemini] Error in 'translate':\n" + self.owner.trbk(e))
                 await asyncio.sleep(settings["gemini_rate_limit"])
         return None
 
     async def translate_batch(self : TLGemini, name : str, batch : dict[str, Any], settings : dict[str, Any] = {}) -> dict[str, str]:
         inputs : list[str] = self.format_batch(batch, settings["gemini_token_limit"])
         result : dict[str, str] = {}
+        await asyncio.sleep(settings["gemini_rate_limit"])
         for i, input_batch in enumerate(inputs):
             retry : int = 0
             if len(inputs) > 1:
@@ -381,19 +404,9 @@ class TLGemini(TranslatorPlugin):
                     result = result | self.parse_model_output(output, name, batch)
                     break
                 except Exception as e:
-                    self.owner.log.error("[TL Gemini] Error in 'translate_batch':\n" + self.owner.trbk(e))
-                    se : str = str(e)
                     retry += 1
-                    if "429 RESOURCE_EXHAUSTED" in se:
+                    if "429 RESOURCE_EXHAUSTED" in str(e):
                         raise Exception("Resource exhausted")
+                    self.owner.log.error("[TL Gemini] Error in 'translate_batch':\n" + self.owner.trbk(e))
                     await asyncio.sleep(settings["gemini_rate_limit"])
         return result
-
-    def knowledge_to_text(self : TLGemini, base : list[dict]) -> str:
-        result : list[str] = []
-        for entry in base:
-            if entry["note"].strip() != "":
-                result.append("- {} ({}): {}".format(entry["original"], entry["translation"], entry["note"]))
-            else:
-                result.append("- {} ({})".format(entry["original"], entry["translation"]))
-        return "\n".join(result).strip()
