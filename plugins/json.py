@@ -207,7 +207,7 @@ class JSON(Plugin):
                                     mode,
                                     params["_t_name"],
                                     params["_t_start"],
-                                    params["_t_end"],
+                                    params["_t_end"]
                                 )
                                 if b:
                                     self.owner.modified[name] = True
@@ -221,7 +221,7 @@ class JSON(Plugin):
                                 mode,
                                 params["_t_name"],
                                 params["_t_start"],
-                                params["_t_end"],
+                                params["_t_end"]
                             )
                             if b:
                                 self.owner.modified[name] = True
@@ -242,7 +242,7 @@ class JSON(Plugin):
         mode : int,
         first_line : bool,
         start_delim : str,
-        end_delim : str,
+        end_delim : str
     ) -> tuple[str, bool]:
         start : str = ""
         old : str = string
