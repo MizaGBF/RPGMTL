@@ -99,7 +99,7 @@ class TLGemini(TranslatorPlugin):
             "gemini_model": ["Set the Gemini Model (<a href=\"https://aistudio.google.com/usage?timeRange=last-28-days&tab=rate-limit\">Models and Rate Limits</a>)", "str", "gemini-2.5-flash", None],
             "gemini_src_language": ["Set the Source Language", "str", "Japanese", None],
             "gemini_target_language": ["Set the Target Language", "str", "English", None],
-            "gemini_rate_limit": ["Set the minimum wait time between requests (in seconds)", "num", 8, None],
+            "gemini_rate_limit": ["Set the minimum wait time between requests (in seconds)", "num", 12, None],
             "gemini_token_limit": ["Set the minimum token count per translation batch (Minimum is 2000)", "num", 30000, None],
             "gemini_temperature": ["Set the Model Temperature (Higher is more creative but less predictable)", "num", 0, None],
             "gemini_extra_context": ["Set extra informations or commands for the AI", "text", "", None],
