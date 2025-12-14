@@ -1880,7 +1880,7 @@ class RPGMTL():
             if state:
                 return web.json_response({"result":"ok", "data":{"config":self.projects[name], "name":name, "path":path, "strings":self.strings[name]["strings"], "list":self.strings[name]["files"][path]}, "message":"{} string(s) have been translated".format(res)})
             else:
-                return web.json_response({"result":"ok", "message":"An error occured: " + res})
+                return web.json_response({"result":"ok", "data":{"config":self.projects[name], "name":name, "path":path, "strings":self.strings[name]["strings"], "list":self.strings[name]["files"][path]}, "message":"An error occured: " + res})
 
     # /api/translate_project
     async def translate_project(self : RPGMTL, request : web.Request) -> web.Response:
