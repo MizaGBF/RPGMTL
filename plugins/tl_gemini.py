@@ -347,6 +347,8 @@ class TLGemini(TranslatorPlugin):
                     raise Exception("Generation blocked by safety settings. Ratings: {}".format(candidate.safety_ratings))
                 case "RECITATION":
                     raise Exception("Blocked due to recitation (copyright/verbatim check).")
+                case "MAX_TOKENS": # ignore this one
+                    pass
                 case _:
                     raise Exception("Generation blocked. Cause: {}".format(candidate.finish_reason.name))
 
