@@ -56,7 +56,7 @@ class KiriKiri(Plugin):
                                 group = ["Label"]
                             group.append(line)
                 case "[":
-                    if line.strip().startswith("[link target="):
+                    if line.strip().startswith("[link "):
                         if group[0] != "Choices":
                             if len(group) > 1:
                                 entries.append(group)
@@ -136,7 +136,7 @@ class KiriKiri(Plugin):
                             if helper.str_modified:
                                 lines[i] = line[:p+1] + tmp
                 case "[":
-                    if line.strip().startswith("[link target="):
+                    if line.strip().startswith("[link "):
                         a = line.find("]")
                         b = line.find("[", a)
                         if b == -1:
