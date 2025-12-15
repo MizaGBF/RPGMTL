@@ -5,7 +5,7 @@ class KiriKiri(Plugin):
     def __init__(self : KiriKiri) -> None:
         super().__init__()
         self.name : str = "KiriKiri"
-        self.description : str = " v1.1\nHandle KiriKiri KAG and script files"
+        self.description : str = " v1.2\nHandle KiriKiri KAG and script files"
         self.related_tool_plugins : list[str] = [self.name]
 
     def get_setting_infos(self : KiriKiri) -> dict[str, list]:
@@ -14,7 +14,8 @@ class KiriKiri(Plugin):
         }
 
     def match(self : KiriKiri, file_path : str, is_for_action : bool) -> bool:
-        return file_path.endswith(".ks") or file_path.endswith(".tjs")
+        lp : str = file_path.lower()
+        return lp.endswith(".ks") or lp.endswith(".tjs")
 
     def read(self : KiriKiri, file_path : str, content : bytes) -> list[list[str]]:
         if file_path.endswith(".ks"):
