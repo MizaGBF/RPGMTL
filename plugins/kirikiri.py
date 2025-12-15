@@ -18,9 +18,10 @@ class KiriKiri(Plugin):
         return lp.endswith(".ks") or lp.endswith(".tjs")
 
     def read(self : KiriKiri, file_path : str, content : bytes) -> list[list[str]]:
-        if file_path.endswith(".ks"):
+        lp : str = file_path.lower()
+        if lp.endswith(".ks"):
             return self.read_ks(file_path, content)
-        elif file_path.endswith(".tjs"):
+        elif lp.endswith(".tjs"):
             return self.read_tjs(file_path, content)
         else:
             return []
@@ -107,9 +108,10 @@ class KiriKiri(Plugin):
             return []
 
     def write(self : KiriKiri, name : str, file_path : str, content : bytes) -> tuple[bytes, bool]:
-        if file_path.endswith(".ks"):
+        lp : str = file_path.lower()
+        if lp.endswith(".ks"):
             return self.write_ks(name, file_path, content)
-        elif file_path.endswith(".tjs"):
+        elif lp.endswith(".tjs"):
             return self.write_tjs(name, file_path, content)
         else:
             return content, False
