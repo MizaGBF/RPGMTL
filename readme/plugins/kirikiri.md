@@ -34,5 +34,5 @@ If you need to start a line with the `[` character, make sure to double it (`[[`
   
 ## Development References  
   
-[Doc](https://kirikirikag.sourceforge.net/contents/index.html/)  
+[Doc](https://kirikirikag.sourceforge.net/contents/index.html)  
 [KirikiriTools](https://github.com/arcusmaximus/KirikiriTools)  
