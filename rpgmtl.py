@@ -1364,6 +1364,9 @@ class RPGMTL():
         else:
             if key is None:
                 self.projects[name]["settings"] = {}
+            elif key in self.settings and value == self.settings[key]:
+                if key in self.projects[name]["settings"]:
+                    self.projects[name]["settings"].pop(key)
             else:
                 self.projects[name]["settings"][key] = value
             self.modified[name] = True
