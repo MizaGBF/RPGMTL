@@ -22,7 +22,7 @@ class KiriKiri(Plugin):
                 {
                     "type":self.COMPLEX_TOOL,
                     "params":{
-                        "_t_0000":["This tool is destructive, be sure to keep a backup of your work.", "display", None, None],
+                        "_t_0000":["This Text Wrap can be DESTRUCTIVE. It's recommended to backup strings.bak-1.json after.", "display", None, None],
                         "_t_0001":["It will replace all non-standard whitespace characters with normal ones", "display", None, None],
                         "_t_0002":["OR, in case Zero-Width Spaces, will remove them.", "display", None, None],
                         "_t_0003":["It won't affect disabled strings.", "display", None, None],
