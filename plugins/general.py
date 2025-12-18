@@ -7,7 +7,7 @@ class GeneralActions(Plugin):
     def __init__(self : GeneralActions) -> None:
         super().__init__()
         self.name : str = "General Actions"
-        self.description : str = "v1.1\nAdd specific file actions on all files and tools."
+        self.description : str = "v1.2\nAdd specific file actions on all files and tools."
         self.related_tool_plugins : list[str] = [self.name]
 
     def get_setting_infos(self : GeneralActions) -> dict[str, list]:
@@ -41,6 +41,23 @@ class GeneralActions(Plugin):
                         "_t_end":["and ending with:", "str", "", None],
                     },
                     "help":"Tool to automatically wrap texts."
+                }
+            ],
+            "general_special_character": [
+                "assets/images/text_wrap.png", "Special Character Remover", self.tool_special_char,
+                {
+                    "type":self.COMPLEX_TOOL,
+                    "params":{
+                        "_t_0000":["This Text Wrap can be DESTRUCTIVE. It's recommended to backup strings.bak-1.json after.", "display", None, None],
+                        "_t_0001":["Check what you want to replace:", "display", None, None],
+                        "_t_dash":["– — − ‑ by -", "bool", True, None],
+                        "_t_single_quote":["‘ ’ by '", "bool", True, None],
+                        "_t_double_quote":["“ ” « » by \"", "bool", True, None],
+                        "_t_dot":["· 。 by .", "bool", True, None],
+                        "_t_triple_dot":["… by ...", "bool", True, None],
+                        "_t_file_ext":["Only on files ending with (Separate by ,)(Optional):", "str", "", None],
+                    },
+                    "help":"Tool to automatically replace specific special characters."
                 }
             ],
         }
@@ -138,6 +155,72 @@ class GeneralActions(Plugin):
         else:
             string = start + "\n".join(p)
         return string, string != old
+
+    def tool_special_char(self : GeneralActions, name : str, params : dict[str, Any]) -> str:
+        checks : dict[str, Any] = {
+            "_t_dash" : (("–", "—", "−", "‑"), "-"),
+            "_t_single_quote" : (("‘", "’"), "'"),
+            "_t_double_quote" : (("“", "”", "«", "»"), "\""),
+            "_t_dot" : (("·", "。"), "-"),
+            "_t_dash" : (("…"), "..."),
+        }
+        try:
+            extensions : tuple[str] = tuple(params["_t_file_ext"].split(","))
+        except:
+            return "Failed to parse file ending setting."
+        try:
+            for k in list(checks.keys()):
+                if params.get(k, False) == False:
+                    checks.pop(k, None)
+            if len(list(checks.keys())) == 0:
+                return "Nothing has been selected"
+            
+            self.owner.save() # save first!
+            self.owner.backup_strings_file(name) # backup strings.json
+            self.owner.load_strings(name)
+            seen : set[str] = set() # used to track which strings we tested
+            count : int = 0
+            for file in self.owner.strings[name]["files"]:
+                if len(extensions) > 0 and not file.endswith(extensions):
+                    continue
+                for i, group in enumerate(self.owner.strings[name]["files"][file]):
+                    for j in range(1, len(group)):
+                        sid : str = self.owner.strings[name]["files"][file][i][j][LocIndex.ID]
+                        if self.owner.strings[name]["strings"][sid][GloIndex.TL] is not None:
+                            if sid not in seen:
+                                seen.add(sid)
+                                s, b = self._tool_special_char_parser(
+                                    self.owner.strings[name]["strings"][sid][GloIndex.TL],
+                                    checks
+                                )
+                                if b:
+                                    self.owner.modified[name] = True
+                                    self.owner.strings[name]["strings"][sid][GloIndex.TL] = s
+                                    count += 1
+                        
+                        if self.owner.strings[name]["files"][file][i][j][LocIndex.TL] is not None:
+                            s, b = self._tool_special_char_parser(
+                                self.owner.strings[name]["strings"][sid][LocIndex.TL],
+                                checks
+                            )
+                            if b:
+                                self.owner.modified[name] = True
+                                self.owner.strings[name]["files"][file][i][j][LocIndex.TL] = s
+                                count += 1
+            if count == 0:
+                return "No strings have been modified"
+            else:
+                return str(count) + " strings have been wrapped"
+        except Exception as e:
+            self.owner.log.error("[JSON] Tool 'tool_special_char' failed with error:\n" + self.owner.trbk(e))
+            return "An unexpected error occured"
+
+    def _tool_special_char_parser(self : GeneralActions, s : str, checks : dict[str, Any]) -> tuple[str, bool]:
+        m : str = s
+        for k, (chars, replacement) in checks.items():
+            for c in chars:
+                m = m.replace(c, replacement)
+        return m, m != s
 
     def check_limit(self : GeneralActions, name : str, file_path : str, settings : dict[str, Any] = {}) -> str:
         try:
