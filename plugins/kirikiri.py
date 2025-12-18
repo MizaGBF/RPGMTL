@@ -1,17 +1,91 @@
 from __future__ import annotations
-from . import Plugin, WalkHelper
+from . import Plugin, WalkHelper, GloIndex, LocIndex
+from typing import Any
+import unicodedata
 
 class KiriKiri(Plugin):
     def __init__(self : KiriKiri) -> None:
         super().__init__()
         self.name : str = "KiriKiri"
-        self.description : str = " v1.2\nHandle KiriKiri KAG and script files"
+        self.description : str = " v1.3\nHandle KiriKiri KAG and script files"
         self.related_tool_plugins : list[str] = [self.name]
 
     def get_setting_infos(self : KiriKiri) -> dict[str, list]:
         return {
             "kirikiri_default_encoding": ["Select the default script encoding", "str", "shift_jis", ["auto"] + self.FILE_ENCODINGS]
         }
+
+    def get_tool_infos(self : KiriKiri) -> dict[str, list]:
+        return {
+            "kirikiri_space_removers": [
+                "assets/images/note.png", "Non-Standard Space Remover", self.tool_space_removal,
+                {
+                    "type":self.COMPLEX_TOOL,
+                    "params":{
+                        "_t_0000":["This tool is destructive, be sure to keep a backup of your work.", "display", None, None],
+                        "_t_0001":["It will replace all non-standard whitespace characters with normal ones", "display", None, None],
+                        "_t_0002":["OR, in case Zero-Width Spaces, will remove them.", "display", None, None],
+                        "_t_0003":["It won't affect disabled strings.", "display", None, None],
+                    },
+                    "help":"Tool to automatically replace non-standard whitespace characters with normal ones."
+                }
+            ]
+        }
+
+    def tool_space_removal(self : KiriKiri, name : str, params : dict[str, Any]) -> str:
+        try:
+            self.owner.save() # save first!
+            self.owner.backup_strings_file(name) # backup strings.json
+            self.owner.load_strings(name)
+            seen : set[str] = set() # used to track which strings we tested
+            count : int = 0
+            for file in self.owner.strings[name]["files"]:
+                for i, group in enumerate(self.owner.strings[name]["files"][file]):
+                    for j in range(1, len(group)):
+                        sid : str = self.owner.strings[name]["files"][file][i][j][LocIndex.ID]
+                        if self.owner.strings[name]["strings"][sid][GloIndex.TL] is not None:
+                            if sid not in seen:
+                                seen.add(sid)
+                                s, b = self.edit_non_standard_spaces(self.owner.strings[name]["strings"][sid][GloIndex.TL])
+                                if b:
+                                    self.owner.modified[name] = True
+                                    self.owner.strings[name]["strings"][sid][GloIndex.TL] = s
+                                    count += 1
+                        
+                        if self.owner.strings[name]["files"][file][i][j][LocIndex.TL] is not None:
+                            s, b = self.edit_non_standard_spaces(self.owner.strings[name]["strings"][sid][LocIndex.TL])
+                            if b:
+                                self.owner.modified[name] = True
+                                self.owner.strings[name]["files"][file][i][j][LocIndex.TL] = s
+                                count += 1
+            if count == 0:
+                return "No strings have been modified"
+            else:
+                return str(count) + " strings have been wrapped"
+        except Exception as e:
+            self.owner.log.error("[KiriKiri] Tool 'tool_space_removal' failed with error:\n" + self.owner.trbk(e))
+            return "An unexpected error occured"
+
+    def edit_non_standard_spaces(self : KiriKiri, text : str) -> tuple[str, bool]:
+        modifications : dict[str, str] = {}
+
+        for index, char in enumerate(text):
+            if char != " ":
+                category = unicodedata.category(char)
+                # Note:
+                # 'Zs' = Space Separator (includes NBSP, Ideographic Space)
+                # 'Cf' = Format (includes Zero Width Space, ZWNJ)
+                # 'Cc' = Control (includes \t, \n, \r) usually standard, but included here for context
+                if (category.startswith('Z') or category == 'Cf'):
+                    if category == 'Cf' and unicodedata.name(char, "") == "ZERO WIDTH SPACE":
+                        modifications[char] = ""
+                    else:
+                        modifications[char] = " "
+
+        modified = text
+        for ori, modif in modifications.items():
+            modified = modified.replace(ori, modif)
+        return modified, modified != text
 
     def match(self : KiriKiri, file_path : str, is_for_action : bool) -> bool:
         lp : str = file_path.lower()
