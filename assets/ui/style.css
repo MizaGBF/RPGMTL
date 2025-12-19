@@ -313,7 +313,7 @@ li {
 	padding: 0px;
 	width: calc(100% - 18px);
 	
-	content-visibility: auto; 
+	content-visibility: auto-pointer-events; 
     contain-intrinsic-size: 65px;
 }
 
