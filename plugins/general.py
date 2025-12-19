@@ -52,7 +52,9 @@ class GeneralActions(Plugin):
                         "_t_0001":["Check what you want to replace:", "display", None, None],
                         "_t_dash":["– — − ‑ by -", "bool", True, None],
                         "_t_single_quote":["‘ ’ by '", "bool", True, None],
+                        "_t_single_quote2":["『 』 by '", "bool", False, None],
                         "_t_double_quote":["“ ” « » by \"", "bool", True, None],
+                        "_t_double_quote2":["「 」 by \"", "bool", False, None],
                         "_t_dot":["· 。 by .", "bool", True, None],
                         "_t_triple_dot":["… by ...", "bool", True, None],
                         "_t_file_ext":["Only on files ending with (Separate by ,)(Optional):", "str", "", None],
@@ -160,7 +162,9 @@ class GeneralActions(Plugin):
         checks : dict[str, Any] = {
             "_t_dash" : (("–", "—", "−", "‑"), "-"),
             "_t_single_quote" : (("‘", "’"), "'"),
+            "_t_single_quote2" : (("『", "』"), "'"),
             "_t_double_quote" : (("“", "”", "«", "»"), "\""),
+            "_t_double_quote2" : (("「", "」"), "\""),
             "_t_dot" : (("·", "。"), "-"),
             "_t_triple_dot" : (("…"), "..."),
         }
