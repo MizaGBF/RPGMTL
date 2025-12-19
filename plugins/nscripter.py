@@ -11,7 +11,7 @@ class NScripter(Plugin):
     def __init__(self : NScripter) -> None:
         super().__init__()
         self.name : str = "NScripter"
-        self.description : str = " v1.0\nHandle NScripter scripts"
+        self.description : str = " v1.1\nHandle NScripter scripts"
         self.related_tool_plugins : list[str] = [self.name]
 
     def get_setting_infos(self : NScripter) -> dict[str, list]:
@@ -87,8 +87,6 @@ class NScripter(Plugin):
             else:
                 string += params[i]
             i += 1
-        if string != params:
-            print(string, params)
         return cmd + " " + string, modified
 
     def read(self : NScripter, file_path : str, content : bytes) -> list[list[str]]:
@@ -171,6 +169,22 @@ class NScripter(Plugin):
                             lines[i] = self.force_single_byte(tmp) if single_byte else tmp
             i += 1
         if helper.modified:
-            return "\r\n".join(lines).encode(encoding), True
-        else:
-            return content, False
+            combined : str = "\r\n".join(lines)
+            try:
+                return combined.encode(encoding), True
+            except Exception as e:
+                se : str = str(e)
+                if "codec can't encode character" in se:
+                    try:
+                        pos : int = int(se.split("in position ")[1].split(":")[0])
+                        raise Exception(
+                            "Invalid character for encoding '{}'. Part: '{}'".format(
+                                encoding,
+                                combined[max(0, pos - 10):pos + 10]
+                            )
+                        ) from e
+                    except:
+                        raise e
+                else:
+                    raise e
+        return content, False
