@@ -53,7 +53,7 @@ class KiriKiri(Plugin):
                                     count += 1
                         
                         if self.owner.strings[name]["files"][file][i][j][LocIndex.TL] is not None:
-                            s, b = self.edit_non_standard_spaces(self.owner.strings[name]["strings"][sid][LocIndex.TL])
+                            s, b = self.edit_non_standard_spaces(self.owner.strings[name]["files"][file][i][j][LocIndex.TL])
                             if b:
                                 self.owner.modified[name] = True
                                 self.owner.strings[name]["files"][file][i][j][LocIndex.TL] = s

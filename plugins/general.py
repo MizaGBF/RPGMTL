@@ -109,7 +109,7 @@ class GeneralActions(Plugin):
                         if self.owner.strings[name]["files"][file][i][j][LocIndex.TL] is not None:
                             s, b = self._tool_text_wrap_sub(
                                 limit,
-                                self.owner.strings[name]["strings"][sid][LocIndex.TL],
+                                self.owner.strings[name]["files"][file][i][j][LocIndex.TL],
                                 params["_t_start"],
                                 params["_t_end"],
                                 params["_t_space"]
@@ -203,7 +203,7 @@ class GeneralActions(Plugin):
                         
                         if self.owner.strings[name]["files"][file][i][j][LocIndex.TL] is not None:
                             s, b = self._tool_special_char_parser(
-                                self.owner.strings[name]["strings"][sid][LocIndex.TL],
+                                self.owner.strings[name]["files"][file][i][j][LocIndex.TL],
                                 checks
                             )
                             if b:

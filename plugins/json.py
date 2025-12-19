@@ -217,7 +217,7 @@ class JSON(Plugin):
                         if self.owner.strings[name]["files"][file][i][j][LocIndex.TL] is not None:
                             s, b = self._tool_text_wrap_sub(
                                 limit,
-                                self.owner.strings[name]["strings"][sid][LocIndex.TL],
+                                self.owner.strings[name]["files"][file][i][j][LocIndex.TL],
                                 mode,
                                 params["_t_name"],
                                 params["_t_start"],
