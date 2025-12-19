@@ -61,7 +61,7 @@ class KiriKiri(Plugin):
             if count == 0:
                 return "No strings have been modified"
             else:
-                return str(count) + " strings have been wrapped"
+                return str(count) + " strings have been modified"
         except Exception as e:
             self.owner.log.error("[KiriKiri] Tool 'tool_space_removal' failed with error:\n" + self.owner.trbk(e))
             return "An unexpected error occured"

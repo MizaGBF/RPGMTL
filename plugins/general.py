@@ -213,7 +213,7 @@ class GeneralActions(Plugin):
             if count == 0:
                 return "No strings have been modified"
             else:
-                return str(count) + " strings have been wrapped"
+                return str(count) + " strings have been modified"
         except Exception as e:
             self.owner.log.error("[JSON] Tool 'tool_special_char' failed with error:\n" + self.owner.trbk(e))
             return "An unexpected error occured"
