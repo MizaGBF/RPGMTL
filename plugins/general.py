@@ -48,7 +48,7 @@ class GeneralActions(Plugin):
                 {
                     "type":self.COMPLEX_TOOL,
                     "params":{
-                        "_t_0000":["This Text Wrap can be DESTRUCTIVE. It's recommended to backup strings.bak-1.json after.", "display", None, None],
+                        "_t_0000":["This tool can be DESTRUCTIVE. It's recommended to backup strings.bak-1.json after.", "display", None, None],
                         "_t_0001":["Check what you want to replace:", "display", None, None],
                         "_t_dash":["– — − ‑ by -", "bool", True, None],
                         "_t_single_quote":["‘ ’ by '", "bool", True, None],
