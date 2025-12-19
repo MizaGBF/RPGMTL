@@ -30,6 +30,9 @@ var filebrowsingmode = 0;
 var navigables = []; // elements with tabindex = 0
 var navigable_index = 0;
 
+// color markers
+const MARKER_CLASSES = ["", "marker-red", "marker-green", "marker-blue", "marker-pink", "marker-yellow", "marker-cyan"];
+
 // entry point
 function init()
 {
@@ -2906,6 +2909,7 @@ function prepareGroupOn(node, i)
 		
 		let marker = add_to(span, "div", {cls:["marker", "inline", "marker-pad-left"], br:false}); // left marker (modified, plugins...)
 		let user_marker = add_to(span, "div", {cls:["marker", "inline", "marker-pad-right"], br:false}); // second marker (user color marker)
+		user_marker.state = 0;
 		
 		let original = add_to(span, "pre", {cls:["title", "inline", "smalltext", "string-area", "original"], br:false}); // original string
 		original.group = i;
@@ -2915,6 +2919,7 @@ function prepareGroupOn(node, i)
 		let translation = add_to(span, "pre", {cls:["title", "inline", "smalltext", "string-area", "translation"], br:false}); // translated string
 		translation.group = i;
 		translation.string = j;
+		translation.raw_string = "";
 		
 		strtablecache.push([span, marker, translation, original, user_marker]); // add to strtablecache
 		span.onclick = function() // add string interactions
@@ -3370,85 +3375,58 @@ function update_string_list(data)
 			// retrieve string details
 			const s = project.string_groups[elems[0].group][elems[0].string];
 			const g = project.strings[s[0]];
-			// color marker
-			switch(g[3])
+			// user color marker
+			if(g[3] != elems[4].state)
 			{
-				case 1:
-				{
-					elems[4].classList.remove("marker-green", "marker-blue", "marker-pink", "marker-yellow", "marker-cyan");
-					elems[4].classList.add("marker-red");
-					break;
-				}
-				case 2:
-				{
-					elems[4].classList.remove("marker-red", "marker-blue", "marker-pink", "marker-yellow", "marker-cyan");
-					elems[4].classList.add("marker-green");
-					break;
-				}
-				case 3:
-				{
-					elems[4].classList.remove("marker-red", "marker-green", "marker-pink", "marker-yellow", "marker-cyan");
-					elems[4].classList.add("marker-blue");
-					break;
-				}
-				case 4:
-				{
-					elems[4].classList.remove("marker-red", "marker-green", "marker-blue",  "marker-yellow", "marker-cyan");
-					elems[4].classList.add("marker-pink");
-					break;
-				}
-				case 5:
-				{
-					elems[4].classList.remove("marker-red", "marker-green", "marker-blue", "marker-pink", "marker-cyan");
-					elems[4].classList.add("marker-yellow");
-					break;
-				}
-				case 6:
-				{
-					elems[4].classList.remove("marker-red", "marker-green", "marker-blue", "marker-pink", "marker-yellow");
-					elems[4].classList.add("marker-cyan");
-					break;
-				}
-				default:
-				{
-					elems[4].classList.remove("marker-red", "marker-green", "marker-blue", "marker-pink", "marker-yellow", "marker-cyan");
-					break;
-				}
+				// remove previous class
+				if(elems[4].state != 0)
+					elems[4].classList.remove(MARKER_CLASSES[elems[4].state]);
+				if(g[3] != 0)
+					elems[4].classList.add(MARKER_CLASSES[g[3]]);
+				elems[4].state = g[3];
 			}
+			let target_text = "";
+			let target_disabled = false;
+			let target_linked = false;
+
 			if(s[2]) // local/linked check
 			{
-				elems[0].classList.toggle("unlinked", true);
+				target_linked = true;
 				if(s[1] == null)
 				{
-					if(elems[2].textContent != "")
-						elems[2].textContent = "";
-					elems[2].classList.toggle("disabled", true);
+					target_text = ""; // default empty if null
+					target_disabled = true;
 				}
 				else
 				{
-					if(elems[2].textContent != s[1])
-						elems[2].textContent = s[1];
-					elems[2].classList.toggle("disabled", false);
+					target_text = s[1];
 				}
 			}
 			else // global
 			{
-				elems[0].classList.toggle("unlinked", false);
 				if(g[1] == null)
 				{
-					if(elems[2].textContent != "")
-						elems[2].textContent = "";
-					elems[2].classList.toggle("disabled", true);
+					target_text = "";
+					target_disabled = true;
 				}
 				else
 				{
-					if(elems[2].textContent != g[1])
-						elems[2].textContent = g[1];
-					elems[2].classList.toggle("disabled", false);
+					target_text = g[1];
 				}
 			}
+			
+			// span
+			elems[0].classList.toggle("unlinked", target_linked);
 			elems[0].classList.toggle("disabled", s[3] != 0);
+			// modified marker
 			elems[1].classList.toggle("modified", s[4] != 0);
+			// translation
+			elems[2].classList.toggle("disabled", target_disabled);
+			if(elems[2].raw_string != target_text)
+			{
+				elems[2].textContent = target_text;
+				elems[2].raw_string = target_text;
+			}
 			// check if string is the target of a string search
 			// if so, store in searched
 			if(search_state.string != null && searched == null)
