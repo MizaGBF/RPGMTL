@@ -62,7 +62,13 @@ class NScripter(Plugin):
             i += 1
         return strings
 
-    def get_patched_string_from_cmd(self : NScripter, cmd : str, params : str, helper : WalkHelper) -> tuple[str, bool]:
+    def get_patched_string_from_cmd(
+        self : NScripter,
+        cmd : str,
+        params : str,
+        helper : WalkHelper,
+        single_byte : bool
+    ) -> tuple[str, bool]:
         string = ""
         modified = False
         i = 0
@@ -77,7 +83,9 @@ class NScripter(Plugin):
                         break
                 tmp = helper.apply_string(params[start+1:i])
                 if helper.str_modified:
-                    string += '"' + tmp + '"'
+                    string += '"' + (
+                        self.force_single_byte(tmp) if single_byte else tmp
+                    ) + '"'
                     modified = True
                 else:
                     string += params[start:i+1]
@@ -145,7 +153,12 @@ class NScripter(Plugin):
                 cmd = self.split_command(line)
                 if len(cmd) > 1 and cmd[0].lower() in self.FUNCTIONS:
                     if cmd[0].lower() not in self.EXCLUDE:
-                        tmp, changed = self.get_patched_string_from_cmd(cmd[0], cmd[1].strip(), helper)
+                        tmp, changed = self.get_patched_string_from_cmd(
+                            cmd[0],
+                            cmd[1].strip(),
+                            helper,
+                            single_byte
+                        )
                         if changed:
                             lines[i] = tmp
                 elif cmd[0].lower() in self.FUNCTIONS:
