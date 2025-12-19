@@ -312,6 +312,9 @@ li {
 .string-group {
 	padding: 0px;
 	width: calc(100% - 18px);
+	
+	content-visibility: auto; 
+    contain-intrinsic-size: 65px;
 }
 
 .marker {
