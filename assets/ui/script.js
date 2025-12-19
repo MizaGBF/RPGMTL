@@ -2914,7 +2914,8 @@ function prepareGroupOn(node, i)
 		let original = add_to(span, "pre", {cls:["title", "inline", "smalltext", "string-area", "original"], br:false}); // original string
 		original.group = i;
 		original.string = j;
-		original.textContent = project.strings[project.string_groups[i][j][0]][0];
+		original.raw_string = project.strings[project.string_groups[i][j][0]][0];
+		original.textContent = original.raw_string;
 		
 		let translation = add_to(span, "pre", {cls:["title", "inline", "smalltext", "string-area", "translation"], br:false}); // translated string
 		translation.group = i;
@@ -3435,8 +3436,8 @@ function update_string_list(data)
 				{
 					if(search_state.contains)
 					{
-						if(elems[2].textContent.toLowerCase().includes(lcstringsearch)
-							|| elems[3].textContent.toLowerCase().includes(lcstringsearch)
+						if(elems[2].raw_string.toLowerCase().includes(lcstringsearch)
+							|| elems[3].raw_string.toLowerCase().includes(lcstringsearch)
 						)
 						{
 							searched = elems[0];
@@ -3444,8 +3445,8 @@ function update_string_list(data)
 					}
 					else
 					{
-						if(elems[2].textContent.toLowerCase() == lcstringsearch
-							|| elems[3].textContent.toLowerCase() == lcstringsearch
+						if(elems[2].raw_string.toLowerCase() == lcstringsearch
+							|| elems[3].raw_string.toLowerCase() == lcstringsearch
 						)
 						{
 							searched = elems[0];
@@ -3456,8 +3457,8 @@ function update_string_list(data)
 				{
 					if(search_state.contains)
 					{
-						if(elems[2].textContent.includes(lcstringsearch)
-							|| elems[3].textContent.includes(lcstringsearch)
+						if(elems[2].raw_string.includes(lcstringsearch)
+							|| elems[3].raw_string.includes(lcstringsearch)
 						)
 						{
 							searched = elems[0];
@@ -3465,8 +3466,8 @@ function update_string_list(data)
 					}
 					else
 					{
-						if(elems[2].textContent == lcstringsearch
-							|| elems[3].textContent == lcstringsearch
+						if(elems[2].raw_string == lcstringsearch
+							|| elems[3].raw_string == lcstringsearch
 						)
 						{
 							searched = elems[0];
