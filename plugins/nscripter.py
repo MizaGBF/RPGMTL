@@ -11,7 +11,7 @@ class NScripter(Plugin):
     def __init__(self : NScripter) -> None:
         super().__init__()
         self.name : str = "NScripter"
-        self.description : str = " v1.1\nHandle NScripter scripts"
+        self.description : str = " v1.2\nHandle NScripter scripts"
         self.related_tool_plugins : list[str] = [self.name]
 
     def get_setting_infos(self : NScripter) -> dict[str, list]:
@@ -126,8 +126,10 @@ class NScripter(Plugin):
                         if line.endswith('\r'):
                             line = line[:-1]
                         if line.strip() == "" or line.startswith((";", "*")):
+                            i -= 1
                             break
                         if self.split_command(line)[0].lower() in self.FUNCTIONS:
+                            i -= 1
                             break
                         group.append(line)
                     entries.append(group)
@@ -174,8 +176,10 @@ class NScripter(Plugin):
                             line = line[:-1]
                             lines[i] = line
                         if line.strip() == "" or line.startswith((";", "*")):
+                            i -= 1
                             break
                         if self.split_command(line)[0].lower() in self.FUNCTIONS:
+                            i -= 1
                             break
                         tmp = helper.apply_string(line)
                         if helper.str_modified:
