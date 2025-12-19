@@ -162,7 +162,7 @@ class GeneralActions(Plugin):
             "_t_single_quote" : (("‘", "’"), "'"),
             "_t_double_quote" : (("“", "”", "«", "»"), "\""),
             "_t_dot" : (("·", "。"), "-"),
-            "_t_dash" : (("…"), "..."),
+            "_t_triple_dot" : (("…"), "..."),
         }
         try:
             extensions : tuple[str] = tuple(params["_t_file_ext"].split(","))
@@ -174,7 +174,6 @@ class GeneralActions(Plugin):
                     checks.pop(k, None)
             if len(list(checks.keys())) == 0:
                 return "Nothing has been selected"
-            
             self.owner.save() # save first!
             self.owner.backup_strings_file(name) # backup strings.json
             self.owner.load_strings(name)
