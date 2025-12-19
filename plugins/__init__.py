@@ -282,8 +282,9 @@ class TranslatorPlugin(BasePlugin):
         #            }
         #        ]
         #    }
-        #"translation" key is optional.
-        #The function must return a dict[str, str] where keys are string id (like given above) and values are the translated strings.
+        # "translation" key is optional.
+        # The function must return a dict[str, str] where keys are string id (like given above) and values are the translated strings,
+        # and a boolean indicating if it can continue
 
     def __init__(self : TranslatorPlugin) -> None:
         # Be sure to call super first, in your TranslatorPlugin
@@ -303,12 +304,12 @@ class TranslatorPlugin(BasePlugin):
         # Return the translated String or None on error
         return None
 
-    async def translate_batch(self : TranslatorPlugin, name : str, batch : Any, settings : dict[str, Any] = {}) -> dict[str, str]|list[str|None]:
+    async def translate_batch(self : TranslatorPlugin, name : str, batch : Any, settings : dict[str, Any] = {}) -> tuple[dict[str, str]|list[str|None], bool]:
         # Translate a batch of string
         # name is the project name
         # Return the list of translated Strings or None if errors
         # or a dictionary depending on TranslatorBatchFormat
-        return []
+        return [], True
 
 @dataclass(slots=True)
 class WalkHelper():

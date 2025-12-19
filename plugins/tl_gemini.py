@@ -410,7 +410,12 @@ class TLGemini(TranslatorPlugin):
                 await asyncio.sleep(settings["gemini_rate_limit"])
         return None
 
-    async def translate_batch(self : TLGemini, name : str, batch : dict[str, Any], settings : dict[str, Any] = {}) -> dict[str, str]:
+    async def translate_batch(
+        self : TLGemini,
+        name : str,
+        batch : dict[str, Any],
+        settings : dict[str, Any] = {}
+    ) -> tuple[dict[str, str], bool]:
         inputs : list[str] = self.format_batch(batch, settings["gemini_token_limit"])
         result : dict[str, str] = {}
         await asyncio.sleep(settings["gemini_rate_limit"])
@@ -425,8 +430,8 @@ class TLGemini(TranslatorPlugin):
                     break
                 except Exception as e:
                     retry += 1
-                    if "429 RESOURCE_EXHAUSTED" in str(e):
-                        raise Exception("Resource exhausted")
                     self.owner.log.error("[TL Gemini] Error in 'translate_batch':\n" + self.owner.trbk(e))
+                    if "429 RESOURCE_EXHAUSTED" in str(e):
+                        return result, False
                     await asyncio.sleep(settings["gemini_rate_limit"])
-        return result
+        return result, True
