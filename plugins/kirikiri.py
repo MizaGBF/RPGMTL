@@ -7,7 +7,7 @@ class KiriKiri(Plugin):
     def __init__(self : KiriKiri) -> None:
         super().__init__()
         self.name : str = "KiriKiri"
-        self.description : str = " v1.3\nHandle KiriKiri KAG and script files"
+        self.description : str = " v1.4\nHandle KiriKiri KAG and script files"
         self.related_tool_plugins : list[str] = [self.name]
 
     def get_setting_infos(self : KiriKiri) -> dict[str, list]:
@@ -132,13 +132,23 @@ class KiriKiri(Plugin):
                                 group = ["Label"]
                             group.append(line)
                 case "[":
-                    if line.strip().startswith("[link "):
+                    ls : str = line.strip()
+                    if ls.startswith("[seladd "):
+                        if group[0] != "Selection":
+                            if len(group) > 1:
+                                entries.append(group)
+                            group = ["Selection"]
+                        if 'text="' in ls:
+                            group.append(line.split('text="')[1].split('"')[0])
+                        elif "text='" in ls:
+                            group.append(line.split("text='")[1].split("'")[0])
+                    elif ls.startswith("[link "):
                         if group[0] != "Choices":
                             if len(group) > 1:
                                 entries.append(group)
                             group = ["Choices"]
                         group.append(line.split("]")[1].split("[")[0])
-                    elif line.strip().startswith("[iscript]"):
+                    elif ls.startswith("[iscript]"):
                         i += 1
                         start = i
                         while not lines[i].strip().startswith("[endscript]"):
@@ -213,7 +223,25 @@ class KiriKiri(Plugin):
                             if helper.str_modified:
                                 lines[i] = line[:p+1] + tmp
                 case "[":
-                    if line.strip().startswith("[link "):
+                    ls : str = line.strip()
+                    if ls.startswith("[seladd "):
+                        quote_char : str = None
+                        parts : list[str] = []
+                        if 'text="' in ls:
+                            parts = line.split('text="')
+                            quote_char = '"'
+                        elif "text='" in ls:
+                            parts = line.split("text='")
+                            quote_char = "'"
+                        if quote_char is not None:
+                            parts[0] += "text="
+                            tmp = parts[1].split(quote_char)
+                            parts = parts[:1]
+                            parts.extend(tmp)
+                            parts[1] = helper.apply_string(parts[1], "Selection")
+                            if helper.str_modified:
+                                lines[i] = quote_char.join(parts)
+                    elif ls.startswith("[link "):
                         a = line.find("]")
                         b = line.find("[", a)
                         if b == -1:
@@ -226,7 +254,7 @@ class KiriKiri(Plugin):
                             if b != -1:
                                 tmp += line[b:]
                             lines[i] = tmp
-                    elif line.strip().startswith("[iscript]"):
+                    elif ls.startswith("[iscript]"):
                         i += 1
                         start = i
                         while not lines[i].strip().startswith("[endscript]"):
