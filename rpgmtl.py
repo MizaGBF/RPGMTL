@@ -1523,8 +1523,15 @@ class RPGMTL():
             return web.json_response({"result":"bad", "message":"Bad request, missing 'file' parameter"}, status=400)
         else:
             self.save() # save
-            shutil.copyfile('projects/' + name + '/' + file, 'projects/' + name + '/backup.tmp.file.json')
-            bak : list[str] = ["strings.bak-5.json", "strings.bak-4.json", "strings.bak-3.json", "strings.bak-2.json", "strings.bak-1.json", "strings.bak.json"]
+            shutil.move("projects/" + name + "/" + file, "projects/" + name + "/backup.tmp.file.json")
+            bak : list[str] = [
+                "strings.bak-5.json",
+                "strings.bak-4.json",
+                "strings.bak-3.json",
+                "strings.bak-2.json",
+                "strings.bak-1.json",
+                "strings.json"
+            ]
             meet : bool = False
             for i in range(0, len(bak)):
                 if bak[i] == file:
@@ -1534,10 +1541,13 @@ class RPGMTL():
                     continue
                 else:
                     try:
-                        shutil.copyfile('projects/' + name + '/' + bak[i], 'projects/' + name + '/' + bak[i-1])
+                        if i == 0:
+                            os.remove("projects/" + name + "/" + bak[i])
+                        else:
+                            shutil.move("projects/" + name + "/" + bak[i], "projects/" + name + "/" + bak[i-1])
                     except:
                         pass
-            shutil.copyfile('projects/' + name + '/backup.tmp.file.json', 'projects/' + name + '/strings.json')
+            shutil.move("projects/" + name + "/backup.tmp.file.json", "projects/" + name + "/strings.json")
             self.projects[name]["version"] = self.projects[name].get("version", -1) + 1
             self.modified[name] = True
             self.strings.pop(name, None)
