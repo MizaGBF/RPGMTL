@@ -241,8 +241,11 @@ class GeneralActions(Plugin):
                     for i in range(1, len(group)):
                         lc = group[i]
                         gl = self.owner.strings[name]["strings"][lc[LocIndex.ID]]
-                        if lc[LocIndex.LOCAL] and lc[LocIndex.TL] is not None:
-                            s = lc[LocIndex.TL]
+                        if lc[LocIndex.LOCAL]:
+                            if lc[LocIndex.TL] is not None:
+                                s = lc[LocIndex.TL]
+                            else:
+                                continue
                         elif gl[1] is not None:
                             s = gl[GloIndex.TL]
                         else:
