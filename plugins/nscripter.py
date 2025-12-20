@@ -5,8 +5,98 @@ from . import Plugin, WalkHelper
 # https://07th-mod.github.io/ponscripter-fork/api/
 # https://github.com/Galladite27/ONScripter-EN
 class NScripter(Plugin):
-    FUNCTIONS : set[str] = {"*define","*start","game","reset","definereset","end","*",";",":","%","$","?","~","/","{}","`","0x","^","setwindow","setwindow2","textoff","texton","windoweffect","erasetextwindow","btnnowindowerase","noteraseman","gettext","tateyoko","windowchip","setwindow3","textspeeddefault","font","defaultfont","!s","#","textclear","locate","puttext","br","textspeed","shadedistance","setkinsoku","addkinsoku","kinsoku","english","textcolor","language","@","\\","clickstr","linepage","_","clickvoice","autoclick","click","lrclick","clickskippage","setcursor","abssetcursor","mousecursor","mousemode","movemousecursor","getnextline","transmode","underline","bgalia","humanz","windowback","bg","ld","cl","tal","print","lsp","lsph","csp","vsp","spstr","msp","amsp","cell","blt","ofscpy","repaint","allsphide","allspresume","humanorder","humanpos","bgcopy","getspsize","getspmode","spfont","strsp","strsph","effect","effectblank","effectcut","effectskip","quake","quakex","quakey","monocro","nega","flushout","%","$","?","bar","barclear","prnum","prnumclear","cdfadeout","chkcdfile","chkcdfile_ex","mp3fadeout","play","playonce","playstop","wave","waveloop","wavestop","mp3","mp3loop","mp3save","dsound","dwave","dwaveloop","dwavestop","dwaveload","dwaveplay","dwaveplayloop","stop","mp3stop","mp3fadein","bgm","bgmonce","bgmstop","bgmfadeout","bgmfadein","loopbgm","loopbgmstop","mp3vol","chvol","voicevol","sevol","bgmvol","v","dv","mv","bgmdownmode","avi","mpegplay","movie","selectcolor","selectvoice","select","selgosub","selnum","goto","skip","gosub","return","jumpf","jumpb","tablegoto","trap","r_trap","lr_trap","trap2","lr_trap2","btndef","btn","btnwait","btnwait2","spbtn","cellcheckspbtn","getbtntimer","btntime","btntime2","exbtn","cellcheckexbtn","exbtn_d","transbtn","!d","!w","delay","wait","resettimer","waittimer","gettimer","spwait","stralias","numalias","intlimit","dim","mov","mov3","mov4","mov5","mov6","mov7","mov8","mov9","mov10","movl","add","+","sub","-","inc","dec","mul","*","div","/","mod","rnd","rnd2","itoa","itoa2","atoi","len","mid","split","sin","cos","tan","if","notif","cmp","fchk","lchk","for","next","break","rmenu","menusetwindow","savename","menuselectcolor","menuselectvoice","rlookback","rgosub","roff","rmode","lookbackbutton","lookbackcolor","lookbackvoice","lookbacksp","maxkaisoupage","lookbackflush","lookbackoff","lookbackon","kidokuskip","mode_wave_demo","skipoff","kidokumode","filelog","globalon","labellog","savenumber","savedir","loadgame","savegame","savegame2","getsavestr","savefileexist","saveon","saveoff","loadgosub","errorsave","autosaveoff","savepoint","mesbox","okcancelbox","yesnobox","inputstr","inputnum","input","textfield","clickpos","systemcall","fileexist","fileremove","labelexist","noloaderror","minimizewindow","automode","automode_time","defvoicevol","defsevol","defmp3vol","defbgmvol","mode_saya","mode_ext","mode800","mode400","mode320","value","gameid","soundpressplgin","spi","arc","nsa","nsadir","addnsadir","exec_dll","getret","setlayer","layermessage","versionstr","caption","date","time","savetime","getversion","getwindowsize","getreg","getini","readfile","killmenu","resetmenu","insertmenu","deletemenu","defaultspeed","!sd","menu_full","menu_window","isfull","menu_click_page","menu_click_def","menu_dwavvol","menu_waveon","menu_waveoff","*customsel","csel","cselbtn","cselgoto","getcselnum","getcselstr","nextcsel","selectbtnwait","textgosub","textbtnwait","getskipoff","getmouseover","checkkey","texec","texec2","getcursorpos","getcursorpos2","isskip","ispage","defsub","getparam","luacall","luasub","getscreenshot","savescreenshot","savescreenshot2","deletescreenshot","btnarea","btndown","isdown","getmousepos","spclclk","usewheel","useescspc","getcursor","getenter","gettab","getfunction","getpage","getinsert","getzxc","getmclick","()","rubyoff","rubyon","rubyon2","draw","drawclear","drawfill","drawbg","drawbg2","drawtext","drawsp","drawsp2","drawsp3","checkpage","getlog","logsp","logsp2","getlogtext","gettaglog","texthide","textshow","pretextgosub","[]","gettag","indent","pagetag","zenkakko","bmpcut","bw2a","bw2a3","chainbmp","createdummy","debuglog","shell","winexec","csvopen","csvread","csvwrite","csveof","csvclose","<>","linkcolor","textbtnstart","gettextbtnstr","erasetextbtn","textexbtn","textbtnoff","lsp2","lsph2","lsp2add","lsph2add","lsp2sub","lsph2sub","csp2","vsp2","msp2","amsp2","allsp2hide","allsp2resume","bclear","bsp","bdef","btime","bexec","bcursor","bdown","btrans","~","pmapfont","prendering","pfontstyle","pligate","pindentstr","pbreakstr","localestring","h_mapfont","h_rendering","h_fontstyle","h_ligate","h_indentstr","h_breakstr"}
-    EXCLUDE : set[str] = {"bg", "btndef", "mp3loop"}
+    # Complete list of NScripter functions, automatically dumped
+    FUNCTIONS : set[str] = {
+        "*define","*start","game","reset","definereset",
+        "end","*",";",":","%","$","?","~","/","{}","`","0x","^",
+        "setwindow","setwindow2","textoff","texton","windoweffect",
+        "erasetextwindow","btnnowindowerase","noteraseman",
+        "gettext","tateyoko","windowchip","setwindow3",
+        "textspeeddefault","font","defaultfont","!s","#","textclear",
+        "locate","puttext","br","textspeed","shadedistance",
+        "setkinsoku","addkinsoku","kinsoku","english","textcolor",
+        "language","@","\\","clickstr","linepage","_","clickvoice",
+        "autoclick","click","lrclick","clickskippage","setcursor",
+        "abssetcursor","mousecursor","mousemode","movemousecursor",
+        "getnextline","transmode","underline","bgalia","humanz",
+        "windowback","bg","ld","cl","tal","print","lsp","lsph",
+        "csp","vsp","spstr","msp","amsp","cell","blt","ofscpy",
+        "repaint","allsphide","allspresume","humanorder",
+        "humanpos","bgcopy","getspsize","getspmode","spfont",
+        "strsp","strsph","effect","effectblank","effectcut",
+        "effectskip","quake","quakex","quakey","monocro","nega",
+        "flushout","%","$","?","bar","barclear","prnum",
+        "prnumclear","cdfadeout","chkcdfile","chkcdfile_ex",
+        "mp3fadeout","play","playonce","playstop","wave",
+        "waveloop","wavestop","mp3","mp3loop","mp3save",
+        "dsound","dwave","dwaveloop","dwavestop","dwaveload",
+        "dwaveplay","dwaveplayloop","stop","mp3stop","mp3fadein",
+        "bgm","bgmonce","bgmstop","bgmfadeout","bgmfadein",
+        "loopbgm","loopbgmstop","mp3vol","chvol","voicevol",
+        "sevol","bgmvol","v","dv","mv","bgmdownmode","avi",
+        "mpegplay","movie","selectcolor","selectvoice",
+        "select","selgosub","selnum","goto","skip","gosub",
+        "return","jumpf","jumpb","tablegoto","trap","r_trap",
+        "lr_trap","trap2","lr_trap2","btndef","btn","btnwait",
+        "btnwait2","spbtn","cellcheckspbtn","getbtntimer",
+        "btntime","btntime2","exbtn","cellcheckexbtn","exbtn_d",
+        "transbtn","!d","!w","delay","wait","resettimer","waittimer",
+        "gettimer","spwait","stralias","numalias","intlimit","dim",
+        "mov","mov3","mov4","mov5","mov6","mov7","mov8","mov9",
+        "mov10","movl","add","+","sub","-","inc","dec","mul","*",
+        "div","/","mod","rnd","rnd2","itoa","itoa2","atoi","len",
+        "mid","split","sin","cos","tan","if","notif","cmp","fchk",
+        "lchk","for","next","break","rmenu","menusetwindow",
+        "savename","menuselectcolor","menuselectvoice","rlookback",
+        "rgosub","roff","rmode","lookbackbutton","lookbackcolor",
+        "lookbackvoice","lookbacksp","maxkaisoupage","lookbackflush",
+        "lookbackoff","lookbackon","kidokuskip","mode_wave_demo",
+        "skipoff","kidokumode","filelog","globalon","labellog",
+        "savenumber","savedir","loadgame","savegame","savegame2",
+        "getsavestr","savefileexist","saveon","saveoff","loadgosub",
+        "errorsave","autosaveoff","savepoint","mesbox","okcancelbox",
+        "yesnobox","inputstr","inputnum","input","textfield","clickpos",
+        "systemcall","fileexist","fileremove","labelexist","noloaderror",
+        "minimizewindow","automode","automode_time","defvoicevol",
+        "defsevol","defmp3vol","defbgmvol","mode_saya","mode_ext",
+        "mode800","mode400","mode320","value","gameid","soundpressplgin",
+        "spi","arc","nsa","nsadir","addnsadir","exec_dll","getret",
+        "setlayer","layermessage","versionstr","caption","date",
+        "time","savetime","getversion","getwindowsize","getreg",
+        "getini","readfile","killmenu","resetmenu","insertmenu",
+        "deletemenu","defaultspeed","!sd","menu_full","menu_window",
+        "isfull","menu_click_page","menu_click_def","menu_dwavvol",
+        "menu_waveon","menu_waveoff","*customsel","csel","cselbtn",
+        "cselgoto","getcselnum","getcselstr","nextcsel","selectbtnwait",
+        "textgosub","textbtnwait","getskipoff","getmouseover","checkkey",
+        "texec","texec2","getcursorpos","getcursorpos2","isskip","ispage",
+        "defsub","getparam","luacall","luasub","getscreenshot","savescreenshot",
+        "savescreenshot2","deletescreenshot","btnarea","btndown","isdown",
+        "getmousepos","spclclk","usewheel","useescspc","getcursor","getenter",
+        "gettab","getfunction","getpage","getinsert","getzxc","getmclick","()",
+        "rubyoff","rubyon","rubyon2","draw","drawclear","drawfill","drawbg",
+        "drawbg2","drawtext","drawsp","drawsp2","drawsp3","checkpage",
+        "getlog","logsp","logsp2","getlogtext","gettaglog","texthide",
+        "textshow","pretextgosub","[]","gettag","indent","pagetag",
+        "zenkakko","bmpcut","bw2a","bw2a3","chainbmp","createdummy",
+        "debuglog","shell","winexec","csvopen","csvread","csvwrite",
+        "csveof","csvclose","<>","linkcolor","textbtnstart","gettextbtnstr",
+        "erasetextbtn","textexbtn","textbtnoff","lsp2","lsph2","lsp2add",
+        "lsph2add","lsp2sub","lsph2sub","csp2","vsp2","msp2","amsp2",
+        "allsp2hide","allsp2resume","bclear","bsp","bdef","btime",
+        "bexec","bcursor","bdown","btrans","~","pmapfont","prendering",
+        "pfontstyle","pligate","pindentstr","pbreakstr","localestring",
+        "h_mapfont","h_rendering","h_fontstyle","h_ligate","h_indentstr",
+        "h_breakstr"
+    }
+    # Functions excluded from parsing
+    EXCLUDE : set[str] = {
+        "bg", "btndef", "mp3loop"
+    }
+    # Functions excluded from single bit mode
+    SINGLE_BYTE_EXCEPTION : set[str] = {
+        "caption"
+    }
     
     def __init__(self : NScripter) -> None:
         super().__init__()
@@ -159,7 +249,7 @@ class NScripter(Plugin):
                             cmd[0],
                             cmd[1].strip(),
                             helper,
-                            single_byte
+                            single_byte and cmd[0].lower() not in self.SINGLE_BYTE_EXCEPTION
                         )
                         if changed:
                             lines[i] = tmp
