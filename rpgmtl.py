@@ -1341,24 +1341,25 @@ class RPGMTL():
             return web.json_response({"result":"bad", "message":"Bad request, missing 'key' parameter"}, status=400)
         elif name is None and value is None:
             return web.json_response({"result":"bad", "message":"Bad request, missing 'value' parameter"}, status=400)
-        for f in self.setting_menu:
-            if key in self.setting_menu[f]:
-                try:
-                    match self.setting_menu[f][key][1]:
-                        case "bool":
-                            if not isinstance(value, bool):
-                                raise Exception()
-                        case "num":
-                            try:
-                                value = float(value)
-                            except:
-                                value = int(value)
-                        case _:
-                            if not isinstance(value, str):
-                                raise Exception()
-                except:
-                    return web.json_response({"result":"bad", "message":"Invalid 'value' parameter, couldn't convert to setting type"}, status=400)
-                break
+        if value is not None:
+            for f in self.setting_menu:
+                if key in self.setting_menu[f]:
+                    try:
+                        match self.setting_menu[f][key][1]:
+                            case "bool":
+                                if not isinstance(value, bool):
+                                    raise Exception()
+                            case "num":
+                                try:
+                                    value = float(value)
+                                except:
+                                    value = int(value)
+                            case _:
+                                if not isinstance(value, str):
+                                    raise Exception()
+                    except:
+                        return web.json_response({"result":"bad", "message":"Invalid 'value' parameter, couldn't convert to setting type"}, status=400)
+                    break
         if name is None:
             self.settings[key] = value
             self.settings_modified = True
@@ -1366,12 +1367,14 @@ class RPGMTL():
         else:
             if key is None:
                 self.projects[name]["settings"] = {}
-            elif key in self.settings and value == self.settings[key]:
-                if key in self.projects[name]["settings"]:
+                self.modified[name] = True
+            elif key in self.projects[name]["settings"]:
+                if value is None or value == self.settings.get(key, None):
                     self.projects[name]["settings"].pop(key)
-            else:
+                    self.modified[name] = True
+            elif value is not None:
                 self.projects[name]["settings"][key] = value
-            self.modified[name] = True
+                self.modified[name] = True
             settings = self.settings | self.projects[name]["settings"]
             return web.json_response({"result":"ok", "data":{"name":name, "config":self.projects[name], "settings":settings}})
 

@@ -1329,6 +1329,50 @@ function project_list(data)
 	update_main(fragment);
 }
 
+// function to create a reset button for a specific setting
+function setting_menu_individual_reset(node, relevant_node, setting_key)
+{
+	add_button(node, "Reset", "assets/images/update.png", function()
+		{
+			if(window.confirm("Are you sure you want to reset this setting?"))
+			{
+				post("/api/update_settings", function(result_data) {
+						push_popup("The setting has been reset.");
+						set_loading(false);
+						if(setting_key in result_data["settings"])
+						{
+							switch(relevant_node.tagName)
+							{
+								case "DIV":
+								{
+									if(relevant_node.classList.contains("button"))
+									{
+										relevant_node.classList.toggle("green", result_data["settings"][setting_key]);
+									}
+									else if(relevant_node.classList.contains("settinginput"))
+									{
+										relevant_node.innerText = result_data["settings"][setting_key];
+									}
+									break;
+								}
+								case "INPUT":
+								case "SELECT":
+								{
+									relevant_node.value = result_data["settings"][setting_key];
+									break;
+								}
+							}
+						}
+					},
+					null,
+					{name:project.name, key:setting_key}
+				);
+			}
+		},
+		true
+	);
+}
+
 // display settings for /api/settings
 function setting_menu(data)
 {
@@ -1416,6 +1460,8 @@ function setting_menu(data)
 							post("/api/update_settings", callback, null, {key:key, value:!elem.classList.contains("green")});
 						}
 					}, true);
+					if(is_project)
+						setting_menu_individual_reset(fragment, elem, key);
 					fragment.appendChild(document.createElement("br"));
 					if(key in settings)
 						elem.classList.toggle("green", settings[key]);
@@ -1496,6 +1542,8 @@ function setting_menu(data)
 								post("/api/update_settings", callback, null, {key:key, value:val});
 							}
 						});
+						if(is_project)
+							setting_menu_individual_reset(fragment, input, key);
 						fragment.appendChild(document.createElement("br"));
 						if(fdata[1] != "text")
 						{
@@ -1552,6 +1600,8 @@ function setting_menu(data)
 								post("/api/update_settings", callback, null, {key:key, value:sel.value});
 							}
 						});
+						if(is_project)
+							setting_menu_individual_reset(fragment, sel, key);
 						fragment.appendChild(document.createElement("br"));
 						if(key in settings)
 							sel.value = settings[key];
