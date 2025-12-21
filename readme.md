@@ -14,7 +14,7 @@ The list of supported files is currently:
 - RPY files (for Renpy Scripts)  
 - MED (md_scr.med archives, used by Triangle and Lusterise games)  
 - YPF Archives and YBN Scripts (YU-RIS Engine)  
-- KiriKiri Engine scripts (.ks and .tjs)  
+- KAG (KiriKiri) Engine scripts (.ks and .tjs)  
 - NScripter scripts (see the [dedicated readme](https://github.com/MizaGBF/RPGMTL/blob/main/readme/plugins/nscripter.md) for details)  
 - Subtitles (.lrc, .ssa/.ass, .srt)  
   
