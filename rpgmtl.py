@@ -271,6 +271,8 @@ class RPGMTL():
     # return a tuple of the Translator-in-use name and instance
     # name is the project name (to check a specific project setting)
     def get_current_translator(self : RPGMTL, name : str|None) -> tuple[str, plugins.TranslatorPlugin|None, str, plugins.TranslatorPlugin|None]:
+        # load if it's not loaded
+        self.load_project(name)
         pname : str|None = None
         bname : str|None = None
         if name is not None: # check project setting
