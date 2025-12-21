@@ -847,7 +847,6 @@ class RPGMTL():
         for f in self.projects[name]["files"]:
             ftype : int = self.projects[name]["files"][f]["file_type"]
             if (self.projects[name]["files"][f]["ignored"]
-                    or (ftype == FileType.NORMAL and len(self.strings[name]["files"][f]) == 0)
                     or ftype in (FileType.VIRTUAL, FileType.VIRTUAL_UNDEFINED)):
                 # skip ignored files and virtual files
                 continue

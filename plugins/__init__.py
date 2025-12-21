@@ -340,7 +340,9 @@ class WalkHelper():
     # Internal function to go to the next string
     def _goNext(self : WalkHelper) -> None:
         self.index += 1
-        if self.group >= len(self.groups):
+        if self.group == len(self.groups):
+            return
+        elif self.group > len(self.groups):
             raise Exception("[WalkHelper] Reached the end of known strings") 
         while self.index >= len(self.groups[self.group]):
             self.group += 1
