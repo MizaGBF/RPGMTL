@@ -1784,6 +1784,7 @@ class RPGMTL():
             self.log.info("{} strings have been translated in file '{}' for project {}...".format(count, path, name))
         else:
             count = 0
+            continue_flag = False
         if count > 0:
             self.modified[name] = True
             self.start_compute_translated(name)
