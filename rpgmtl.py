@@ -1741,7 +1741,7 @@ class RPGMTL():
             return web.json_response({"result":"ok", "data":{"translation":translation}})
 
     # subroutine of translate_file() for TranslatorBatchFormat.STANDARD
-    async def standard_batch_translate_file(self : RPGMTL, name : str, path : str, plugin : TranslatorPlugin) -> tuple[bool, int|str]:
+    async def standard_batch_translate_file(self : RPGMTL, name : str, path : str, plugin : TranslatorPlugin) -> tuple[bool, bool, int|str]:
         version = self.projects[name]["version"]
         file = self.strings[name]["files"][path]
         revert_table = []
@@ -1772,10 +1772,10 @@ class RPGMTL():
             result, continue_flag = await plugin.translate_batch(name, to_translate, self.settings | self.projects[name]['settings'])
             if len(result) != len(to_translate):
                 self.log.error("Batch translation for project " + name + " failed")
-                return False, "Batch translation failed."
+                return False, False, "Batch translation failed."
             if version != self.projects[name]["version"]:
                 self.log.error("Batch translation for project " + name + " has been aborted because of a version update")
-                return False, "The Project has been updated, the translation has been cancelled."
+                return False, False, "The Project has been updated, the translation has been cancelled."
             count = 0
             for i in range(len(result)):
                 if result[i] is None or result[i].strip() == "" or result[i].lower() == to_translate[i].lower():
@@ -1791,10 +1791,10 @@ class RPGMTL():
             self.modified[name] = True
             self.start_compute_translated(name)
         # Respond
-        return continue_flag, count
+        return True, continue_flag, count
 
     # subroutine of translate_file() for TranslatorBatchFormat.AI
-    async def ai_batch_translate_file(self : RPGMTL, name : str, path : str, plugin : TranslatorPlugin) -> tuple[bool, int|str]:
+    async def ai_batch_translate_file(self : RPGMTL, name : str, path : str, plugin : TranslatorPlugin) -> tuple[bool, bool, int|str]:
         version = self.projects[name]["version"]
         file = self.strings[name]["files"][path]
         untranslated : int = 0
@@ -1825,7 +1825,7 @@ class RPGMTL():
                 batch["groups"][-1]["strings"].append(s)
         
         if untranslated == 0:
-            return True, 0
+            return True, True, 0
         
         self.log.info("Batch translating {} strings in file '{}' for project {}...".format(untranslated, path, name))
         count : int = 0
@@ -1833,12 +1833,12 @@ class RPGMTL():
             translated, continue_flag = await plugin.translate_batch(name, batch, self.settings | self.projects[name]['settings'])
         except Exception as e:
             self.log.error("File translation aborted due to the following exception:\n" + self.trbk(e))
-            return False, str(e)
+            return False, True, str(e)
         if translated is not None:
             # check version
             if version != self.projects[name]["version"]:
                 self.log.error("Batch translation for project " + name + " has been aborted because of a version update")
-                return False, "The Project has been updated, the translation has been cancelled."
+                return False, False, "The Project has been updated, the translation has been cancelled."
             # apply translated strings
             for sid, tl in translated.items():
                 try:
@@ -1866,7 +1866,7 @@ class RPGMTL():
             self.log.info("{} strings have been translated in file '{}' for project {}...".format(count, path, name))
             self.modified[name] = True
             self.start_compute_translated(name)
-        return continue_flag, count
+        return True, continue_flag, count
 
     # /api/translate_file
     async def translate_file(self : RPGMTL, request : web.Request) -> web.Response:
@@ -1890,9 +1890,9 @@ class RPGMTL():
             # Fetching strings in need of translation
             match current.get_format():
                 case TranslatorPlugin.TranslatorBatchFormat.AI:
-                    state, res = await self.ai_batch_translate_file(name, path, current)
+                    state, _unused_, res = await self.ai_batch_translate_file(name, path, current)
                 case _:
-                    state, res = await self.standard_batch_translate_file(name, path, current)
+                    state, _unused_, res = await self.standard_batch_translate_file(name, path, current)
             msg : str
             match res:
                 case int():
@@ -1920,9 +1920,10 @@ class RPGMTL():
                 while not self.computing[name].done(): # to make sure string counts are up to date
                     await asyncio.sleep(1)
             # Fetching strings in need of translation
-            count = 0
-            file_count = 0
-            error = 0
+            count : int = 0
+            file_count : int = 0
+            error : int = 0
+            continue_flag : bool = True
             for path in self.strings[name]["files"]:
                 if path not in self.projects[name]["files"]:
                     continue
@@ -1937,9 +1938,9 @@ class RPGMTL():
                     try:
                         match current.get_format():
                             case TranslatorPlugin.TranslatorBatchFormat.AI:
-                                state, res =  await self.ai_batch_translate_file(name, path, current)
+                                state, continue_flag, res =  await self.ai_batch_translate_file(name, path, current)
                             case _:
-                                state, res =  await self.standard_batch_translate_file(name, path, current)
+                                state, continue_flag, res =  await self.standard_batch_translate_file(name, path, current)
                     except Exception as e:
                         self.log.error("Exception: " + self.trbk(e))
                         self.log.error("An exception has been raised and 'translate_project' has been aborted for project " + name)
@@ -1949,6 +1950,8 @@ class RPGMTL():
                         count += res
                     if not state:
                         error += 1
+                    if not continue_flag:
+                        break
             msg : str
             if count == 0:
                 if error > 0:
