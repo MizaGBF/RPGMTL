@@ -1367,13 +1367,13 @@ class RPGMTL():
             if key is None:
                 self.projects[name]["settings"] = {}
                 self.modified[name] = True
-            elif key in self.projects[name]["settings"]:
-                if value is None or value == self.settings.get(key, None):
+            elif value is None or value == self.settings.get(key, None):
+                if key in self.projects[name]["settings"]:
                     self.projects[name]["settings"].pop(key)
                     self.modified[name] = True
-                elif value is not None:
-                    self.projects[name]["settings"][key] = value
-                    self.modified[name] = True
+            elif value is not None:
+                self.projects[name]["settings"][key] = value
+                self.modified[name] = True
             settings = self.settings | self.projects[name]["settings"]
             return web.json_response({"result":"ok", "data":{"name":name, "config":self.projects[name], "settings":settings}})
 
