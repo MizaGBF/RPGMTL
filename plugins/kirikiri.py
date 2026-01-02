@@ -7,7 +7,7 @@ class KiriKiri(Plugin):
     def __init__(self : KiriKiri) -> None:
         super().__init__()
         self.name : str = "KiriKiri"
-        self.description : str = " v1.4\nHandle KiriKiri KAG and script files"
+        self.description : str = " v1.5\nHandle KiriKiri KAG and script files"
         self.related_tool_plugins : list[str] = [self.name]
 
     def get_setting_infos(self : KiriKiri) -> dict[str, list]:
@@ -133,7 +133,14 @@ class KiriKiri(Plugin):
                             group.append(line)
                 case "[":
                     ls : str = line.strip()
-                    if ls.startswith("[seladd "):
+                    if ls.startswith(("[r]", "[p]")):
+                        if group[0] != "":
+                            if len(group) > 1:
+                                entries.append(group)
+                            group = [""]
+                        if len(ls) != 3:
+                            group.append(line)
+                    elif ls.startswith("[seladd "):
                         if group[0] != "Selection":
                             if len(group) > 1:
                                 entries.append(group)
@@ -224,7 +231,12 @@ class KiriKiri(Plugin):
                                 lines[i] = line[:p+1] + tmp
                 case "[":
                     ls : str = line.strip()
-                    if ls.startswith("[seladd "):
+                    if ls.startswith(("[r]", "[p]")):
+                        if len(ls) != 3:
+                            tmp = helper.apply_string(line, "")
+                            if helper.str_modified:
+                                lines[i] = tmp
+                    elif ls.startswith("[seladd "):
                         quote_char : str = None
                         parts : list[str] = []
                         if 'text="' in ls:
