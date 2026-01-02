@@ -57,6 +57,8 @@ class GeneralActions(Plugin):
                         "_t_double_quote2":["「 」 by \"", "bool", False, None],
                         "_t_dot":["· 。 by .", "bool", True, None],
                         "_t_triple_dot":["… by ...", "bool", True, None],
+                        "_t_exclamation":["！ by !", "bool", True, None],
+                        "_t_question":["？ by ?", "bool", True, None],
                         "_t_bracket1":["【 by [", "bool", False, None],
                         "_t_bracket2":["】 by ]", "bool", False, None],
                         "_t_file_ext":["Only on files ending with (Separate by ,)(Optional):", "str", "", None],
@@ -169,6 +171,8 @@ class GeneralActions(Plugin):
             "_t_double_quote2" : (("「", "」"), "\""),
             "_t_dot" : (("·", "。"), "-"),
             "_t_triple_dot" : (("…"), "..."),
+            "_t_exclamation" : (("！"), "!"),
+            "_t_question" : (("？"), "?"),
             "_t_bracket1" : (("【"), "["),
             "_t_bracket2" : (("】"), "]"),
         }
