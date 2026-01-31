@@ -384,7 +384,7 @@ class Subtitle(Plugin):
             string = helper.apply_string(string, code)
             if helper.str_modified:
                 patched.append(code)
-                patch_segment.append("[{}]{}".format(code, string))
+                patch_segment.append(f"[{code}]{string}")
         if helper.modified:
             # remove patched
             lines_to_delete : list[int] = []
@@ -392,7 +392,7 @@ class Subtitle(Plugin):
                 string, positions, repeatitions = lyrics[code]
                 if repeatitions[0] > 1:
                     repeatitions[0] -= 1
-                    lines[positions[0]] = lines[positions[0]].replace("[{}]".format(code), "")
+                    lines[positions[0]] = lines[positions[0]].replace(f"[{code}]", "")
                 else:
                     for i in range(positions[1] + 1):
                         lines_to_delete.append(positions[0] + i)

@@ -268,7 +268,7 @@ class YBN(Plugin):
                                 modified += 1
             if modified:
                 self.owner.modified[name] = True
-                return "Text wrap applied to {} strings, make sure to backup strings.bak-1.json!".format(modified)
+                return f"Text wrap applied to {modified} strings, make sure to backup strings.bak-1.json!"
             else:
                 return "No strings in need of text wrapping."
         except Exception as e:

@@ -466,7 +466,7 @@ class JSON(Plugin):
                             self.owner.modified[name] = True
                             modified_string += 1
             self.owner.start_compute_translated(name)
-            return "{} modifications applied".format(modified_string + modified_file)
+            return f"{modified_string + modified_file} modifications applied"
         except Exception as e:
             self.owner.log.error("[JSON] Tool 'tool_text_wrap' failed with error:\n" + self.owner.trbk(e))
             return "An unexpected error occured"
@@ -546,19 +546,19 @@ class JSON(Plugin):
                         match k:
                             case "data":
                                 f.write("\n")
-                                f.write("\"{}\":".format(k))
+                                f.write(f"\"{k}\":")
                                 json.dump(v, f, ensure_ascii=False, separators=(',', ':'))
                                 if k != keys[-1]:
                                     f.write(",")
                             case "events":
                                 f.write("\n")
-                                f.write("\"{}\":".format(k))
+                                f.write(f"\"{k}\":")
                                 self._format_element(f, v)
                                 if k != keys[-1]:
                                     f.write(",")
                                 f.write("\n")
                             case _:
-                                f.write("\"{}\":".format(k))
+                                f.write(f"\"{k}\":")
                                 json.dump(v, f, ensure_ascii=False, separators=(',', ':'))
                                 if k != keys[-1]:
                                     f.write(",")
@@ -581,7 +581,7 @@ class JSON(Plugin):
                 f.write("{\n")
                 keys = list(data.keys())
                 for k, v in data.items():
-                    f.write("\"{}\":".format(k))
+                    f.write(f"\"{k}\":")
                     json.dump(v, f, ensure_ascii=False, separators=(',', ':'))
                     if k != keys[-1]:
                         f.write(",")
@@ -699,7 +699,7 @@ class JSON(Plugin):
                                 for i, p in enumerate(ev["pages"]):
                                     strings = self._read_walk_event(p["list"])
                                     if len(strings) > 0:
-                                        entries.append(["Page {}".format(i+1)])
+                                        entries.append([f"Page {i + 1}"])
                                         entries.extend(strings)
                     else:
                         group : list[str] = [k]
@@ -743,7 +743,7 @@ class JSON(Plugin):
                 continue
             strings = self._read_walk_event(ev["list"])
             if len(strings) > 0:
-                entries.append([self.owner.CHILDREN_FILE_ID + "{:04}".format(ev["id"]) + " " + ev["name"].replace("/", " ")])
+                entries.append([self.owner.CHILDREN_FILE_ID + f"{ev['id']:04}" + " " + ev["name"].replace("/", " ")])
                 entries.extend(strings)
         return entries
 
@@ -752,7 +752,7 @@ class JSON(Plugin):
         for i in range(len(obj)):
             if obj[i] is None:
                 continue
-            evname : str = file_path + "/{:04}".format(obj[i]["id"]) + " " + obj[i]["name"].replace("/", " ")
+            evname : str = file_path + f"/{obj[i]['id']:04}" + " " + obj[i]["name"].replace("/", " ")
             if evname in strings["files"] and not self.owner.projects[name]["files"][evname]["ignored"]:
                 helper : WalkHelper = WalkHelper(evname, strings)
                 self._write_walk_event(obj[i]["list"], helper)
@@ -919,7 +919,7 @@ class JSON(Plugin):
                 for i, p in enumerate(ev["pages"]):
                     strings = self._read_walk_event(p["list"])
                     if len(strings) > 0:
-                        entries.append(["Page {}".format(i+1)])
+                        entries.append([f"Page {i + 1}"])
                         entries.extend(strings)
         return entries
 

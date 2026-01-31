@@ -180,7 +180,7 @@ class TLGemini(TranslatorPlugin):
                 i += 1
         # result
         if updated + added + deleted != 0:
-            self.owner.log.info("[TL Gemini] Knowledge base of project {}: {} update(s), {} addition(s), {} deletion(s)".format(name, updated, added, deleted))
+            self.owner.log.info(f"[TL Gemini] Knowledge base of project {name}: {updated} update(s), {added} addition(s), {deleted} deletion(s)")
 
     def parse_model_output(self : TLGemini, text : str, name : str, input_batch : dict[str, Any]) -> dict[str, str]:
         # build set of string id from batch for validation
@@ -302,16 +302,16 @@ class TLGemini(TranslatorPlugin):
         result : list[str] = []
         for entry in base:
             if entry["note"].strip() != "":
-                result.append("- {} ({}): {}".format(entry["original"], entry["translation"], entry["note"]))
+                result.append(f"- {entry['original']} ({entry['translation']}): {entry['note']}")
             else:
-                result.append("- {} ({})".format(entry["original"], entry["translation"]))
+                result.append(f"- {entry['original']} ({entry['translation']})")
         return "\n".join(result).strip()
 
     async def ask_gemini(self : TLGemini, name : str, batch : str, settings : dict[str, Any] = {}) -> str:
         self._init_translator(settings)
         extra_context : str = ""
         if settings["gemini_extra_context"].strip() != "":
-            extra_context = "\nThe User specified the following:\n{}".format(settings["gemini_extra_context"])
+            extra_context = f"\nThe User specified the following:\n{settings['gemini_extra_context']}"
         knowledge_base : str = self.knowledge_to_text(self.owner.projects[name]["ai_knowledge_base"])
         if knowledge_base != "":
             knowledge_base = "The knowledge base that you must STRICTLY refer to for your translations is the following:\n" + knowledge_base
@@ -362,13 +362,13 @@ class TLGemini(TranslatorPlugin):
         if candidate.finish_reason.name != "STOP":
             match candidate.finish_reason.name:
                 case "SAFETY":
-                    raise Exception("Generation blocked by safety settings. Ratings: {}".format(candidate.safety_ratings))
+                    raise Exception(f"Generation blocked by safety settings. Ratings: {candidate.safety_ratings}")
                 case "RECITATION":
                     raise Exception("Blocked due to recitation (copyright/verbatim check).")
                 case "MAX_TOKENS": # ignore this one
                     pass
                 case _:
-                    raise Exception("Generation blocked. Cause: {}".format(candidate.finish_reason.name))
+                    raise Exception(f"Generation blocked. Cause: {candidate.finish_reason.name}")
 
         return response.text
 
@@ -422,7 +422,7 @@ class TLGemini(TranslatorPlugin):
         for i, input_batch in enumerate(inputs):
             retry : int = 0
             if len(inputs) > 1:
-                self.owner.log.info("[TL Gemini] Batch {} of {}...".format(i + 1, len(inputs)))
+                self.owner.log.info(f"[TL Gemini] Batch {i + 1} of {len(inputs)}...")
             while retry < 3:
                 try:
                     output : str = await self.ask_gemini(name, input_batch, settings)

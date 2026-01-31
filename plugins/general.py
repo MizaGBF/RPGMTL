@@ -259,7 +259,7 @@ class GeneralActions(Plugin):
                             self.owner.strings[name]["files"][file_path][g][i][LocIndex.MODIFIED] = IntBool.TRUE
                             self.owner.modified[name] = True
             if count > 0:
-                return "{} strings are over the limit and have been marked".format(count)
+                return f"{count} strings are over the limit and have been marked"
             else:
                 return "No strings are over the limit"
         except Exception as e:

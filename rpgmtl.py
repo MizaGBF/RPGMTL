@@ -77,7 +77,7 @@ class RPGMTL():
         for l in ['httpx']:
             logging.getLogger(l).setLevel(logging.FATAL)
         self.log = self.loggers['rpgmtl']
-        self.log.info("RPGMTL v{} is starting up...".format(self.VERSION))
+        self.log.info(f"RPGMTL v{self.VERSION} is starting up...")
         # Web server
         self.app : web.Application = web.Application(middlewares=[self.ip_whitelist])
         # Autosave system
@@ -177,9 +177,9 @@ class RPGMTL():
         # Process plugin settings
         for k, v in plugin.get_setting_infos().items(): # go over returned settings
             if len(v) != 4: # error if invalid format
-                raise Exception("[{}] Expected 4 values for setting key {}".format(plugin.name, k))
+                raise Exception(f"[{plugin.name}] Expected 4 values for setting key {k}")
             if k in self.setting_key_set: # error if setting key is already set
-                raise Exception("[{}] Setting key {} is already in use by another plugin".format(plugin.name, k))
+                raise Exception(f"[{plugin.name}] Setting key {k} is already in use by another plugin")
             self.setting_key_set.add(k)
             
             menu_info = [v[0]] # Setting UI text
@@ -187,19 +187,19 @@ class RPGMTL():
                 case "bool":
                     menu_info.append(v[1]) # add type string
                     if not isinstance(v[2], bool): # check default value
-                        raise Exception("[{}] Default value of setting key {} isn't of type bool".format(plugin.name, k))
+                        raise Exception(f"[{plugin.name}] Default value of setting key {k} isn't of type bool")
                 case "str"|"password"|"text":
                     menu_info.append(v[1])
                     if not isinstance(v[2], str):
-                        raise Exception("[{}] Default value of setting key {} isn't of type str".format(plugin.name, k))
+                        raise Exception(f"[{plugin.name}] Default value of setting key {k} isn't of type str")
                 case "num":
                     menu_info.append(v[1])
                     if not isinstance(v[2], float) and not isinstance(v[2], int):
-                        raise Exception("[{}] Default value of setting key {} isn't of number".format(plugin.name, k))
+                        raise Exception(f"[{plugin.name}] Default value of setting key {k} isn't of number")
                 case "display":
                     menu_info.append(v[1])
                 case _:
-                    raise Exception("[{}] Unexpected type for setting key {}".format(plugin.name, k))
+                    raise Exception(f"[{plugin.name}] Unexpected type for setting key {k}")
             menu_info.append(v[3]) # add choices
             # Add setting to list
             if plugin.name not in self.setting_menu:
@@ -212,13 +212,13 @@ class RPGMTL():
         # Process plugin actions
         for k, v in plugin.get_action_infos().items(): # same principle
             if len(v) not in (2, 3): # check the format
-                raise Exception("[{}] Expected 2 or 3 values for action key {}".format(plugin.name, k))
+                raise Exception(f"[{plugin.name}] Expected 2 or 3 values for action key {k}")
             if k in self.action_key_set: # check if key is already set
-                raise Exception("[{}] Action key {} is already in use by another Plugin".format(plugin.name, k))
+                raise Exception(f"[{plugin.name}] Action key {k} is already in use by another Plugin")
             self.action_key_set.add(k)
             # add action
             if len(v) == 2: # old format without icon
-                self.log.warning("Format of action {} in plugin {} is deprecated. Icon is missing.".format(k, plugin.name))
+                self.log.warning(f"Format of action {k} in plugin {plugin.name} is deprecated. Icon is missing.")
                 self.actions[k] = [plugin.name, None, v[0], v[1]] # plugin name (for reverse lookup), UI text, no icon and callback
             else:
                 self.actions[k] = [plugin.name, v[0], v[1], v[2]] # plugin name (for reverse lookup), icon path, UI text, and callback
@@ -226,9 +226,9 @@ class RPGMTL():
         # Process tool actions
         for k, v in plugin.get_tool_infos().items(): # same principle
             if len(v) != 4: # check the format
-                raise Exception("[{}] Expected 4 values for tool key {}".format(plugin.name, k))
+                raise Exception(f"[{plugin.name}] Expected 4 values for tool key {k}")
             if k in self.tool_key_set: # check if key is already set
-                raise Exception("[{}] Action key {} is already in use by another Plugin".format(plugin.name, k))
+                raise Exception(f"[{plugin.name}] Action key {k} is already in use by another Plugin")
             self.tool_key_set.add(k)
             # add tool
             self.tools[k] = [plugin.name, v[0], v[1], v[2], v[3]] # plugin name (for reverse lookup), icon path, UI text, callback and params
@@ -239,7 +239,7 @@ class RPGMTL():
         if plugin.name == "__undefined__":
             raise Exception("The plugin doesn't have a name defined")
         elif plugin.name in self.plugins:
-            raise Exception("[{}] Another plugin with the same name is already loaded".format(plugin.name))
+            raise Exception(f"[{plugin.name}] Another plugin with the same name is already loaded")
         # Parse setting and action infos (see above function)
         self.process_infos(plugin)
         # Add and connect plugin
@@ -252,7 +252,7 @@ class RPGMTL():
         if plugin.name == "__undefined__":
             raise Exception("The plugin doesn't have a name defined")
         elif plugin.name in self.plugins:
-            raise Exception("[{}] Another plugin with the same name is already loaded".format(plugin.name))
+            raise Exception(f"[{plugin.name}] Another plugin with the same name is already loaded")
         # Parse setting and action infos
         self.process_infos(plugin)
         # Add and connect plugin
@@ -409,7 +409,7 @@ class RPGMTL():
                 pass
             return
         self.allowed_ips = [ip.strip() for ip in ip_list.replace("\r", "").split("\n")]
-        self.log.info("{} IP are allowed".format(len(self.allowed_ips)))
+        self.log.info(f"{len(self.allowed_ips)} IP are allowed")
 
     # check the projects folder and return a list of folder containing config.json files inside
     def load_project_list(self : RPGMTL) -> list[str]:
@@ -872,9 +872,9 @@ class RPGMTL():
                 self.log.warning("Failed to copy the content of the edit folder for project " + name)
                 err += 1
         if patch_count > 0:
-            self.log.info("Patched {} files for project {} with {} errors, available in the release folder".format(patch_count, name, err))
+            self.log.info(f"Patched {patch_count} files for project {name} with {err} errors, available in the release folder")
         else:
-            self.log.info("Patched {} files for project {} with {} errors,".format(patch_count, name, err))
+            self.log.info(f"Patched {patch_count} files for project {name} with {err} errors,")
         return patch_count, err
 
     # execute and apply runtime fix/patch
@@ -1162,7 +1162,7 @@ class RPGMTL():
         
         # Start
         try:
-            self.log.info("Starting RPGMTL on port {}".format(self.port))
+            self.log.info(f"Starting RPGMTL on port {self.port}")
             web.run_app(self.app, port=self.port, shutdown_timeout=0, ssl_context=ssl_context)
         except Exception as e: # Ctrl+C is enough to trigger it
             self.log.warning("The following exception occured:\n" + self.trbk(e))
@@ -1224,7 +1224,7 @@ class RPGMTL():
                     for dir, dir_name in (("C:/Nvidia", "Nvidia"), ("C:/Windows", "Windows"), ("C:/sources", "Sources")):
                         path_dir : Path = Path(dir)
                         if path_dir in path_exe.parents or path_dir == path_exe:
-                            return web.json_response({"result":"bad", "message":"Selecting an executable in the {} system directory or sub-directory is forbidden.".format(dir_name)})
+                            return web.json_response({"result":"bad", "message":f"Selecting an executable in the {dir_name} system directory or sub-directory is forbidden."})
             else: # unix
                 if path_exe.as_posix() == "/":
                     return web.json_response({"result":"bad", "message":"Selecting an executable in the root directory is forbidden."})
@@ -1232,7 +1232,7 @@ class RPGMTL():
                     for dir, dir_name in (("/boot", "boot"), ("/dev", "dev"), ("/etc", "etc"), ("/lib", "lib"), ("/lib64", "lib64"), ("/proc", "proc"), ("/sys", "sys"), ("/usr", "usr")):
                         path_dir : Path = Path(dir)
                         if path_dir in path_exe.parents or path_dir == path_exe:
-                            return web.json_response({"result":"bad", "message":"Selecting an executable in the {} system directory or sub-directory is forbidden.".format(dir_name)})
+                            return web.json_response({"result":"bad", "message":f"Selecting an executable in the {dir_name} system directory or sub-directory is forbidden."})
         if name is None: # new project
             return web.json_response({"result":"ok", "data":{"path":file_path}, "message":"Please select a project name."})
         else: # update existing project
@@ -1405,7 +1405,7 @@ class RPGMTL():
         else:
             err = self.generate(name)
             self.save()
-            message = "Strings extracted, but {} error(s) occured.".format(err) if err > 0 else "Strings extracted with success."
+            message = f"Strings extracted, but {err} error(s) occured." if err > 0 else "Strings extracted with success."
             return web.json_response({"result":"ok", "data":{"name":name, "config":self.projects[name]}, "message":message})
 
     # /api/release
@@ -1417,9 +1417,9 @@ class RPGMTL():
         else:
             patch_count, err = self.create_release(name)
             if patch_count > 0:
-                message = "Patch generated in projects/{}/release, but {} error(s) occured.".format(name, err) if err > 0 else "Patch generated in projects/{}/release with success.".format(name)
+                message = f"Patch generated in projects/{name}/release, but {err} error(s) occured." if err > 0 else f"Patch generated in projects/{name}/release with success."
             else:
-                message = "No files patched and {} error(s) occured.".format(err) if err > 0 else "No files patched."
+                message = f"No files patched and {err} error(s) occured." if err > 0 else "No files patched."
             return web.json_response({"result":"ok", "data":{"name":name, "config":self.projects[name]}, "message":message})
 
     # /api/patches
@@ -1477,9 +1477,9 @@ class RPGMTL():
             state, count = self.import_old_data(name, path)
             match state:
                 case 1:
-                    return web.json_response({"result":"ok", "data":{"name":name, "config":self.projects[name]}, "message":"Imported {} string(s) with success".format(count)})
+                    return web.json_response({"result":"ok", "data":{"name":name, "config":self.projects[name]}, "message":f"Imported {count} string(s) with success"})
                 case -1:
-                    return web.json_response({"result":"ok", "data":{"name":name, "config":self.projects[name]}, "message":"Imported {} string(s), but an error occured".format(count)})
+                    return web.json_response({"result":"ok", "data":{"name":name, "config":self.projects[name]}, "message":f"Imported {count} string(s), but an error occured"})
                 case _:
                     return web.json_response({"result":"ok", "data":{"name":name, "config":self.projects[name]}})
         
@@ -1494,9 +1494,9 @@ class RPGMTL():
             state, count = self.import_rpgmtrans_data(name, path)
             match state:
                 case 1:
-                    return web.json_response({"result":"ok", "data":{"name":name, "config":self.projects[name]}, "message":"Imported {} string(s) with success".format(count)})
+                    return web.json_response({"result":"ok", "data":{"name":name, "config":self.projects[name]}, "message":f"Imported {count} string(s) with success"})
                 case -1:
-                    return web.json_response({"result":"ok", "data":{"name":name, "config":self.projects[name]}, "message":"Imported {} string(s), but an error occured".format(count)})
+                    return web.json_response({"result":"ok", "data":{"name":name, "config":self.projects[name]}, "message":f"Imported {count} string(s), but an error occured"})
                 case _:
                     return web.json_response({"result":"ok", "data":{"name":name, "config":self.projects[name]}})
 
@@ -1770,7 +1770,7 @@ class RPGMTL():
         count : int
         if len(to_translate) > 0:
             # Translating
-            self.log.info("Batch translating {} strings in file '{}' for project {}...".format(len(to_translate), path, name))
+            self.log.info(f"Batch translating {len(to_translate)} strings in file '{path}' for project {name}...")
             result, continue_flag = await plugin.translate_batch(name, to_translate, self.settings | self.projects[name]['settings'])
             if len(result) != len(to_translate):
                 self.log.error("Batch translation for project " + name + " failed")
@@ -1785,7 +1785,7 @@ class RPGMTL():
                 revert_table[i][1][1] = result[i] # 1 is the TL index, can be either global or local
                 revert_table[i][0][LocIndex.MODIFIED] = IntBool.FALSE
                 count += 1
-            self.log.info("{} strings have been translated in file '{}' for project {}...".format(count, path, name))
+            self.log.info(f"{count} strings have been translated in file '{path}' for project {name}...")
         else:
             count = 0
             continue_flag = False
@@ -1809,7 +1809,7 @@ class RPGMTL():
                 gl = self.strings[name]["strings"][lc[LocIndex.ID]]
                 
                 s : dict[str, Any] = {}
-                s["id"] = "{}-{}".format(i, j)
+                s["id"] = f"{i}-{j}"
                 s["ignore"] = lc[LocIndex.IGNORED] == IntBool.TRUE
                 if s["ignore"]:
                     ignore.add(s["id"])
@@ -1829,7 +1829,7 @@ class RPGMTL():
         if untranslated == 0:
             return True, True, 0
         
-        self.log.info("Batch translating {} strings in file '{}' for project {}...".format(untranslated, path, name))
+        self.log.info(f"Batch translating {untranslated} strings in file '{path}' for project {name}...")
         count : int = 0
         try:
             translated, continue_flag = await plugin.translate_batch(name, batch, self.settings | self.projects[name]['settings'])
@@ -1865,7 +1865,7 @@ class RPGMTL():
                 except Exception as e:
                     self.log.error("Exception: " + self.trbk(e))
         if count > 0:
-            self.log.info("{} strings have been translated in file '{}' for project {}...".format(count, path, name))
+            self.log.info(f"{count} strings have been translated in file '{path}' for project {name}...")
             self.modified[name] = True
             self.start_compute_translated(name)
         return True, continue_flag, count
@@ -1898,9 +1898,9 @@ class RPGMTL():
             msg : str
             match res:
                 case int():
-                    msg = "{} string(s) have been translated".format(res)
+                    msg = f"{res} string(s) have been translated"
                 case _:
-                    msg = "An error occured: {}".format(res)
+                    msg = f"An error occured: {res}"
             return web.json_response({"result":"ok", "data":{"config":self.projects[name], "name":name, "path":path, "strings":self.strings[name]["strings"], "list":self.strings[name]["files"][path]}, "message":msg})
 
     # /api/translate_project
@@ -1957,14 +1957,14 @@ class RPGMTL():
             msg : str
             if count == 0:
                 if error > 0:
-                    msg = "{} error(s) occured, no strings have been translated in {} file(s).".format(error, file_count)
+                    msg = f"{error} error(s) occured, no strings have been translated in {file_count} file(s)."
                 else:
-                    msg = "No strings have been translated in {} file(s).".format(file_count)
+                    msg = f"No strings have been translated in {file_count} file(s)."
             else:
                 if error > 0:
-                    msg = "{} string(s) have been translated in {} file(s), {} error(s) occured.".format(count, file_count, error)
+                    msg = f"{count} string(s) have been translated in {file_count} file(s), {error} error(s) occured."
                 else:
-                    msg = "{} string(s) have been translated in {} file(s)".format(count, file_count)
+                    msg = f"{count} string(s) have been translated in {file_count} file(s)"
             return web.json_response({"result":"ok", "data":{"config":self.projects[name], "name":name, "path":path, "strings":self.strings[name]["strings"], "list":self.strings[name]["files"][path]}, "message":msg})
 
     # /api/search_string
@@ -2042,7 +2042,7 @@ class RPGMTL():
             keys.sort()
             for f in keys:
                 result[f] = self.projects[name]["files"].get(f, {}).get("ignored", False)
-            return web.json_response({"result":"ok", "data":{"config":self.projects[name], "name":name, "path":path, "search":search, "case":case, "contains":contains, "files":result}, "message":"Found in {} files".format(len(files))})
+            return web.json_response({"result":"ok", "data":{"config":self.projects[name], "name":name, "path":path, "search":search, "case":case, "contains":contains, "files":result}, "message":f"Found in {len(files)} files"})
 
     # /api/local_path
     async def local_path(self : RPGMTL, request : web.Request) -> web.Response:
@@ -2130,7 +2130,7 @@ class RPGMTL():
                             count += 1
             if count > 0:
                 self.modified[name] = True
-            return web.json_response({"result":"ok", "data":{"config":self.projects[name], "name":name, "count":count}, "message":"{} strings have been modified".format(count)})
+            return web.json_response({"result":"ok", "data":{"config":self.projects[name], "name":name, "count":count}, "message":f"{count} strings have been modified"})
             
     # /api/use_tool
     async def use_tool(self : RPGMTL, request : web.Request) -> web.Response:

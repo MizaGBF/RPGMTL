@@ -28,7 +28,7 @@ class CSV(Plugin):
         match self.settings.get("csv_extract_grouping", "Cell"):
             case "Row":
                 for i, row in enumerate(content):
-                    group : list[str] = ["Row {}".format(i)]
+                    group : list[str] = [f"Row {i}"]
                     for j, cell in enumerate(row):
                         if not ignore_ns or (cell != "" and not cell.isdigit()):
                             group.append(cell)
@@ -44,7 +44,7 @@ class CSV(Plugin):
                         print(i, j, len(columns))
                         columns[j].append(cell)
                 for i, column in enumerate(columns):
-                    group : list[str] = ["Column {}".format(i)]
+                    group : list[str] = [f"Column {i}"]
                     for j, cell in enumerate(column):
                         if not ignore_ns or (cell != "" and not cell.isdigit()):
                             group.append(cell)
@@ -54,7 +54,7 @@ class CSV(Plugin):
                 for i, row in enumerate(content):
                     for j, cell in enumerate(row):
                         if not ignore_ns or (cell != "" and not cell.isdigit()):
-                            entries.append(["Cell {}x{}".format(i,j), cell])
+                            entries.append([f"Cell {i}x{j}", cell])
         return entries
 
     def write(self : CSV, name : str, file_path : str, content : bytes) -> tuple[bytes, bool]:
@@ -69,7 +69,7 @@ class CSV(Plugin):
                 for i, row in enumerate(content):
                     for j, cell in enumerate(row):
                         if not ignore_ns or (cell != "" and not cell.isdigit()):
-                            content[i][j] = helper.apply_string(content[i][j], "Row {}".format(i))
+                            content[i][j] = helper.apply_string(content[i][j], f"Row {i}")
             case "Column":
                 # convert
                 columns : list[list] = []
@@ -81,12 +81,12 @@ class CSV(Plugin):
                 for i, column in enumerate(columns):
                     for j, cell in enumerate(column):
                         if not ignore_ns or (cell["str"] != "" and not cell["str"].isdigit()):
-                            content[cell["i"]][cell["j"]] = helper.apply_string(cell["str"], "Column {}".format(i))
+                            content[cell["i"]][cell["j"]] = helper.apply_string(cell["str"], f"Column {i}")
             case _: # cell
                 for i, row in enumerate(content):
                     for j, cell in enumerate(row):
                         if not ignore_ns or (cell != "" and not cell.isdigit()):
-                            content[i][j] = helper.apply_string(content[i][j], "Cell {}x{}".format(i,j))
+                            content[i][j] = helper.apply_string(content[i][j], f"Cell {i}x{j}")
         # write
         with io.StringIO() as sout:
             writer = csv.writer(sout, delimiter=',', lineterminator='\n')

@@ -117,7 +117,7 @@ class YPFHeader:
     @version.setter
     def version(self : YPFHeader, value : int):
         if value < 234 or value > 500:
-            raise Exception("[YPF] Version {} not supported".format(value))
+            raise Exception(f"[YPF] Version {value} not supported")
         self._version = value
         self._set_length_swapping_table()
         self._set_checksum()

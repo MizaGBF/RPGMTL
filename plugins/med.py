@@ -94,7 +94,7 @@ class MED(Plugin):
                                 modified += 1
             if modified:
                 self.owner.modified[name] = True
-                return "Text wrap applied to {} strings, make sure to backup strings.bak-1.json!".format(modified)
+                return f"Text wrap applied to {modified} strings, make sure to backup strings.bak-1.json!"
             else:
                 return "No strings in need of text wrapping."
         except Exception as e:
@@ -142,7 +142,7 @@ class MED(Plugin):
                         continue
             if count > 0:
                 self.owner.modified[name] = True
-                return "{} strings contain non-ASCII characters in this file, and have been marked".format(count)
+                return f"{count} strings contain non-ASCII characters in this file, and have been marked"
             else:
                 return "No strings contain non-ASCII characters in this file"
         except Exception as e:
@@ -251,7 +251,7 @@ class MED(Plugin):
             content : bytearray = data[offset:]
             file_content : bytes = b''
             strings : list[str] = [""]
-            file_entries : list[list[str]] = [[self.owner.CHILDREN_FILE_ID + "{:05}_".format(count) + f]]
+            file_entries : list[list[str]] = [[self.owner.CHILDREN_FILE_ID + f"{count:05}_" + f]]
             for i in content:
                 if i:
                     file_content += int.to_bytes(i, 1, byteorder='little')
@@ -280,7 +280,7 @@ class MED(Plugin):
         modified : bool = False
         count = 0
         for f in files:
-            fname : str = file_path + "/{:05}_".format(count) + f.replace("/", " ").replace("\\", " ")
+            fname : str = file_path + f"/{count:05}_" + f.replace("/", " ").replace("\\", " ")
             group : str = ""
             if fname in strings["files"] and not self.owner.projects[pname]["files"][fname]["ignored"]:
                 helper : WalkHelper = WalkHelper(fname, strings)

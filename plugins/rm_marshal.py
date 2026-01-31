@@ -312,7 +312,7 @@ class RM_Marshal(Plugin):
                         if cmds is not None:
                             results = self._read_walk_event(cmds)
                             if len(results) > 0:
-                                strings.append(["Page {}".format(i+1)])
+                                strings.append([f"Page {i + 1}"])
                                 strings.extend(results)
                 if len(strings) > 1:
                     entries.extend(strings)
@@ -340,7 +340,7 @@ class RM_Marshal(Plugin):
                 strings = self._read_walk_event(cmds)
                 if len(strings) > 0:
                     eid : ME = e.get(b"@id")
-                    evname : str = self.owner.CHILDREN_FILE_ID + "{:04}".format(eid.data)
+                    evname : str = self.owner.CHILDREN_FILE_ID + f"{eid.data:04}"
                     n : ME = e.get(b"@name")
                     if n is not None:
                         evname += " " + n.data.decode('utf-8')
@@ -356,7 +356,7 @@ class RM_Marshal(Plugin):
             cmds : ME = e.get(b"@list")
             if cmds is not None:
                 eid : ME = e.get(b"@id")
-                evname : str = file_path + "/{:04}".format(eid.data)
+                evname : str = file_path + f"/{eid.data:04}"
                 n : ME = e.get(b"@name")
                 if n is not None:
                     evname += " " + n.data.decode('utf-8')
@@ -502,7 +502,7 @@ class RM_Marshal(Plugin):
         entries : list[list[str]] = []
         count = 0
         for e in me:
-            scriptname = self.owner.CHILDREN_FILE_ID + "{:04}".format(count)
+            scriptname = self.owner.CHILDREN_FILE_ID + f"{count:04}"
             if e.data[1].data:
                 scriptname += " " + e.data[1].data.decode('utf-8')
             if e.data[2].data:
@@ -523,7 +523,7 @@ class RM_Marshal(Plugin):
         modified : bool = False
         count = 0
         for e in me:
-            scriptname = file_path + "/{:04}".format(count)
+            scriptname = file_path + f"/{count:04}"
             if e.data[1].data:
                 scriptname += " " + e.data[1].data.decode('utf-8').replace("/", " ").replace("\\", " ")
             if e.data[2].data:
@@ -585,7 +585,7 @@ class RM_Marshal(Plugin):
                         if u is not None:
                             strings = self._read_walk_event(u)
                             if len(strings) > 0:
-                                entries.append(["Page {}".format(i+1)])
+                                entries.append([f"Page {i + 1}"])
                                 entries.extend(strings)
         return entries
 
@@ -707,7 +707,7 @@ class MC(): # for Marshal Container
         else:
             size = int(math.ceil(value.bit_length() / 8.0))
             if size > 5:
-                raise Exception("[RM_Marshal] {} is too long for serialization".format(value))
+                raise Exception(f"[RM_Marshal] {value} is too long for serialization")
             back = value
             factor = 256 ** size
             if value < 0 and value == -factor:
