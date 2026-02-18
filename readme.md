@@ -6,7 +6,7 @@ The interface runs in your Web Browser.
 The list of supported files is currently:  
 - JSON (for RPG Maker MV, MZ and other games)  
 - Javascript (for RPG Maker MV, MZ and other games)  
-- CSV (for RPG Maker MV, MZ and other games)  
+- CSV (for RPG Maker MV, MZ games, and Livemaker files converted via [pylivemaker](https://github.com/pmrowla/pylivemaker))  
 - INI (for RPG Maker MV, MZ and other games)  
 - TXT (i.e. regular text files)  
 - Ruby Marshal (.rxdata, .rvdata, .rvdata2 for RPG Maker XP to VX Ace)  
