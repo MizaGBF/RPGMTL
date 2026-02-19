@@ -10,7 +10,7 @@ class CSV(Plugin):
     def __init__(self : CSV) -> None:
         super().__init__()
         self.name : str = "CSV"
-        self.description : str = " v2.0\nHandle CSV files, including externMessage files from RPG Maker MV/MZ"
+        self.description : str = " v2.1\nHandle CSV files, including externMessage files from RPG Maker MV/MZ"
         self.related_tool_plugins : list[str] = [self.name]
 
     def match(self : CSV, file_path : str, is_for_action : bool) -> bool:
@@ -74,7 +74,12 @@ class CSV(Plugin):
 
     def read_livemaker(self : CSV, file_path : str, content : bytes) -> list[list[str]]:
         entries : list[list[str]] = []
-        with io.StringIO(self.decode(content)) as sin:
+        decoded : str
+        try:
+            decoded = content.decode('utf-8-sig')
+        except:
+            decoded = self.decode(content)
+        with io.StringIO(decoded) as sin:
             reader = csv.reader(sin)
             group = [""]
             for i, row in enumerate(reader):
@@ -100,7 +105,14 @@ class CSV(Plugin):
         
     def write_standard(self : CSV, name : str, file_path : str, content : bytes) -> tuple[bytes, bool]:
         helper : WalkHelper = WalkHelper(file_path, self.owner.strings[name])
-        with io.StringIO(self.decode(content)) as sin:
+        decoded : str
+        with_bom : bool = False
+        try:
+            decoded = content.decode('utf-8-sig')
+            with_bom = True
+        except:
+            decoded = self.decode(content)
+        with io.StringIO(decoded) as sin:
             reader = csv.reader(sin)
             content = [row for row in reader]
         # patch
@@ -135,7 +147,10 @@ class CSV(Plugin):
                 writer.writerow(content[i])
             sout.seek(0)
             if helper.modified:
-                return self.encode(sout.read()), True
+                if with_bom:
+                    return sout.read().encode('utf-8-sig'), True
+                else:
+                    return self.encode(sout.read()), True
             else:
                 return content, False
         
