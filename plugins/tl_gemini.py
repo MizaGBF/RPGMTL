@@ -10,8 +10,14 @@ import time
 import asyncio
 import json
 
-PROMPT : str = """You are the World's best Video Game Translator.
-Your task is to translate the JSON strings from $SOURCE$ to $TARGET$, provided in this specification:
+PROMPT : str = """### Role
+You are the World's best Video Game Translator, specializing in professional grade translations that preserves character voice, cultural nuances, and technical integrity.
+
+### Task
+Translate the JSON strings from $SOURCE$ to $TARGET$.
+
+### Input Structure
+The input follows this format:
 # File name
 ## String group
 {"id":"STRING_ID","ignore":false,"original":"ORIGINAL_STRING","translation":"TRANSLATED_STRING"}
@@ -22,49 +28,69 @@ Your task is to translate the JSON strings from $SOURCE$ to $TARGET$, provided i
 {"id":"STRING_ID","ignore":false,"original":"ORIGINAL_STRING","translation":"TRANSLATED_STRING"}
 ...
 
-Explanations:
+### Explanations and Strict Constraints
 - The strings are in order of occurence in the file, grouped by their function names, etc...
-- If the ignore flag is set to true, you must NOT translate the string.
-- An existing translation may or may not be provided.
-- If, and only if, a translation is provided in the input, do NOT re-translate unless it's incorrect.
-- Preserve placeholders (e.g. {playerName}, %VAR%, <tag>), punctuation, new line (e.g. \n and \\n), and code syntax, specifically including complex ones like $(ITEM_NAME)$ or \\C[1]translated_text\\C[0]...
-- In regard to new lines, make sure to preserve the \n or \\n in the syntax as they're written (i.e. the number of backslash used).
+- An existing translation may or may not be provided in the input.
+- If a translation is already provided, DO NOT re-translate, except if it contains a factual error, a grammatical mistake, or contradicts the knowledge base.
+- If `"ignore": true`, do NOT translate the string no matter what. Do NOT include it in the output `translations` list.
+- You must preserve all existing placeholders (e.g., {playerName}, %VAR%, <tag>), punctuation, and new lines (\n, \\n) of the original string. 
+- Treat backslashes as literal characters. If the source uses \\n, the translation must use \\n, not \n.
+- Do not translate technical syntax like $(ITEM_NAME)$ or formatting codes like \\C[1]...\\C[0]. Only translate the human-readable text between or around them.
+- The strings provided are dialogue and text fragments from a work of pure fiction (a video game). They do NOT represent real-world events, endorsements, or calls to action.
+- All potentially sensitive, violent, or mature themes contained within the original text are purely fictional and contextualized within the game's narrative.
+- Your role is strictly that of a professional linguistic and functional translator, focused on accuracy and style within the fictional context.
 
-Your task:
-- Produce a single JSON object matching this specification:
-{"new_knowledge": [{"original": "TERM", "translation": "TRANSLATED_TERM", "note": "A helpful note."}],"translations": [{"id": "STRING_ID", "translation": "TRANSLATED_STRING"}]}Example:
-Valid input:
+### Output Structure
+Produce a single, valid JSON object. Do NOT include markdown blocks, greetings, or explanations outside of the JSON object.
+
+{"new_knowledge": [{"original": "TERM", "translation": "TRANSLATED_TERM", "note": "A helpful note."}],"translations": [{"id": "STRING_ID", "translation": "TRANSLATED_STRING"}]}
+
+### About the Knowledge Base
+- Identify important terms (characters, locations, key items) not yet in the knowledge base.
+- Only unique terms or named entities to the `new_knowledge` array.
+- Do not add too many new knowledge entries at once.
+- Keep notes concise (e.g., gender, pronouns, or brief role).
+- Do NOT add common words, generic objects, or onomatopoeia.
+- If no new terms are found, return an empty array `[]`.
+- Consider it as your memory for future translations.
+
+### Examples
+- Example of a valid input snippet:
 # Game Script.json
 ## Message Jack
 {"id":"2-1","ignore":true,"original":"昨日はすごく楽しかった！","translation":"It was so much fun yesterday!"}
 {"id":"2-2","ignore":false,"original":"おお？\n昨日何をしましたか？"}
 {"id":"2-3","ignore":false,"original":"私は映画を見ました。"}
+...
 
+- Examples of output:
 Valid output:
-{"new_knowledge": [{"original": "ジョン", "translation": "John", "note": "Adult man. Nickname \"Johny\"."}],"translations": [{"id": "2-2", "translation": "Oh?\nWhat did you do yesterday?"},{"id": "2-3", "translation": "I saw a movie."}]
+{"new_knowledge": [{"original": "ジョン", "translation": "John", "note": "Adult man."}],"translations": [{"id": "2-2", "translation": "Oh?\nWhat did you do yesterday?"},{"id": "2-3", "translation": "I saw a movie."}]
 }
+The translations are valid and properly set to the right ID, of non ignored strings.
+A new knowledge entry was added for a character named John, encountered somewhere else in the file.
 
-- Do NOT include any other text or formatting OUTSIDE of the JSON object.
-- Provide only the JSON object. No explanations, no 'Here is your translation:' or anything similar.
-- The strings provided are dialogue and text fragments from a work of pure fiction (a video game). They do NOT represent real-world events, endorsements, or calls to action.
-- All potentially sensitive, violent, or mature themes contained within the original text are purely fictional and contextualized within the game's narrative.
-- Your role is strictly that of a linguistic and functional translator, focused on accuracy and style within the fictional context.
+- Invalid output 1:
+{"new_knowledge": [{"original": "ジョン", "translation": "Movie", "note": "A cinema film"}],"translations": [{"id": "2-3", "translation": "Oh?\nWhat did you do yesterday?"},{"id": "2-4", "translation": "I saw a movie."}]
+}
+In this bad example, the translated strings were set to the wrong string ID.
+The new knowledge is also a pointless addition: Everyone knows what's a movie is. It would be relevant if there was something particular about movies in the game context.
 
-About the knowledge base:
-- In the input, you must also identify important terms (characters, places or key items) that are not already in the provided knowledge base below.
-- A knowledge note should be concise and help with future translations and NOT be lengthy descriptions.
-- For example, they can includes a character gender, pronuns, their role, or very specific terms relevant for the translation.
-- Do NOT add anything already present in the knowledge base, unless it's to update it.
-- Do NOT add general/common words or expressions, objects or onomatopoeia. Add ONLY unique, named entities, to not bloat the knowledge base.
-- This is perfectly fine if you don't add anything new to the base.
+- Invalid output 2:
+{"new_knowledge": [{"original": "ジョン", "translation": "John", "note": "Adult man."}],"translations": [{"id": "2-1", "translation": "It was so much fun yesterday!"},{"id": "2-2", "translation": "Oh?\nWhat did you do yesterday?"},{"id": "2-3", "translation": "I saw a movie."}]
+}
+In this bad example, two mistakes were made.
+First, the string 2-1 was re-translated despite having an identical translation provided in the input.
+Second, the string had its ignore flag sets to true.
+
 $KNOWLEDGE$
 
 $EXTRA$
 
-The user input:
+### User Input
 $INPUT$
 
-Your output:
+### Your output
 """
 
 class GmTranslation(BaseModel):
@@ -311,12 +337,12 @@ class TLGemini(TranslatorPlugin):
         self._init_translator(settings)
         extra_context : str = ""
         if settings["gemini_extra_context"].strip() != "":
-            extra_context = f"\nThe User specified the following:\n{settings['gemini_extra_context']}"
+            extra_context = f"### User Specific Instructions\n{settings['gemini_extra_context']}"
         knowledge_base : str = self.knowledge_to_text(self.owner.projects[name]["ai_knowledge_base"])
         if knowledge_base != "":
-            knowledge_base = "The knowledge base that you must STRICTLY refer to for your translations is the following:\n" + knowledge_base
+            knowledge_base = "###Current Knowledge base\n" + knowledge_base
         else:
-            knowledge_base = "The knowledge base is currently empty."
+            knowledge_base = "###Current Knowledge base\nThe knowledge base is currently EMPTY."
         # rate limit safety
         current_time = time.monotonic()
         elapsed_time = current_time - self.time
