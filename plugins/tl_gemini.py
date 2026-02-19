@@ -30,17 +30,9 @@ Explanations:
 - Preserve placeholders (e.g. {playerName}, %VAR%, <tag>), punctuation, new line (e.g. \n and \\n), and code syntax, specifically including complex ones like $(ITEM_NAME)$ or \\C[1]translated_text\\C[0]...
 - In regard to new lines, make sure to preserve the \n or \\n in the syntax as they're written (i.e. the number of backslash used).
 
-About the knowledge base:
-- In the input, you must also identify important proper nouns (characters, places or key items) that are not already in the provided knowledge base below.
-- Notes should be concise and help with future translations (e.g., gender, role) and NOT be lengthy descriptions.
-- For example, they can includes a character gender, pronuns, specific terms relevant for the translation, and so on.
-- Do NOT add general/common words or expressions, objects or onomatopoeia. Add ONLY unique, named entities, to not bloat the knowledge base.
-
 Your task:
 - Produce a single JSON object matching this specification:
-{"new_knowledge": [{"original": "TERM", "translation": "TRANSLATED_TERM", "note": "A helpful note."}],"translations": [{"id": "STRING_ID", "translation": "TRANSLATED_STRING"}]}
-
-Example:
+{"new_knowledge": [{"original": "TERM", "translation": "TRANSLATED_TERM", "note": "A helpful note."}],"translations": [{"id": "STRING_ID", "translation": "TRANSLATED_STRING"}]}Example:
 Valid input:
 # Game Script.json
 ## Message Jack
@@ -54,10 +46,18 @@ Valid output:
 
 - Do NOT include any other text or formatting OUTSIDE of the JSON object.
 - Provide only the JSON object. No explanations, no 'Here is your translation:' or anything similar.
-$KNOWLEDGE$
 - The strings provided are dialogue and text fragments from a work of pure fiction (a video game). They do NOT represent real-world events, endorsements, or calls to action.
 - All potentially sensitive, violent, or mature themes contained within the original text are purely fictional and contextualized within the game's narrative.
 - Your role is strictly that of a linguistic and functional translator, focused on accuracy and style within the fictional context.
+
+About the knowledge base:
+- In the input, you must also identify important terms (characters, places or key items) that are not already in the provided knowledge base below.
+- A knowledge note should be concise and help with future translations and NOT be lengthy descriptions.
+- For example, they can includes a character gender, pronuns, their role, or very specific terms relevant for the translation.
+- Do NOT add anything already present in the knowledge base, unless it's to update it.
+- Do NOT add general/common words or expressions, objects or onomatopoeia. Add ONLY unique, named entities, to not bloat the knowledge base.
+- This is perfectly fine if you don't add anything new to the base.
+$KNOWLEDGE$
 
 $EXTRA$
 
@@ -84,7 +84,7 @@ class TLGemini(TranslatorPlugin):
     def __init__(self : TLGemini) -> None:
         super().__init__()
         self.name : str = "TL Gemini"
-        self.description : str = " v1.0\nWrapper around the google-genai module to prompt Gemini to generate translations."
+        self.description : str = " v1.1\nWrapper around the google-genai module to prompt Gemini to generate translations."
         self.related_tool_plugins : list[str] = [self.name]
         self.time = time.monotonic()
         self.instance = None
