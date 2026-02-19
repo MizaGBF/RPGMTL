@@ -29,6 +29,9 @@ You'll have to run this command again on each file with a matching `.csv` file:
 lmlsb insertcsv --encoding=utf-8-sig FILE_NAME.lsb FILE_NAME.csv
 ```
   
+Note: Make sure the strings are CP932 compliants or they won't be patched in.  
+
+  
 Then, you can patch the game.  
 ```console
 cd ..
@@ -37,6 +40,8 @@ lmpatch -r game.dat game_files
 lmpatch -r game.exe game_files
 ```
 *You only need one of those three command, depending on where the files are packed.*  
+  
+Note: Technically, you don't have to patch. You can simply put your modified files in the game folder, respecting the original archive folder structure. The engine checks for files outside the archive first, and inside second.
   
 ## Full-width issue  
 The engine forces alphanumeric characters to full-width by default.  
