@@ -555,10 +555,9 @@ if __name__ == "__main__":
                 for f in list_files(".lsb"):
                     backup_lsb(f)
                     csv_file = f.replace(".lsb", ".csv")
-                    result = False
-                    result = result or insertcsv(csv_file)
-                    result = result or insertmenu(csv_file.replace(".csv", "_menu.csv"))
-                    if not result:
+                    flagA = insertcsv(csv_file)
+                    flagB = insertmenu(csv_file.replace(".csv", "_menu.csv"))
+                    if not flagA and not flagB:
                         revert_backup(f)
             case "2":
                 for f in list_files(".bak"):
