@@ -63,6 +63,35 @@ The engine first checks if a file exists outside the archive.
 So, all you have to do is put your modified `.lsb` in the game folder.  
 This also makes distributing a translation patch either.  
   
+### Encoding
+  
+Strings must be able to be encoded to `cp932` (an extended variant of the `Shift JIS` encoding), or `pylivemaker` won't be able to patch them back in.  
+You can use the built-in RPGMTL tool `Special Character Remover` to quickly swap out problematic characters.  
+Alternatively, you can run the following Python script in the project folder to find problematic strings:  
+```python
+import json
+
+with open("strings.json", mode="r", encoding="utf-8") as f:
+    d = json.load(f)
+for sid, sd in d["strings"].items():
+    if d["strings"][sid][1] is not None:
+        try:
+            d["strings"][sid][1].encode("cp932")
+        except:
+            print("# Global", sid)
+            print(d["strings"][sid][1])
+
+for file in d["files"]:
+    for i, group in enumerate(d["files"][file]):
+        for j in range(1, len(group)):
+            if d["files"][file][i][j][1] is not None:
+                try:
+                    d["files"][file][i][j][1].encode("cp932")
+                except:
+                    print("# Local", file, i, j, d["files"][file][i][j][0])
+                    print( d["files"][file][i][j][1])
+```
+  
 ### Full-width ASCII  
   
 [Relevant documentation](https://pylivemaker.readthedocs.io/en/latest/usage.html#notes-for-translation-patches)  

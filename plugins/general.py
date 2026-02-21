@@ -2,12 +2,13 @@ from __future__ import annotations
 from . import Plugin, GloIndex, LocIndex, IntBool
 from typing import Any
 import textwrap
+import unicodedata
 
 class GeneralActions(Plugin):
     def __init__(self : GeneralActions) -> None:
         super().__init__()
         self.name : str = "General Actions"
-        self.description : str = "v1.2\nAdd specific file actions on all files and tools."
+        self.description : str = "v1.3\nAdd specific file actions on all files and tools."
         self.related_tool_plugins : list[str] = [self.name]
 
     def get_setting_infos(self : GeneralActions) -> dict[str, list]:
@@ -61,6 +62,7 @@ class GeneralActions(Plugin):
                         "_t_question":["？ by ?", "bool", True, None],
                         "_t_bracket1":["【 by [", "bool", False, None],
                         "_t_bracket2":["】 by ]", "bool", False, None],
+                        "_t_accent":["Latin Accented Letters", "bool", False, None],
                         "_t_file_ext":["Only on files ending with (Separate by ,)(Optional):", "str", "", None],
                     },
                     "help":"Tool to automatically replace specific special characters."
@@ -175,6 +177,7 @@ class GeneralActions(Plugin):
             "_t_question" : (("？"), "?"),
             "_t_bracket1" : (("【"), "["),
             "_t_bracket2" : (("】"), "]"),
+            "_t_accent" : ((""), ""),
         }
         try:
             extensions : tuple[str] = tuple(params["_t_file_ext"].split(","))
@@ -226,11 +229,18 @@ class GeneralActions(Plugin):
             self.owner.log.error("[JSON] Tool 'tool_special_char' failed with error:\n" + self.owner.trbk(e))
             return "An unexpected error occured"
 
+    def _tool_special_remove_latin_accent(self : GeneralActions, input_string: str) -> str:
+        nfd_string = unicodedata.normalize('NFD', input_string)
+        return ''.join(char for char in nfd_string if unicodedata.category(char) != 'Mn')
+
     def _tool_special_char_parser(self : GeneralActions, s : str, checks : dict[str, Any]) -> tuple[str, bool]:
         m : str = s
         for k, (chars, replacement) in checks.items():
-            for c in chars:
-                m = m.replace(c, replacement)
+            if k == "_t_accent":
+                m = self._tool_special_remove_latin_accent(m)
+            else:
+                for c in chars:
+                    m = m.replace(c, replacement)
         return m, m != s
 
     def check_limit(self : GeneralActions, name : str, file_path : str, settings : dict[str, Any] = {}) -> str:
