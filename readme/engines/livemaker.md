@@ -192,6 +192,10 @@ def extractcsv(lsb_file, encoding=None, overwrite=False):
     if encoding is None:
         encoding = ENCODING
     csv_file = lsb_file.replace(".lsb", ".csv")
+    if Path(csv_file).exists():
+        if not overwrite:
+            print(f"File {csv_file} already exists.")
+            return
     lsb_file = Path(lsb_file)
     print(f"Extracting {lsb_file} ...")
 
@@ -216,11 +220,6 @@ def extractcsv(lsb_file, encoding=None, overwrite=False):
     if len(csv_data) == 0:
         print("No text data found.")
         return
-
-    if Path(csv_file).exists():
-        if not overwrite:
-            print(f"File {csv_file} already exists.")
-            return
 
     with open(csv_file, "w", newline="\n", encoding=encoding) as csvfile:
         csv_writer = csv.writer(csvfile, delimiter=",", quotechar='"', quoting=csv.QUOTE_MINIMAL)
@@ -260,6 +259,10 @@ def extractmenu(lsb_file, encoding=None, overwrite=False):
     if encoding is None:
         encoding = ENCODING
     csv_file = lsb_file.replace(".lsb", "_menu.csv")
+    if Path(csv_file).exists():
+        if not overwrite:
+            print(f"File {csv_file} already exists.")
+            return
     lsb_file = Path(lsb_file)
     print(f"Extracting {lsb_file} Menu ...")
 
@@ -305,11 +308,6 @@ def extractmenu(lsb_file, encoding=None, overwrite=False):
     if len(csv_data) == 0:
         print("No menu data found.")
         return
-
-    if Path(csv_file).exists():
-        if not overwrite:
-            print(f"File {csv_file} already exists.")
-            return
 
     with open(csv_file, "w", encoding=encoding, newline="\n") as csvfile:
         csv_writer = csv.writer(csvfile, delimiter=",", quotechar='"', quoting=csv.QUOTE_MINIMAL)
@@ -597,9 +595,25 @@ if __name__ == "__main__":
                 elif ENCODING == "utf-8-sig":
                     ENCODING = "utf-8"
             case _:
-                break
+                pass
 ```  
 The first option will go over each LSB recursively and create both CSV if possible.  
 The second option does the opposite operation. It also creates a backup if needed.  
 The third option will revert **all** `.lsb` files to their original backups.  
 The fourth option lets you switch to `utf-8-sig`, if you need to use the CSV in Excel.  
+  
+If the script crash during the CSV creation with the following error:  
+`No matching jump for menu choice...`  
+OR
+`Cannot add duplicate choices`
+the related `.lsb` might have some particularity not supported by `pylivemaker`.  
+My solution is to go patch `pylivemaker` itself at:  
+`<PYTHON PATH>\Lib\site-packages\livemaker\lsb` 
+  
+For `No matching jump for menu choice...`:  
+Open `menu.py`, look for `from_lsb_command(` and the related exception.  
+Insert a `continue` before.  
+  
+For `Cannot add duplicate choices`:  
+Open `menu.py`, look for `add_choice(` and the related exception.  
+Insert a `return` before.  
