@@ -1070,8 +1070,8 @@ class RPGMTL():
         # update last seen of existing entries
         for entry in base_ref:
             found = False
-            for string in input_strings:
-                if entry["original"] in string["original"]:
+            for s in string_list:
+                if entry["original"] in s["original"]:
                     entry["occurence"] += 1
                     entry["last_seen"] += 0
                     found = True
