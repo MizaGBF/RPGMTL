@@ -131,8 +131,8 @@ class TLGemini(TranslatorPlugin):
             "gemini_rate_limit": ["Set the minimum wait time between requests (in seconds)", "num", 12, None],
             "gemini_token_limit": ["Set the minimum token count per translation batch (Minimum is 2000)", "num", 30000, None],
             "gemini_temperature": ["Set the Model Temperature (Higher is more creative but less predictable)", "num", 0, None],
+            "gemini_knowledge_limit": ["Max number of AI Knowledge updates in one request (Negative means unlimited)", "num", 10, None],
             "gemini_extra_context": ["Set extra informations or commands for the AI", "text", "", None],
-            "gemini_knowledge_limit": ["Max number of AI Knowledge update in one request (Negative means unlimited)", "num", 10, None],
         }
 
     def _init_translator(self : TLGemini, settings : dict[str, Any]) -> None:
