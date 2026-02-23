@@ -1891,19 +1891,19 @@ class RPGMTL():
                 
                 s : dict[str, Any] = {}
                 s["id"] = f"{i}-{j}"
-                s["ignore"] = lc[LocIndex.IGNORED] == IntBool.TRUE
-                if s["ignore"]:
+                s["translate"] = lc[LocIndex.IGNORED] == IntBool.FALSE
+                if not s["translate"]:
                     ignore.add(s["id"])
                 s["original"] = gl[GloIndex.ORI]
                 if lc[LocIndex.LOCAL]:
                     if lc[LocIndex.TL] is not None:
                         s["translation"] = lc[LocIndex.TL]
-                    elif not s["ignore"]:
+                    elif s["translate"]:
                         untranslated += 1
                 else:
                     if gl[GloIndex.TL] is not None:
                         s["translation"] = gl[GloIndex.TL]
-                    elif not s["ignore"]:
+                    elif s["translate"]:
                         untranslated += 1
                 batch["groups"][-1]["strings"].append(s)
         

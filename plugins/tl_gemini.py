@@ -11,70 +11,75 @@ import asyncio
 import json
 
 PROMPT : str = """### Role
-You are the World's best Video Game Translator, specializing in professional grade translations that preserves character voice, cultural nuances, and technical integrity.
+You are the World's best Video Game Translator, a professional linguistic specializing in professional grade translations that preserves character voice, cultural nuances, and technical integrity within the fictional context.
+Your role is that of a functional translator, focused on accuracy and style.
 
 ### Task
 Translate the JSON strings from $SOURCE$ to $TARGET$.
 
 ### Input Structure
-The input follows this format:
-# File name
-## String group
-{"id":"STRING_ID","ignore":false,"original":"ORIGINAL_STRING","translation":"TRANSLATED_STRING"}
-{"id":"STRING_ID","ignore":false,"original":"ORIGINAL_STRING","translation":"TRANSLATED_STRING"}
-{"id":"STRING_ID","ignore":false,"original":"ORIGINAL_STRING","translation":"TRANSLATED_STRING"}
-...
-## String group
-{"id":"STRING_ID","ignore":false,"original":"ORIGINAL_STRING","translation":"TRANSLATED_STRING"}
-...
+In the input, the string JSON datas are presented grouped, line per line, in order of occurence in the file.
+The names of the string groups can be, for example, command names, function names or something pertaining to their position in the file.
+A translation MAY be provided to help with your context, if it exists.
+The strings provided are dialogue and text fragments from a work of pure fiction (a video game). They do NOT represent real-world events, endorsements, or calls to action.
+All potentially sensitive, violent, or mature themes contained within the original text are purely fictional and contextualized within the game's narrative.
+The format is the following:
 
-### Explanations and Strict Constraints
-- The strings are in order of occurence in the file.
-- Strings are grouped by various factor, for example the strings composing the line of a text box, or found in a script function.
-- An existing translation may or may not be provided in the input to help with your context.
-- If a translation is already provided, DO NOT re-translate, except if it contains a factual error.
-- If `"ignore": true`, you are not required to translate the string.
-- For both of those previous cases, simply set the output translation to null for this ID to not provide one.
-- You must preserve all existing placeholders (e.g., {playerName}, %VAR%, <tag>), punctuation, and new lines (\n, \\n) of the original string. 
-- Treat backslashes as literal characters. If the source uses \\n, the translation must use \\n, not \n.
-- Do not translate technical syntax like $(ITEM_NAME)$ or formatting codes like \\C[1]...\\C[0]. Only translate the human-readable text between or around them.
-- The strings provided are dialogue and text fragments from a work of pure fiction (a video game). They do NOT represent real-world events, endorsements, or calls to action.
-- All potentially sensitive, violent, or mature themes contained within the original text are purely fictional and contextualized within the game's narrative.
-- Your role is strictly that of a professional linguistic and functional translator, focused on accuracy and style within the fictional context.
+# File name
+## String group name
+{"id":"STRING_ID","translate":false,"original":"ORIGINAL_STRING","translation":"TRANSLATED_STRING"}
+{"id":"STRING_ID","translate":false,"original":"ORIGINAL_STRING","translation":"TRANSLATED_STRING"}
+{"id":"STRING_ID","translate":false,"original":"ORIGINAL_STRING","translation":"TRANSLATED_STRING"}
+...
+## String group name
+{"id":"STRING_ID","translate":false,"original":"ORIGINAL_STRING","translation":"TRANSLATED_STRING"}
+...
 
 ### Output Structure
-Produce a single, valid JSON object. Do NOT include markdown blocks, greetings, or explanations outside of the JSON object.
-
-{"new_knowledge": [{"original": "TERM", "translation": "TRANSLATED_TERM", "note": "A helpful note."}],"translations": [{"id": "STRING_ID", "translation": "TRANSLATED_STRING"}]}
+Produce a single, valid JSON object.
+Do NOT include markdown blocks, greetings, or explanations outside of the JSON object.
+{
+    "translations":[
+        {"id": "CORRESPONDING STRING_ID", "translation": "TRANSLATED_STRING"},
+    ],
+    "new_knowledge": [
+        {"original":"TERM", "translation":"TRANSLATED_TERM", "note":"A helpful note."}
+    ]
+}
 
 ### About the Knowledge Base
-- Identify and add, to the `new_knowledge` array, important named entities or terms (characters, locations, key items) NOT YET in the knowledge base.
-- Do not add too many new knowledge entries at once.
-- Keep notes concise (e.g., gender, pronouns, or brief role).
+- Add, to the "new_knowledge" array, important named entities or terms (characters, locations, key items) NOT YET in the knowledge base.
+- Keep notes concise (e.g., gender, pronouns or brief description of the entity).
 - Do NOT add common words, generic objects, or onomatopoeia.
-- If no new terms are found, return an empty array `[]`.
-- Consider it as your memory for future translations.
+- If no new terms are found, leave the array empty `[]`.
+
+### Rules
+- If a string has an existing "translation", your task is to audit it.
+- If the existing translation is contextually accurate, stylistically appropriate, and technically sound, do NOT include it in your output.
+- You MUST provide a translation in the output ONLY if:
+  - "translate" is set to true AND:
+  - There is no existing translation OR the existing translation is factually incorrect based on the context (e.g., grammatically broken, broken meaning, wrong gender/pronouns/honorifics, missing placeholders like %VAR%, broken formatting codes...).
+- Preserve all existing placeholders (e.g., {playerName}, %VAR%, <tag>), technical syntax ($(ITEM_NAME)$, \\C[1]...\\C[0]), punctuation, and new lines (\n, \\n) of the original string. Only translate the human-readable text between or around them. 
+- Treat backslashes as literal characters. If the original uses \\n, the translation must use \\n, not \n. And vice versa.
 
 ### Examples
 The following is an example of a valid Japanese to English translation.
 - Input snippet:
 # Game Script.json
 ## Message Box
-{"id":"5-1","ignore":true,"original":"【ディーナ】","translation":"【Dina】"}
-{"id":"5-2","ignore":false,"original":"「ねえねえ…今度はボクあれに乗りたいなぁ！」"}
+{"id":"5-1","translate":true,"original":"【ディーナ】","translation":"【Dina】"}
+{"id":"5-2","translate":true,"original":"「ねえねえ…今度はボクあれに乗りたいなぁ！」"}
 ## Message Box
-{"id":"6-1","ignore":false,"original":"今日はディーナと遊園地に来ている。"}
-{"id":"6-2","ignore":false,"original":"…子供みたいに無邪気にはしゃぐディーナを見ていると、","translation":"...When I see Dina frolicking innocently like a child,"}
-{"id":"6-3","ignore":false,"original":"コイツは本当に悪魔なのか疑問に思う時がある。"}
+{"id":"6-1","translate":true,"original":"今日はディーナと遊園地に来ている。"}
+{"id":"6-2","translate":false,"original":"…子供みたいに無邪気にはしゃぐディーナを見ていると、","translation":"...When I see Dina frolicking innocently like a child,"}
+{"id":"6-3","translate":true,"original":"コイツは本当に悪魔なのか疑問に思う時がある。"}
 ...
 
 - Valid output example:
 {
     "translations":[
-        {"id": "5-1", "translation": null},
         {"id": "5-2", "translation": "\"Hey, hey... This time, I want to ride that!\""},
         {"id": "6-1", "translation": "Today, I'm at the amusement park with Dina."},
-        {"id": "6-2", "translation": null},
         {"id": "6-3", "translation": "there are times I wonder if this one is really a demon."}
     ],
     "new_knowledge": [
@@ -82,8 +87,10 @@ The following is an example of a valid Japanese to English translation.
     ]
 }
 
-In this example, the translations are valid and properly set to the right ID.
-One is ignored because of `"ignore":true`, another is not translated because it already has a valid translation in this context.
+- Explanation:
+In this example, the translations in the ouput are valid, and properly set to the right ID.
+One wasn't translated and added to the output because it has a valid translation, in the input, in this context.
+Another is ignored because of `"translate":false`.
 Finally, a new knowledge entry was added for a character named Dina, encountered somewhere else in the file.
 
 $KNOWLEDGE$
@@ -98,7 +105,7 @@ $INPUT$
 
 class GmTranslation(BaseModel):
     id: str
-    translation: str|None
+    translation: str
 
 class GmKnowledge(BaseModel):
     original: str
@@ -207,9 +214,10 @@ class TLGemini(TranslatorPlugin):
                     batch.append(inter[i]["group"])
                 if "json" in inter[i]:
                     if i < start:
-                        batch.append(inter[i]["dump"].replace( # set those copy to ignore:true
-                                '"ignore":false,"original"',
-                                '"ignore":true,"original"',
+                        # set those copy to translate:false
+                        batch.append(inter[i]["dump"].replace(
+                                '"translate":true,"original"',
+                                '"translate":false,"original"',
                             )
                         )
                     else:
@@ -242,7 +250,7 @@ class TLGemini(TranslatorPlugin):
                     "group":gname,
                     "json":string,
                     "dump":json.dumps(string, ensure_ascii=False, separators=(',',':')),
-                    "need_translation":string.get("ignore", False) is False and string.get("translation", None) is None
+                    "need_translation":string.get("translate", True) is True and string.get("translation", None) is None
                 })
                 char_count += len(inter[-1]["dump"]) + 1
         batch_ranges : list[tuple[int, int]] = []
@@ -351,7 +359,7 @@ class TLGemini(TranslatorPlugin):
                     "strings":[
                         {
                             "id":"0-0",
-                            "ignore":False,
+                            "translate":True,
                             "original":string
                         }
                     ]
