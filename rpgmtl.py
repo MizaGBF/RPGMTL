@@ -505,8 +505,8 @@ class RPGMTL():
     def clean_project_name(self : RPGMTL, name : str) -> str:
         # forbidden charas (POSIX & Windows)
         forbidden_chars = r'[<>:"/\\|?*\x00-\x1f]'
-        # remove characters, trailing dot and file extension
-        return re.sub(forbidden_chars, replacement, name).strip(". ").rsplit(".")[0]
+        # remove characters, trailing dot
+        return re.sub(forbidden_chars, "", name).strip(". ")
 
     # create a blank new project
     def create_new_project(self : RPGMTL, path : str, name : str) -> tuple[bool, str]:
