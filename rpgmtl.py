@@ -1404,13 +1404,12 @@ class RPGMTL():
         except:
             payload = {}
         name = payload.get('name', None)
-        settings = copy.deepcopy(self.settings)
         if name is None:
             return web.json_response({"result":"ok", "data":{"layout":self.setting_menu, "settings":settings, "descriptions":self.plugin_descriptions}})
         else:
             self.load_project(name)
-            settings = settings | self.projects[name].get("settings", {})
-            return web.json_response({"result":"ok", "data":{"name":name, "config":self.projects[name], "layout":self.setting_menu, "settings":settings, "descriptions":self.plugin_descriptions}})
+            merged = settings | self.projects[name].get("settings", {})
+            return web.json_response({"result":"ok", "data":{"name":name, "config":self.projects[name], "layout":self.setting_menu, "settings":merged, "descriptions":self.plugin_descriptions}})
         
     # /api/update_settings
     async def update_setting(self : RPGMTL, request : web.Request) -> web.Response:
