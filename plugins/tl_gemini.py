@@ -29,10 +29,12 @@ The input follows this format:
 ...
 
 ### Explanations and Strict Constraints
-- The strings are in order of occurence in the file, grouped by their function names, etc...
-- An existing translation may or may not be provided in the input.
-- If a translation is already provided, DO NOT re-translate, except if it contains a factual error, a grammatical mistake, or contradicts the knowledge base.
-- If `"ignore": true`, do NOT translate the string no matter what. Do NOT include it in the output `translations` list.
+- The strings are in order of occurence in the file.
+- Strings are grouped by various factor, for example the strings composing the line of a text box, or found in a script function.
+- An existing translation may or may not be provided in the input to help with your context.
+- If a translation is already provided, DO NOT re-translate, except if it contains a factual error.
+- If `"ignore": true`, you are not required to translate the string.
+- For both of those previous cases, simply set the output translation to null for this ID to not provide one.
 - You must preserve all existing placeholders (e.g., {playerName}, %VAR%, <tag>), punctuation, and new lines (\n, \\n) of the original string. 
 - Treat backslashes as literal characters. If the source uses \\n, the translation must use \\n, not \n.
 - Do not translate technical syntax like $(ITEM_NAME)$ or formatting codes like \\C[1]...\\C[0]. Only translate the human-readable text between or around them.
@@ -46,8 +48,7 @@ Produce a single, valid JSON object. Do NOT include markdown blocks, greetings, 
 {"new_knowledge": [{"original": "TERM", "translation": "TRANSLATED_TERM", "note": "A helpful note."}],"translations": [{"id": "STRING_ID", "translation": "TRANSLATED_STRING"}]}
 
 ### About the Knowledge Base
-- Identify important terms (characters, locations, key items) not yet in the knowledge base.
-- Only unique terms or named entities to the `new_knowledge` array.
+- Identify and add, to the `new_knowledge` array, important named entities or terms (characters, locations, key items) NOT YET in the knowledge base.
 - Do not add too many new knowledge entries at once.
 - Keep notes concise (e.g., gender, pronouns, or brief role).
 - Do NOT add common words, generic objects, or onomatopoeia.
@@ -55,33 +56,35 @@ Produce a single, valid JSON object. Do NOT include markdown blocks, greetings, 
 - Consider it as your memory for future translations.
 
 ### Examples
-- Example of a valid input snippet:
+The following is an example of a valid Japanese to English translation.
+- Input snippet:
 # Game Script.json
-## Message Jack
-{"id":"2-1","ignore":true,"original":"昨日はすごく楽しかった！","translation":"It was so much fun yesterday!"}
-{"id":"2-2","ignore":false,"original":"おお？\n昨日何をしましたか？"}
-{"id":"2-3","ignore":false,"original":"私は映画を見ました。"}
+## Message Box
+{"id":"5-1","ignore":true,"original":"【ディーナ】","translation":"【Dina】"}
+{"id":"5-2","ignore":false,"original":"「ねえねえ…今度はボクあれに乗りたいなぁ！」"}
+## Message Box
+{"id":"6-1","ignore":false,"original":"今日はディーナと遊園地に来ている。"}
+{"id":"6-2","ignore":false,"original":"…子供みたいに無邪気にはしゃぐディーナを見ていると、","translation":"...When I see Dina frolicking innocently like a child,"}
+{"id":"6-3","ignore":false,"original":"コイツは本当に悪魔なのか疑問に思う時がある。"}
 ...
 
-- Examples of output:
-Valid output:
-{"new_knowledge": [{"original": "ジョン", "translation": "John", "note": "Adult man."}],"translations": [{"id": "2-2", "translation": "Oh?\nWhat did you do yesterday?"},{"id": "2-3", "translation": "I saw a movie."}]
+- Valid output example:
+{
+    "translations":[
+        {"id": "5-1", "translation": null},
+        {"id": "5-2", "translation": "\"Hey, hey... This time, I want to ride that!\""},
+        {"id": "6-1", "translation": "Today, I'm at the amusement park with Dina."},
+        {"id": "6-2", "translation": null},
+        {"id": "6-3", "translation": "there are times I wonder if this one is really a demon."}
+    ],
+    "new_knowledge": [
+        {"original":"ディーナ", "translation":"Dina", "note":"A demon girl"}
+    ]
 }
-The translations are valid and properly set to the right ID, of non ignored strings.
-A new knowledge entry was added for a character named John, encountered somewhere else in the file.
 
-- Invalid output 1:
-{"new_knowledge": [{"original": "ジョン", "translation": "Movie", "note": "A cinema film"}],"translations": [{"id": "2-3", "translation": "Oh?\nWhat did you do yesterday?"},{"id": "2-4", "translation": "I saw a movie."}]
-}
-In this bad example, the translated strings were set to the wrong string ID.
-The new knowledge is also a pointless addition: Everyone knows what's a movie is. It would be relevant if there was something particular about movies in the game context.
-
-- Invalid output 2:
-{"new_knowledge": [{"original": "ジョン", "translation": "John", "note": "Adult man."}],"translations": [{"id": "2-1", "translation": "It was so much fun yesterday!"},{"id": "2-2", "translation": "Oh?\nWhat did you do yesterday?"},{"id": "2-3", "translation": "I saw a movie."}]
-}
-In this bad example, two mistakes were made.
-First, the string 2-1 was re-translated despite having an identical translation provided in the input.
-Second, the string had its ignore flag sets to true.
+In this example, the translations are valid and properly set to the right ID.
+One is ignored because of `"ignore":true`, another is not translated because it already has a valid translation in this context.
+Finally, a new knowledge entry was added for a character named Dina, encountered somewhere else in the file.
 
 $KNOWLEDGE$
 
@@ -95,7 +98,7 @@ $INPUT$
 
 class GmTranslation(BaseModel):
     id: str
-    translation: str
+    translation: str|None
 
 class GmKnowledge(BaseModel):
     original: str
@@ -103,8 +106,8 @@ class GmKnowledge(BaseModel):
     note: str
 
 class GmResponse(BaseModel):
-    new_knowledge: list[GmKnowledge]
     translations: list[GmTranslation]
+    new_knowledge: list[GmKnowledge]
 
 class TLGemini(TranslatorPlugin):
     def __init__(self : TLGemini) -> None:
@@ -148,65 +151,6 @@ class TLGemini(TranslatorPlugin):
         input_strings : list[dict[str, str]],
         new_knowledge : list[dict[str, str]]
     ) -> None:
-        base_ref = self.owner.projects[name]["ai_knowledge_base"]
-        # update last seen
-        for entry in base_ref:
-            found = False
-            for string in input_strings:
-                if entry["original"] in string["original"]:
-                    entry["occurence"] += 1
-                    entry["last_seen"] += 0
-                    found = True
-                    self.owner.modified[name] = True
-                    break
-            if not found:
-                entry["last_seen"] += 1
-                self.owner.modified[name] = True
-        # table of original : pointer to entries
-        ref = {entry["original"] : entry for entry in self.owner.projects[name]["ai_knowledge_base"]}
-        updated : int = 0
-        added : int = 0
-        deleted : int = 0
-        for entry in new_knowledge:
-            if "original" in entry and "translation" in entry and "note" in entry:
-                if entry["original"] in ref:
-                    ref[entry["original"]]["note"] = entry["note"]
-                    if ref[entry["original"]]["last_seen"] != 0: # if not found in above loop
-                        ref[entry["original"]]["last_seen"] = 0
-                        ref[entry["original"]]["occurence"] += 1
-                    updated += 1
-                    self.owner.modified[name] = True
-                else:
-                    # Checking if the entry added by the AI is a substring of an existing one
-                    # For example: AI tris to add John, when we have John Doe in our list
-                    # Note: Current solution isn't perfect, but it's to help with the bloat
-                    # Note²: Maybe add a setting toggle?
-                    found : bool = False
-                    for k in ref:
-                        if entry["original"] in k:
-                            found = True
-                            if ref[k]["last_seen"] != 0: # if not found in above loop
-                                ref[k]["last_seen"] = 0
-                                ref[k]["occurence"] += 1
-                            break
-                    if not found:
-                        base_ref.append({"original":entry["original"], "translation":entry["translation"], "note":entry["note"], "last_seen":0, "occurence":1})
-                        added += 1
-                        self.owner.modified[name] = True
-        # cleanup
-        i = 0
-        while i < len(base_ref):
-            if base_ref[i]["last_seen"] > 15: # if not seen in last 15 translations
-                base_ref[i]["occurence"] -= 1
-                self.owner.modified[name] = True
-            if base_ref[i]["occurence"] <= 0: # if occurence at 0, delete from base
-                base_ref.pop(i)
-                deleted += 1
-            else:
-                i += 1
-        # result
-        if updated + added + deleted != 0:
-            self.owner.log.info(f"[TL Gemini] Knowledge base of project {name}: {updated} update(s), {added} addition(s), {deleted} deletion(s)")
 
     def parse_model_output(self : TLGemini, text : str, name : str, input_batch : dict[str, Any]) -> dict[str, str]:
         # build set of string id from batch for validation
@@ -237,7 +181,7 @@ class TLGemini(TranslatorPlugin):
                     parsed[string["id"]] = string["translation"]
         # updated knowledge base
         if "new_knowledge" in output:
-            self.update_knowledge_base(name, string_list, output["new_knowledge"])
+            self.owner.update_ai_knowledge_base(name, output["new_knowledge"], string_list)
         return parsed
     
     def _format_batch_to_text(
@@ -340,9 +284,9 @@ class TLGemini(TranslatorPlugin):
             extra_context = f"### User Specific Instructions\n{settings['gemini_extra_context']}"
         knowledge_base : str = self.knowledge_to_text(self.owner.projects[name]["ai_knowledge_base"])
         if knowledge_base != "":
-            knowledge_base = "###Current Knowledge base\n" + knowledge_base
+            knowledge_base = "### Current Knowledge base\n" + knowledge_base
         else:
-            knowledge_base = "###Current Knowledge base\nThe knowledge base is currently EMPTY."
+            knowledge_base = "### Current Knowledge base\nThe knowledge base is currently EMPTY."
         # rate limit safety
         current_time = time.monotonic()
         elapsed_time = current_time - self.time

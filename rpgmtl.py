@@ -1054,6 +1054,81 @@ class RPGMTL():
             self.log.error("The following exception occured in import_rpgmtrans_data():\n" + self.trbk(e))
             return -1, count
 
+    def update_ai_knowledge_base(
+        self : RPGMTL,
+        name : str, # project name
+        entries : list[dict[str, str]], # [{"original":"STR","translation":"STR","note":"STR"},...]
+        string_list : list[str], # list of strings used to update the base
+        update_limit : int = -1 # used to control how many entries to update
+    ) -> None:
+        if update_limit = 0:
+            return
+        elif update_limit < 0:
+            # negative = nearly no limit
+            update_limit = 1000000000
+        base_ref = self.projects[name].get("ai_knowledge_base", [])
+        # update last seen of existing entries
+        for entry in base_ref:
+            found = False
+            for string in input_strings:
+                if entry["original"] in string["original"]:
+                    entry["occurence"] += 1
+                    entry["last_seen"] += 0
+                    found = True
+                    self.modified[name] = True
+                    break
+            if not found:
+                entry["last_seen"] += 1
+                self.modified[name] = True
+        # table of original : pointer to entries
+        ref = {entry["original"] : entry for entry in base_ref}
+        updated : int = 0
+        added : int = 0
+        deleted : int = 0
+        for i, entry in enumerate(entries):
+            if i >= update_limit:
+                break
+            # validation
+            if "original" in entry and "translation" in entry and "note" in entry:
+                if entry["original"] in ref:
+                    ref[entry["original"]]["note"] = entry["note"]
+                    if ref[entry["original"]]["last_seen"] != 0: # if not found in above loop
+                        ref[entry["original"]]["last_seen"] = 0
+                        ref[entry["original"]]["occurence"] += 1
+                    updated += 1
+                    self.modified[name] = True
+                else:
+                    # Checking if the entry added by the AI is a substring of an existing one
+                    # For example: AI tris to add John, when we have John Doe in our list
+                    # Note: Current solution isn't perfect, but it's to help with the bloat
+                    # Note²: Maybe add a setting toggle?
+                    found : bool = False
+                    for k in ref:
+                        if entry["original"] in k:
+                            found = True
+                            if ref[k]["last_seen"] != 0: # if not found in above loop
+                                ref[k]["last_seen"] = 0
+                                ref[k]["occurence"] += 1
+                            break
+                    if not found:
+                        base_ref.append({"original":entry["original"], "translation":entry["translation"], "note":entry["note"], "last_seen":0, "occurence":1})
+                        added += 1
+                        self.modified[name] = True
+        # cleanup
+        i = 0
+        while i < len(base_ref):
+            if base_ref[i]["last_seen"] > 15: # if not seen in last 15 translations
+                base_ref[i]["occurence"] -= 1
+                self.modified[name] = True
+            if base_ref[i]["occurence"] <= 0: # if occurence at 0, delete from base
+                base_ref.pop(i)
+                deleted += 1
+            else:
+                i += 1
+        # result
+        if updated + added + deleted != 0:
+            self.log.info(f"[TL Gemini] Knowledge base of project {name}: {updated} update(s), {added} addition(s), {deleted} deletion(s)")  
+
     # Return the file list and folder list inside a project folder
     def get_folder_content(self : RPGMTL, name : str, path : str) -> tuple[dict[str, bool], list[str]]:
         files : dict[str, bool] = {}
