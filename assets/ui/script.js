@@ -1363,6 +1363,10 @@ function setting_menu_individual_reset(node, relevant_node, setting_key)
 								}
 							}
 						}
+						relevant_node.classList.toggle(
+							"settingmodifiedborder",
+							result_data["modified_default"].includes(setting_key)
+						);
 					},
 					null,
 					{name:project.name, key:setting_key}
@@ -1416,6 +1420,8 @@ function setting_menu(data)
 		fragment = new_page();
 		let layout = data["layout"];
 		let settings = data["settings"];
+		let descriptions = data["descriptions"];
+		let modified_default = data["modified_default"];
 		
 		if(is_project) // add button to reset settings of THIS project
 		{
@@ -1435,8 +1441,8 @@ function setting_menu(data)
 			// add plugin name
 			add_to(fragment, "div", {cls:["title", "left"], br:false}).innerHTML = file + " Plugin settings";
 			// and description if it exists
-			if(file in data["descriptions"] && data["descriptions"][file] != "")
-				add_to(fragment, "div", {cls:["left", "interact-group", "smalltext"]}).innerText = data["descriptions"][file];
+			if(file in descriptions && descriptions[file] != "")
+				add_to(fragment, "div", {cls:["left", "interact-group", "smalltext"]}).innerText = descriptions[file];
 			// go over options
 			for(const [key, fdata] of Object.entries(fsett))
 			{
@@ -1445,21 +1451,25 @@ function setting_menu(data)
 					add_to(fragment, "div", {cls:["settingtext"], br:false}).innerHTML = fdata[0];
 					// add a simple toggle
 					const elem = add_button(fragment, "Set", "assets/images/confirm.png", function(){
-						let callback = function(result_data) {
-							push_popup("The setting has been updated.");
-							set_loading(false);
-							if(key in result_data["settings"])
-								elem.classList.toggle("green", result_data["settings"][key]);
-						};
-						if(is_project)
-						{
-							post("/api/update_settings", callback, null, {name:project.name, key:key, value:!elem.classList.contains("green")});
-						}
-						else
-						{
-							post("/api/update_settings", callback, null, {key:key, value:!elem.classList.contains("green")});
-						}
-					}, true);
+							let callback = function(result_data) {
+								push_popup("The setting has been updated.");
+								set_loading(false);
+								if(key in result_data["settings"])
+									elem.classList.toggle("green", result_data["settings"][key]);
+								elem.classList.toggle("settingmodifiedborder", result_data["modified_default"].includes(key));
+							};
+							if(is_project)
+							{
+								post("/api/update_settings", callback, null, {name:project.name, key:key, value:!elem.classList.contains("green")});
+							}
+							else
+							{
+								post("/api/update_settings", callback, null, {key:key, value:!elem.classList.contains("green")});
+							}
+						},
+						true
+					);
+					elem.classList.toggle("settingmodifiedborder", modified_default.includes(key));
 					if(is_project)
 						setting_menu_individual_reset(fragment, elem, key);
 					fragment.appendChild(document.createElement("br"));
@@ -1489,6 +1499,7 @@ function setting_menu(data)
 							add_to(fragment, "div", {cls:["input", "settinginput", "inline"], navigable:true, br:false}) :
 							add_to(fragment, "input", {cls:["input", "settinginput"], navigable:true, br:false})
 						);
+						input.classList.toggle("settingmodifiedborder", modified_default.includes(key));
 						switch(fdata[1])
 						{
 							case "password":
@@ -1532,6 +1543,7 @@ function setting_menu(data)
 								set_loading(false);
 								if(key in result_data["settings"])
 									input.value = result_data["settings"][key];
+								input.classList.toggle("settingmodifiedborder", result_data["modified_default"].includes(key));
 							};
 							if(is_project)
 							{
@@ -1576,6 +1588,7 @@ function setting_menu(data)
 					{
 						// add select and option elements
 						const sel = add_to(fragment, "select", {cls:["input", "settinginput"], navigable:true, br:false});
+						sel.classList.toggle("settingmodifiedborder", modified_default.includes(key));
 						for(let i = 0; i < fdata[2].length; ++i)
 						{
 							let opt = add_to(sel, "option");
@@ -1590,6 +1603,7 @@ function setting_menu(data)
 								set_loading(false);
 								if(key in result_data["settings"])
 									sel.value = result_data["settings"][key];
+								sel.classList.toggle("settingmodifiedborder", result_data["modified_default"].includes(key));
 							};
 							if(is_project)
 							{

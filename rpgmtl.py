@@ -1453,11 +1453,37 @@ class RPGMTL():
             payload = {}
         name = payload.get('name', None)
         if name is None:
-            return web.json_response({"result":"ok", "data":{"layout":self.setting_menu, "settings":self.settings, "descriptions":self.plugin_descriptions}})
+            return web.json_response(
+                {
+                    "result":"ok",
+                    "data":
+                    {
+                        "layout":self.setting_menu,
+                        "settings":self.settings,
+                        "descriptions":self.plugin_descriptions,
+                        "modified_default":[]
+                    }
+                }
+            )
         else:
             self.load_project(name)
-            merged = self.settings | self.projects[name].get("settings", {})
-            return web.json_response({"result":"ok", "data":{"name":name, "config":self.projects[name], "layout":self.setting_menu, "settings":merged, "descriptions":self.plugin_descriptions}})
+            psettings : dict[str, Any] = self.projects[name].get("settings", {})
+            merged = self.settings | psettings
+            modified_default : list[str] = [k for k, v in self.settings.items() if (k in psettings and psettings[k] != v)]
+            return web.json_response(
+                {
+                    "result":"ok",
+                    "data":
+                    {
+                        "name":name,
+                        "config":self.projects[name],
+                        "layout":self.setting_menu,
+                        "settings":merged,
+                        "descriptions":self.plugin_descriptions,
+                        "modified_default":modified_default
+                    }
+                }
+            )
         
     # /api/update_settings
     async def update_setting(self : RPGMTL, request : web.Request) -> web.Response:
@@ -1486,12 +1512,18 @@ class RPGMTL():
                                 if not isinstance(value, str):
                                     raise Exception()
                     except:
-                        return web.json_response({"result":"bad", "message":"Invalid 'value' parameter, couldn't convert to setting type"}, status=400)
+                        return web.json_response(
+                            {
+                                "result":"bad",
+                                "message":"Invalid 'value' parameter, couldn't convert to setting type"
+                            },
+                            status=400
+                        )
                     break
         if name is None:
             self.settings[key] = value
             self.settings_modified = True
-            return web.json_response({"result":"ok", "data":{"settings":self.settings}})
+            return web.json_response({"result":"ok", "data":{"settings":self.settings, "modified_default":[]}})
         else:
             if key is None:
                 self.projects[name]["settings"] = {}
@@ -1503,8 +1535,20 @@ class RPGMTL():
             elif value is not None:
                 self.projects[name]["settings"][key] = value
                 self.modified[name] = True
-            settings = self.settings | self.projects[name]["settings"]
-            return web.json_response({"result":"ok", "data":{"name":name, "config":self.projects[name], "settings":settings}})
+            psettings : dict[str, Any] = self.projects[name].get("settings", {})
+            modified_default : list[str] = [k for k, v in self.settings.items() if (k in psettings and psettings[k] != v)]
+            return web.json_response(
+                {
+                    "result":"ok",
+                    "data":
+                    {
+                        "name":name,
+                        "config":self.projects[name],
+                        "settings":(self.settings | psettings),
+                        "modified_default":modified_default
+                    }
+                }
+            )
 
     # /api/unload
     async def unload_project(self : RPGMTL, request : web.Request) -> web.Response:
