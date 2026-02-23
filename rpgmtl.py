@@ -1061,7 +1061,7 @@ class RPGMTL():
         string_list : list[str], # list of strings used to update the base
         update_limit : int = -1 # used to control how many entries to update
     ) -> None:
-        if update_limit = 0:
+        if update_limit == 0:
             return
         elif update_limit < 0:
             # negative = nearly no limit
