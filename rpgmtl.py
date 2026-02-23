@@ -4,6 +4,7 @@ from aiohttp import web
 from typing import Any
 from dataclasses import dataclass
 import os
+import re
 import shutil
 import copy
 import traceback
@@ -501,11 +502,19 @@ class RPGMTL():
         self.projects[pname]["files"] = update_file_dict
         self.modified[pname] = True
 
+    def clean_project_name(self : RPGMTL, name : str) -> str:
+        # forbidden charas (POSIX & Windows)
+        forbidden_chars = r'[<>:"/\\|?*\x00-\x1f]'
+        # remove characters, trailing dot and file extension
+        return re.sub(forbidden_chars, replacement, name).strip(". ").rsplit(".")[0]
+
     # create a blank new project
     def create_new_project(self : RPGMTL, path : str, name : str) -> tuple[bool, str]:
         try:
             # remove forbidden chara from project name
-            name = name.replace('/', '').replace('<', '').replace('>', '').replace(':', '').replace('"', '').replace('\\', '').replace('|', '').replace('?', '').replace('*', '')
+            name = self.clean_project_name(name)
+            if name == "":
+                name = "new_project"
             # check folder exist or validity
             if name == "" or os.path.isdir('projects/' + name): # if already exists
                 count = 0
@@ -1066,20 +1075,17 @@ class RPGMTL():
         elif update_limit < 0:
             # negative = nearly no limit
             update_limit = 1000000000
-        base_ref = self.projects[name].get("ai_knowledge_base", [])
+        base_ref : list[dict[str, str]] = self.projects[name].get("ai_knowledge_base", [])
+        # combine originals to avoid slow lookup
+        original_combined = "\r\n".join([s["original"] for s in string_list])
         # update last seen of existing entries
         for entry in base_ref:
-            found = False
-            for s in string_list:
-                if entry["original"] in s["original"]:
-                    entry["occurence"] += 1
-                    entry["last_seen"] = 0
-                    found = True
-                    self.modified[name] = True
-                    break
-            if not found:
+            if entry["original"] in original_combined:
+                entry["occurence"] += 1
+                entry["last_seen"] = 0
+            else:
                 entry["last_seen"] += 1
-                self.modified[name] = True
+            self.modified[name] = True
         # table of original : pointer to entries
         ref = {entry["original"] : entry for entry in base_ref}
         updated : int = 0
@@ -1089,9 +1095,10 @@ class RPGMTL():
             if i >= update_limit:
                 break
             # validation
-            if "original" in entry and "translation" in entry and "note" in entry:
+            if "original" in entry:
                 if entry["original"] in ref:
-                    ref[entry["original"]]["note"] = entry["note"]
+                    ref[entry["original"]]["note"] = entry.get("note", ref[entry["original"]]["note"])
+                    ref[entry["original"]]["translation"] = entry.get("translation", ref[entry["original"]]["translation"])
                     if ref[entry["original"]]["last_seen"] != 0: # if not found in above loop
                         ref[entry["original"]]["last_seen"] = 0
                         ref[entry["original"]]["occurence"] += 1
