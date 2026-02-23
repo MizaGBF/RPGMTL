@@ -145,13 +145,6 @@ class TLGemini(TranslatorPlugin):
         except Exception as e:
              self.owner.log.error("[TL Gemini] Error in '_init_translator':\n" + self.owner.trbk(e))
 
-    def update_knowledge_base(
-        self : TLGemini,
-        name : str,
-        input_strings : list[dict[str, str]],
-        new_knowledge : list[dict[str, str]]
-    ) -> None:
-
     def parse_model_output(self : TLGemini, text : str, name : str, input_batch : dict[str, Any]) -> dict[str, str]:
         # build set of string id from batch for validation
         id_set : set[str] = set()
