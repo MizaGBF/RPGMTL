@@ -2212,7 +2212,7 @@ function project_menu(data = null)
 					<li><b>Update the Game Files</b> if the Game got updated or if you need to re-copy the files.</li>\
 					<li><b>Extract the Strings</b> if you need to extract them from Game files.</li>\
 					<li><b>Release a Patch</b> to create a copy of Game files with your translated strings. They will be found in the <b>release</b> folder.</li>\
-					<li><b>Unload from Memory</b> if you must do modifications on the local files, using external scripts or whatever.</li>\
+					<li><b>Save and close</b> if you must do modifications on the local files, using external scripts or whatever.</li>\
 				</ul>\
 				<ul>\
 					<li><b>Replace Strings in batch</b> allows you to do batch replacement of case-sensitive strings.</li>\
@@ -2293,7 +2293,7 @@ function project_menu(data = null)
 				post("/api/release", redirect_to_project, null, {name:project.name});
 			});
 		}
-		add_grid_cell(grid, '<img src="assets/images/cancel.png"> Unload from Memory', function(){
+		add_grid_cell(grid, '<img src="assets/images/cancel.png"> Save and close', function(){
 			post("/api/unload", go_main, null, {name:project.name});
 		});
 		if(project.config.version)
