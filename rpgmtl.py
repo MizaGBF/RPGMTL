@@ -1405,10 +1405,10 @@ class RPGMTL():
             payload = {}
         name = payload.get('name', None)
         if name is None:
-            return web.json_response({"result":"ok", "data":{"layout":self.setting_menu, "settings":settings, "descriptions":self.plugin_descriptions}})
+            return web.json_response({"result":"ok", "data":{"layout":self.setting_menu, "settings":self.settings, "descriptions":self.plugin_descriptions}})
         else:
             self.load_project(name)
-            merged = settings | self.projects[name].get("settings", {})
+            merged = self.settings | self.projects[name].get("settings", {})
             return web.json_response({"result":"ok", "data":{"name":name, "config":self.projects[name], "layout":self.setting_menu, "settings":merged, "descriptions":self.plugin_descriptions}})
         
     # /api/update_settings
