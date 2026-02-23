@@ -923,7 +923,7 @@ class RPGMTL():
         self.load_strings(name)
         self.log.info("Patching files for project " + name + "...")
         # patch all the files
-        patch_count, err = self._create_release_patch_files(name, release_folder)
+        patch_count, patch_err = self._create_release_patch_files(name, release_folder)
         # copy edit content
         copy_err = self._create_release_copy_edit_folder(name, release_folder)
         # result
