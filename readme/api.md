@@ -82,24 +82,24 @@ Return in data: menu 'layout', global 'settings', plugin 'description'
 ```
 /api/settings (Project Specific)
 Payload: project 'name'
-Return in data: project 'name', project 'config', menu 'layout', global 'settings', plugin 'description'
+Return in data: project 'name', project 'config', menu 'layout', global 'settings', plugin 'description', 'modified_default' setting keys list
 ```
   
 ```
 /api/update_settings (Global)
-Payload: setting 'key', new setting 'value'
+Payload: setting 'key', new setting 'value', 'modified_default' setting keys list
 ```
   
 ```
 /api/update_settings (Project Specific)
 Payload: project 'name', setting 'key', new setting 'value'
-Return in data: project 'name', project 'config'
+Return in data: project 'name', project 'config', 'modified_default' setting keys list
 ```
   
 ```
 /api/update_settings (Project Specific, reset the setting)
 Payload: project 'name'
-Return in data: project 'name', project 'config'
+Return in data: project 'name', project 'config', 'modified_default' setting keys list
 ```
   
 ```
