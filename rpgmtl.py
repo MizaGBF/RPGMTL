@@ -1058,7 +1058,7 @@ class RPGMTL():
         self : RPGMTL,
         name : str, # project name
         entries : list[dict[str, str]], # [{"original":"STR","translation":"STR","note":"STR"},...]
-        string_list : list[str], # list of strings used to update the base
+        string_list : list[dict], # list of strings from a batch, used to update the base
         update_limit : int = -1 # used to control how many entries to update
     ) -> None:
         if update_limit == 0:
