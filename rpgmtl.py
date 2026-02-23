@@ -80,54 +80,7 @@ class RPGMTL():
         self.log = self.loggers['rpgmtl']
         self.log.info(f"RPGMTL v{self.VERSION} is starting up...")
         # Web server
-        self.app : web.Application = web.Application(middlewares=[self.ip_whitelist])
-        # Autosave system
-        self.app.on_startup.append(self.init_autosave)
-        self.app.on_cleanup.append(self.stop_autosave)
-        # HTTP Routes
-        self.app.router.add_static('/assets/images', path='./assets/images', name='assets')
-        self.app.router.add_static('/assets/plugins', path='./assets/plugins', name='plugins_assets')
-        self.app.router.add_static('/assets/ui', path='./assets/ui', name='ui')
-        self.app.add_routes([
-                web.get('/', self.index), # index.html 
-                
-                web.post('/api/main', self.project_list), # main menu
-                web.post('/api/shutdown', self.shutdown), # stop RPGMTL
-                web.post('/api/update_location', self.select_project_exe), # Game Path selection
-                web.post('/api/new_project', self.create_project), # Create Project
-                web.post('/api/open_project', self.get_project), # Open Project
-                web.post('/api/translator', self.get_translator), # Open Translator menu
-                web.post('/api/update_translator', self.update_translator), # Update Translator
-                web.post('/api/settings', self.get_settings), # Open Settings
-                web.post('/api/update_settings', self.update_setting), # Update Settings
-                web.post('/api/unload', self.unload_project), # Unload project
-                web.post('/api/extract', self.generate_project), # Extract Strings
-                web.post('/api/release', self.release), # Create Translation Patch
-                web.post('/api/patches', self.open_patches), # Open Fix/Patch List
-                web.post('/api/open_patch', self.edit_patch), # Open specific Fix/Patch
-                web.post('/api/update_patch', self.update_patch), # Update specific Fix/Patch
-                web.post('/api/import', self.import_old), # Import Old RPGMTL data
-                web.post('/api/import_rpgmtrans', self.import_rpgmtrans), # Import RPG Maker Trans data
-                web.post('/api/backups', self.backup_list), # Open list of strings.json backups
-                web.post('/api/load_backup', self.load_backup), # Load strings.json backup
-                web.post('/api/browse', self.open_folder), # Browse Folders/Files
-                web.post('/api/ignore_file', self.ignore_file), # Toggle File ignore value
-                web.post('/api/file', self.open_file), # Open File
-                web.post('/api/file_action', self.run_action), # Run file action
-                web.post('/api/update_marker', self.update_marker), # Edit string marker
-                web.post('/api/update_string', self.edit_string), # Edit string values
-                web.post('/api/translate_string', self.translate_string), # Translate a string
-                web.post('/api/translate_file', self.translate_file), # Translate a file
-                web.post('/api/translate_project', self.translate_project), # Translate a project
-                web.post('/api/search_string', self.search_string), # Search a string
-                web.post('/api/local_path', self.local_path), # Browse local files
-                web.post('/api/replace_strings', self.replace_strings), # Browse local files
-                web.post('/api/use_tool', self.use_tool), # Use a tool
-                web.post('/api/bookmark_tool', self.bookmark_tool), # Bookmark a tool
-                web.post('/api/delete_knowledge', self.delete_knowledge), # delete a knowledge base entry
-                web.post('/api/update_knowledge', self.update_knowledge), # update a knowledge base entry
-                web.post('/api/update_notes', self.update_notes), # update project notes
-        ])
+        self.app : web.Application = self.setup_web_server()
         # variables
         self.port : int = 8000 # Port to start the server with
         self.last_directory = os.getcwd() # used for file browsing
@@ -173,66 +126,130 @@ class RPGMTL():
     def trbk(self : RPGMTL, e : Exception) -> str:
         return "".join(traceback.format_exception(type(e), e, e.__traceback__))
 
+    def setup_web_server(self : RPGMTL) -> web.Application:
+        app = web.Application(middlewares=[self.ip_whitelist])
+        # Autosave system
+        app.on_startup.append(self.init_autosave)
+        app.on_cleanup.append(self.stop_autosave)
+        # HTTP Routes
+        app.router.add_static('/assets/images', path='./assets/images', name='assets')
+        app.router.add_static('/assets/plugins', path='./assets/plugins', name='plugins_assets')
+        app.router.add_static('/assets/ui', path='./assets/ui', name='ui')
+        app.add_routes([
+                web.get('/', self.index), # index.html 
+                
+                web.post('/api/main', self.project_list), # main menu
+                web.post('/api/shutdown', self.shutdown), # stop RPGMTL
+                web.post('/api/update_location', self.select_project_exe), # Game Path selection
+                web.post('/api/new_project', self.create_project), # Create Project
+                web.post('/api/open_project', self.get_project), # Open Project
+                web.post('/api/translator', self.get_translator), # Open Translator menu
+                web.post('/api/update_translator', self.update_translator), # Update Translator
+                web.post('/api/settings', self.get_settings), # Open Settings
+                web.post('/api/update_settings', self.update_setting), # Update Settings
+                web.post('/api/unload', self.unload_project), # Unload project
+                web.post('/api/extract', self.generate_project), # Extract Strings
+                web.post('/api/release', self.release), # Create Translation Patch
+                web.post('/api/patches', self.open_patches), # Open Fix/Patch List
+                web.post('/api/open_patch', self.edit_patch), # Open specific Fix/Patch
+                web.post('/api/update_patch', self.update_patch), # Update specific Fix/Patch
+                web.post('/api/import', self.import_old), # Import Old RPGMTL data
+                web.post('/api/import_rpgmtrans', self.import_rpgmtrans), # Import RPG Maker Trans data
+                web.post('/api/backups', self.backup_list), # Open list of strings.json backups
+                web.post('/api/load_backup', self.load_backup), # Load strings.json backup
+                web.post('/api/browse', self.open_folder), # Browse Folders/Files
+                web.post('/api/ignore_file', self.ignore_file), # Toggle File ignore value
+                web.post('/api/file', self.open_file), # Open File
+                web.post('/api/file_action', self.run_action), # Run file action
+                web.post('/api/update_marker', self.update_marker), # Edit string marker
+                web.post('/api/update_string', self.edit_string), # Edit string values
+                web.post('/api/translate_string', self.translate_string), # Translate a string
+                web.post('/api/translate_file', self.translate_file), # Translate a file
+                web.post('/api/translate_project', self.translate_project), # Translate a project
+                web.post('/api/search_string', self.search_string), # Search a string
+                web.post('/api/local_path', self.local_path), # Browse local files
+                web.post('/api/replace_strings', self.replace_strings), # Browse local files
+                web.post('/api/use_tool', self.use_tool), # Use a tool
+                web.post('/api/bookmark_tool', self.bookmark_tool), # Bookmark a tool
+                web.post('/api/delete_knowledge', self.delete_knowledge), # delete a knowledge base entry
+                web.post('/api/update_knowledge', self.update_knowledge), # update a knowledge base entry
+                web.post('/api/update_notes', self.update_notes), # update project notes
+        ])
+        return app
+
+    def _process_plugin_settings(self : RPGMTL, plugin : BasePlugin) -> None:
+        for k, v in plugin.get_setting_infos().items(): # go over returned settings
+            try:
+                if len(v) != 4: # error if invalid format
+                    raise Exception(f"[{plugin.name}] Expected 4 values for setting key {k}")
+                if k in self.setting_key_set: # error if setting key is already set
+                    raise Exception(f"[{plugin.name}] Setting key {k} is already in use by another plugin")
+                self.setting_key_set.add(k)
+                
+                menu_info = [v[0]] # Setting UI text
+                match v[1]: # check type
+                    case "bool":
+                        menu_info.append(v[1]) # add type string
+                        if not isinstance(v[2], bool): # check default value
+                            raise Exception(f"[{plugin.name}] Default value of setting key {k} isn't of type bool")
+                    case "str"|"password"|"text":
+                        menu_info.append(v[1])
+                        if not isinstance(v[2], str):
+                            raise Exception(f"[{plugin.name}] Default value of setting key {k} isn't of type str")
+                    case "num":
+                        menu_info.append(v[1])
+                        if not isinstance(v[2], float) and not isinstance(v[2], int):
+                            raise Exception(f"[{plugin.name}] Default value of setting key {k} isn't of number")
+                    case "display":
+                        menu_info.append(v[1])
+                    case _:
+                        raise Exception(f"[{plugin.name}] Unexpected type for setting key {k}")
+                menu_info.append(v[3]) # add choices
+                # Add setting to list
+                if plugin.name not in self.setting_menu:
+                    self.setting_menu[plugin.name] = {}
+                self.setting_menu[plugin.name][k] = menu_info
+                # Add default value (if missing) to settings.json
+                if k not in self.settings:
+                    self.settings[k] = v[2]
+            except Exception as e:
+                self.log.error(f"Error loading plugin '{plugin.name}' setting infos:\n{self.trbk(e)}")
+        
+    def _process_plugin_actions(self : RPGMTL, plugin : BasePlugin) -> None:
+        for k, v in plugin.get_action_infos().items():
+            try:
+                if len(v) not in (2, 3): # check the format
+                    raise Exception(f"[{plugin.name}] Expected 2 or 3 values for action key {k}")
+                if k in self.action_key_set: # check if key is already set
+                    raise Exception(f"[{plugin.name}] Action key {k} is already in use by another Plugin")
+                self.action_key_set.add(k)
+                # add action
+                if len(v) == 2: # old format without icon
+                    self.log.warning(f"Format of action {k} in plugin {plugin.name} is deprecated. Icon is missing.")
+                    self.actions[k] = [plugin.name, None, v[0], v[1]] # plugin name (for reverse lookup), UI text, no icon and callback
+                else:
+                    self.actions[k] = [plugin.name, v[0], v[1], v[2]] # plugin name (for reverse lookup), icon path, UI text, and callback
+            except Exception as e:
+                self.log.error(f"Error loading plugin '{plugin.name}' action infos:\n{self.trbk(e)}")
+        
+    def _process_tool_actions(self : RPGMTL, plugin : BasePlugin) -> None:
+        for k, v in plugin.get_tool_infos().items():
+            try:
+                if len(v) != 4: # check the format
+                    raise Exception(f"[{plugin.name}] Expected 4 values for tool key {k}")
+                if k in self.tool_key_set: # check if key is already set
+                    raise Exception(f"[{plugin.name}] Action key {k} is already in use by another Plugin")
+                self.tool_key_set.add(k)
+                # add tool
+                self.tools[k] = [plugin.name, v[0], v[1], v[2], v[3]] # plugin name (for reverse lookup), icon path, UI text, callback and params
+            except Exception as e:
+                self.log.error(f"Error loading plugin '{plugin.name}' tool infos:\n{self.trbk(e)}")
+
     # Generic function used by add_plugin and add_translator
     def process_infos(self : RPGMTL, plugin : BasePlugin) -> None:
-        # Process plugin settings
-        for k, v in plugin.get_setting_infos().items(): # go over returned settings
-            if len(v) != 4: # error if invalid format
-                raise Exception(f"[{plugin.name}] Expected 4 values for setting key {k}")
-            if k in self.setting_key_set: # error if setting key is already set
-                raise Exception(f"[{plugin.name}] Setting key {k} is already in use by another plugin")
-            self.setting_key_set.add(k)
-            
-            menu_info = [v[0]] # Setting UI text
-            match v[1]: # check type
-                case "bool":
-                    menu_info.append(v[1]) # add type string
-                    if not isinstance(v[2], bool): # check default value
-                        raise Exception(f"[{plugin.name}] Default value of setting key {k} isn't of type bool")
-                case "str"|"password"|"text":
-                    menu_info.append(v[1])
-                    if not isinstance(v[2], str):
-                        raise Exception(f"[{plugin.name}] Default value of setting key {k} isn't of type str")
-                case "num":
-                    menu_info.append(v[1])
-                    if not isinstance(v[2], float) and not isinstance(v[2], int):
-                        raise Exception(f"[{plugin.name}] Default value of setting key {k} isn't of number")
-                case "display":
-                    menu_info.append(v[1])
-                case _:
-                    raise Exception(f"[{plugin.name}] Unexpected type for setting key {k}")
-            menu_info.append(v[3]) # add choices
-            # Add setting to list
-            if plugin.name not in self.setting_menu:
-                self.setting_menu[plugin.name] = {}
-            self.setting_menu[plugin.name][k] = menu_info
-            # Add default value (if missing) to settings.json
-            if k not in self.settings:
-                self.settings[k] = v[2]
-
-        # Process plugin actions
-        for k, v in plugin.get_action_infos().items(): # same principle
-            if len(v) not in (2, 3): # check the format
-                raise Exception(f"[{plugin.name}] Expected 2 or 3 values for action key {k}")
-            if k in self.action_key_set: # check if key is already set
-                raise Exception(f"[{plugin.name}] Action key {k} is already in use by another Plugin")
-            self.action_key_set.add(k)
-            # add action
-            if len(v) == 2: # old format without icon
-                self.log.warning(f"Format of action {k} in plugin {plugin.name} is deprecated. Icon is missing.")
-                self.actions[k] = [plugin.name, None, v[0], v[1]] # plugin name (for reverse lookup), UI text, no icon and callback
-            else:
-                self.actions[k] = [plugin.name, v[0], v[1], v[2]] # plugin name (for reverse lookup), icon path, UI text, and callback
-
-        # Process tool actions
-        for k, v in plugin.get_tool_infos().items(): # same principle
-            if len(v) != 4: # check the format
-                raise Exception(f"[{plugin.name}] Expected 4 values for tool key {k}")
-            if k in self.tool_key_set: # check if key is already set
-                raise Exception(f"[{plugin.name}] Action key {k} is already in use by another Plugin")
-            self.tool_key_set.add(k)
-            # add tool
-            self.tools[k] = [plugin.name, v[0], v[1], v[2], v[3]] # plugin name (for reverse lookup), icon path, UI text, callback and params
+        self._process_plugin_settings(plugin)
+        self._process_plugin_actions(plugin)
+        self._process_tool_actions(plugin)
 
     # Add a plugin to RPGMTL
     def add_plugin(self : RPGMTL, plugin : plugins.Plugin) -> None:
@@ -655,13 +672,7 @@ class RPGMTL():
                 return (0, totalerr + 1)
         return (0, totalerr)
 
-    # extract strings from backed up files
-    def generate(self : RPGMTL, name : str) -> int:
-        self.save() # save first!
-        self.backup_strings_file(name) # backup strings.json
-        self.load_strings(name) # load strings.json
-        self.log.info("Extracting strings for project " + name + "...")
-        
+    def _generate_init(self : RPGMTL, name : str) -> tuple[dict, dict, dict, int, int]:
         # start
         reverse_strings : dict[str, str] = {}
         str_id : int = 0
@@ -687,6 +698,59 @@ class RPGMTL():
             reverse_strings = {}
             str_id = 0
             self.log.info("projects/" + name + "/strings.json will be generated from scratch")
+        return index, old, reverse_strings, str_id, update_run_flag
+
+    def _generate_cleanup(self : RPGMTL, name : str, index : dict, old : dict) -> dict:
+        # cleanup virtual files still undefined
+        self.log.info("Cleaning config.json of " + name + "...")
+        for f in list(self.projects[name]['files'].keys()):
+            if self.projects[name]['files'][f]["file_type"] == FileType.VIRTUAL_UNDEFINED:
+                self.projects[name]['files'].pop(f)
+        # check old file and retrieve old strings
+        self.log.info("Matching with the previous strings of " + name + "...")
+        for k in index["files"]:
+            if len(index["files"][k]) == 0:
+                continue
+            if k in old:
+                # list new strings
+                A : list[str] = []
+                A_index : list[tuple[int, int]] = []
+                for i, g in enumerate(index["files"][k]):
+                    for j in range(1, len(g)):
+                        A.append(g[j][LocIndex.ID])
+                        A_index.append((i, j))
+                # list old strings
+                B : list[str] = []
+                B_index : list[tuple[int, int]] = []
+                for i, g in enumerate(old[k]):
+                    for j in range(1, len(g)):
+                        B.append(g[j][LocIndex.ID])
+                        B_index.append((i, j))
+                # compare the lists
+                blocks = difflib.SequenceMatcher(a=A, b=B).get_matching_blocks()
+                for block in blocks:
+                    for i in range(block.size):
+                        xyA : tuple[int, int] = A_index[block.a+i]
+                        xyB : tuple[int, int] = B_index[block.b+i]
+                        index["files"][k][xyA[0]][xyA[1]] = old[k][xyB[0]][xyB[1]] # match old to new (to keep individual translations and settings)
+        return index
+
+    def _generate_auto_bookmark_files(self : RPGMTL, name : str, used_plugins : set[str]) -> None:
+        # auto bookmark tools for starting projects
+        self.projects[name]["bookmarked_tools"] = []
+        for p in used_plugins:
+            if p in self.plugins:
+                for t in self.plugins[p].get_tool_infos():
+                    self.projects[name]["bookmarked_tools"].append(t)
+
+    # extract strings from backed up files
+    def generate(self : RPGMTL, name : str) -> int:
+        self.save() # save first!
+        self.backup_strings_file(name) # backup strings.json
+        self.load_strings(name) # load strings.json
+        # init
+        index, old, reverse_strings, str_id, update_run_flag = self._generate_init(name)
+        self.log.info("Extracting strings for project " + name + "...")
         # go over each files
         # ... first to set virtual as undefined
         for f in list(self.projects[name]['files'].keys()):
@@ -753,46 +817,10 @@ class RPGMTL():
             except Exception as e:
                 err += 1
                 self.log.error("Failed to extract strings from " + f + " for project " + name + "\n" + self.trbk(e))
-        if update_run_flag:
-            # cleanup virtual files still undefined
-            self.log.info("Cleaning config.json of " + name + "...")
-            for f in list(self.projects[name]['files'].keys()):
-                if self.projects[name]['files'][f]["file_type"] == FileType.VIRTUAL_UNDEFINED:
-                    self.projects[name]['files'].pop(f)
-            # check old file and retrieve old strings
-            self.log.info("Matching with the previous strings of " + name + "...")
-            for k in index["files"]:
-                if len(index["files"][k]) == 0:
-                    continue
-                if k in old:
-                    # list new strings
-                    A : list[str] = []
-                    A_index : list[tuple[int, int]] = []
-                    for i, g in enumerate(index["files"][k]):
-                        for j in range(1, len(g)):
-                            A.append(g[j][LocIndex.ID])
-                            A_index.append((i, j))
-                    # list old strings
-                    B : list[str] = []
-                    B_index : list[tuple[int, int]] = []
-                    for i, g in enumerate(old[k]):
-                        for j in range(1, len(g)):
-                            B.append(g[j][LocIndex.ID])
-                            B_index.append((i, j))
-                    # compare the lists
-                    blocks = difflib.SequenceMatcher(a=A, b=B).get_matching_blocks()
-                    for block in blocks:
-                        for i in range(block.size):
-                            xyA : tuple[int, int] = A_index[block.a+i]
-                            xyB : tuple[int, int] = B_index[block.b+i]
-                            index["files"][k][xyA[0]][xyA[1]] = old[k][xyB[0]][xyB[1]] # match old to new (to keep individual translations and settings)
-        else:
-            # auto bookmark tools for starting projects
-            self.projects[name]["bookmarked_tools"] = []
-            for p in used_plugins:
-                if p in self.plugins:
-                    for t in self.plugins[p].get_tool_infos():
-                        self.projects[name]["bookmarked_tools"].append(t)
+        if update_run_flag: # we're updating
+            index = self._generate_cleanup(name, index, old)
+        else: # first time creating the project
+            self._generate_auto_bookmark_files(name, used_plugins)
         # set new string table
         self.strings[name] = index
         # increase project version
@@ -836,23 +864,20 @@ class RPGMTL():
         except Exception as e:
             self.log.error("Unexpected error in compute_translated for project " + name + "\n" + self.trbk(e))
 
-    # release game patch
-    def create_release(self : RPGMTL, name : str) -> tuple[int, int]:
-        err : int = 0
-        # clean existing folder
-        release_folder : PurePath = PurePath('projects', name, 'release')
+    def _create_release_cleanup(self : RPGMTL, release_folder : PurePath) -> int:
         if os.path.isdir(release_folder):
             try:
                 shutil.rmtree(release_folder)
                 self.log.info("Cleaned up " + release_folder.as_posix())
             except Exception as e:
                 self.log.error("Failed to properly clean " + release_folder.as_posix() + "\n" + self.trbk(e))
-                err += 1
-        # load strings if not loaded
-        self.load_strings(name)
-        self.log.info("Patching files for project " + name + "...")
+                return 1
+        return 0
+
+    def _create_release_patch_files(self : RPGMTL, name : str, release_folder : PurePath) -> tuple[int, int]:
         # for each file
         patch_count : int = 0
+        err : int = 0
         for f in self.projects[name]["files"]:
             ftype : int = self.projects[name]["files"][f]["file_type"]
             if (self.projects[name]["files"][f]["ignored"]
@@ -864,7 +889,10 @@ class RPGMTL():
                 patch_count += 1
             if r[1] > 0:
                 err += 1
-        # Copy edit content
+        return patch_count, err
+
+    def _create_release_copy_edit_folder(self : RPGMTL, name : str, release_folder : PurePath) -> int:
+        err : int = 0
         edit_folder : PurePath = PurePath('projects', name, 'edit')
         if os.path.isdir(edit_folder):
             try:
@@ -880,6 +908,26 @@ class RPGMTL():
             except:
                 self.log.warning("Failed to copy the content of the edit folder for project " + name)
                 err += 1
+        return err
+
+    # release game patch
+    def create_release(self : RPGMTL, name : str) -> tuple[int, int]:
+        patch_count : int
+        cleanup_err : int
+        patch_err : int
+        copy_err : int
+        release_folder : PurePath = PurePath('projects', name, 'release')
+        # clean existing folder
+        cleanup_err : bool = self._create_release_cleanup(release_folder)
+        # load strings if not loaded
+        self.load_strings(name)
+        self.log.info("Patching files for project " + name + "...")
+        # patch all the files
+        patch_count, err = self._create_release_patch_files(name, release_folder)
+        # copy edit content
+        copy_err = self._create_release_copy_edit_folder(name, release_folder)
+        # result
+        err : int = cleanup_err + patch_err + copy_err
         if patch_count > 0:
             self.log.info(f"Patched {patch_count} files for project {name} with {err} errors, available in the release folder")
         else:
