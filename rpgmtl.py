@@ -1073,7 +1073,7 @@ class RPGMTL():
             for s in string_list:
                 if entry["original"] in s["original"]:
                     entry["occurence"] += 1
-                    entry["last_seen"] += 0
+                    entry["last_seen"] = 0
                     found = True
                     self.modified[name] = True
                     break
