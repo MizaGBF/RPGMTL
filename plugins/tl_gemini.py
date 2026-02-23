@@ -132,6 +132,7 @@ class TLGemini(TranslatorPlugin):
             "gemini_token_limit": ["Set the minimum token count per translation batch (Minimum is 2000)", "num", 30000, None],
             "gemini_temperature": ["Set the Model Temperature (Higher is more creative but less predictable)", "num", 0, None],
             "gemini_extra_context": ["Set extra informations or commands for the AI", "text", "", None],
+            "gemini_knowledge_limit": ["Max number of AI Knowledge update in one request (Negative means unlimited)", "num", 10, None],
         }
 
     def _init_translator(self : TLGemini, settings : dict[str, Any]) -> None:
@@ -145,7 +146,13 @@ class TLGemini(TranslatorPlugin):
         except Exception as e:
              self.owner.log.error("[TL Gemini] Error in '_init_translator':\n" + self.owner.trbk(e))
 
-    def parse_model_output(self : TLGemini, text : str, name : str, input_batch : dict[str, Any]) -> dict[str, str]:
+    def parse_model_output(
+        self : TLGemini,
+        text : str,
+        name : str,
+        input_batch : dict[str, Any],
+        settings : dict[str, Any]
+    ) -> dict[str, str]:
         # build set of string id from batch for validation
         id_set : set[str] = set()
         string_list : list[dict] = []
@@ -174,7 +181,7 @@ class TLGemini(TranslatorPlugin):
                     parsed[string["id"]] = string["translation"]
         # updated knowledge base
         if "new_knowledge" in output:
-            self.owner.update_ai_knowledge_base(name, output["new_knowledge"], string_list)
+            self.owner.update_ai_knowledge_base(name, output["new_knowledge"], string_list, settings["gemini_knowledge_limit"])
         return parsed
     
     def _format_batch_to_text(
@@ -359,7 +366,7 @@ class TLGemini(TranslatorPlugin):
                     self.format_batch(batch, settings["gemini_token_limit"])[0],
                     settings
                 )
-                data : dict[str, str] = self.parse_model_output(output, name, batch)
+                data : dict[str, str] = self.parse_model_output(output, name, batch, settings)
                 if len(data) == 1:
                     return data[list(data.keys())[0]]
                 else:
@@ -389,7 +396,7 @@ class TLGemini(TranslatorPlugin):
             while retry < 3:
                 try:
                     output : str = await self.ask_gemini(name, input_batch, settings)
-                    result = result | self.parse_model_output(output, name, batch)
+                    result = result | self.parse_model_output(output, name, batch, settings)
                     break
                 except Exception as e:
                     retry += 1
