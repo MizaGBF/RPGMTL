@@ -686,7 +686,7 @@ document.addEventListener('keydown', function(e)
 			}
 			break;
 		}
-		case " ":
+		case " ": // Space
 		{
 			// next untranslated
 			if(all_allowed && e.ctrlKey && !e.altKey && navigables.length > 0)
@@ -715,6 +715,28 @@ document.addEventListener('keydown', function(e)
 								focus_and_scroll(navigables[navigable_index]);
 								break;
 							}
+						}
+						i = (i + 1) % navigables.length;
+					}
+					e.stopPropagation();
+					e.preventDefault();
+				}
+			}
+			// next local/unlinked
+			else if(all_allowed && e.ctrlKey && e.altKey && !e.shiftKey && navigables.length > 0)
+			{
+				let params = new URLSearchParams(window.location.search)
+				if(params.has("page") && params.get("page") == "file")
+				{
+					let i = (navigable_index + 1) % navigables.length;
+					console.log(i)
+					while(i != navigable_index)
+					{
+						if(navigables[i].classList.contains("unlinked"))
+						{
+							navigable_index = i;
+							focus_and_scroll(navigables[navigable_index]);
+							break;
 						}
 						i = (i + 1) % navigables.length;
 					}
@@ -3217,6 +3239,7 @@ function open_file(data)
 					<li><b>Click</b> or press <b>Enter</b> on the translated string (on the right) to edit it.</li>\
 					<li><b>Ctrl+Space</b> to scroll to the next untranslated <b>enabled</b> string.</li>\
 					<li><b>Shift+Ctrl+Space</b> to scroll to the next untranslated string.</li>\
+					<li><b>Alt+Ctrl+Space</b> to scroll to the next unlinked string.</li>\
 					<li>On top, if available, you'll find <b>Plugin Actions</b> for this file.</li>\
 					<li>You'll also find the <b>Translate the File</b> button.</li>\
 				</ul>\
