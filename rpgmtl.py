@@ -432,18 +432,15 @@ class RPGMTL():
     # check the projects folder and return a list of folder containing config.json files inside
     def load_project_list(self : RPGMTL) -> list[str]:
         try:
-            if not os.path.isdir('projects'): # create folder if not found
-                os.mkdir('projects')
-            dirs : list[str] = []
-            for d in os.walk('projects'): # walk inside
-                try:
-                    p = PurePath(d[0])
-                    if os.path.isfile(p / 'config.json'): # take note of folders with a config.json inside
-                        dirs.append(Path(*p.parts[1:]).as_posix())
-                except:
-                    pass
-            return dirs
-        except:
+            base_dir = Path('projects')
+            base_dir.mkdir(exist_ok=True) # Creates the folder only if it doesn't exist
+            # Check only direct subdirectories of 'projects'
+            return [
+                folder.name for folder in base_dir.iterdir()
+                if folder.is_dir() and (folder / 'config.json').is_file()
+            ]
+        except Exception as e:
+            self.log.error("Error loading project list:\n" + self.trbk(e))
             return []
 
     # function to search a game executable
