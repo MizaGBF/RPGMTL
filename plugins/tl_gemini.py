@@ -67,8 +67,7 @@ The following is an example of a valid Japanese to English translation.
 - Input snippet:
 # Game Script.json
 ## Message Box
-{"id":"5-1","translate":true,"original":"【ディーナ】","translation":"【Dina】"}
-{"id":"5-2","translate":true,"original":"「ねえねえ…今度はボクあれに乗りたいなぁ！」"}
+{"id":"5-1","translate":true,"original":"【ディーナ】\n「ねえねえ…今度はボクあれに乗りたいなぁ！」","translation":"【Dina】\n\"Hey, hey... This time, I want to ride that!\""}
 ## Message Box
 {"id":"6-1","translate":true,"original":"今日はディーナと遊園地に来ている。"}
 {"id":"6-2","translate":false,"original":"…子供みたいに無邪気にはしゃぐディーナを見ていると、","translation":"...When I see Dina frolicking innocently like a child,"}
@@ -78,7 +77,6 @@ The following is an example of a valid Japanese to English translation.
 - Valid output example:
 {
     "translations":[
-        {"id": "5-2", "translation": "\"Hey, hey... This time, I want to ride that!\""},
         {"id": "6-1", "translation": "Today, I'm at the amusement park with Dina."},
         {"id": "6-3", "translation": "there are times I wonder if this one is really a demon."}
     ],
