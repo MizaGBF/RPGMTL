@@ -615,5 +615,9 @@ Open `menu.py`, look for `from_lsb_command(` and the related exception.
 Insert a `continue` before.  
   
 For `Cannot add duplicate choices`:  
-Open `menu.py`, look for `add_choice(` and the related exception.  
-Insert a `return` before.  
+Open `menu.py`, look for `add_choice(` and the related exception in the `TextSelectionMenu` class.  
+Comment out:
+```python
+# if choice.text in self._texts:
+    # raise ValueError("Cannot add duplicate choices")
+```
