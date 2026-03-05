@@ -267,11 +267,13 @@ li {
 	font-size: 22px;
 	line-height: 22px;
 	/* background grid */
-	background-size: 1ch 22px;
-	background-position: 10px 9px; /* match padding, -1 on height */
-	background-image: 
+	background-size: 50ch 22px, 1ch 22px, 1ch 22px; /* match the gradients below */
+	background-position: 9px 9px; /* match padding, -1 */
+	background-image:
+	linear-gradient(to right, #88c 1px, transparent 1px),
     linear-gradient(to right, #ccc 1px, transparent 1px),
     linear-gradient(to bottom, #ccc 1px, transparent 1px);
+	background-repeat: repeat;
 }
 
 #edit-times {
