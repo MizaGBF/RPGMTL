@@ -212,6 +212,7 @@ li {
 	border-color: #000000;
 	vertical-align: middle;
 	display:inline-block;
+	cursor: pointer;
 }
 
 .interact:hover {
@@ -233,12 +234,14 @@ li {
 	margin-bottom: 0px;
 	padding-top: 0px;
 	padding-bottom: 0px;
+	cursor: pointer;
 }
 
 .text-button {
 	width: auto;
 	min-height:34px;
 	max-height:34px;
+	cursor: pointer;
 }
 
 #edit-ori {
@@ -258,8 +261,17 @@ li {
 	border-radius: 4px;
 	background-color: #eeeeee;
 	outline: none;
-	font-size: 20px;
 	resize: none;
+	cursor: pointer;
+	font-family: monospace; /* import for characters to be exactly 1ch wide */
+	font-size: 20px;
+	line-height: 20px;
+	/* background grid */
+	background-size: 1ch 20px;
+	background-position: 10px 9px; /* match padding, -1 on height */
+	background-image: 
+    linear-gradient(to right, #ccc 1px, transparent 1px),
+    linear-gradient(to bottom, #ccc 1px, transparent 1px);
 }
 
 #edit-times {
