@@ -263,7 +263,7 @@ li {
 	outline: none;
 	resize: none;
 	cursor: pointer;
-	font-family: monospace; /* import for characters to be exactly 1ch wide */
+	font-family: monospace; /* important for characters to be exactly 1ch wide */
 	font-size: 20px;
 	line-height: 20px;
 	/* background grid */
