@@ -143,6 +143,7 @@ RPGMTL is entirely usable without mouse:
 In the file page:  
 - `Ctrl+Space` to go the next enabled untranslated string.  
 - `Ctrl+Shift+Space` to go the next untranslated string.  
+- `Ctrl+Alt+Space` to go the next unlinked string.  
 - `Ctrl+H` to go back to the home page, if available.  
 - `Ctrl+P` to go back to the project page, if available.  
 - `Ctrl+R` to reload the page, if available.  
