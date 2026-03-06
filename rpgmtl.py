@@ -1232,14 +1232,14 @@ class RPGMTL():
         command.add_argument('-s', '--https', help="provide paths to your SSL certificate and key", nargs=2, default=None)
         command.add_argument('-n', '--http', help="clear SSL certificate settings and force HTTP", action='store_const', const=True, default=False, metavar='FILES')
         command.add_argument('-i', '--ip', help="set the IP filter status. Add 1, on, enable, enabled, 0, off, disable or disabled to set it.", nargs=1, default=None, metavar='STATE')
-        command.add_argument('-d', '--debug', help="remove some strings from the standard output for clarity", action='store_const', const=True, default=False, metavar='')
+        command.add_argument('-v', '--verbose', help="add incoming HTTP requests to the logging and output", action='store_const', const=True, default=False, metavar='')
         args : argparse.Namespace = parser.parse_args()
         
         # set server port
         self.port = args.port[0]
         
         # Remove aiohttp.access
-        if args.debug:
+        if not args.verbose:
             self.loggers['aiohttp.access'].propagate = False
         
         # Check HTTPS/SSL
