@@ -209,7 +209,10 @@ To disable it at some point in time:
 ```console
 python rpgmtl.py --ip off
 ```  
-Run `python rpgmtl.py --help` for alternative options.  
+  
+### Parameter Help  
+  
+Simply `python rpgmtl.py --help`.  
   
 ### Disable a Plugin  
   
