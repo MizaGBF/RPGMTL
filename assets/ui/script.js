@@ -2624,7 +2624,7 @@ function browse_files(data)
 			if(progress.folder.disabled)
 				completion_text += " (" + progress.folder.disabled + " ignored Strings)";
 		}
-		completion_text += "<br><i><small>(Progress isn't live updated.)</small></i>";
+		completion_text += "<br><i><small>(Use the refresh button to update)</small></i>";
 		completion.innerHTML = completion_text;
 		
 		update_main(fragment).then(() => {
