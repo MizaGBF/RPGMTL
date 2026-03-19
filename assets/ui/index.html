@@ -4,16 +4,18 @@
 	<title>RPGMTL</title>
 	<meta charset="utf-8">
     <link rel="stylesheet" href="assets/ui/style.css"/>
-    <script src="assets/ui/script.js"></script>
+    <script src="assets/ui/interface.js"></script>
+    <script src="assets/ui/util.js"></script>
+    <script src="assets/ui/components.js"></script>
 	<link rel="icon" type="image/x-icon" href="assets/ui/favicon.svg"/>
 </head>
-<body onload="init();">
+<body onload="rpgmtl = new RPGMTL_Interface(); rpgmtl.init();">
 	<div id="loading">
 		<div id="loader-animation" class="loader"></div><br>
 		<div id="loader-text"></div>
 	</div>
 	
-	<div id="help" style="display:none;" onclick="close_help();">
+	<div id="help" style="display:none;" onclick="rpgmtl.help.close();">
 	</div>
 
 	<div id="top">
@@ -39,14 +41,14 @@
 		<span class="block center">
 			<div class="centered">
 				<div class="static button" id="string-length">0</div>
-				<div class="interact button grey" id="edit-btn-trash" title="Delete" onclick="apply_string(true);"><img src="assets/images/trash.png"></div>
+				<div class="interact button grey" id="edit-btn-trash" title="Delete" onclick="rpgmtl.apply_string(true);"><img src="assets/images/trash.png"></div>
 				<div class="control-spacer inline"></div>
-				<div class="interact button purple" id="edit-btn-search" title="Search Original" onclick="search_this();"><img src="assets/images/search.png"></div>
-				<div class="interact button cyan" id="edit-btn-copy" title="Copy Original" onclick="copy_string();"><img src="assets/images/copy.png"></div>
-				<div class="interact button gold" id="edit-btn-translate" title="Translate" onclick="translate_string();"><img src="assets/images/translate.png"></div>
+				<div class="interact button purple" id="edit-btn-search" title="Search Original" onclick="rpgmtl.search_this();"><img src="assets/images/search.png"></div>
+				<div class="interact button cyan" id="edit-btn-copy" title="Copy Original" onclick="rpgmtl.copy_string();"><img src="assets/images/copy.png"></div>
+				<div class="interact button gold" id="edit-btn-translate" title="Translate" onclick="rpgmtl.translate_string();"><img src="assets/images/translate.png"></div>
 				<div class="control-spacer inline"></div>
-				<div class="interact button red" id="edit-btn-close" title="Cancel" onclick="cancel_string();"><img src="assets/images/forbid.png"></div>
-				<div class="interact button green" id="edit-btn-save" title="Confirm and Apply" onclick="apply_string();"><img src="assets/images/confirm.png"></div>
+				<div class="interact button red" id="edit-btn-close" title="Cancel" onclick="rpgmtl.cancel_string();"><img src="assets/images/forbid.png"></div>
+				<div class="interact button green" id="edit-btn-save" title="Confirm and Apply" onclick="rpgmtl.apply_string();"><img src="assets/images/confirm.png"></div>
 			</div>
 		</span>
 	</div>

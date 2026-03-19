@@ -24,7 +24,7 @@ html, body {
 }
 
 li {
-	text-align: justify
+	text-align: left
 }
 
 #top {
@@ -52,7 +52,7 @@ li {
 	left: 0;
 	right: 0;
 	z-index: 0;
-	overflow-y:auto;
+	overflow-y: auto;
 	max-height: calc(100vh - 50px);
 	overflow-x: hidden;
 	scrollbar-color: white black;
