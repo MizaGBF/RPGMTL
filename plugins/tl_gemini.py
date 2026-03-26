@@ -225,6 +225,8 @@ class TLGemini(TranslatorPlugin):
         return batch_texts
 
     def format_batch(self : TLGemini, batch : dict[str, Any], token_limit : int) -> list[str]:
+        if token_limit < 2000:
+            token_limit = 2000
         inter : list[dict] = []
         char_count : int = 0
         for gi, group in enumerate(batch["groups"]):
