@@ -130,7 +130,7 @@ class TLGemini(TranslatorPlugin):
     def get_setting_infos(self : TLGemini) -> dict[str, list]:
         return {
             "gemini_api_key": ["Set the Google Studio <a href=\"https://aistudio.google.com/apikey\">API Key</a> (Don't share your settings/config.json!)", "password", "", None],
-            "gemini_model": ["Set the Gemini Model (<a href=\"https://aistudio.google.com/usage?timeRange=last-28-days&tab=rate-limit\">Models and Rate Limits</a>)", "str", "gemini-2.5-flash", None],
+            "gemini_model": ["Set the Gemini Model (<a href=\"https://aistudio.google.com/usage?timeRange=last-28-days&tab=rate-limit\">Models and Rate Limits</a>)", "str", "gemini-3-flash-preview", None],
             "gemini_src_language": ["Set the Source Language", "str", "Japanese", None],
             "gemini_target_language": ["Set the Target Language", "str", "English", None],
             "gemini_rate_limit": ["Set the minimum wait time between requests (in seconds)", "num", 12, None],
