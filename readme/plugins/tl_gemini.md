@@ -12,7 +12,7 @@ Do note that the plugin can be slow, especially on the free tier.
 This plugin is best suited for Batch Translation (using the `Translate this File` or `Batch Translate` buttons).  
   
 You can generate an API key at https://aistudio.google.com/apikey  
-Recommended model is `gemini-3-flash-preview`.  
+Recommended model is `gemini-3-flash-lite-preview`.  
   
 You can also use experimental preview models when available.  
 Consult the changelog here: https://ai.google.dev/gemini-api/docs/changelog  
