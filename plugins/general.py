@@ -62,6 +62,8 @@ class GeneralActions(Plugin):
                         "_t_question":["？ by ?", "bool", True, None],
                         "_t_bracket1":["【 by [", "bool", False, None],
                         "_t_bracket2":["】 by ]", "bool", False, None],
+                        "_t_parenthesis1":["（ by (", "bool", False, None],
+                        "_t_parenthesis2":["） by )", "bool", False, None],
                         "_t_accent":["Latin Accented Letters", "bool", False, None],
                         "_t_file_ext":["Only on files ending with (Separate by ,)(Optional):", "str", "", None],
                     },
@@ -177,6 +179,8 @@ class GeneralActions(Plugin):
             "_t_question" : (("？"), "?"),
             "_t_bracket1" : (("【"), "["),
             "_t_bracket2" : (("】"), "]"),
+            "_t_parenthesis1": (("（"), "("),
+            "_t_parenthesis2": (("）"), ")"),
             "_t_accent" : ((""), ""),
         }
         try:
