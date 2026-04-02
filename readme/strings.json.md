@@ -6,7 +6,7 @@
   
 ```json
 {
-    "version": 1,
+    "version": 2,
     "strings": {
         "STRING_ID": [
             "ORIGINAL_STRING",

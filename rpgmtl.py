@@ -63,6 +63,7 @@ class RPGMTL():
     VERSION = "3.29"
     CHILDREN_FILE_ID = "@__children_file__@:"
     HISTORY_LIMIT = 10
+    CURRENT_STRING_VERSION = 2
 
     def __init__(self : RPGMTL) -> None:
         # Setting up logging
@@ -609,7 +610,12 @@ class RPGMTL():
             for sid in strings["strings"]:
                 # adding color marker
                 strings["strings"][sid].insert(GloIndex.COLOR, IntBool.FALSE)
-        strings["version"] = 1
+        if ver < 2:
+            for sid in strings["strings"]:
+                # remove bugged extra integer
+                if len(strings["strings"][sid]) > 4 and strings["strings"][sid][3] == 0:
+                    strings["strings"][sid].pop(3)
+        strings["version"] = self.CURRENT_STRING_VERSION
         return strings
 
     # backup a project strings.json file and backups
@@ -689,7 +695,8 @@ class RPGMTL():
             self.log.warning("The following error occured while loading existing strings (Ignore if it's a fresh project):\n" + self.trbk(e))
             index = {
                 "strings":{},
-                "files":{}
+                "files":{},
+                "version":self.CURRENT_STRING_VERSION
             }
             old = {}
             reverse_strings = {}
