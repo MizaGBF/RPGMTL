@@ -241,7 +241,7 @@ class YPF(Plugin):
     def __init__(self : YPF):
         super().__init__()
         self.name : str = "YPF"
-        self.description : str = " v1.3\nExtract content from YPF files"
+        self.description : str = " v1.4\nExtract content from YPF files"
         self.related_tool_plugins : list[str] = [self.name]
 
     def extract(
@@ -257,12 +257,13 @@ class YPF(Plugin):
             ybn_keys : dict[str, int] = {}
             ybn_msgs : dict[int, int] = {}
             ybn_calls : dict[int, int] = {}
+            archive_name : str = full_path.stem
             with open(full_path, mode="rb") as stream:
                 # Extract the header
                 ypfh = YPFHeader(stream)
                 # Go through the files
                 for entry in ypfh.archived_files:
-                    file_path : PurePath = target_dir / entry.file_name
+                    file_path : PurePath = target_dir / archive_name / entry.file_name
                     if file_path.suffix.lower() not in (".ybn",):
                         continue
                     # Validate the file
@@ -307,7 +308,7 @@ class YPF(Plugin):
                                         ybn_calls[call_op] = ybn_calls.get(call_op, 0) + 1
                 # we take note of most commonly used key, msg_opcode and call_opcode in a separate, commong json file
                 if "YBN" in self.owner.plugins:
-                    with open(target_dir / "ypf.json", mode="w", encoding="utf-8") as f:
+                    with open(target_dir / archive_name / "ypf.json", mode="w", encoding="utf-8") as f:
                         d = {
                             "key":None,
                             "msg":None,
