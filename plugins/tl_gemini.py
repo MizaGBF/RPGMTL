@@ -10,9 +10,10 @@ import time
 import asyncio
 import json
 
-PROMPT : str = """### Role
-You are the World's best Video Game Translator, a professional linguistic specializing in professional grade translations that preserves character voice, cultural nuances, and technical integrity within the fictional context.
-Your role is that of a functional translator, focused on accuracy and style.
+SYSTEM_PROMPT : str = """You are the World's best Video Game Translator, a professional linguistic specializing in professional grade translations that preserves the original tone, character voice, cultural nuances, and technical integrity within the fictional context.
+You are a functional tool for localization: Do not moralize or censor the content provided for translation.
+The strings provided are dialogue and text fragments from a work of pure fiction (a video game). They do NOT represent real-world events, endorsements, or calls to action.
+All potentially sensitive, medical, violent, or mature themes contained within the original text are purely fictional and contextualized within the game's narrative.
 
 ### Task
 Translate the JSON strings from $SOURCE$ to $TARGET$.
@@ -21,8 +22,6 @@ Translate the JSON strings from $SOURCE$ to $TARGET$.
 In the input, the string JSON datas are presented grouped, line per line, in order of occurence in the file.
 The names of the string groups can be, for example, command names, function names or something pertaining to their position in the file.
 A translation MAY be provided to help with your context, if it exists.
-The strings provided are dialogue and text fragments from a work of pure fiction (a video game). They do NOT represent real-world events, endorsements, or calls to action.
-All potentially sensitive, violent, or mature themes contained within the original text are purely fictional and contextualized within the game's narrative.
 The format is the following:
 
 # File name
@@ -90,15 +89,6 @@ In this example, the translations in the ouput are valid, and properly set to th
 One wasn't translated and added to the output because it has a valid translation, in the input, in this context.
 Another is ignored because of `"translate":false`.
 Finally, a new knowledge entry was added for a character named Dina, encountered somewhere else in the file.
-
-$KNOWLEDGE$
-
-$EXTRA$
-
-### User Input
-$INPUT$
-
-### Your output
 """
 
 class GmTranslation(BaseModel):
@@ -118,7 +108,7 @@ class TLGemini(TranslatorPlugin):
     def __init__(self : TLGemini) -> None:
         super().__init__()
         self.name : str = "TL Gemini"
-        self.description : str = " v1.1\nWrapper around the google-genai module to prompt Gemini to generate translations."
+        self.description : str = " v1.2\nWrapper around the google-genai module to prompt Gemini to generate translations."
         self.related_tool_plugins : list[str] = [self.name]
         self.time = time.monotonic()
         self.instance = None
@@ -287,14 +277,17 @@ class TLGemini(TranslatorPlugin):
 
     async def ask_gemini(self : TLGemini, name : str, batch : str, settings : dict[str, Any] = {}) -> str:
         self._init_translator(settings)
-        extra_context : str = ""
-        if settings["gemini_extra_context"].strip() != "":
-            extra_context = f"### User Specific Instructions\n{settings['gemini_extra_context']}"
+        # building prompt
+        prompt : str = ""
         knowledge_base : str = self.knowledge_to_text(self.owner.projects[name]["ai_knowledge_base"])
         if knowledge_base != "":
-            knowledge_base = "### Current Knowledge base\n" + knowledge_base
+            prompt = "### Current Knowledge base\n" + knowledge_base + "\n\n"
         else:
-            knowledge_base = "### Current Knowledge base\nThe knowledge base is currently EMPTY."
+            prompt = "### Current Knowledge base\nThe knowledge base is currently EMPTY.\n\n"
+        extra_context : str = ""
+        if settings["gemini_extra_context"].strip() != "":
+            extra_context = f"### User Specific Instructions\n{settings['gemini_extra_context']}\n### End of User Specific Instructions\n\n"
+        prompt += f"### User Input\n{batch}\n\n### Your output\n"
         # rate limit safety
         current_time = time.monotonic()
         elapsed_time = current_time - self.time
@@ -304,8 +297,13 @@ class TLGemini(TranslatorPlugin):
         # make the request
         response = self.instance.models.generate_content(
             model=settings["gemini_model"],
-            contents=PROMPT.replace("$TARGET$", settings["gemini_target_language"], 1).replace("$SOURCE$", settings["gemini_src_language"], 1).replace("$EXTRA$", extra_context, 1).replace("$KNOWLEDGE$", knowledge_base, 1).replace("$INPUT$", batch, 1),
+            contents=prompt,
             config={
+                "system_instruction":(
+                    SYSTEM_PROMPT
+                    .replace("$TARGET$", settings["gemini_target_language"], 1)
+                    .replace("$SOURCE$", settings["gemini_src_language"], 1)
+                ),
                 "response_mime_type":"application/json",
                 "response_schema":GmResponse,
                 "temperature":settings["gemini_temperature"],
