@@ -255,7 +255,8 @@ class TLGemini(TranslatorPlugin):
                         tstart : int = max(0, i - 10)
                         searching_start = False
                         for j in range(tstart, i + 1):
-                            char_count += len(inter[j]["dump"]) + 1
+                            if "dump" in inter[j]:
+                                char_count += len(inter[j]["dump"]) + 1
                 elif "json" in inter[i]:
                     char_count += len(inter[i]["dump"]) + 1
                     if i == len(inter) -1 or char_count // 4 > token_limit - 50:
