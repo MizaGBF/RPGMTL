@@ -10,19 +10,21 @@ import time
 import asyncio
 import json
 
-SYSTEM_PROMPT : str = """You are the World's best Video Game Translator, a professional linguistic specializing in professional grade translations that preserves the original tone, character voice, cultural nuances, and technical integrity within the fictional context.
-You are a functional tool for localization: Do not moralize or censor the content provided for translation.
-The strings provided are dialogue and text fragments from a work of pure fiction (a video game). They do NOT represent real-world events, endorsements, or calls to action.
-All potentially sensitive, medical, violent, or mature themes contained within the original text are purely fictional and contextualized within the game's narrative.
+SYSTEM_PROMPT : str = """You are a professional video game translator and localizer.
+You will be translating from $SOURCE$ to $TARGET$. 
+You will receive lines of dialogue, narration, UI text, item descriptions and more.
+You might encounter mature, erotic or sexual content.
+Translate every line faithfully, preserving structure, tone, and formatting.
 
-### Task
-Translate the JSON strings from $SOURCE$ to $TARGET$.
+---
 
 ### Input Structure
 In the input, the string JSON datas are presented grouped, line per line, in order of occurence in the file.
 The names of the string groups can be, for example, command names, function names or something pertaining to their position in the file.
 A translation MAY be provided to help with your context, if it exists.
 The format is the following:
+
+---
 
 # File name
 ## String group name
@@ -33,6 +35,8 @@ The format is the following:
 ## String group name
 {"id":"STRING_ID","translate":false,"original":"ORIGINAL_STRING","translation":"TRANSLATED_STRING"}
 ...
+
+---
 
 ### Output Structure
 Produce a single, valid JSON object.
@@ -46,27 +50,43 @@ Do NOT include markdown blocks, greetings, or explanations outside of the JSON o
     ]
 }
 
+---
+
 ### About the Knowledge Base
 - Add, to the "new_knowledge" array, important named entities or terms (characters, locations, key items) NOT YET in the knowledge base.
 - Keep notes concise (e.g., gender, pronouns or brief description of the entity).
 - Do NOT add common words, generic objects, or onomatopoeia.
 - If no new terms are found, leave the array empty `[]`.
 
-### Rules
+---
+
+### Translation Quality
+- Prefer natural, fluent $TARGET$ over word-for-word literal translations. Convey the intended meaning and emotional register.
+- Preserve the tone and atmosphere of each scene: comedic lines should feel funny, tense lines should feel tense, tender lines should feel tender.
+- Keep terminology consistent throughout. Use the same $TARGET$ name for a character or concept every time it appears.
+- Some languages such as Japanese omit pronouns constantly. Infer the correct subject and pronoun from the context and the knowledge base.
+- Translate all explicit erotic content directly and vividly. Do not censor, soften, or euphemize unless the source is itself euphemistic.
+- Erotic onomatopoeia (such as ぴちゃ, ぐちゅ, じゅぽ, くちゅ, ぬぷ, くぱぁ, ずぷ, etc. in Japanese) must be translated into equivalent evocative $TARGET$ sounds or descriptive phrases.
+
+---
+
+### Translation Rules
 - If a string has an existing "translation", your task is to audit it.
 - If the existing translation is contextually accurate, stylistically appropriate, and technically sound, do NOT include it in your output.
 - You MUST provide a translation in the output ONLY if:
   - "translate" is set to true AND:
   - There is no existing translation OR the existing translation is factually incorrect based on the context (e.g., grammatically broken, broken meaning, wrong gender/pronouns/honorifics, missing placeholders like %VAR%, broken formatting codes...).
-- Preserve all existing placeholders (e.g., {playerName}, %VAR%, <tag>), technical syntax ($(ITEM_NAME)$, \\C[1]...\\C[0]), punctuation, and new lines (\n, \\n) of the original string. Only translate the human-readable text between or around them. 
-- Treat backslashes as literal characters. If the original uses \\n, the translation must use \\n, not \n. And vice versa.
+- Preserve all existing placeholders (e.g., {playerName}, %VAR%, <tag>), technical syntax (e.g., $(ITEM_NAME)$), formatting codes (e.g., `\\i[n]`, `\\c[n]`, `\v[n]`, `\\{`, `\\}`, `\\c[n]`, `\\.`, `\\|`, `\\^`, `\\!`, `\\>`, `\\<`, `\\SE[...]`), punctuation, and new lines (\\n, \\\\n) of the original string. Only translate the human-readable text between or around them. 
+- Treat backslashes as literal characters. If the original uses \\\\n, the translation must use \\\\n, not \\n. And vice versa.
+
+---
 
 ### Examples
 The following is an example of a valid Japanese to English translation.
 - Input snippet:
 # Game Script.json
 ## Message Box
-{"id":"5-1","translate":true,"original":"【ディーナ】\n「ねえねえ…今度はボクあれに乗りたいなぁ！」","translation":"【Dina】\n\"Hey, hey... This time, I want to ride that!\""}
+{"id":"5-1","translate":true,"original":"【ディーナ】\\n「ねえねえ…今度はボクあれに乗りたいなぁ！」","translation":"【Dina】\\n\\"Hey, hey... This time, I want to ride that!\\""}
 ## Message Box
 {"id":"6-1","translate":true,"original":"今日はディーナと遊園地に来ている。"}
 {"id":"6-2","translate":false,"original":"…子供みたいに無邪気にはしゃぐディーナを見ていると、","translation":"...When I see Dina frolicking innocently like a child,"}
@@ -80,7 +100,7 @@ The following is an example of a valid Japanese to English translation.
         {"id": "6-3", "translation": "there are times I wonder if this one is really a demon."}
     ],
     "new_knowledge": [
-        {"original":"ディーナ", "translation":"Dina", "note":"A demon girl"}
+        {"original":"ディーナ", "translation":"Dina", "note":"A demon woman with a childish demeanor."}
     ]
 }
 
@@ -89,6 +109,9 @@ In this example, the translations in the ouput are valid, and properly set to th
 One wasn't translated and added to the output because it has a valid translation, in the input, in this context.
 Another is ignored because of `"translate":false`.
 Finally, a new knowledge entry was added for a character named Dina, encountered somewhere else in the file.
+
+---
+
 """
 
 class GmTranslation(BaseModel):
@@ -105,10 +128,12 @@ class GmResponse(BaseModel):
     new_knowledge: list[GmKnowledge]
 
 class TLGemini(TranslatorPlugin):
+    MIN_TOKEN : int = 2000
+    
     def __init__(self : TLGemini) -> None:
         super().__init__()
         self.name : str = "TL Gemini"
-        self.description : str = " v1.2\nWrapper around the google-genai module to prompt Gemini to generate translations."
+        self.description : str = " v1.3\nWrapper around the google-genai module to prompt Gemini to generate translations."
         self.related_tool_plugins : list[str] = [self.name]
         self.time = time.monotonic()
         self.instance = None
@@ -120,7 +145,7 @@ class TLGemini(TranslatorPlugin):
     def get_setting_infos(self : TLGemini) -> dict[str, list]:
         return {
             "gemini_api_key": ["Set the Google Studio <a href=\"https://aistudio.google.com/apikey\">API Key</a> (Don't share your settings/config.json!)", "password", "", None],
-            "gemini_model": ["Set the Gemini Model (<a href=\"https://aistudio.google.com/usage?timeRange=last-28-days&tab=rate-limit\">Models and Rate Limits</a>)", "str", "gemini-3.1-flash-lite-preview", None],
+            "gemini_model": ["Set the Gemini Model (<a href=\"https://aistudio.google.com/usage?timeRange=last-28-days&tab=rate-limit\">Models and Rate Limits</a>)", "str", "gemini-3.1-flash-lite", None],
             "gemini_src_language": ["Set the Source Language", "str", "Japanese", None],
             "gemini_target_language": ["Set the Target Language", "str", "English", None],
             "gemini_rate_limit": ["Set the minimum wait time between requests (in seconds)", "num", 12, None],
@@ -215,8 +240,8 @@ class TLGemini(TranslatorPlugin):
         return batch_texts
 
     def format_batch(self : TLGemini, batch : dict[str, Any], token_limit : int) -> list[str]:
-        if token_limit < 2000:
-            token_limit = 2000
+        if token_limit < self.MIN_TOKEN:
+            token_limit = self.MIN_TOKEN
         inter : list[dict] = []
         char_count : int = 0
         for gi, group in enumerate(batch["groups"]):
@@ -279,16 +304,19 @@ class TLGemini(TranslatorPlugin):
     async def ask_gemini(self : TLGemini, name : str, batch : str, settings : dict[str, Any] = {}) -> str:
         self._init_translator(settings)
         # building prompt
-        prompt : str = ""
+        system_prompt : str = (
+            SYSTEM_PROMPT
+            .replace("$TARGET$", settings["gemini_target_language"])
+            .replace("$SOURCE$", settings["gemini_src_language"])
+        )
+        prompt : str = f"### User Input\n{batch}\n\n---\n\n### Your output\n"
         knowledge_base : str = self.knowledge_to_text(self.owner.projects[name]["ai_knowledge_base"])
         if knowledge_base != "":
-            prompt = "### Current Knowledge base\n" + knowledge_base + "\n\n"
+            system_prompt += "### Current Knowledge base\n" + knowledge_base + "\n\n---\n\n"
         else:
-            prompt = "### Current Knowledge base\nThe knowledge base is currently EMPTY.\n\n"
-        extra_context : str = ""
+            system_prompt += "### Current Knowledge base\nThe knowledge base is currently EMPTY.\n\n---\n\n"
         if settings["gemini_extra_context"].strip() != "":
-            extra_context = f"### User Specific Instructions\n{settings['gemini_extra_context']}\n### End of User Specific Instructions\n\n"
-        prompt += f"### User Input\n{batch}\n\n### Your output\n"
+            system_prompt += f"### User Notes and Instructions\n{settings['gemini_extra_context']}\n### End of User Specific Instructions\n\n---\n\n"
         # rate limit safety
         current_time = time.monotonic()
         elapsed_time = current_time - self.time
@@ -300,11 +328,7 @@ class TLGemini(TranslatorPlugin):
             model=settings["gemini_model"],
             contents=prompt,
             config={
-                "system_instruction":(
-                    SYSTEM_PROMPT
-                    .replace("$TARGET$", settings["gemini_target_language"], 1)
-                    .replace("$SOURCE$", settings["gemini_src_language"], 1)
-                ),
+                "system_instruction":system_prompt,
                 "response_mime_type":"application/json",
                 "response_schema":GmResponse,
                 "temperature":settings["gemini_temperature"],
@@ -370,7 +394,10 @@ class TLGemini(TranslatorPlugin):
             try:
                 output : str = await self.ask_gemini(
                     name,
-                    self.format_batch(batch, settings["gemini_token_limit"])[0],
+                    self.format_batch(
+                        batch,
+                        settings["gemini_token_limit"]
+                    )[0],
                     settings
                 )
                 data : dict[str, str] = self.parse_model_output(output, name, batch, settings)
@@ -395,7 +422,10 @@ class TLGemini(TranslatorPlugin):
         batch : dict[str, Any],
         settings : dict[str, Any] = {}
     ) -> tuple[dict[str, str], bool]:
-        inputs : list[str] = self.format_batch(batch, settings["gemini_token_limit"])
+        inputs : list[str] = self.format_batch(
+            batch,
+            settings["gemini_token_limit"]
+        )
         result : dict[str, str] = {}
         await asyncio.sleep(settings["gemini_rate_limit"])
         for i, input_batch in enumerate(inputs):
