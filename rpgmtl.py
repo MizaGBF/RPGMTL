@@ -637,7 +637,7 @@ class RPGMTL():
                 # read the content
                 if p.is_streaming(filename, False):
                     with open((p_path / filename).as_posix(), mode="rb") as infile:
-                        return True, p.read_stream(name, filename, infile)
+                        return True, p.read_stream(name, filename, infile), p.related_tool_plugins
                 else:
                     with open((p_path / filename).as_posix(), mode="rb") as infile:
                         content = infile.read()
