@@ -132,7 +132,7 @@ class JSON(Plugin):
     def __init__(self : JSON) -> None:
         super().__init__()
         self.name : str = "JSON"
-        self.description : str = "v1.12\nHandle JSON files, including ones from RPG Maker MV/MZ"
+        self.description : str = "v1.13\nHandle JSON files, including ones from RPG Maker MV/MZ"
         self.related_tool_plugins : list[str] = [self.name]
 
     def get_setting_infos(self : JSON) -> dict[str, list]:
@@ -487,7 +487,7 @@ class JSON(Plugin):
             return self._read_walk_troops(data)
         elif s in self.DEFAULT_RPGMK_DATA_FILE:
             return self._read_walk_data(data)
-        elif s.startswith("data/map"): # Map file of RPGMV/MZ (Note: Make sure it's after mapinfos or it'll be caught by it)
+        elif s.startswith("data/map") or s.endswith("op_en/map001.json"): # Map file of RPGMV/MZ (Note: Make sure it's after mapinfos or it'll be caught by it)
             return self._read_walk_map(data)
         else:
             return self._read_walk(data)
@@ -518,7 +518,7 @@ class JSON(Plugin):
                 elif s in self.DEFAULT_RPGMK_DATA_FILE:
                     self._write_walk_data(data, helper)
                     format_mode = 0
-                elif s.startswith("data/map"): # Map file of RPGMV/MZ (Note: Make sure it's after mapinfos or it'll be caught by it)
+                elif s.startswith("data/map") or s.endswith("op_en/map001.json"): # Map file of RPGMV/MZ (Note: Make sure it's after mapinfos or it'll be caught by it)
                     self._write_walk_map(data, helper)
                     format_mode = 1
                 else:
