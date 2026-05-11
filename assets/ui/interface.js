@@ -2517,6 +2517,47 @@ class RPGMTL_Interface
 			util.add_interaction(fragment, '<img src="assets/images/new.png"> Create', () => {
 				this.edit_patch({});
 			});
+			// add patch.py buttons
+			let grid = util.add_to(
+				fragment,
+				"div",
+				{
+					cls:["grid"],
+					br:true
+				}
+			);
+			util.add_grid_cell(grid, '<img src="assets/images/export.png"> Export', (e) => {
+				if(
+					e.ctrlKey
+					|| window.confirm("It will overwrite projects/" + this.project.name + "/patch.py\nContinue?")
+				) // confirmation / shortcut to insta confirm
+				{
+					this.post(
+						"/api/export_patch",
+						(result_data) => this.browse_patches(result_data),
+						(result_data) => this.browse_patches(result_data),
+						{
+							name:this.project.name
+						}
+					);
+				}
+			});
+			util.add_grid_cell(grid, '<img src="assets/images/import.png"> Import', (e) => {
+				if(
+					e.ctrlKey
+					|| window.confirm("The patches will be overwritten by the content of projects/" + this.project.name + "/patch.py\nContinue?")
+				) // confirmation / shortcut to insta confirm
+				{
+					this.post(
+						"/api/import_patch",
+						(result_data) => this.browse_patches(result_data),
+						(result_data) => this.browse_patches(result_data),
+						{
+							name:this.project.name
+						}
+					);
+				}
+			});
 			this.update_main(fragment);
 		}
 		catch(err)

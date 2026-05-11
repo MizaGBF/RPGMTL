@@ -156,6 +156,18 @@ Return in data: project 'name', project 'config'
 ```
   
 ```
+/api/import_patch
+Payload: project 'name'
+Return in data: project 'name', project 'config'
+```
+  
+```
+/api/export_patch
+Payload: project 'name'
+Return in data: project 'name', project 'config'
+```
+  
+```
 /api/release
 Payload: project 'name'
 Return in data: project 'name', project 'config'

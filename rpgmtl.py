@@ -154,6 +154,8 @@ class RPGMTL():
                 web.post('/api/patches', self.open_patches), # Open Fix/Patch List
                 web.post('/api/open_patch', self.edit_patch), # Open specific Fix/Patch
                 web.post('/api/update_patch', self.update_patch), # Update specific Fix/Patch
+                web.post('/api/import_patch', self.import_patch), # Import patches.py
+                web.post('/api/export_patch', self.export_patch), # Export patches.py
                 web.post('/api/import', self.import_old), # Import Old RPGMTL data
                 web.post('/api/import_rpgmtrans', self.import_rpgmtrans), # Import RPG Maker Trans data
                 web.post('/api/backups', self.backup_list), # Open list of strings.json backups
@@ -1328,9 +1330,7 @@ class RPGMTL():
 
     # /api/main
     async def project_list(self : RPGMTL, request : web.Request) -> web.Response:
-        l : list[str] = self.load_project_list()
-        self.log.info("A list of " + str(len(l)) + " project(s) has been sent to an user")
-        return web.json_response({"result":"ok", "data":{"list":l, "verstring":self.VERSION, "history":self.history}})
+        return web.json_response({"result":"ok", "data":{"list":self.load_project_list(), "verstring":self.VERSION, "history":self.history}})
 
     # /api/shutdown
     async def shutdown(self : RPGMTL, request : web.Request) -> web.Response:
@@ -1642,6 +1642,61 @@ class RPGMTL():
                 l.sort()
             self.modified[name] = True
             return web.json_response({"result":"ok", "data":{"name":name, "config":self.projects[name]}})
+
+    # /api/import_patch
+    async def import_patch(self : RPGMTL, request : web.Request) -> web.Response:
+        payload = await request.json()
+        name = payload.get('name', None)
+        if name is None:
+            return web.json_response({"result":"bad", "message":"Bad request, missing 'name' parameter"}, status=400)
+        else:
+            try:
+                with open(f"projects/{name}/patch.py", mode="r", encoding="utf-8") as f:
+                    new_patches : dict[str, str] = {}
+                    key : str = ""
+                    for line in f.readlines():
+                        if line.startswith("###"):
+                            key = line[3:].strip()
+                            new_patches[key] = []
+                        else:
+                            new_patches[key].append(line)
+                    keys : list[str] = list(new_patches.keys())
+                    for key in keys:
+                        if len(new_patches[key]) == 0:
+                            new_patches.pop(key)
+                        else:
+                            new_patches[key] = "\n".join(new_patches[key])
+                    if len(list(new_patches.keys())) == 0:
+                        return web.json_response({"result":"ok", "data":{"name":name, "config":self.projects[name]}, "message":f"projects/{name}/patch.py is empty, nothing has been imported"})
+                    else:
+                        self.projects[name]["patches"] = new_patches
+                        self.modified[name] = True
+                        return web.json_response({"result":"ok", "data":{"name":name, "config":self.projects[name]}, "message":f"projects/{name}/patch.py has been imported"})
+            except IOError as ioe:
+                self.log.error(f"Import of {name}/patch.py aborted due to following exception:\n{self.trbk(ioe)}")
+                return web.json_response({"result":"bad", "message":f"Failed to read projects/{name}/patch.py"}, status=400)
+            except Exception as e:
+                self.log.error(f"Import of {name}/patch.py aborted due to following exception:\n{self.trbk(e)}")
+                return web.json_response({"result":"bad", "message":f"An error occured while importing projects/{name}/patch.py"}, status=400)
+
+    # /api/export_patch
+    async def export_patch(self : RPGMTL, request : web.Request) -> web.Response:
+        payload = await request.json()
+        name = payload.get('name', None)
+        if name is None:
+            return web.json_response({"result":"bad", "message":"Bad request, missing 'name' parameter"}, status=400)
+        else:
+            file_content : list[str] = []
+            for key, code in self.projects[name]["patches"].items():
+                file_content.append(f"### {key}")
+                file_content.append(code)
+            try:
+                with open(f"projects/{name}/patch.py", mode="w", encoding="utf-8") as f:
+                    f.write("\n".join(file_content))
+                    return web.json_response({"result":"ok", "data":{"name":name, "config":self.projects[name]}, "message":f"projects/{name}/patch.py has been exported"})
+            except Exception as e:
+                self.log.error(f"Export to {name}/patch.py aborted due to following exception:\n{self.trbk(e)}")
+                return web.json_response({"result":"bad", "message":f"An error occured while exporting to projects/{name}/patch.py"}, status=400)
         
     # /api/import
     async def import_old(self : RPGMTL, request : web.Request) -> web.Response:
@@ -1704,7 +1759,7 @@ class RPGMTL():
             return web.json_response({"result":"bad", "message":"Bad request, missing 'file' parameter"}, status=400)
         else:
             self.save() # save
-            shutil.move("projects/" + name + "/" + file, "projects/" + name + "/backup.tmp.file.json")
+            shutil.move(f"projects/{name}/{file}", f"projects/{name}/backup.tmp.file.json")
             bak : list[str] = [
                 "strings.bak-5.json",
                 "strings.bak-4.json",
@@ -1723,17 +1778,17 @@ class RPGMTL():
                 else:
                     try:
                         if i == 0:
-                            os.remove("projects/" + name + "/" + bak[i])
+                            os.remove(f"projects/{name}/{bak[i]}")
                         else:
-                            shutil.move("projects/" + name + "/" + bak[i], "projects/" + name + "/" + bak[i-1])
+                            shutil.move(f"projects/{name}/{bak[i]}", f"projects/{name}/{bak[i-1]}")
                     except:
                         pass
-            shutil.move("projects/" + name + "/backup.tmp.file.json", "projects/" + name + "/strings.json")
+            shutil.move(f"projects/{name}/backup.tmp.file.json", f"projects/{name}/strings.json")
             self.projects[name]["version"] = self.projects[name].get("version", -1) + 1
             self.modified[name] = True
             self.strings.pop(name, None)
             self.load_strings(name)
-            return web.json_response({"result":"ok", "data":{"name":name, "config":self.projects[name]}, "message":"strings.json has been renamed strings.bak-1.json, and " + file + " became the new strings.json"})
+            return web.json_response({"result":"ok", "data":{"name":name, "config":self.projects[name]}, "message":f"strings.json has been renamed strings.bak-1.json, and {file} became the new strings.json"})
 
     # /api/browse
     async def open_folder(self : RPGMTL, request : web.Request) -> web.Response:
@@ -1950,10 +2005,10 @@ class RPGMTL():
             self.log.info(f"Batch translating {len(to_translate)} strings in file '{path}' for project {name}...")
             result, continue_flag = await plugin.translate_batch(name, to_translate, self.settings | self.projects[name]['settings'])
             if len(result) != len(to_translate):
-                self.log.error("Batch translation for project " + name + " failed")
+                self.log.error(f"Batch translation for project {name} failed")
                 return False, False, "Batch translation failed."
             if version != self.projects[name]["version"]:
-                self.log.error("Batch translation for project " + name + " has been aborted because of a version update")
+                self.log.error(f"Batch translation for project {name} has been aborted because of a version update")
                 return False, False, "The Project has been updated, the translation has been cancelled."
             count = 0
             for i in range(len(result)):
@@ -2011,12 +2066,12 @@ class RPGMTL():
         try:
             translated, continue_flag = await plugin.translate_batch(name, batch, self.settings | self.projects[name]['settings'])
         except Exception as e:
-            self.log.error("File translation aborted due to the following exception:\n" + self.trbk(e))
+            self.log.error(f"File translation aborted due to the following exception:\n{self.trbk(e)}")
             return False, True, str(e)
         if translated is not None:
             # check version
             if version != self.projects[name]["version"]:
-                self.log.error("Batch translation for project " + name + " has been aborted because of a version update")
+                self.log.error(f"Batch translation for project {name} has been aborted because of a version update")
                 return False, False, "The Project has been updated, the translation has been cancelled."
             # apply translated strings
             for sid, tl in translated.items():
