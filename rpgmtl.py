@@ -1690,6 +1690,8 @@ class RPGMTL():
             for key, code in self.projects[name]["patches"].items():
                 file_content.append(f"### {key}")
                 file_content.append(code)
+            if len(file_content) == 0:
+                return web.json_response({"result":"ok", "data":{"name":name, "config":self.projects[name]}, "message":f"There are no patches to export"})
             try:
                 with open(f"projects/{name}/patch.py", mode="w", encoding="utf-8") as f:
                     f.write("\n".join(file_content))
