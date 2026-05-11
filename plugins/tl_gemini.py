@@ -128,7 +128,7 @@ class GmResponse(BaseModel):
     new_knowledge: list[GmKnowledge]
 
 class TLGemini(TranslatorPlugin):
-    MIN_TOKEN : int = 2000
+    MIN_TOKEN : int = 500
     
     def __init__(self : TLGemini) -> None:
         super().__init__()
@@ -149,7 +149,7 @@ class TLGemini(TranslatorPlugin):
             "gemini_src_language": ["Set the Source Language", "str", "Japanese", None],
             "gemini_target_language": ["Set the Target Language", "str", "English", None],
             "gemini_rate_limit": ["Set the minimum wait time between requests (in seconds)", "num", 12, None],
-            "gemini_token_limit": ["Set the minimum token count per translation batch (Minimum is 2000)", "num", 30000, None],
+            "gemini_token_limit": ["Set the minimum token count per translation batch (Minimum is 500)", "num", 30000, None],
             "gemini_temperature": ["Set the Model Temperature (Higher is more creative but less predictable)", "num", 0, None],
             "gemini_knowledge_limit": ["Max number of AI Knowledge updates in one request (Negative means unlimited)", "num", 10, None],
             "gemini_extra_context": ["Set extra informations or commands for the AI", "text", "", None],
