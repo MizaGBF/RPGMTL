@@ -6,7 +6,7 @@ class Javascript(Plugin):
     def __init__(self : Javascript) -> None:
         super().__init__()
         self.name : str = "Javascript"
-        self.description : str = " v1.7\nHandle Javascript files, including the plugins.js file from RPG Maker MV/MZ"
+        self.description : str = " v1.8\nHandle Javascript files, including the plugins.js file from RPG Maker MV/MZ"
         self.related_tool_plugins : list[str] = [self.name]
 
     def match(self : Javascript, file_path : str, is_for_action : bool) -> bool:
@@ -95,7 +95,7 @@ class Javascript(Plugin):
                             if start != end:
                                 literal = js[start:end]
                                 string_table.append((start, end, len(entries), len(group), quote)) # position in file, position in entries, quote
-                                group.append(literal.replace('\\'+quote, quote))
+                                group.append(literal.replace('\\'+quote, quote).replace("\\\n", "\n").replace("\\\r\n", "\n"))
                             i = end + 1
                             break
                         else:
@@ -147,7 +147,7 @@ class Javascript(Plugin):
                 st = string_table[i]
                 tmp : str = helper.apply_string(entries[st[2]][st[3]], entries[st[2]][0], loc=(st[2]+entry_offset, st[3]))
                 if tmp != entries[st[2]][st[3]]:
-                    js = js[:st[0]] + tmp.replace(st[4], '\\'+st[4]) + js[st[1]:]
+                    js = js[:st[0]] + tmp.replace(st[4], '\\'+st[4]).replace("\n", "\\n") + js[st[1]:]
         return entries, js
 
     # RPGMK MZ/MV plugins.js
