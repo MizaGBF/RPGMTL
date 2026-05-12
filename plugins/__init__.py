@@ -343,7 +343,7 @@ class WalkHelper():
         if self.group == len(self.groups):
             return
         elif self.group > len(self.groups):
-            raise Exception("[WalkHelper] Reached the end of known strings") 
+            raise Exception("[WalkHelper] Reached the end of known strings")
         while self.index >= len(self.groups[self.group]):
             self.group += 1
             self.index = 1
