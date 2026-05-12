@@ -1665,7 +1665,7 @@ class RPGMTL():
                         if len(new_patches[key]) == 0:
                             new_patches.pop(key)
                         else:
-                            new_patches[key] = "\n".join(new_patches[key])
+                            new_patches[key] = "".join(new_patches[key])
                     if len(list(new_patches.keys())) == 0:
                         return web.json_response({"result":"ok", "data":{"name":name, "config":self.projects[name]}, "message":f"projects/{name}/patch.py is empty, nothing has been imported"})
                     else:
