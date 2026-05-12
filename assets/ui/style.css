@@ -438,7 +438,7 @@ li {
 }
 
 .sideinput {
-	width: calc(100vw - 100px);
+	width: calc(100vw - 120px);
 }
 
 .noteinput {
