@@ -969,21 +969,31 @@ class RPGMTL():
                 return 0, 0
             # backup project strings.json
             self.backup_strings_file(name)
+            ref : dict[str, str] = {}
             # read file
             with open(file_path, mode="rb") as f:
                 data = f.read()
-            if file_path.endswith(".json"): # old format 1
+            if file_path.endswith(".json"): # format v0, v1 or v3
                 data = json.loads(data.decode("utf-8"))
-                flag : bool = "strings" in data
+                flag : bool = "strings" in data # v1/v3 check
                 if flag:
                     if "files" in data: # current v3 format
                         ref = {v[0]:v[1] for k, v in data["strings"].items() if v[1] is not None}
-                    elif len(data) == 2: # very old format
+                    elif len(data) == 2: # v0 format
                         ref = data["strings"]
-                else:
-                    ref = data
-            elif file_path.endswith(".py"): # old format 2
-                ref = {}
+                else: # V1 format
+                    tmp : dict = data
+                    # Format javascript to be compatible
+                    is_js : bool = False
+                    for k, v in data.items():
+                        if isinstance(v, int) and k.startswith("==="):
+                            is_js = k.replace("=", "").strip().endswith(".js")
+                        elif v is not None:
+                            if is_js:
+                                ref[k.replace("\n", "\\n")] = v
+                            else:
+                                ref[k] = v
+            elif file_path.endswith(".py"): # format v2
                 for line in data.decode("utf-8").split('\n'):
                     try:
                         d = json.loads("{"+line+"}")
