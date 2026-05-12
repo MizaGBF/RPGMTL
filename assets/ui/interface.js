@@ -490,7 +490,7 @@ class RPGMTL_Interface
 						this.routes.main();
 				},
 				"<ul>\
-					<li>Some settings might require you to extract your this.project strings again, be careful to not lose progress.</li>\
+					<li>Some settings might require you to extract your project strings again, be careful to not lose progress.</li>\
 					<li><b>Default</b> Settings are your projects defaults.</li>\
 					<li><b>Project</b> Settings override <b>Default</b> Settings when modified.</li>\
 				</ul>\
@@ -1085,7 +1085,7 @@ class RPGMTL_Interface
 				() => { // back callback
 					this.routes.project(this.project.name);
 				},
-				"You can use a Tool or bookmark it for the this.project page.",
+				"You can use a Tool or bookmark it for the project page.",
 				{
 					home:1
 				}
@@ -1644,7 +1644,7 @@ class RPGMTL_Interface
 				fragment,
 				'<img src="assets/images/confirm.png"> Create',
 				() => {
-					this.loader.text = "Creating the this.project...";
+					this.loader.text = "Creating the project...";
 					if(input.value.trim() != "")
 					{
 						this.routes.new_project(path, input.value);
@@ -1691,7 +1691,7 @@ class RPGMTL_Interface
 				</ul>\
 				<ul>\
 					<li><b>Replace Strings in batch</b> allows you to do batch replacement of case-sensitive strings.</li>\
-					<li><b>Backup Control</b> to open the list of backups if you need to revert the this.project strings data to an earlier state.</li>\
+					<li><b>Backup Control</b> to open the list of backups if you need to revert the project strings data to an earlier state.</li>\
 					<li><b>Knowledge Base</b> to open the list of knowledge entries for AI translations.</li>\
 					<li><b>Notepad</b> is used to note things.</li>\
 					<li><b>Import RPGMTL Strings</b> to import strings from RPGMTL projects from any version.</li>\
@@ -1815,7 +1815,7 @@ class RPGMTL_Interface
 			grid,
 				'<img src="assets/images/update.png"> Update the Game Files',
 				() => {
-					this.local_browse("Update this.project files", "Select the Game executable.", 1);
+					this.local_browse("Update project files", "Select the Game executable.", 1);
 				}
 			);
 			util.add_grid_cell(
@@ -2107,7 +2107,7 @@ class RPGMTL_Interface
 					<li><b>Enter</b> to interact.</li>\
 					<li><b>Escape</b> to go back.</li>\
 					<li><b>Ctrl+H</b> to go to the home page.</li>\
-					<li><b>Ctrl+P</b> to go to the this.project page.</li>\
+					<li><b>Ctrl+P</b> to go to the project page.</li>\
 					<li><b>Ctrl+R</b> to reload.</li>\
 				</ul>",
 				{
@@ -2485,7 +2485,7 @@ class RPGMTL_Interface
 					<li><b>Enter</b> to interact.</li>\
 					<li><b>Escape</b> to go back.</li>\
 					<li><b>Ctrl+H</b> to go to the home page.</li>\
-					<li><b>Ctrl+P</b> to go to the this.project page.</li>\
+					<li><b>Ctrl+P</b> to go to the project page.</li>\
 				</ul>",
 				{
 					home:1,
@@ -2594,7 +2594,7 @@ class RPGMTL_Interface
 					<li><b>Enter</b> to interact.</li>\
 					<li><b>Escape</b> to go back.</li>\
 					<li><b>Ctrl+H</b> to go to the home page.</li>\
-					<li><b>Ctrl+P</b> to go to the this.project page.</li>\
+					<li><b>Ctrl+P</b> to go to the project page.</li>\
 				</ul>",
 				{
 					home:1,
@@ -2721,7 +2721,7 @@ class RPGMTL_Interface
 					<li><b>Enter</b> to interact.</li>\
 					<li><b>Escape</b> to go back.</li>\
 					<li><b>Ctrl+H</b> to go to the home page.</li>\
-					<li><b>Ctrl+P</b> to go to the this.project page.</li>\
+					<li><b>Ctrl+P</b> to go to the project page.</li>\
 				</ul>",
 				{
 					home:1,
