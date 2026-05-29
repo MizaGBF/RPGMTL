@@ -14,6 +14,7 @@ import json
 import difflib
 from pathlib import Path, PurePath
 import string
+import signal
 import argparse
 import ssl
 
@@ -1311,10 +1312,13 @@ class RPGMTL():
             web.run_app(self.app, port=self.port, shutdown_timeout=0, ssl_context=ssl_context)
         except Exception as e: # Ctrl+C is enough to trigger it
             self.log.warning("The following exception occured:\n" + self.trbk(e))
+        # temporarily ignore Ctrl+C (SIGINT) at the OS level
+        original_handler = signal.signal(signal.SIGINT, signal.SIG_IGN)
         self.log.info("RPGMTL is shutting down...")
-        
-        # Ssave on quit
+        # save on quit
         self.save()
+        # restore handler
+        signal.signal(signal.SIGINT, original_handler)
 
     ######################################################
     # Request Responses start here
