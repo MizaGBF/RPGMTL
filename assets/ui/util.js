@@ -176,14 +176,27 @@ class util
 		return sel;
 	}
 	
-	// add a simple text
-	static add_title(node, text, extra_classes=[])
+	// add the top page title
+	static add_project_title(node, text)
 	{
 		return util.add_to(
 			node,
 			"div",
 			{
-				cls:["title"].concat(extra_classes),
+				cls:["project-title"],
+				innerText:text
+			}
+		)
+	}
+	
+	// add a simple text label
+	static add_label(node, text, extra_classes=[])
+	{
+		return util.add_to(
+			node,
+			"div",
+			{
+				cls:["label"].concat(extra_classes),
 				innerText:text,
 				br:!extra_classes.includes("inline")
 			}
@@ -201,6 +214,67 @@ class util
 				br:true
 			}
 		);
+	}
+	
+	static add_stylized_path(node, path)
+	{
+		if(path == "")
+		{
+			// return a dummy node
+			return util.add_to(
+				null,
+				"div",
+				{
+					cls:["path-container"]
+				}
+			);
+		}
+		const parts = path.split("/");
+		const container = util.add_to(
+			node,
+			"div",
+			{
+				cls:["path-container"]
+			}
+		);
+		for(let i = 0; i < parts.length; ++i)
+		{
+			if(i > 0)
+			{
+				util.add_to(
+					container,
+					"span",
+					{
+						cls:["path-separator"],
+						innerText:"/"
+					}
+				);
+			}
+			let is_final = (
+				i == parts.length - 1
+				|| (
+					i == parts.length - 2
+					&& parts[i + 1] == ""
+				)
+			);
+			util.add_to(
+				container,
+				"span",
+				{
+					cls:(
+						is_final
+						? ["path-segment-final"]
+						: ["path-segment"]
+					),
+					innerText:parts[i]
+				}
+			);
+			if(is_final)
+			{
+				break;
+			}
+		}
+		return container;
 	}
 
 	// add a button with an image

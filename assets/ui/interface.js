@@ -335,7 +335,7 @@ class RPGMTL_Interface
 						() => {
 							this.constant.bar.innerHTML = "";
 							let fragment = this.new_page();
-							util.add_title(
+							util.add_label(
 								fragment,
 								"RPGMTL has been shutdown"
 							);
@@ -381,7 +381,7 @@ class RPGMTL_Interface
 		util.add_grid_cell(grid, '<img src="assets/images/translate.png"> Translators', () => {
 			this.routes.translator(null, true);
 		});
-		util.add_title(
+		util.add_label(
 			fragment,
 			"Project List"
 		);
@@ -406,7 +406,7 @@ class RPGMTL_Interface
 		// quick links
 		if(data.history.length > 0) // list last browsed Files
 		{
-			util.add_title(
+			util.add_label(
 				fragment,
 				"Last Accessed Files",
 				["left"]
@@ -516,19 +516,27 @@ class RPGMTL_Interface
 			
 			if(is_project) // add button to reset settings of THIS project
 			{
-				util.add_interaction(fragment, '<img src="assets/images/trash.png"> Reset All Settings to RPGMTL Default', () => {
-					this.post(
-						"/api/update_settings",
-						() => {
-							util.push_popup("The Project Settings have been reset to the global settings.");
-							this.routes.settings(this.project.name);
-						},
-						null,
-						{
-							name:this.project.name
-						}
-					);
-				});
+				util.add_project_title(
+					fragment,
+					this.project.name
+				);
+				util.add_interaction(
+					fragment,
+					'<img src="assets/images/trash.png"> Reset All Settings to RPGMTL Default',
+					() => {
+						this.post(
+							"/api/update_settings",
+							() => {
+								util.push_popup("The Project Settings have been reset to the global settings.");
+								this.routes.settings(this.project.name);
+							},
+							null,
+							{
+								name:this.project.name
+							}
+						);
+					}
+				);
 			}
 			
 			let count = 0;
@@ -537,7 +545,7 @@ class RPGMTL_Interface
 			{
 				fragment.appendChild(document.createElement("br"));
 				// add plugin name
-				util.add_title(
+				util.add_label(
 					fragment,
 					file + " Plugin settings",
 					["left"]
@@ -845,7 +853,7 @@ class RPGMTL_Interface
 			}
 			if(count == 0)
 			{
-				util.add_title(
+				util.add_label(
 					fragment,
 					"No settings available for your Plugins",
 					["left"]
@@ -904,6 +912,10 @@ class RPGMTL_Interface
 			
 			// main part
 			let fragment = this.new_page();
+			util.add_project_title(
+				fragment,
+				this.project.name
+			);
 			// add tool parameters
 			for(const [key, fdata] of Object.entries(tool[4].params))
 			{
@@ -1093,14 +1105,16 @@ class RPGMTL_Interface
 			
 			// main part
 			let fragment = this.new_page();
-			
+			util.add_project_title(
+				fragment,
+				this.project.name
+			);
 			this.add_tools(
 				fragment,
 				util.add_interaction,
 				null,
 				true
 			);
-			
 			this.update_main(fragment);
 		}
 		catch(err)
@@ -1129,11 +1143,15 @@ class RPGMTL_Interface
 			
 			// main part
 			let fragment = this.new_page();
-			util.add_title(
+			util.add_project_title(
+				fragment,
+				this.project.name
+			);
+			util.add_label(
 				fragment,
 				"Knowledge Base"
 			);
-			util.add_title(
+			util.add_label(
 				fragment,
 				"Entry",
 				["left", "smalltext", "inline"]
@@ -1167,14 +1185,14 @@ class RPGMTL_Interface
 					}
 				);
 			}
-			const selected = util.add_title(
+			const selected = util.add_label(
 				fragment,
 				"None selected",
 				["left"]
 			);
 			selected.id = "base-selected";
 			selected.original_string = null;
-			util.add_title(
+			util.add_label(
 				fragment,
 				"Original",
 				["left", "smalltext"]
@@ -1189,7 +1207,7 @@ class RPGMTL_Interface
 				}
 			);
 			base_ori.contentEditable = "plaintext-only";
-			util.add_title(
+			util.add_label(
 				fragment,
 				"Translation",
 				["left", "smalltext"]
@@ -1204,7 +1222,7 @@ class RPGMTL_Interface
 				}
 			);
 			base_tl.contentEditable = "plaintext-only";
-			util.add_title(
+			util.add_label(
 				fragment,
 				"Note",
 				["left", "smalltext"]
@@ -1219,7 +1237,7 @@ class RPGMTL_Interface
 				}
 			);
 			base_note.contentEditable = "plaintext-only";
-			util.add_title(
+			util.add_label(
 				fragment,
 				"Last seen (# of Translation ago)",
 				["left", "smalltext"]
@@ -1234,7 +1252,7 @@ class RPGMTL_Interface
 				}
 			);
 			base_seen.value = "0";
-			util.add_title(
+			util.add_label(
 				fragment,
 				"# of Recent occurences",
 				["left", "smalltext"]
@@ -1414,7 +1432,11 @@ class RPGMTL_Interface
 			
 			// main part
 			let fragment = this.new_page();
-			util.add_title(
+			util.add_project_title(
+				fragment,
+				this.project.name
+			);
+			util.add_label(
 				fragment,
 				"Notepad"
 			);
@@ -1495,7 +1517,7 @@ class RPGMTL_Interface
 			{
 				if(list.length == 0)
 				{
-					util.add_title(
+					util.add_label(
 						fragment,
 						"No Translator Plugin available",
 						["left"]
@@ -1506,22 +1528,30 @@ class RPGMTL_Interface
 				{
 					if(t == 0 && is_project) // add button to reset project setting (Only at the top)
 					{
-						util.add_interaction(fragment, '<img src="assets/images/trash.png"> Use RPGMTL Default', () => {
-							this.post(
-								"/api/update_translator",
-								(result_data) => {
-									util.push_popup("The Project Translators have been reset to the global settings.");
-									this.routes.translator(this.project.name);
-								},
-								null,
-								{
-									name:this.project.name
-								}
-							);
-						});
+						util.add_project_title(
+							fragment,
+							this.project.name
+						);
+						util.add_interaction(
+							fragment,
+							'<img src="assets/images/trash.png"> Use RPGMTL Default',
+							() => {
+								this.post(
+									"/api/update_translator",
+									(result_data) => {
+										util.push_popup("The Project Translators have been reset to the global settings.");
+										this.routes.translator(this.project.name);
+									},
+									null,
+									{
+										name:this.project.name
+									}
+								);
+							}
+						);
 					}
 					// add text
-					util.add_title(
+					util.add_label(
 						fragment,
 						possibles_text[t],
 						["left"]
@@ -1611,7 +1641,7 @@ class RPGMTL_Interface
 			
 			// main part
 			let fragment = this.new_page();
-			util.add_title(
+			util.add_label(
 				fragment,
 				"Folder/Project Name",
 				["left"]
@@ -1653,7 +1683,7 @@ class RPGMTL_Interface
 			);
 			
 			// explanation
-			util.add_title(
+			util.add_label(
 				fragment,
 				"After confirming, a backup of the game files will be made in this project folder.\nYou'll then have to set your Project Settings and Extract the strings.",
 				["left"]
@@ -1715,11 +1745,11 @@ class RPGMTL_Interface
 			// here we add various buttons
 			// some only appear if files have been parsed
 			let fragment = this.new_page();
-			util.add_title(
+			util.add_project_title(
 				fragment,
 				this.project.name
 			);
-			util.add_title(
+			util.add_label(
 				fragment,
 				"Imported from: " + this.project.config.path,
 				["left", "smalltext"]
@@ -1728,7 +1758,7 @@ class RPGMTL_Interface
 			// translate options
 			if(this.project.config.version)
 			{
-				util.add_title(
+				util.add_label(
 					fragment,
 					"Translate",
 					["left"]
@@ -1770,7 +1800,7 @@ class RPGMTL_Interface
 				);
 			}
 			// settings options
-			util.add_title(
+			util.add_label(
 				fragment,
 				"Settings",
 				["left"]
@@ -1798,7 +1828,7 @@ class RPGMTL_Interface
 				}
 			);
 			// main actions
-			util.add_title(
+			util.add_label(
 				fragment,
 				"Actions",
 				["left"]
@@ -1924,7 +1954,7 @@ class RPGMTL_Interface
 				);
 				if(this.tools.list.length > 0)
 				{
-					util.add_title(
+					util.add_label(
 						fragment,
 						"Tools",
 						["left"]
@@ -1966,7 +1996,7 @@ class RPGMTL_Interface
 	addSearchBar(node, bp, defaultVal = null)
 	{
 		// input element
-		util.add_title(
+		util.add_label(
 			node,
 			"Search",
 			["left", "smalltext", "inline"]
@@ -2024,7 +2054,7 @@ class RPGMTL_Interface
 		});
 		util.add_to(node, "br");
 		// setting buttons
-		util.add_title(
+		util.add_label(
 			node,
 			"Search settings",
 			["left", "smalltext", "inline"]
@@ -2235,7 +2265,7 @@ class RPGMTL_Interface
 			
 			// main part
 			let fragment = this.new_page();
-			util.add_title(
+			util.add_project_title(
 				fragment,
 				this.project.name
 			);
@@ -2252,11 +2282,7 @@ class RPGMTL_Interface
 			);
 			
 			let first_element = null;
-			util.add_title(
-				fragment,
-				bp,
-				["left"]
-			);
+			util.add_stylized_path(fragment, bp);
 			// go over folders
 			for(let i = 0; i < data.folders.length; ++i)
 			{
@@ -2314,7 +2340,7 @@ class RPGMTL_Interface
 					}
 				};
 			}
-			util.add_title(
+			util.add_label(
 				fragment,
 				"List of Files",
 				["left"]
@@ -2502,13 +2528,13 @@ class RPGMTL_Interface
 			
 			// main part
 			let fragment = this.new_page();
-			util.add_title(
+			util.add_project_title(
 				fragment,
 				this.project.name
 			);
 			this.addSearchBar(fragment, bp, data.search);
 			
-			util.add_title(
+			util.add_label(
 				fragment,
 				"Results",
 				["left"]
@@ -2608,11 +2634,11 @@ class RPGMTL_Interface
 			
 			// main part
 			let fragment = this.new_page();
-			util.add_title(
+			util.add_project_title(
 				fragment,
 				this.project.name
 			);
-			util.add_title(
+			util.add_label(
 				fragment,
 				"Fix List",
 				["left"]
@@ -2718,11 +2744,11 @@ class RPGMTL_Interface
 			// main part
 			let fragment = this.new_page();
 			// add various input and text elements
-			util.add_title(
+			util.add_project_title(
 				fragment,
 				this.project.name
 			);
-			util.add_title(
+			util.add_label(
 				fragment,
 				"Filename match",
 				["left"]
@@ -2737,7 +2763,7 @@ class RPGMTL_Interface
 					br:true
 				}
 			).type = "text";
-			util.add_title(
+			util.add_label(
 				fragment,
 				"Python Code",
 				["left"]
@@ -2844,18 +2870,18 @@ class RPGMTL_Interface
 			
 			// main part
 			let fragment = this.new_page();
-			util.add_title(
+			util.add_project_title(
 				fragment,
 				this.project.name
 			);
-			util.add_title(
+			util.add_label(
 				fragment,
 				"Backup List",
 				["left"]
 			);
 			if(data.list.length == 0)
 			{
-				util.add_title(
+				util.add_label(
 					fragment,
 					"No backup available",
 					["left", "block", "inline"]
@@ -2890,19 +2916,19 @@ class RPGMTL_Interface
 						}
 					}
 				);
-				util.add_title(
+				util.add_label(
 					fragment,
 					elem[0],
 					["left", "block", "inline"]
 				);
 				// add backup infos
 				let size = util.filesizeToStr(elem[1]);
-				util.add_title(
+				util.add_label(
 					fragment,
 					size,
 					["left", "block", "inline", "smalltext"]
 				);
-				util.add_title(
+				util.add_label(
 					fragment,
 					new Date(elem[2]*1000).toISOString().split('.')[0].replace('T', ' '),
 					["left", "block", "inline", "smalltext"]
@@ -3006,7 +3032,7 @@ class RPGMTL_Interface
 				span,
 				"pre",
 				{
-					cls:["title", "inline", "smalltext", "string-area", "original"]
+					cls:["label", "inline", "smalltext", "string-area", "original"]
 				}
 			); // original string
 			original.group = i;
@@ -3018,7 +3044,7 @@ class RPGMTL_Interface
 				span,
 				"pre",
 				{
-					cls:["title", "inline", "smalltext", "string-area", "translation"]
+					cls:["label", "inline", "smalltext", "string-area", "translation"]
 				}
 			); // translated string
 			translation.group = i;
@@ -3363,7 +3389,7 @@ class RPGMTL_Interface
 			// main part
 			let fragment = this.new_page();
 			
-			let topsection = util.add_title(
+			const topsection = util.add_project_title(
 				fragment,
 				this.project.name
 			);
@@ -3375,10 +3401,9 @@ class RPGMTL_Interface
 					id:"progress_tracker"
 				}
 			);
-			util.add_title(
+			util.add_stylized_path(
 				fragment,
-				this.lastfileopened,
-				["left"]
+				this.lastfileopened
 			);
 			let previous_plugin = null;
 			// list file actions
@@ -3386,7 +3411,7 @@ class RPGMTL_Interface
 			{
 				if(previous_plugin != plugin_name)
 				{
-					util.add_title(
+					util.add_label(
 						fragment,
 						plugin_name + " Plugin",
 						["left", "interact-group", "smalltext"]
@@ -3429,7 +3454,7 @@ class RPGMTL_Interface
 					}
 				);
 			}
-			util.add_title(
+			util.add_label(
 				fragment,
 				"Other Actions",
 				["left", "interact-group", "smalltext"]
@@ -3470,7 +3495,7 @@ class RPGMTL_Interface
 					util.add_interaction(fragment, '<img src="assets/images/archive.png"> Access Files contained inside', () => {
 						this.routes.browse(this.project.name, this.lastfileopened + "/");
 					});
-					util.add_title(
+					util.add_label(
 						fragment,
 						"This file has been divided into multiple files.",
 						["left", "smalltext"]
@@ -3480,14 +3505,14 @@ class RPGMTL_Interface
 					util.add_interaction(fragment, '<img src="assets/images/archive.png"> Open Parent File', () => {
 						this.routes.file(this.project.name, this.project.config.files[this.lastfileopened].parent);
 					});
-					util.add_title(
+					util.add_label(
 						fragment,
 						"This file is part of a bigger file.",
 						["left", "smalltext"]
 					);
 					break;
 				case 3: // VIRTUAL_UNDEFINED
-					util.add_title(
+					util.add_label(
 						fragment,
 						"If you see this message, something went wrong.",
 						["left", "smalltext"]
@@ -3870,7 +3895,7 @@ class RPGMTL_Interface
 		
 			// main part
 			let fragment = this.new_page();
-			util.add_title(
+			util.add_label(
 				fragment,
 				explanation
 			);
@@ -3894,7 +3919,7 @@ class RPGMTL_Interface
 					br:true
 				}
 			);
-			util.add_title(
+			util.add_label(
 				fragment,
 				"Folders",
 				["left"]
@@ -3907,7 +3932,7 @@ class RPGMTL_Interface
 					br:true
 				}
 			);
-			util.add_title(
+			util.add_label(
 				fragment,
 				"Files",
 				["left"]
@@ -4143,12 +4168,16 @@ class RPGMTL_Interface
 		
 			// main part
 			let fragment = this.new_page();
-			util.add_title(
+			util.add_project_title(
+				fragment,
+				this.project.name
+			);
+			util.add_label(
 				fragment,
 				"Replace strings by others (Case Sensitive)",
 				["left"]
 			);
-			util.add_title(
+			util.add_label(
 				fragment,
 				"String to replace",
 				["left", "smalltext"]
@@ -4166,7 +4195,7 @@ class RPGMTL_Interface
 			input.addEventListener('input', () => { // auto update rows on input
 				input.rows = "" + input.value.split("\n").length;
 			});
-			util.add_title(
+			util.add_label(
 				fragment,
 				"Replacement",
 				["left", "smalltext"]

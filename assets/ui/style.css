@@ -161,7 +161,20 @@ li {
 	width: 95%;
 }
 
-.title {
+.project-title {
+	color: #eeeeee;
+	font-size: 34px;
+	padding: 5px;
+	padding-bottom: 10px;
+	margin: 5px;
+	margin-bottom: 10px;
+	text-align: center;
+	position: relative;
+	word-wrap: break-word;
+	border-bottom: 2px solid #545454;
+}
+
+.label {
 	color: #eeeeee;
 	font-size: 30px;
 	padding: 5px;
@@ -547,6 +560,39 @@ a:active {
 
 .settingmodifiedborder {
 	border-color: #ffd802;
+}
+
+.path-container {
+	display: inline-flex;
+	align-items: center;
+	background: #111111;
+	margin: 10px;
+	padding: 8px 16px;
+	border-radius: 8px;
+	font-weight: 400;
+	font-size: 25px;
+	color: #ffffff;
+}
+
+.path-segment {
+	display: flex;
+	align-items: center;
+}
+
+.path-segment-final {
+	display: flex;
+	align-items: center;
+	background: #cccccc;
+	color: #1d420b;
+	padding: 2px 6px;
+	border-radius: 4px;
+}
+
+.path-separator {
+	color: #3a8714;
+	margin: 0px 8px;
+	font-weight: bold;
+	user-select: none;
 }
 
 .progress-tracker {
