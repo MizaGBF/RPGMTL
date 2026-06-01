@@ -228,11 +228,7 @@ class RPGMTL():
                     raise Exception(f"[{plugin.name}] Action key {k} is already in use by another Plugin")
                 self.action_key_set.add(k)
                 # add action
-                if len(v) == 2: # old format without icon
-                    self.log.warning(f"Format of action {k} in plugin {plugin.name} is deprecated. Icon is missing.")
-                    self.actions[k] = [plugin.name, None, v[0], v[1]] # plugin name (for reverse lookup), UI text, no icon and callback
-                else:
-                    self.actions[k] = [plugin.name, v[0], v[1], v[2]] # plugin name (for reverse lookup), icon path, UI text, and callback
+                self.actions[k] = [plugin.name, v[0], v[1], v[2]] # plugin name (for reverse lookup), icon path, UI text, and callback
             except Exception as e:
                 self.log.error(f"Error loading plugin '{plugin.name}' action infos:\n{self.trbk(e)}")
         
