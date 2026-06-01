@@ -2084,6 +2084,105 @@ class RPGMTL_Interface
 		})));
 		window.open(window.location.pathname + '?' + urlparams.toString(), '_blank').focus(); // open in another tab
 	}
+	
+	// used to make the translation project progress indicator
+	add_progress_indicator(completion, progress, infos)
+	{
+		completion.innerHTML = "";
+		for(const label of ["Strings", "Progress", "%", "Count", "Ignored"])
+		{
+			util.add_to(
+				completion,
+				"div",
+				{
+					cls:["tracker-label"],
+					innerText:label
+				}
+			);
+		}
+		// note: The first line must always be the global progress
+		let is_main_project = true;
+		for(const info of infos)
+		{
+			const key = info.key;
+			if(is_main_project)
+			{
+				is_main_project = false;
+				completion.classList.toggle("progress-tracker-complete", progress[key].translated == progress[key].strings);
+			}
+			else
+			{
+				if(progress[key].strings == progress[infos[0].key].strings)
+				{
+					break;
+				}
+			}
+			const is_complete = progress[key].translated == progress[key].strings;
+			const percent = (
+				is_complete
+				? 100
+				: Math.min(99.99, Math.round(10000 * progress[key].translated / progress[key].strings) / 100)
+			);
+			util.add_to(
+				completion,
+				"div",
+				{
+					cls:["tracker-label"],
+					innerText:info.label
+				}
+			);
+			const bar_bg = util.add_to(
+				completion,
+				"div",
+				{
+					cls:["tracker-bar-bg"]
+				}
+			);
+			util.add_to(
+				bar_bg,
+				"div",
+				{
+					cls:(
+						is_complete
+						? ["tracker-bar-fill-complete"]
+						: ["tracker-bar-fill"]
+					)
+				}
+			).style.width = percent + "%";
+			util.add_to(
+				completion,
+				"div",
+				{
+					cls:(
+						is_complete
+						? ["tracker-percentage-complete"]
+						: ["tracker-percentage-fill"]
+					),
+					innerText:percent + "%"
+				}
+			);
+			util.add_to(
+				completion,
+				"div",
+				{
+					cls:["tracker-strings-count"],
+					innerText:progress[key].translated + "/" + progress[key].strings
+				}
+			);
+			util.add_to(
+				completion,
+				"div",
+				{
+					cls:["tracker-ignored-count"],
+					innerText:(
+						progress[key].disabled
+						? "" + progress[key].disabled
+						: "None"
+					)
+				}
+			);
+		}
+	}
 
 	// open folder /api/browse
 	browse_files(data)
@@ -2144,10 +2243,12 @@ class RPGMTL_Interface
 			this.addSearchBar(fragment, bp);
 			
 			// add completion indicator (filled at the bottom)
-			let completion = util.add_title(
+			const completion = util.add_to(
 				fragment,
-				"",
-				["left"]
+				"div",
+				{
+					cls:["progress-tracker"]
+				}
 			);
 			
 			let first_element = null;
@@ -2273,8 +2374,8 @@ class RPGMTL_Interface
 			}
 			// add space at the bottom
 			util.add_spacer(fragment);
-			// set completion text
-			let progress = {
+			// set completion tracker
+			const progress = {
 				all:{
 					strings:0,
 					translated:0,
@@ -2309,19 +2410,15 @@ class RPGMTL_Interface
 					}
 				}
 			}
-			let completion_text = "Progress: " + progress.all.strings + " Strings";
-			completion_text += progress.all.strings > 0 ? ', ' + (Math.round(10000 * progress.all.translated / progress.all.strings) / 100) + '%' : '';
-			if(progress.all.disabled)
-				completion_text += " (" + progress.all.disabled + " ignored Strings)";
-			if(progress.all.strings != progress.folder.strings)
-			{
-				completion_text += "<br>Folders: " + progress.folder.strings + " Strings";
-				completion_text += progress.folder.strings > 0 ? ', ' + (Math.round(10000 * progress.folder.translated / progress.folder.strings) / 100) + '%' : '';
-				if(progress.folder.disabled)
-					completion_text += " (" + progress.folder.disabled + " ignored Strings)";
-			}
-			completion_text += "<br><i><small>(Use the refresh button to update)</small></i>";
-			completion.innerHTML = completion_text;
+			// add completion progress indicator
+			this.add_progress_indicator(
+				completion,
+				progress,
+				[
+					{key:"all", label:"Project"},
+					{key:"folder", label:"Folders"}
+				]
+			);
 			
 			this.update_main(fragment).then(() => {
 				if(scrollTo != null) // scroll to last opened file
@@ -3270,6 +3367,14 @@ class RPGMTL_Interface
 				fragment,
 				this.project.name
 			);
+			util.add_to(
+				fragment,
+				"div",
+				{
+					cls:["progress-tracker"],
+					id:"progress_tracker"
+				}
+			);
 			util.add_title(
 				fragment,
 				this.lastfileopened,
@@ -3522,6 +3627,14 @@ class RPGMTL_Interface
 					lcstringsearch = this.search.string;
 				}
 			}
+			// set completion tracker
+			const progress = {
+				all:{
+					strings:0,
+					translated:0,
+					disabled:0
+				}
+			};
 			// iterate over ALL strings
 			for(let i = 0; i < this.strtablecache.length; ++i)
 			{
@@ -3543,6 +3656,7 @@ class RPGMTL_Interface
 					}
 					elems[4].state = g[3];
 				}
+				let has_translation = false;
 				let target_text = "";
 				let target_disabled = false;
 				let target_linked = false;
@@ -3557,6 +3671,7 @@ class RPGMTL_Interface
 					}
 					else
 					{
+						has_translation = true;
 						target_text = s[1];
 					}
 				}
@@ -3569,6 +3684,7 @@ class RPGMTL_Interface
 					}
 					else
 					{
+						has_translation = true;
 						target_text = g[1];
 					}
 				}
@@ -3585,6 +3701,20 @@ class RPGMTL_Interface
 					elems[2].textContent = target_text;
 					elems[2].raw_string = target_text;
 				}
+				// update progress
+				if(s[3] != 0)
+				{
+					++progress.all.disabled;
+				}
+				else
+				{
+					++progress.all.strings;
+					if(has_translation)
+					{
+						++progress.all.translated;
+					}
+				}
+				
 				// check if string is the target of a string search
 				// if so, store in searched
 				if(this.search.string != null && searched == null)
@@ -3649,6 +3779,12 @@ class RPGMTL_Interface
 					}
 				}
 			}
+			// add completion progress indicator
+			this.add_progress_indicator(
+				document.getElementById("progress_tracker"),
+				progress,
+				[{key:"all", label:"File"}]
+			);
 			this.loader.state = false;
 		}
 		catch(err)

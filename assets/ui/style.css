@@ -548,3 +548,63 @@ a:active {
 .settingmodifiedborder {
 	border-color: #ffd802;
 }
+
+.progress-tracker {
+	display: grid;
+	grid-template-columns: 70px 120px 45px 110px auto;
+	align-items: center;
+	gap: 10px 16px;
+	font-size: 13px;
+	margin: 10px;
+	padding: 12px 16px;
+	border-radius: 8px;
+	min-width: 520px;
+	max-width: 520px;
+	color: #ffffff;
+	background: #111111;
+}
+
+.progress-tracker-complete {
+	background: linear-gradient(180deg,rgba(0, 0, 0, 0.01) 0%, rgba(43, 56, 49, 1) 50%, rgba(31, 99, 47, 1) 100%);
+}
+
+.tracker-label {
+	font-weight: 800;
+}
+
+.tracker-bar-bg {
+	background: #f1f5f9;
+	height: 6px;
+	border-radius: 3px;
+	overflow: hidden;
+}
+
+.tracker-bar-fill {
+	height: 100%;
+	background: #0cb0fa;
+	border-radius: 3px;
+}
+
+.tracker-bar-fill-complete {
+	height: 100%;
+	background: #07faaa;
+	border-radius: 3px;
+}
+
+.tracker-percentage {
+	font-weight: 700;
+	text-align: right;
+}
+
+.tracker-percentage-complete {
+	color: #07faaa;
+}
+
+.tracker-strings-count {
+	font-weight: 500;
+}
+
+.tracker-ignored-count {
+	color: #ffdddd;
+	font-size: 12px;
+}
