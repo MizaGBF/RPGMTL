@@ -3611,6 +3611,13 @@ class RPGMTL_Interface
 		let searched = null;
 		try
 		{
+			const Ix = { // enum for clarity
+				SPAN:0,
+				MARKER:1,
+				TL:2,
+				ORI:3,
+				USERMARKER:4,
+			}
 			// update list in memory with received data
 			this.project.strings = data.strings;
 			this.project.string_groups = data.list;
@@ -3640,7 +3647,9 @@ class RPGMTL_Interface
 			{
 				const elems = this.strtablecache[i];
 				// retrieve string details
+				// s is the local string data
 				const s = this.project.string_groups[elems[0].group][elems[0].string];
+				// g is the global string data
 				const g = this.project.strings[s[0]];
 				// user color marker
 				if(g[3] != elems[4].state)
@@ -3690,16 +3699,16 @@ class RPGMTL_Interface
 				}
 				
 				// span
-				elems[0].classList.toggle("unlinked", target_linked);
-				elems[0].classList.toggle("disabled", s[3] != 0);
+				elems[Ix.SPAN].classList.toggle("unlinked", target_linked);
+				elems[Ix.SPAN].classList.toggle("disabled", s[3] != 0);
 				// modified marker
-				elems[1].classList.toggle("modified", s[4] != 0);
+				elems[Ix.MARKER].classList.toggle("modified", s[4] != 0);
 				// translation
-				elems[2].classList.toggle("disabled", target_disabled);
-				if(elems[2].raw_string != target_text)
+				elems[Ix.TL].classList.toggle("disabled", target_disabled);
+				if(elems[Ix.TL].raw_string != target_text)
 				{
-					elems[2].textContent = target_text;
-					elems[2].raw_string = target_text;
+					elems[Ix.TL].textContent = target_text;
+					elems[Ix.TL].raw_string = target_text;
 				}
 				// update progress
 				if(s[3] != 0)
@@ -3726,9 +3735,9 @@ class RPGMTL_Interface
 							if(
 								(
 									this.search.useorigin
-									&& elems[2].raw_string.toLowerCase().includes(lcstringsearch)
+									&& elems[Ix.ORI].raw_string.toLowerCase().includes(lcstringsearch)
 								)
-								|| elems[3].raw_string.toLowerCase().includes(lcstringsearch)
+								|| elems[Ix.TL].raw_string.toLowerCase().includes(lcstringsearch)
 							)
 							{
 								searched = elems[0];
@@ -3739,9 +3748,9 @@ class RPGMTL_Interface
 							if(
 								(
 									this.search.useorigin
-									&& elems[2].raw_string.toLowerCase() == lcstringsearch
+									&& elems[Ix.ORI].raw_string.toLowerCase() == lcstringsearch
 								)
-								|| elems[3].raw_string.toLowerCase() == lcstringsearch
+								|| elems[Ix.TL].raw_string.toLowerCase() == lcstringsearch
 							)
 							{
 								searched = elems[0];
@@ -3755,9 +3764,9 @@ class RPGMTL_Interface
 							if(
 								(
 									this.search.useorigin
-									&& elems[2].raw_string.includes(lcstringsearch)
+									&& elems[Ix.ORI].raw_string.includes(lcstringsearch)
 								)
-								|| elems[3].raw_string.includes(lcstringsearch)
+								|| elems[Ix.TL].raw_string.includes(lcstringsearch)
 							)
 							{
 								searched = elems[0];
@@ -3768,9 +3777,9 @@ class RPGMTL_Interface
 							if(
 								(
 									this.search.useorigin
-									&& elems[2].raw_string == lcstringsearch
+									&& elems[Ix.ORI].raw_string == lcstringsearch
 								)
-								|| elems[3].raw_string == lcstringsearch
+								|| elems[Ix.TL].raw_string == lcstringsearch
 							)
 							{
 								searched = elems[0];
