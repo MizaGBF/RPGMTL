@@ -836,6 +836,7 @@ class Routing extends Component
 						urlparams.get("name"),
 						p.path,
 						p.search,
+						(p.useorigin ?? true),
 						(p.casesensitive ?? false),
 						(p.contains ?? true),
 						true
@@ -1003,6 +1004,7 @@ class Routing extends Component
 		name,
 		in_path,
 		search,
+		useorigin,
 		casesensitive,
 		contains,
 		onerror_back_to_main = false
@@ -1020,6 +1022,7 @@ class Routing extends Component
 				name:name,
 				path:in_path,
 				search:search,
+				useorigin:useorigin,
 				case:casesensitive,
 				contains:contains
 			}
@@ -1099,6 +1102,7 @@ class Search_Setting extends Component
 	{
 		super(owner);
 		this.string = null;
+		this.useorigin = true;
 		this.casesensitive = false;
 		this.contains = true;
 	}

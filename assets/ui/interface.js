@@ -2007,6 +2007,7 @@ class RPGMTL_Interface
 					this.routes.search(
 						this.project.name, bp,
 						input.value,
+						useorigin.classList.contains("green"),
 						casesensi.classList.contains("green"),
 						!contains.classList.contains("green")
 					);
@@ -2028,6 +2029,18 @@ class RPGMTL_Interface
 			"Search settings",
 			["left", "smalltext", "inline"]
 		);
+		const useorigin = util.add_button(
+			node,
+			"Search Original Strings", "assets/images/original_string.png",
+			() => {
+				useorigin.classList.toggle("green");
+			},
+			true
+		);
+		if(this.search.useorigin)
+		{
+			useorigin.classList.toggle("green", true);
+		}
 		const casesensi = util.add_button(
 			node,
 			"Case Sensitive", "assets/images/search_case.png",
@@ -2065,6 +2078,7 @@ class RPGMTL_Interface
 			name:this.project.name,
 			path:this.project.last_data.path,
 			search:document.getElementById('edit-ori').textContent,
+			useorigin:true,
 			casesensitive:true,
 			contains:false
 		})));
@@ -2341,6 +2355,7 @@ class RPGMTL_Interface
 		{
 			const bp = data.path;
 			this.search.string = data.search;
+			this.search.useorigin = data.useorigin;
 			this.search.casesensitive = data["case"];
 			this.search.contains = data.contains;
 			util.update_page_location(
@@ -2349,6 +2364,7 @@ class RPGMTL_Interface
 				{
 					path:bp,
 					search:this.search.string,
+					useorigin:this.search.useorigin,
 					casesensitive:this.search.casesensitive,
 					contains:this.search.contains
 				}
@@ -3173,6 +3189,7 @@ class RPGMTL_Interface
 							this.project.name,
 							returnpath,
 							this.search.string,
+							this.search.useorigin,
 							this.search.casesensitive,
 							this.search.contains
 						);
@@ -3576,7 +3593,11 @@ class RPGMTL_Interface
 					{
 						if(this.search.contains)
 						{
-							if(elems[2].raw_string.toLowerCase().includes(lcstringsearch)
+							if(
+								(
+									this.search.useorigin
+									&& elems[2].raw_string.toLowerCase().includes(lcstringsearch)
+								)
 								|| elems[3].raw_string.toLowerCase().includes(lcstringsearch)
 							)
 							{
@@ -3585,7 +3606,11 @@ class RPGMTL_Interface
 						}
 						else
 						{
-							if(elems[2].raw_string.toLowerCase() == lcstringsearch
+							if(
+								(
+									this.search.useorigin
+									&& elems[2].raw_string.toLowerCase() == lcstringsearch
+								)
 								|| elems[3].raw_string.toLowerCase() == lcstringsearch
 							)
 							{
@@ -3597,7 +3622,11 @@ class RPGMTL_Interface
 					{
 						if(this.search.contains)
 						{
-							if(elems[2].raw_string.includes(lcstringsearch)
+							if(
+								(
+									this.search.useorigin
+									&& elems[2].raw_string.includes(lcstringsearch)
+								)
 								|| elems[3].raw_string.includes(lcstringsearch)
 							)
 							{
@@ -3606,7 +3635,11 @@ class RPGMTL_Interface
 						}
 						else
 						{
-							if(elems[2].raw_string == lcstringsearch
+							if(
+								(
+									this.search.useorigin
+									&& elems[2].raw_string == lcstringsearch
+								)
 								|| elems[3].raw_string == lcstringsearch
 							)
 							{

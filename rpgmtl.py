@@ -2220,6 +2220,7 @@ class RPGMTL():
         path = payload.get('path', None)
         name = payload.get('name', None)
         search = payload.get('search', None)
+        useorigin = payload.get('useorigin', None)
         case = payload.get('case', None)
         contains = payload.get('contains', None)
         if path is None:
@@ -2228,6 +2229,8 @@ class RPGMTL():
             return web.json_response({"result":"bad", "message":"Bad request, missing 'search' parameter"}, status=400)
         elif name is None:
             return web.json_response({"result":"bad", "message":"Bad request, missing 'name' parameter"}, status=400)
+        elif useorigin is None:
+            return web.json_response({"result":"bad", "message":"Bad request, missing 'useorigin' parameter"}, status=400)
         elif case is None:
             return web.json_response({"result":"bad", "message":"Bad request, missing 'case' parameter"}, status=400)
         elif contains is None:
@@ -2237,21 +2240,25 @@ class RPGMTL():
             self.load_strings(name)
             # set search term and list all string matching in set
             lsearch : str = search.lower() if not case else search
-            original_matches : set[str] # contains string id matching at original level
+            original_matches : set[str] = set() # contains string id matching at original level
             translation_matches : set[str] # contains string id matching at translation level
             if not case:
                 if contains:
-                    original_matches = {k for k, s in self.strings[name]["strings"].items() if lsearch in s[GloIndex.ORI].lower()}
+                    if useorigin:
+                        original_matches = {k for k, s in self.strings[name]["strings"].items() if lsearch in s[GloIndex.ORI].lower()}
                     translation_matches = {k for k, s in self.strings[name]["strings"].items() if (s[GloIndex.TL] is not None and lsearch in s[GloIndex.TL].lower())}
                 else:
-                    original_matches = {k for k, s in self.strings[name]["strings"].items() if lsearch == s[GloIndex.ORI].lower()}
+                    if useorigin:
+                        original_matches = {k for k, s in self.strings[name]["strings"].items() if lsearch == s[GloIndex.ORI].lower()}
                     translation_matches = {k for k, s in self.strings[name]["strings"].items() if (s[GloIndex.TL] is not None and lsearch == s[GloIndex.TL].lower())}
             else:
                 if contains:
-                    original_matches = {k for k, s in self.strings[name]["strings"].items() if lsearch in s[GloIndex.ORI]}
+                    if useorigin:
+                        original_matches = {k for k, s in self.strings[name]["strings"].items() if lsearch in s[GloIndex.ORI]}
                     translation_matches = {k for k, s in self.strings[name]["strings"].items() if (s[GloIndex.TL] is not None and lsearch in s[GloIndex.TL])}
                 else:
-                    original_matches = {k for k, s in self.strings[name]["strings"].items() if lsearch == s[GloIndex.ORI]}
+                    if useorigin:
+                        original_matches = {k for k, s in self.strings[name]["strings"].items() if lsearch == s[GloIndex.ORI]}
                     translation_matches = {k for k, s in self.strings[name]["strings"].items() if (s[GloIndex.TL] is not None and lsearch == s[GloIndex.TL])}
             files : set[str] = set()
             for f, groups in self.strings[name]["files"].items():
@@ -2289,7 +2296,7 @@ class RPGMTL():
             keys.sort()
             for f in keys:
                 result[f] = self.projects[name]["files"].get(f, {}).get("ignored", False)
-            return web.json_response({"result":"ok", "data":{"config":self.projects[name], "name":name, "path":path, "search":search, "case":case, "contains":contains, "files":result}, "message":f"Found in {len(files)} files"})
+            return web.json_response({"result":"ok", "data":{"config":self.projects[name], "name":name, "path":path, "search":search, "useorigin":useorigin, "case":case, "contains":contains, "files":result}, "message":f"Found in {len(files)} files"})
 
     # /api/local_path
     async def local_path(self : RPGMTL, request : web.Request) -> web.Response:
