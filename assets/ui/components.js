@@ -526,19 +526,168 @@ class Project_Info extends Component
 	constructor(owner)
 	{
 		super(owner);
-		// TOFIX
-		//this.path = null;
 		this.name = null;
 		this.config = null;
 		this.version = null;
+		this.strings = null;
+		this.last_data = null;
 	}
 	
 	reset()
 	{
-		//this.path = null;
 		this.name = null;
 		this.config = null;
 		this.version = null;
+		this.strings = null;
+		this.last_data = null;
+	}
+}
+
+class Project_Progress extends Component
+{
+	constructor(owner)
+	{
+		super(owner);
+		this.all = {
+			strings:0,
+			translated:0,
+			disabled:0
+		};
+		this.folder = {
+			strings:0,
+			translated:0,
+			disabled:0
+		};
+		this.file = {
+			strings:0,
+			translated:0,
+			disabled:0
+		};
+		this.node = util.add_to(
+			null,
+			"div",
+			{
+				cls:["progress-tracker"]
+			}
+		);
+	}
+	
+	reset(keys)
+	{
+		for(const key of keys)
+		{
+			if(key in this)
+			{
+				this[key] = {
+					strings:0,
+					translated:0,
+					disabled:0
+				};
+			}
+		}
+	}
+	
+	add_tracker(node)
+	{
+		node.appendChild(this.node);
+	}
+	
+	update_and_show(infos)
+	{
+		this.node.innerHTML = "";
+		for(const label of ["Strings", "Progress", "%", "Count", "Ignored"])
+		{
+			util.add_to(
+				this.node,
+				"div",
+				{
+					cls:["tracker-label"],
+					innerText:label
+				}
+			);
+		}
+		// note: The first line must always be the global progress
+		let is_main_project = true;
+		for(const info of infos)
+		{
+			const key = info.key;
+			if(is_main_project)
+			{
+				is_main_project = false;
+				this.node.classList.toggle("progress-tracker-complete", this[key].translated == this[key].strings);
+			}
+			else
+			{
+				if(this[key].strings == this[infos[0].key].strings)
+				{
+					break;
+				}
+			}
+			const is_complete = this[key].translated == this[key].strings;
+			const percent = (
+				is_complete
+				? 100
+				: Math.min(99.99, Math.round(10000 * this[key].translated / this[key].strings) / 100)
+			);
+			util.add_to(
+				this.node,
+				"div",
+				{
+					cls:["tracker-label"],
+					innerText:info.label
+				}
+			);
+			const bar_bg = util.add_to(
+				this.node,
+				"div",
+				{
+					cls:["tracker-bar-bg"]
+				}
+			);
+			util.add_to(
+				bar_bg,
+				"div",
+				{
+					cls:(
+						is_complete
+						? ["tracker-bar-fill-complete"]
+						: ["tracker-bar-fill"]
+					)
+				}
+			).style.width = percent + "%";
+			util.add_to(
+				this.node,
+				"div",
+				{
+					cls:(
+						is_complete
+						? ["tracker-percentage-complete"]
+						: ["tracker-percentage-fill"]
+					),
+					innerText:percent + "%"
+				}
+			);
+			util.add_to(
+				this.node,
+				"div",
+				{
+					cls:["tracker-strings-count"],
+					innerText:this[key].translated + "/" + this[key].strings
+				}
+			);
+			util.add_to(
+				this.node,
+				"div",
+				{
+					cls:["tracker-ignored-count"],
+					innerText:(
+						this[key].disabled
+						? "" + this[key].disabled
+						: "None"
+					)
+				}
+			);
+		}
 	}
 }
 

@@ -8,6 +8,7 @@ class RPGMTL_Interface
 		this.edit = new Edit_Area(this);
 		this.routes = new Routing(this);
 		this.project = new Project_Info(this);
+		this.progress = new Project_Progress(this);
 		this.search = new Search_Setting(this);
 		this.top_bar = new Top_Bar(this);
 		this.help = new Help(this);
@@ -2114,105 +2115,6 @@ class RPGMTL_Interface
 		})));
 		window.open(window.location.pathname + '?' + urlparams.toString(), '_blank').focus(); // open in another tab
 	}
-	
-	// used to make the translation project progress indicator
-	add_progress_indicator(completion, progress, infos)
-	{
-		completion.innerHTML = "";
-		for(const label of ["Strings", "Progress", "%", "Count", "Ignored"])
-		{
-			util.add_to(
-				completion,
-				"div",
-				{
-					cls:["tracker-label"],
-					innerText:label
-				}
-			);
-		}
-		// note: The first line must always be the global progress
-		let is_main_project = true;
-		for(const info of infos)
-		{
-			const key = info.key;
-			if(is_main_project)
-			{
-				is_main_project = false;
-				completion.classList.toggle("progress-tracker-complete", progress[key].translated == progress[key].strings);
-			}
-			else
-			{
-				if(progress[key].strings == progress[infos[0].key].strings)
-				{
-					break;
-				}
-			}
-			const is_complete = progress[key].translated == progress[key].strings;
-			const percent = (
-				is_complete
-				? 100
-				: Math.min(99.99, Math.round(10000 * progress[key].translated / progress[key].strings) / 100)
-			);
-			util.add_to(
-				completion,
-				"div",
-				{
-					cls:["tracker-label"],
-					innerText:info.label
-				}
-			);
-			const bar_bg = util.add_to(
-				completion,
-				"div",
-				{
-					cls:["tracker-bar-bg"]
-				}
-			);
-			util.add_to(
-				bar_bg,
-				"div",
-				{
-					cls:(
-						is_complete
-						? ["tracker-bar-fill-complete"]
-						: ["tracker-bar-fill"]
-					)
-				}
-			).style.width = percent + "%";
-			util.add_to(
-				completion,
-				"div",
-				{
-					cls:(
-						is_complete
-						? ["tracker-percentage-complete"]
-						: ["tracker-percentage-fill"]
-					),
-					innerText:percent + "%"
-				}
-			);
-			util.add_to(
-				completion,
-				"div",
-				{
-					cls:["tracker-strings-count"],
-					innerText:progress[key].translated + "/" + progress[key].strings
-				}
-			);
-			util.add_to(
-				completion,
-				"div",
-				{
-					cls:["tracker-ignored-count"],
-					innerText:(
-						progress[key].disabled
-						? "" + progress[key].disabled
-						: "None"
-					)
-				}
-			);
-		}
-	}
 
 	// open folder /api/browse
 	browse_files(data)
@@ -2272,14 +2174,8 @@ class RPGMTL_Interface
 			// add the string search
 			this.addSearchBar(fragment, bp);
 			
-			// add completion indicator (filled at the bottom)
-			const completion = util.add_to(
-				fragment,
-				"div",
-				{
-					cls:["progress-tracker"]
-				}
-			);
+			// add completion indicator
+			this.progress.add_tracker(fragment);
 			
 			let first_element = null;
 			util.add_stylized_path(fragment, bp);
@@ -2401,45 +2297,32 @@ class RPGMTL_Interface
 			// add space at the bottom
 			util.add_spacer(fragment);
 			// set completion tracker
-			const progress = {
-				all:{
-					strings:0,
-					translated:0,
-					disabled:0
-				},
-				folder:{
-					strings:0,
-					translated:0,
-					disabled:0
-				}
-			};
+			this.progress.reset(["all", "folder"]);
 			for(const filepath in this.project.config.files)
 			{
 				if(this.project.config.files[filepath].ignored)
 				{
-					progress.all.disabled += this.project.config.files[filepath].strings;
+					this.progress.all.disabled += this.project.config.files[filepath].strings;
 					if(filepath.startsWith(bp))
 					{
-						progress.folder.disabled += this.project.config.files[filepath].strings;
+						this.progress.folder.disabled += this.project.config.files[filepath].strings;
 					}
 				}
 				else
 				{
-					progress.all.disabled += this.project.config.files[filepath].disabled_strings;
-					progress.all.strings += this.project.config.files[filepath].strings - this.project.config.files[filepath].disabled_strings;
-					progress.all.translated += this.project.config.files[filepath].translated;
+					this.progress.all.disabled += this.project.config.files[filepath].disabled_strings;
+					this.progress.all.strings += this.project.config.files[filepath].strings - this.project.config.files[filepath].disabled_strings;
+					this.progress.all.translated += this.project.config.files[filepath].translated;
 					if(filepath.startsWith(bp))
 					{
-						progress.folder.disabled += this.project.config.files[filepath].disabled_strings;
-						progress.folder.strings += this.project.config.files[filepath].strings - this.project.config.files[filepath].disabled_strings;
-						progress.folder.translated += this.project.config.files[filepath].translated;
+						this.progress.folder.disabled += this.project.config.files[filepath].disabled_strings;
+						this.progress.folder.strings += this.project.config.files[filepath].strings - this.project.config.files[filepath].disabled_strings;
+						this.progress.folder.translated += this.project.config.files[filepath].translated;
 					}
 				}
 			}
-			// add completion progress indicator
-			this.add_progress_indicator(
-				completion,
-				progress,
+			// update progress infos
+			this.progress.update_and_show(
 				[
 					{key:"all", label:"Project"},
 					{key:"folder", label:"Folders"}
@@ -3404,14 +3287,7 @@ class RPGMTL_Interface
 				fragment,
 				this.project.name
 			);
-			util.add_to(
-				fragment,
-				"div",
-				{
-					cls:["progress-tracker"],
-					id:"progress_tracker"
-				}
-			);
+			this.progress.add_tracker(fragment);
 			util.add_stylized_path(
 				fragment,
 				this.lastfileopened
@@ -3671,13 +3547,7 @@ class RPGMTL_Interface
 				}
 			}
 			// set completion tracker
-			const progress = {
-				all:{
-					strings:0,
-					translated:0,
-					disabled:0
-				}
-			};
+			this.progress.reset(["file"]);
 			// iterate over ALL strings
 			for(let i = 0; i < this.strtablecache.length; ++i)
 			{
@@ -3749,14 +3619,14 @@ class RPGMTL_Interface
 				// update progress
 				if(s[3] != 0)
 				{
-					++progress.all.disabled;
+					++this.progress.all.disabled;
 				}
 				else
 				{
-					++progress.all.strings;
+					++this.progress.all.strings;
 					if(has_translation)
 					{
-						++progress.all.translated;
+						++this.progress.all.translated;
 					}
 				}
 				
@@ -3824,12 +3694,8 @@ class RPGMTL_Interface
 					}
 				}
 			}
-			// add completion progress indicator
-			this.add_progress_indicator(
-				document.getElementById("progress_tracker"),
-				progress,
-				[{key:"all", label:"File"}]
-			);
+			// update progress infos
+			this.progress.update_and_show([{key:"file", label:"File"}]);
 			this.loader.state = false;
 		}
 		catch(err)
