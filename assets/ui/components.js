@@ -592,6 +592,61 @@ class Project_Progress extends Component
 		node.appendChild(this.node);
 	}
 	
+	compute_file_string(is_disabled, is_translated)
+	{
+		if(is_disabled)
+		{
+			++this.file.disabled;
+		}
+		else
+		{
+			++this.file.strings;
+			if(is_translated)
+			{
+				++this.file.translated;
+			}
+		}
+	}
+	
+	compute_browse_view(project, path)
+	{
+		this.reset(["all", "folder"]);
+		this.update_directory_completion(project, path);
+		this.update_and_show(
+			[
+				{key:"all", label:"Project"},
+				{key:"folder", label:"Folders"}
+			]
+		);
+	}
+	
+	update_directory_completion(project, path)
+	{
+		for(const filepath in project.config.files)
+		{
+			if(project.config.files[filepath].ignored)
+			{
+				this.all.disabled += project.config.files[filepath].strings;
+				if(filepath.startsWith(path))
+				{
+					this.folder.disabled += project.config.files[filepath].strings;
+				}
+			}
+			else
+			{
+				this.all.disabled += project.config.files[filepath].disabled_strings;
+				this.all.strings += project.config.files[filepath].strings - project.config.files[filepath].disabled_strings;
+				this.all.translated += project.config.files[filepath].translated;
+				if(filepath.startsWith(path))
+				{
+					this.folder.disabled += project.config.files[filepath].disabled_strings;
+					this.folder.strings += project.config.files[filepath].strings - project.config.files[filepath].disabled_strings;
+					this.folder.translated += project.config.files[filepath].translated;
+				}
+			}
+		}
+	}
+	
 	update_and_show(infos)
 	{
 		this.node.innerHTML = "";

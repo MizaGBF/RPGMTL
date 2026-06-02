@@ -2262,7 +2262,11 @@ class RPGMTL_Interface
 							{
 								this.post(
 									"/api/ignore_file",
-									(result_data) => this.update_file_list(result_data),
+									(result_data) => {
+										this.update_file_list(result_data);
+										// update completion
+										this.progress.compute_browse_view(this.project, bp);
+									},
 									null,
 									{
 										name:this.project.name,
@@ -2297,38 +2301,7 @@ class RPGMTL_Interface
 			// add space at the bottom
 			util.add_spacer(fragment);
 			// set completion tracker
-			this.progress.reset(["all", "folder"]);
-			for(const filepath in this.project.config.files)
-			{
-				if(this.project.config.files[filepath].ignored)
-				{
-					this.progress.all.disabled += this.project.config.files[filepath].strings;
-					if(filepath.startsWith(bp))
-					{
-						this.progress.folder.disabled += this.project.config.files[filepath].strings;
-					}
-				}
-				else
-				{
-					this.progress.all.disabled += this.project.config.files[filepath].disabled_strings;
-					this.progress.all.strings += this.project.config.files[filepath].strings - this.project.config.files[filepath].disabled_strings;
-					this.progress.all.translated += this.project.config.files[filepath].translated;
-					if(filepath.startsWith(bp))
-					{
-						this.progress.folder.disabled += this.project.config.files[filepath].disabled_strings;
-						this.progress.folder.strings += this.project.config.files[filepath].strings - this.project.config.files[filepath].disabled_strings;
-						this.progress.folder.translated += this.project.config.files[filepath].translated;
-					}
-				}
-			}
-			// update progress infos
-			this.progress.update_and_show(
-				[
-					{key:"all", label:"Project"},
-					{key:"folder", label:"Folders"}
-				]
-			);
-			
+			this.progress.compute_browse_view(this.project, bp);
 			this.update_main(fragment).then(() => {
 				if(scrollTo != null) // scroll to last opened file
 				{
@@ -3617,18 +3590,7 @@ class RPGMTL_Interface
 					elems[Ix.TL].raw_string = target_text;
 				}
 				// update progress
-				if(s[3] != 0)
-				{
-					++this.progress.all.disabled;
-				}
-				else
-				{
-					++this.progress.all.strings;
-					if(has_translation)
-					{
-						++this.progress.all.translated;
-					}
-				}
+				this.progress.compute_file_string(s[3] != 0, has_translation);
 				
 				// check if string is the target of a string search
 				// if so, store in searched
