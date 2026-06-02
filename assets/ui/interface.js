@@ -3080,9 +3080,14 @@ class RPGMTL_Interface
 					this.all_disable_string(span);
 					util.stop_event(e);
 				}
-				else if(util.check_sp_key(e, 0, 0, 0)) // marker toggle
+				else if(util.check_sp_key(e, 0, 0, 0)) // marker toggle (+1)
 				{
-					this.cycle_marker(span);
+					this.cycle_marker(span, 1);
+					util.stop_event(e);
+				}
+				else if(util.check_sp_key(e, 1, 0, 0)) // marker toggle (-1)
+				{
+					this.cycle_marker(span, -1);
 					util.stop_event(e);
 				}
 			}
@@ -3191,7 +3196,7 @@ class RPGMTL_Interface
 		this.nav.update_focus(elem);
 	}
 
-	cycle_marker(elem)
+	cycle_marker(elem, shift)
 	{
 		this.post(
 			"/api/update_marker",
@@ -3201,7 +3206,13 @@ class RPGMTL_Interface
 				name:this.project.name,
 				path:this.project.last_data.path,
 				id:this.project.string_groups[elem.group][elem.string][0],
-				value:(this.project.strings[this.project.string_groups[elem.group][elem.string][0]][3] + 1) % 7
+				value:(
+					(
+						this.project.strings[this.project.string_groups[elem.group][elem.string][0]][3]
+						+ shift
+						+ this.constant.marker_classes.length
+					) % this.constant.marker_classes.length
+				)
 			}
 		);
 	}
@@ -3326,7 +3337,7 @@ class RPGMTL_Interface
 					}
 				},
 				"<ul>\
-					<li><b>Right Click</b> or <b>Ctrl+B</b> on a line to cycle the global marker.</li>\
+					<li><b>Right Click</b> or <b>Ctrl+B</b> on a line to cycle the global marker. <b>Shift</b> to cycle in reverse.</li>\
 					<li><b>Ctrl+Click</b> or <b>Ctrl+Y</b> on a line to make it be <b>ignored</b> during the release process.</li>\
 					<li><b>Alt+Ctrl+Click</b> or <b>Ctrl+Shift+Y</b> on a line to <b>ignore ALL</b> occurences of this string in this file.</li>\
 					<li><b>Ctrl+Right Click</b> or <b>Ctrl+Alt+Y</b> on a line to <b>ignore ALL</b> occurences of this string in this this.project.</li>\

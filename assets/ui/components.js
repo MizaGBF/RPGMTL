@@ -17,7 +17,15 @@ class Constant extends Component
 		this.const_bar = document.getElementById("top");
 		this.const_main = document.getElementById("main");
 		this.const_bottom = document.getElementById("bottom");
-		this.const_marker_classes = Object.freeze(["", "marker-red", "marker-green", "marker-blue", "marker-pink", "marker-yellow", "marker-cyan"]);
+		this.const_marker_classes = Object.freeze([
+			"",
+			"marker-red",
+			"marker-green",
+			"marker-blue",
+			"marker-pink",
+			"marker-yellow",
+			"marker-cyan"
+		]);
 		this.const_cwd_code = "$$__RPGMTL_FORCE_WORKING_DIRECTORY__$$";
 	}
 	
@@ -1516,15 +1524,27 @@ class Shortcuts extends Component
 		// cycle the color
 		if(
 			!all_allowed
-			|| !util.check_sp_key(e, 0, 0, 1)
 			|| !e.target.classList.contains("string-group")
 		)
 		{
 			return;
 		}
-		this.owner.nav.update_focus(e.target);
-		const idx = this.owner.nav.to_string_index(this.owner.strtablecache.length);
-		this.owner.cycle_marker(this.owner.strtablecache[idx][0]);
+		if(util.check_sp_key(e, 0, 0, 1))
+		{
+			this.owner.nav.update_focus(e.target);
+			const idx = this.owner.nav.to_string_index(this.owner.strtablecache.length);
+			this.owner.cycle_marker(this.owner.strtablecache[idx][0], 1);
+		}
+		else if(util.check_sp_key(e, 1, 0, 1))
+		{
+			this.owner.nav.update_focus(e.target);
+			const idx = this.owner.nav.to_string_index(this.owner.strtablecache.length);
+			this.owner.cycle_marker(this.owner.strtablecache[idx][0], -1);
+		}
+		else
+		{
+			return;
+		}
 		util.stop_event(e);
 	}
 	
