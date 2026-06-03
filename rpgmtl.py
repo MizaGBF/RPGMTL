@@ -334,16 +334,19 @@ class RPGMTL():
     def save(self : RPGMTL) -> None:
         for k, v in self.modified.items(): # check modified flags
             if v: # if raised
-                folder = 'projects/' + k + '/'
+                folder = f"projects/{k}/"
+                max_success : int = 2
+                success : int = 2
+                self.log.info(f"Saving projects '{k}' files...")
                 try:
                     # write config.json
                     with open(folder + "_tmp_config_.json", mode='w', encoding='utf-8') as f: # file is written to temporary location in case of issue
                         json.dump(self.projects[k], f, ensure_ascii=False, indent=4)
                     # move file to actual name
                     shutil.move(folder + "_tmp_config_.json", folder + "config.json")
-                    self.log.info("Updated projects/" + k + "/config.json")
                 except Exception as e:
-                    self.log.error("Failed to update projects/" + k + "/config.json:\n" + self.trbk(e))
+                    success -= 1
+                    self.log.error(f"Failed to update projects/{k}/config.json:\n{self.trbk(e)}")
                 try:
                     if k in self.strings: # if strings.json is loaded
                         # also save it
@@ -351,15 +354,23 @@ class RPGMTL():
                             f.write(self.serialize_format_json(self.strings[k]))
                         # move file to actual name
                         shutil.move(folder + "_tmp_strings_.json", folder + "strings.json")
-                        self.log.info("Updated projects/" + k + "/strings.json")
+                    else:
+                        max_success -= 1
                 except Exception as e:
-                    self.log.error("Failed to update projects/" + k + "/strings.json:\n" + self.trbk(e))
+                    success -= 1
+                    self.log.error(f"Failed to update projects/{k}/strings.json:\n{self.trbk(e)}")
                 self.modified[k] = False # reset it
+                match (max_success - success):
+                    case 0:
+                        self.log.info(f"Saved projects '{k}' files")
+                    case 1:
+                        self.log.info(f"Saved projects '{k}' files but an error occured")
+                    case _:
+                        self.log.info(f"Failed to save projects '{k}' files")
         if self.settings_modified: # write settings if flag is set
             try:
                 with open('settings.json', mode='w', encoding='utf-8') as f:
                     json.dump({"version":1, "settings":self.settings, "history":self.history}, f, ensure_ascii=False, indent=0, separators=(',', ':'))
-                self.log.info("Updated settings.json")
             except Exception as e:
                 self.log.error("Failed to update settings.json:\n" + self.trbk(e))
             self.settings_modified = False
