@@ -50,10 +50,10 @@ class PatcherHelper():
         self._content_ = s.encode(encoding)
 
     # Convert to/from JSON
-    def to_json(self : PatcherHelper, *, encoding : str = 'utf-8') -> str:
+    def to_json(self : PatcherHelper, *, encoding : str = 'utf-8') -> Any:
         return json.loads(self._content_.decode(encoding))
 
-    def from_json(self : PatcherHelper, s : str, *, encoding : str = 'utf-8', ensure_ascii : bool = False, indent : None|int = None, separators : None|tuple[str, str] = None) -> None:
+    def from_json(self : PatcherHelper, s : Any, *, encoding : str = 'utf-8', ensure_ascii : bool = False, indent : None|int = None, separators : None|tuple[str, str] = None) -> None:
         self._content_ = json.dumps(s, ensure_ascii=ensure_ascii, separators=separators, indent=indent).encode(encoding)
 
 ######################################################

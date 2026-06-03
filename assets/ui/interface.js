@@ -2676,6 +2676,23 @@ class RPGMTL_Interface
 					);
 				}
 			);
+			util.add_to(
+				fragment,
+				"div",
+				{
+					cls:["label", "left"],
+					innerText:"Helper references"
+				}
+			)
+			util.add_to(
+				fragment,
+				"pre",
+				{
+					cls:["documentation"],
+					innerText:"Byte Access:\n• helper.content -> str\n• helper.content = modified_bytes\n\n• helper.to_str(encoding='utf-8') -> str\n• helper.from_str(modified_string, encoding='utf-8')\n\nJSON Access:\n• helper.to_json(encoding='utf-8') -> Any\n• helper.from_json(modified_data, encoding='utf-8', ensure_ascii=False, indent=None, separators=None)\n\nConfirm modifications:\n• helper.modified = True"
+				}
+			);
+			
 			if(key != null)
 			{
 				fragment.getElementById("filter").value = key;
