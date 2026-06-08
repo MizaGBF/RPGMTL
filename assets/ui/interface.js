@@ -2178,7 +2178,11 @@ class RPGMTL_Interface
 			this.progress.add_tracker(fragment);
 			
 			let first_element = null;
-			util.add_stylized_path(fragment, bp);
+			util.add_stylized_path(
+				this,
+				fragment,
+				bp
+			);
 			// go over folders
 			for(let i = 0; i < data.folders.length; ++i)
 			{
@@ -3279,6 +3283,7 @@ class RPGMTL_Interface
 			);
 			this.progress.add_tracker(fragment);
 			util.add_stylized_path(
+				this,
 				fragment,
 				this.lastfileopened
 			);

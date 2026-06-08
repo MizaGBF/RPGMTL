@@ -577,6 +577,7 @@ a:active {
 .path-segment {
 	display: flex;
 	align-items: center;
+	cursor: pointer;
 	white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
@@ -599,6 +600,7 @@ a:active {
 	margin: 0px 8px;
 	font-weight: bold;
 	user-select: none;
+	cursor: pointer;
 	white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;

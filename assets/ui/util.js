@@ -216,7 +216,7 @@ class util
 		);
 	}
 	
-	static add_stylized_path(node, path)
+	static add_stylized_path(rpgmtl, node, path)
 	{
 		if(path == "")
 		{
@@ -237,6 +237,7 @@ class util
 				cls:["path-container"]
 			}
 		);
+		let folder_path = "";
 		for(let i = 0; i < parts.length; ++i)
 		{
 			if(i > 0)
@@ -257,18 +258,36 @@ class util
 					&& parts[i + 1] == ""
 				)
 			);
-			util.add_to(
-				container,
-				"span",
-				{
-					cls:(
-						is_final
-						? ["path-segment-final"]
-						: ["path-segment"]
-					),
-					innerText:parts[i]
-				}
-			);
+			folder_path += parts[i] + "/";
+			const c_folder_path = folder_path;
+			if(is_final)
+			{
+				util.add_to(
+					container,
+					"span",
+					{
+						cls:["path-segment-final"],
+						innerText:parts[i]
+					}
+				);
+			}
+			else
+			{
+				util.add_to(
+					container,
+					"span",
+					{
+						cls:["path-segment"],
+						innerText:parts[i],
+						onclick:() => {
+							rpgmtl.routes.browse(
+								rpgmtl.project.name,
+								c_folder_path
+							);
+						}
+					}
+				);
+			}
 			if(is_final)
 			{
 				break;
