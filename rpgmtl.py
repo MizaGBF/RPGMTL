@@ -1658,8 +1658,10 @@ class RPGMTL():
                 self.projects[name]["patches"].pop(key)
             if newkey is not None and code is not None:
                 self.projects[name]["patches"][newkey] = code
+            if len(self.projects[name]["patches"]) > 0: # sort by file filters
                 l : list[str] = list(self.projects[name]["patches"].keys())
                 l.sort()
+                self.projects[name]["patches"] = {k:self.projects[name]["patches"][k] for k in l}
             self.modified[name] = True
             return web.json_response({"result":"ok", "data":{"name":name, "config":self.projects[name]}})
 
