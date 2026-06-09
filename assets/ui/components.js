@@ -650,7 +650,7 @@ class Project_Progress extends Component
 	update_and_show(infos)
 	{
 		this.node.innerHTML = "";
-		for(const label of ["Strings", "Progress", "%", "Count", "Ignored"])
+		for(const label of ["Strings", "Count", "Progress", "%", "Ignored"])
 		{
 			util.add_to(
 				this.node,
@@ -692,6 +692,14 @@ class Project_Progress extends Component
 					innerText:info.label
 				}
 			);
+			util.add_to(
+				this.node,
+				"div",
+				{
+					cls:["tracker-strings-count"],
+					innerText:this[key].translated + "/" + this[key].strings
+				}
+			);
 			const bar_bg = util.add_to(
 				this.node,
 				"div",
@@ -726,14 +734,6 @@ class Project_Progress extends Component
 				this.node,
 				"div",
 				{
-					cls:["tracker-strings-count"],
-					innerText:this[key].translated + "/" + this[key].strings
-				}
-			);
-			util.add_to(
-				this.node,
-				"div",
-				{
 					cls:["tracker-ignored-count"],
 					innerText:(
 						this[key].disabled
@@ -743,6 +743,105 @@ class Project_Progress extends Component
 				}
 			);
 		}
+	}
+	
+	// add progression to individual files
+	add_path_info(
+		node,
+		title,
+		infos
+	)
+	{
+		const total = infos.strings - infos.disabled_strings;
+		const count = infos.translated;
+		const is_complete = (count == total || total == 0);
+		const percent = (
+			is_complete
+			? 100
+			: Math.min(99.99, Math.round(10000 * count / total) / 100)
+		);
+		if(is_complete)
+		{
+			node.classList.add("complete");
+		}
+		util.add_to(
+			node,
+			"div",
+			{
+				cls:["file-path-text"],
+				innerText:title
+			}
+		)
+		const tracker = util.add_to(
+			node,
+			"div",
+			{
+				cls:["file-progress-tracker"]
+			}
+		)
+		util.add_to(
+			tracker,
+			"div",
+			{
+				cls:["tracker-strings-count"],
+				innerText:count + "/" + total
+			}
+		);
+		if(total > 0)
+		{
+			const bar_bg = util.add_to(
+				tracker,
+				"div",
+				{
+					cls:["tracker-bar-bg"]
+				}
+			);
+			util.add_to(
+				bar_bg,
+				"div",
+				{
+					cls:(
+						is_complete
+						? ["tracker-bar-fill-complete"]
+						: ["tracker-bar-fill"]
+					)
+				}
+			).style.width = percent + "%";
+			util.add_to(
+				tracker,
+				"div",
+				{
+					cls:(
+						is_complete
+						? ["tracker-percentage-complete"]
+						: ["tracker-percentage-fill"]
+					),
+					innerText:percent + "%"
+				}
+			);
+		}
+		else
+		{
+			for(let i = 0; i < 2; ++i)
+			{
+				util.add_to(
+					tracker,
+					"div"
+				);
+			}
+		}
+		util.add_to(
+			tracker,
+			"div",
+			{
+				cls:["tracker-ignored-count"],
+				innerText:(
+					infos.disabled_strings
+					? "" + infos.disabled_strings + " disabled"
+					: ""
+				)
+			}
+		);
 	}
 }
 

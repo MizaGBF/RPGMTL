@@ -2247,8 +2247,8 @@ class RPGMTL_Interface
 			);
 			// possible class sets
 			let cls = [
-				["interact", "text-wrapper"],
-				["interact", "text-wrapper", "disabled"]
+				["interact", "file-path-container"],
+				["interact", "file-path-container", "disabled"]
 			];
 			let scrollTo = null; // contains element to scroll to
 			for(const [key, value] of Object.entries(data.files))
@@ -2291,16 +2291,15 @@ class RPGMTL_Interface
 				{
 					first_element = button;
 				}
-				// add completion indicator
-				let total = this.project.config.files[key].strings - this.project.config.files[key].disabled_strings;
-				let count = this.project.config.files[key].translated;
-				let percent = total > 0 ? ", " + (Math.round(10000 * count / total) / 100) + "%)" : ")";
-				
-				if(count == total) // add complete class if no string left to translate
-					button.classList.add("complete");
-				button.textContent = key + ' (' + this.project.config.files[key].strings + percent; // set text
+				this.progress.add_path_info(
+					button,
+					key,
+					this.project.config.files[key]
+				);
 				if(key == this.lastfileopened) // if this is the last opened file
+				{
 					scrollTo = button; // store it
+				}
 			}
 			// add space at the bottom
 			util.add_spacer(fragment);
@@ -2400,8 +2399,8 @@ class RPGMTL_Interface
 				["left"]
 			);
 			let cls = [
-				["interact", "text-wrapper"],
-				["interact", "text-wrapper", "disabled"]
+				["interact", "file-path-container"],
+				["interact", "file-path-container", "disabled"]
 			];
 			// list files
 			let first_element = null;
@@ -2436,18 +2435,15 @@ class RPGMTL_Interface
 						}
 					}
 				);
+				this.progress.add_path_info(
+					button,
+					key,
+					this.project.config.files[key]
+				);
 				if(first_element == null)
 				{
 					first_element = button;
 				}
-				let total = this.project.config.files[key].strings - this.project.config.files[key].disabled_strings;
-				let count = this.project.config.files[key].translated;
-				let percent = total > 0 ? ', ' + (Math.round(10000 * count / total) / 100) + '%)' : ')';
-				if(count == total)
-				{
-					button.classList.add("complete");
-				}
-				button.innerHTML = key + ' (' + total + " strings" + percent;
 			}
 			this.update_main(fragment, first_element);
 		}
