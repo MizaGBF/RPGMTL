@@ -8,7 +8,7 @@ class GeneralActions(Plugin):
     def __init__(self : GeneralActions) -> None:
         super().__init__()
         self.name : str = "General Actions"
-        self.description : str = "v1.3\nAdd specific file actions on all files and tools."
+        self.description : str = "v1.4\nAdd specific file actions on all files and tools."
         self.related_tool_plugins : list[str] = [self.name]
 
     def get_setting_infos(self : GeneralActions) -> dict[str, list]:
@@ -70,6 +70,19 @@ class GeneralActions(Plugin):
                     "help":"Tool to automatically replace specific special characters."
                 }
             ],
+            "general_clear_unlinked": [
+                "assets/images/trash.png", "Clear all unlinked strings", self.tool_clear_unlinked,
+                {
+                    "type":self.COMPLEX_TOOL,
+                    "params":{
+                        "_t_0000":["This tool can be DESTRUCTIVE. It's recommended to backup strings.bak-1.json after.", "display", None, None],
+                        "_t_0001":["All unlinked strings will be deleted and removed.", "display", None, None],
+                        "_t_0002":["The purpose is to clear garbage created by multiple batch translations at the start of a new translation project.", "display", None, None],
+                        "_t_confirm":["I've read and I understand that data will be deleted.", "bool", False, None],
+                    },
+                    "help":"Tool to automatically clear all unlinked strings."
+                }
+            ],
         }
 
     def match(self : GeneralActions, file_path : str, is_for_action : bool) -> bool:
@@ -129,9 +142,9 @@ class GeneralActions(Plugin):
             if count == 0:
                 return "No strings have been modified"
             else:
-                return str(count) + " strings have been wrapped"
+                return f"{count} strings have been wrapped"
         except Exception as e:
-            self.owner.log.error("[JSON] Tool 'tool_text_wrap' failed with error:\n" + self.owner.trbk(e))
+            self.owner.log.error("[General Actions] Tool 'tool_text_wrap' failed with error:\n" + self.owner.trbk(e))
             return "An unexpected error occured"
 
     def _tool_text_wrap_sub(
@@ -228,9 +241,9 @@ class GeneralActions(Plugin):
             if count == 0:
                 return "No strings have been modified"
             else:
-                return str(count) + " strings have been modified"
+                return f"{count} strings have been modified"
         except Exception as e:
-            self.owner.log.error("[JSON] Tool 'tool_special_char' failed with error:\n" + self.owner.trbk(e))
+            self.owner.log.error("[General Actions] Tool 'tool_special_char' failed with error:\n" + self.owner.trbk(e))
             return "An unexpected error occured"
 
     def _tool_special_remove_latin_accent(self : GeneralActions, input_string: str) -> str:
@@ -246,6 +259,36 @@ class GeneralActions(Plugin):
                 for c in chars:
                     m = m.replace(c, replacement)
         return m, m != s
+
+    def tool_clear_unlinked(self : GeneralActions, name : str, params : dict[str, Any]) -> str:
+        try:
+            if params["_t_confirm"]:
+                self.owner.save() # save first!
+                self.owner.backup_strings_file(name) # backup strings.json
+                self.owner.load_strings(name)
+                count : int = 0
+                for file in self.owner.strings[name]["files"]:
+                    for i, group in enumerate(self.owner.strings[name]["files"][file]):
+                        for j in range(1, len(group)):
+                            m : bool = False
+                            if self.owner.strings[name]["files"][file][i][j][LocIndex.TL] is not None:
+                                self.owner.strings[name]["files"][file][i][j][LocIndex.TL] = None
+                                m = True
+                            if self.owner.strings[name]["files"][file][i][j][LocIndex.LOCAL] == IntBool.TRUE:
+                                self.owner.strings[name]["files"][file][i][j][LocIndex.LOCAL] = IntBool.FALSE
+                                m = True
+                            if m:
+                                count += 1
+                if count > 0:
+                    self.owner.modified[name] = True
+                    return f"{count} unlinked strings have been cleared"
+                else:
+                    return "No strings required modifications"
+            else:
+                return "Please confirm that you understand the purpose of this tool" 
+        except Exception as e:
+            self.owner.log.error("[General Actions] Tool 'tool_clear_unlinked' failed with error:\n" + self.owner.trbk(e))
+            return "An unexpected error occured"
 
     def check_limit(self : GeneralActions, name : str, file_path : str, settings : dict[str, Any] = {}) -> str:
         try:
