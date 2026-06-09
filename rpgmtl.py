@@ -466,15 +466,15 @@ class RPGMTL():
                 if name is not None: # if updating existing location, we set it
                     self.projects[name]["path"] = file_path
                     self.modified[name] = True
-                    self.log.info("Project " + name + " path is updated to " + file_path)
+                    self.log.info(f"Project {name} path is updated to {file_path}")
                 return file_path # return the path
         except Exception as e:
-            self.log.error("Error during selection of an executable for project " + name + "\n" + self.trbk(e))
+            self.log.error(f"Error during selection of an executable for project {name}\n{self.trbk(e)}")
             return None
 
     # Backup game files matching the plugin extensions for the given project name
     def backup_game_files(self : RPGMTL, pname : str) -> None:
-        self.log.info("Copying game files for project " + pname + "...")
+        self.log.info(f"Copying game files for project {pname}...")
         backup_path : PurePath = PurePath("projects", pname, "originals") # project backup path
         # delete existing backup
         if os.path.isdir(backup_path):
@@ -553,7 +553,7 @@ class RPGMTL():
                     os.mkdir('projects/' + name + k)
                     self.log.info("projects/" + name + k + " has been created")
                 except Exception as ex:
-                    self.log.error("Couldn't create the following folder:" + name + k + "\n" + self.trbk(ex))
+                    self.log.error(f"Couldn't create the following folder: {name}{k}\n{self.trbk(ex)}")
             # initialize config.json
             self.projects[name] = {
                 "format_version":2, # config.json format version
@@ -569,7 +569,7 @@ class RPGMTL():
             self.save()
             return True, name
         except Exception as e:
-            self.log.critical("Error while copying game files for project " + name + "\n" + self.trbk(e))
+            self.log.critical(f"Error while copying game files for project {name}\n{self.trbk(e)}")
             return False, str(e)
 
     # load a project config.json file
@@ -578,6 +578,7 @@ class RPGMTL():
             if name not in self.projects:
                 with open('projects/' + name + '/config.json', mode='r', encoding='utf-8') as f:
                     self.projects[name] = self.update_project_config_format(json.load(f))
+                self.log.info(f"Project {name} has been loaded")
             return self.projects[name]
         except:
             return None
@@ -610,7 +611,7 @@ class RPGMTL():
         except OSError:
             return None
         except Exception as e:
-            self.log.error("Failed to load strings of project " + name + "\n" + self.trbk(e))
+            self.log.error(f"Failed to load strings of project {name}\n{self.trbk(e)}")
             raise e
 
     # Update the content of strings.json to later formats
@@ -681,7 +682,7 @@ class RPGMTL():
                             output.write_bytes(content)
                             return (1, totalerr)
             except Exception as e:
-                self.log.error("Failed to patch strings in " + filename + " for project " + name + " using the plugin " + p.name + "\n" + self.trbk(e))
+                self.log.error(f"Failed to patch strings in {filename} for project {name} using the plugin {p.name}\n{self.trbk(e)}")
                 return (0, totalerr + 1)
         return (0, totalerr)
 
@@ -699,10 +700,10 @@ class RPGMTL():
                 index["strings"][k][GloIndex.COUNT] = 0 # set occurence to 0
             old = index["files"] # put old files here
             index["files"] = {}
-            self.log.info("Previous copy of projects/" + name + "/strings.json will be used")
+            self.log.info(f"Previous copy of projects/{name}/strings.json will be used")
             update_run_flag = 1
         except Exception as e:
-            self.log.warning("The following error occured while loading existing strings (Ignore if it's a fresh project):\n" + self.trbk(e))
+            self.log.warning(f"The following error occured while loading existing strings (Ignore if it's a fresh project):\n{self.trbk(e)}")
             index = {
                 "strings":{},
                 "files":{},
@@ -711,17 +712,17 @@ class RPGMTL():
             old = {}
             reverse_strings = {}
             str_id = 0
-            self.log.info("projects/" + name + "/strings.json will be generated from scratch")
+            self.log.info(f"projects/{name}/strings.json will be generated from scratch")
         return index, old, reverse_strings, str_id, update_run_flag
 
     def _generate_cleanup(self : RPGMTL, name : str, index : dict, old : dict) -> dict:
         # cleanup virtual files still undefined
-        self.log.info("Cleaning config.json of " + name + "...")
+        self.log.info(f"Cleaning config.json of {name}...")
         for f in list(self.projects[name]['files'].keys()):
             if self.projects[name]['files'][f]["file_type"] == FileType.VIRTUAL_UNDEFINED:
                 self.projects[name]['files'].pop(f)
         # check old file and retrieve old strings
-        self.log.info("Matching with the previous strings of " + name + "...")
+        self.log.info(f"Matching with the previous strings of {name}...")
         for k in index["files"]:
             if len(index["files"][k]) == 0:
                 continue
@@ -764,7 +765,7 @@ class RPGMTL():
         self.load_strings(name) # load strings.json
         # init
         index, old, reverse_strings, str_id, update_run_flag = self._generate_init(name)
-        self.log.info("Extracting strings for project " + name + "...")
+        self.log.info(f"Extracting strings for project {name}...")
         # go over each files
         # ... first to set virtual as undefined
         for f in list(self.projects[name]['files'].keys()):
@@ -830,7 +831,7 @@ class RPGMTL():
                         index["files"][target_file].append(group)
             except Exception as e:
                 err += 1
-                self.log.error("Failed to extract strings from " + f + " for project " + name + "\n" + self.trbk(e))
+                self.log.error(f"Failed to extract strings from {f} for project {name}\n{self.trbk(e)}")
         if update_run_flag: # we're updating
             index = self._generate_cleanup(name, index, old)
         else: # first time creating the project
@@ -843,7 +844,7 @@ class RPGMTL():
         self.start_compute_translated(name)
         # set save flag
         self.modified[name] = True
-        self.log.info("Strings extraction for project " + name + " completed")
+        self.log.info(f"Strings extraction for project {name} completed")
         return err
 
     def start_compute_translated(self : RPGMTL, name : str) -> None:
@@ -876,7 +877,7 @@ class RPGMTL():
         except asyncio.CancelledError:
             return
         except Exception as e:
-            self.log.error("Unexpected error in compute_translated for project " + name + "\n" + self.trbk(e))
+            self.log.error(f"Unexpected error in compute_translated for project {name}\n{self.trbk(e)}")
 
     def _create_release_cleanup(self : RPGMTL, release_folder : PurePath) -> int:
         if os.path.isdir(release_folder):
@@ -910,7 +911,7 @@ class RPGMTL():
         edit_folder : PurePath = PurePath('projects', name, 'edit')
         if os.path.isdir(edit_folder):
             try:
-                self.log.info("Copying the content of the edit folder for project " + name + "...")
+                self.log.info(f"Copying the content of the edit folder for project {name}...")
                 for path, subdirs, files in os.walk(edit_folder):
                     for f in files:
                         origin : PurePath = PurePath(os.path.join(path, f))
@@ -918,9 +919,9 @@ class RPGMTL():
                         if not os.path.isdir(target.parent):
                             os.makedirs(target.parent, exist_ok=False)
                         shutil.copyfile(origin, target)
-                        self.log.info("Copied edit/" + f + " for project " + name + "...")
+                        self.log.info(f"Copied edit/{f} for project {name}...")
             except:
-                self.log.warning("Failed to copy the content of the edit folder for project " + name)
+                self.log.warning(f"Failed to copy the content of the edit folder for project {name}")
                 err += 1
         return err
 
@@ -935,7 +936,7 @@ class RPGMTL():
         cleanup_err : bool = self._create_release_cleanup(release_folder)
         # load strings if not loaded
         self.load_strings(name)
-        self.log.info("Patching files for project " + name + "...")
+        self.log.info(f"Patching files for project {name}...")
         # patch all the files
         patch_count, patch_err = self._create_release_patch_files(name, release_folder)
         # copy edit content
@@ -1587,10 +1588,11 @@ class RPGMTL():
                 self.computing.pop(name)
             if name in self.strings:
                 self.strings.pop(name)
-            if name in self.projects:
-                self.projects.pop(name)
             if name in self.modified:
                 self.modified.pop(name)
+            if name in self.projects:
+                self.projects.pop(name)
+                self.log.info(f"Project {name} has been unloaded")
             return web.json_response({"result":"ok", "data":{}, "message":"Project has been unloaded."})
 
     # /api/extract
