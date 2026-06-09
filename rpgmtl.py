@@ -2360,30 +2360,50 @@ class RPGMTL():
         name = payload.get('name', None)
         src = payload.get('src', None)
         dst = payload.get('dst', None)
+        casing = payload.get('casing', None)
+        file_match = payload.get('file_match', None)
         if name is None:
             return web.json_response({"result":"bad", "message":"Bad request, missing 'name' parameter"}, status=400)
         elif src is None:
             return web.json_response({"result":"bad", "message":"Bad request, missing 'src' parameter"}, status=400)
         elif dst is None:
             return web.json_response({"result":"bad", "message":"Bad request, missing 'dst' parameter"}, status=400)
+        elif casing is None:
+            return web.json_response({"result":"bad", "message":"Bad request, missing 'casing' parameter"}, status=400)
+        elif file_match is None:
+            return web.json_response({"result":"bad", "message":"Bad request, missing 'file_match' parameter"}, status=400)
         else:
             self.save() # save first!
             self.backup_strings_file(name) # backup strings.json
             self.load_strings(name) # load strings.json
             count : int = 0
             modified : set[str] = set()
-            for k, v in self.strings[name]["strings"].items():
-                if v[GloIndex.TL] is not None:
-                    s : str = v[GloIndex.TL].replace(src, dst)
-                    if s != v[GloIndex.TL]:
-                        modified.add(k)
-                        self.strings[name]["strings"][k][GloIndex.TL] = s
+            seen : set[str] = set()
             for f, data in self.strings[name]["files"].items():
+                if file_match != "" and file_match not in f:
+                    continue
                 for g in range(len(data)):
                     for i in range(1, len(data[g])):
+                        sid : str = data[g][i][LocIndex.ID]
+                        if sid not in seen:
+                            seen.add(sid)
+                            v = self.strings[name]["strings"][sid]
+                            if v[GloIndex.TL] is not None:
+                                s : str
+                                if casing:
+                                    s = v[GloIndex.TL].replace(src, dst)
+                                else:
+                                    s = re.sub(re.escape(src), lambda _: dst, v[GloIndex.TL], flags=re.IGNORECASE)
+                                if s != v[GloIndex.TL]:
+                                    modified.add(sid)
+                                    self.strings[name]["strings"][sid][GloIndex.TL] = s
                         if data[g][i][LocIndex.LOCAL]: # is local
                             if data[g][i][LocIndex.TL] is not None:
-                                s : str = data[g][i][LocIndex.TL].replace(src, dst)
+                                s : str
+                                if casing:
+                                    s = data[g][i][LocIndex.TL].replace(src, dst)
+                                else:
+                                    s = re.sub(re.escape(src), lambda _: dst, data[g][i][LocIndex.TL], flags=re.IGNORECASE)
                                 if s != data[g][i][LocIndex.TL]:
                                     data[g][i][LocIndex.TL] = s
                                     data[g][i][LocIndex.MODIFIED] = IntBool.TRUE

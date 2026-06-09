@@ -4022,8 +4022,7 @@ class RPGMTL_Interface
 					this.routes.project(this.project.name);
 				},
 				"<ul>\
-					<li>This will replace all matching content of Translated Strings with your replacement.</li>\
-					<li>This is Case sensitive.</li>\
+					<li>This a a tool replace all matching content of Translated Strings with your replacement.</li>\
 				</ul>"
 			);
 		
@@ -4056,6 +4055,24 @@ class RPGMTL_Interface
 			input.addEventListener('input', () => { // auto update rows on input
 				input.rows = "" + input.value.split("\n").length;
 			});
+			const string_case = util.add_button(
+				fragment,
+				"Set",
+				"assets/images/confirm.png",
+				() => {
+					string_case.classList.toggle("green");
+				},
+				true
+			);
+			string_case.classList.toggle("green", true);
+			util.add_to(
+				fragment,
+				"div",
+				{
+					cls:["settingtext"],
+					innerHTML:"Input is Case sensitive?"
+				}
+			);
 			util.add_label(
 				fragment,
 				"Replacement",
@@ -4074,6 +4091,26 @@ class RPGMTL_Interface
 			output.addEventListener('input', () => { // auto update rows on input
 				output.rows = "" + output.value.split("\n").length;
 			});
+			util.add_label(
+				fragment,
+				"Only affect files, whose path contains:",
+				["left", "smalltext"]
+			);
+			const file_match = util.add_to(
+				fragment,
+				"input",
+				{
+					cls:["input", "searchinput"],
+					navigable:true
+				}
+			);
+			file_match.type = "text";
+			file_match.placeholder = "Leave empty to ignore";
+			util.add_label(
+				fragment,
+				"Note: If a matching file contains a compatible string shared with another file, it will be modified in that file as well.",
+				["left", "smalltext"]
+			);
 			
 			util.add_to(
 				fragment,
@@ -4083,6 +4120,7 @@ class RPGMTL_Interface
 					navigable:true,
 					innerHTML:'<img src="assets/images/copy.png"> Replace',
 					onclick:(e) => {
+						const file_msg = file_match.value.length ? file_match.value : "None";
 						if(input.value == "")
 						{
 							util.push_popup("The input is empty.");
@@ -4094,7 +4132,10 @@ class RPGMTL_Interface
 								+ input.value
 								+ "'\nby '"
 								+ output.value
-								+ "'?"
+								+ "'?\nCase senstivity: "
+								+ string_case.classList.contains("green")
+								+ "\nMatching files: "
+								+ file_msg
 							)
 						)
 						{
@@ -4105,7 +4146,9 @@ class RPGMTL_Interface
 								{
 									name:this.project.name,
 									src:input.value,
-									dst:output.value
+									dst:output.value,
+									casing:string_case.classList.contains("green"),
+									file_match:file_match.value
 								}
 							);
 						}
