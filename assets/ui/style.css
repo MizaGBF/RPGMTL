@@ -612,11 +612,11 @@ a:active {
 
 .file-path-text {
 	display: inline-block;
-	max-width:calc(90vw - 380px);
+	max-width:calc(90vw - 340px);
 	white-space: nowrap;
 	overflow: hidden; 
 	color:#dddddd;
-	font-size:24px;
+	font-size:25px;
 	text-align:center;
 	text-overflow: ellipsis;
 	min-width: 0;
@@ -626,14 +626,14 @@ a:active {
 
 .file-progress-tracker {
 	display: inline-grid;
-	grid-template-columns: 70px 120px 45px auto;
+	grid-template-columns: 80px 60px 45px auto;
 	align-items: center;
 	gap: 10px 16px;
 	font-size: 13px;
 	margin: 0px;
 	padding: 12px 16px;
-	min-width: 380px;
-	max-width: 380px;
+	min-width: 340px;
+	max-width: 340px;
 	color: #ffffff;
 }
 
