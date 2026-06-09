@@ -281,6 +281,7 @@ class GeneralActions(Plugin):
                                 count += 1
                 if count > 0:
                     self.owner.modified[name] = True
+                    self.owner.start_compute_translated(name)
                     return f"{count} unlinked strings have been cleared"
                 else:
                     return "No strings required modifications"

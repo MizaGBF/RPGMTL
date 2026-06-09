@@ -398,6 +398,7 @@ li {
 
 .complete {
 	background: #1d420b;
+	color: #dedede;
 }
 
 .unlinked {
@@ -614,8 +615,7 @@ a:active {
 	display: inline-block;
 	max-width:calc(90vw - 340px);
 	white-space: nowrap;
-	overflow: hidden; 
-	color:#dddddd;
+	overflow: hidden;
 	font-size:25px;
 	text-align:center;
 	text-overflow: ellipsis;
