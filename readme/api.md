@@ -276,6 +276,12 @@ Return in data: 'path', list of 'folders', list of matching 'files'
 ```
 
 ```
+/api/replace_strings
+Payload: 'src' string, 'dst' string, string 'casing' boolean, 'file_match' string
+Return in data: 'count' of modified strings
+```
+
+```
 /api/delete_knowledge
 Payload: project 'name', 'entry' original string to delete
 Return in data: project 'name', project 'config'
