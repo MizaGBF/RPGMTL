@@ -161,6 +161,22 @@ li {
 	width: 95%;
 }
 
+.project-icon-35px {
+	border-radius: 4px;
+	max-height:35px;
+	max-width:35px;
+	vertical-align:middle;
+	loading:lazy;
+}
+
+.project-icon-80px {
+	border-radius: 4px;
+	max-height:80px;
+	max-width:80px;
+	vertical-align:middle;
+	loading:lazy;
+}
+
 .project-title {
 	color: #eeeeee;
 	font-size: 34px;

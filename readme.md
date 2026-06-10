@@ -255,6 +255,7 @@ If you go into the `projects` folder and into your project folder, you'll see:
 * `release`: This folder only appears upon using the `Release a Patch` button. Your translated files will appear inside, and only the translated ones. Unaltered and ignored ones won't be copied inside.  
 * `config.json`: A file containing various infos about your project.  
 * `strings.json`: A file containing the game strings and translations. Backups are created when doing various operations (such as extracting) but nothing less. Feel free to do manual backups if you wish.  
+* `icon`: An image file (of whatever format, as long as it's supported by a web browser) to be served as the Project icon.  
   
 More files and folders might appear.  
 For a general use, you only need to care about the `edit` and `release` folders.  

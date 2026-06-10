@@ -298,3 +298,9 @@ Return in data: project 'name', project 'config'
 Payload: project 'name', 'notes'
 Return in data: project 'name', project 'config'
 ```
+
+```
+/api/update_icon
+Payload: project 'name', icon 'path' or url
+Return in data: project 'name', project 'config'
+```

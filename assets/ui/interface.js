@@ -399,9 +399,13 @@ class RPGMTL_Interface
 			for(let i = 0; i < data.list.length; ++i)
 			{
 				const t = data.list[i];
-				util.add_grid_cell(grid, data.list[i], () => {
-					this.routes.project(t);
-				});
+				util.add_grid_cell(
+					grid,
+					'<img src="projects/' + data.list[i] + '/icon" class="project-icon-35px" width="35" height="35" onerror="this.remove();"> ' + data.list[i],
+					() => {
+						this.routes.project(t);
+					}
+				);
 			}
 		}
 		// quick links
@@ -415,9 +419,13 @@ class RPGMTL_Interface
 			for(let i = 0; i < data.history.length; ++i)
 			{
 				const c_entry = data.history[i];
-				util.add_interaction(fragment, c_entry[0] + ": " + c_entry[1], () => {
-					this.routes.file(c_entry[0], c_entry[1], true);
-				});
+				util.add_interaction(
+					fragment,
+					'<img src="projects/' + c_entry[0] + '/icon" class="project-icon-35px" width="35" height="35" onerror="this.remove();"> ' + c_entry[0] + ": " + c_entry[1],
+					() => {
+						this.routes.file(c_entry[0], c_entry[1], true);
+					}
+				);
 			}
 		}
 		this.update_main(fragment);
@@ -1473,6 +1481,82 @@ class RPGMTL_Interface
 		}
 	}
 
+	open_icon_set()
+	{
+		try
+		{
+			// top bar
+			this.top_bar.update(
+				"Set Project Icon",
+				() => { // back callback
+					this.routes.project(this.project.name);
+				},
+				"Set the project icon.",
+				{
+					home:1
+				}
+			);
+			
+			// main part
+			let fragment = this.new_page();
+			util.add_project_title(
+				fragment,
+				this.project.name
+			);
+			util.add_label(
+				fragment,
+				"Project Icon"
+			);
+			util.add_label(
+				fragment,
+				"Input the icon location",
+				["left"]
+			);
+			const icon_path = util.add_to(
+				fragment,
+				"input",
+				{
+					cls:["input"],
+					navigable:true
+				}
+			);
+			icon_path.type = "text";
+			icon_path.placeholder = "URL or Local Path or code";
+			util.add_interaction(fragment, '<img src="assets/images/confirm.png"> Set', () => {
+				this.post(
+					"/api/update_icon",
+					() => {
+						this.routes.project(this.project.name);
+					},
+					null,
+					{
+						name:this.project.name,
+						path:icon_path.value
+					}
+				);
+			});
+			util.add_to(
+				fragment,
+				"div",
+				{
+					cls:["label","left"],
+					innerHTML:"Supports:<br>\
+					• URL (Starting with http or https)<br>\
+					• An absolute or relative local path (Example: C:\Users\...\icon.png or ../folder/icon.png)<br>\
+					• A DLsite URL or RJ/RE/VJ codes (such as RJ000000 or RJ00000000)<br>\
+					• A VNDB URL or code (such as v000)"
+				}
+			);
+			this.update_main(fragment);
+		}
+		catch(err)
+		{
+			console.error("Exception thrown", err.stack);
+			util.push_popup("An unexpected error occured.");
+			this.routes.project(this.project.name);
+		}
+	}
+
 	// translator pick menu /api/translator
 	translator_menu(data)
 	{
@@ -1927,6 +2011,13 @@ class RPGMTL_Interface
 				'<img src="assets/images/note.png"> Notepad',
 				() => {
 					this.open_notes();
+				}
+			);
+			util.add_grid_cell(
+				grid,
+				'<img src="assets/images/icon_set.png"> Set Project Icon',
+				() => {
+					this.open_icon_set();
 				}
 			);
 			if(this.project.config.version)

@@ -184,7 +184,7 @@ class util
 			"div",
 			{
 				cls:["project-title"],
-				innerText:text
+				innerHTML:'<img src="projects/' + text + '/icon" class="project-icon-80px" width="80" height="80" onerror="this.remove();"> ' + text
 			}
 		)
 	}
