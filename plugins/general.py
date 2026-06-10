@@ -1,10 +1,12 @@
 from __future__ import annotations
 from . import Plugin, GloIndex, LocIndex, IntBool
 from typing import Any
+import re
 import textwrap
 import unicodedata
 
 class GeneralActions(Plugin):
+    COMMA_SPLIT : re.Pattern = re.compile(r'(?<!\\),')
     def __init__(self : GeneralActions) -> None:
         super().__init__()
         self.name : str = "General Actions"
@@ -29,17 +31,26 @@ class GeneralActions(Plugin):
                 "assets/images/update.png", "Clear All Modified flags", self.clear_all, {"type":self.SIMPLE_TOOL}
             ],
             "general_text_wrap": [
-                "assets/images/text_wrap.png", "Generic Text wrap", self.tool_text_wrap,
+                "assets/images/text_wrap.png", "Text wrap", self.tool_text_wrap,
                 {
                     "type":self.COMPLEX_TOOL,
                     "params":{
-                        "_t_0000":["This Text Wrap can be DESTRUCTIVE. It's recommended to backup strings.bak-1.json after.", "display", None, None],
-                        "_t_char_limit":["Character Limit", "num", 60, None],
-                        "_t_space":["Fill with spaces instead of using a newline:", "bool", False, None],
-                        "_t_file_ext":["Only on files ending with (Separate by ,)(Optional):", "str", "", None],
-                        "_t_0001":["You can ignore the start of a string:", "display", None, None],
-                        "_t_start":["Starting with (Optional):", "str", "", None],
-                        "_t_end":["and ending with:", "str", "", None],
+                        "_t_0000":["The Text Wrap can be DESTRUCTIVE. It's recommended to backup strings.bak-1.json after.", "display", None, None],
+                        "_t_char_limit":["Character Limit per line:", "num", 55, None],
+                        "_t_line_limit":["Maximum number of lines (0 or less for unlimited):", "num", 4, None],
+                        "_t_spacer_1":["", "display", None, None],
+                        "_t_0001":["Text Wrap Options", "display", None, None],
+                        "_t_smart":["Detect punctuation for smart newline placements:", "bool", True, None],
+                        "_t_smart_char":["Punctuation characters:", "str", "』”»\"」·。.…！!？?】]）)♪～~♡::、,;", None],
+                        "_t_file_match":["Only apply on File Paths containing (Optional) (Example: .json):", "str", "", None],
+                        "_t_group_match_desc":["Only apply for those string groups (separated by comma, support \\ escaping, case & space sensitive):", "display", None, None],
+                        "_t_group_match":["Example: Command: Show Text,Command: Set Variable", "str", "Command: Show Text", None],
+                        "_t_spacer_2":["", "display", None, None],
+                        "_t_0002":["Text Box Name detection", "display", None, None],
+                        "_t_name_detect":["Ignore the first line if it doesn't contain spaces in the Untranslated String", "bool", True, None],
+                        "_t_name_group_desc":["Ignore the first line if it contains one of these strings in the Untranslated String (separated by comma, support \\ escaping, case & space sensitive):", "display", None, None],
+                        "_t_additional_names":["Example: アリス,ジャン", "str", "", None],
+                        "_t_name_chara":["Ignore the first line if the second of the Untranslated String starts with:", "str", "『「(", None],
                     },
                     "help":"Tool to automatically wrap texts."
                 }
@@ -90,55 +101,80 @@ class GeneralActions(Plugin):
 
     def tool_text_wrap(self : GeneralActions, name : str, params : dict[str, Any]) -> str:
         try:
-            limit : int = int(params["_t_char_limit"])
-            if limit < 1:
+            char_limit : int = int(params["_t_char_limit"])
+            if char_limit < 1:
                 raise Exception()
         except:
             return "Invalid character limit, it must be a positive integer."
         try:
-            extensions : tuple[str] = tuple(params["_t_file_ext"].split(","))
+            line_limit : int = int(params["_t_line_limit"])
         except:
-            return "Failed to parse file ending setting."
+            return "Invalid line limit, it must an positive integer."
+        be_smart : bool
+        smart_punctuation : set[str] = set(params["_t_smart_char"])
+        if len(smart_punctuation) == 0:
+            be_smart = False
+        else:
+            be_smart = params["_t_smart"]
+        smart_punctuation_tup : tuple[str, ...] = tuple(smart_punctuation)
         try:
+            file_match : str = params["_t_file_match"]
+            group_matches : list[str] = list(set(self.COMMA_SPLIT.split(params["_t_group_match"])))
+            name_detect_space : bool = params["_t_name_detect"]
+            additional_names : set[str] = set(self.COMMA_SPLIT.split(params["_t_additional_names"]))
+            second_line_chara : tuple[str, ...] = tuple(set(list(params["_t_name_chara"])))
+            # parameters preparation ends
             self.owner.save() # save first!
             self.owner.backup_strings_file(name) # backup strings.json
             self.owner.load_strings(name)
             seen : set[str] = set() # used to track which strings we tested
             count : int = 0
             for file in self.owner.strings[name]["files"]:
-                if len(extensions) > 0 and not file.endswith(extensions):
+                if len(file_match) > 0 and file_match not in file:
                     continue
-                
                 for i, group in enumerate(self.owner.strings[name]["files"][file]):
+                    # group name matching check
+                    if len(group_matches) > 0:
+                        is_ok : bool = False
+                        for gn in group_matches:
+                            if gn in group[0]:
+                                is_ok = True
+                                break
+                        if not is_ok:
+                            continue
                     for j in range(1, len(group)):
                         sid : str = self.owner.strings[name]["files"][file][i][j][LocIndex.ID]
-                        if self.owner.strings[name]["strings"][sid][GloIndex.TL] is not None:
-                            if sid not in seen:
-                                seen.add(sid)
-                                s, b = self._tool_text_wrap_sub(
-                                    limit,
-                                    self.owner.strings[name]["strings"][sid][GloIndex.TL],
-                                    params["_t_start"],
-                                    params["_t_end"],
-                                    params["_t_space"]
+                        original : str = self.owner.strings[name]["strings"][sid][GloIndex.ORI]
+                        # local string
+                        if self.owner.strings[name]["files"][file][i][j][LocIndex.LOCAL]:
+                            if self.owner.strings[name]["files"][file][i][j][LocIndex.TL] is not None:
+                                s : str = self.wrap_string(
+                                    original,
+                                    self.owner.strings[name]["files"][file][i][j][LocIndex.TL],
+                                    char_limit, line_limit,
+                                    be_smart, smart_punctuation, smart_punctuation_tup,
+                                    name_detect_space, additional_names, second_line_chara
                                 )
-                                if b:
+                                if s != self.owner.strings[name]["files"][file][i][j][LocIndex.TL]:
+                                    self.owner.strings[name]["files"][file][i][j][LocIndex.TL] = s
                                     self.owner.modified[name] = True
-                                    self.owner.strings[name]["strings"][sid][GloIndex.TL] = s
                                     count += 1
-                        
-                        if self.owner.strings[name]["files"][file][i][j][LocIndex.TL] is not None:
-                            s, b = self._tool_text_wrap_sub(
-                                limit,
-                                self.owner.strings[name]["files"][file][i][j][LocIndex.TL],
-                                params["_t_start"],
-                                params["_t_end"],
-                                params["_t_space"]
-                            )
-                            if b:
-                                self.owner.modified[name] = True
-                                self.owner.strings[name]["files"][file][i][j][LocIndex.TL] = s
-                                count += 1
+                            
+                        else:
+                            # global string
+                            if sid not in seen and self.owner.strings[name]["strings"][sid][GloIndex.TL] is not None:
+                                seen.add(sid)
+                                s : str = self.wrap_string(
+                                    original,
+                                    self.owner.strings[name]["strings"][sid][GloIndex.TL],
+                                    char_limit, line_limit,
+                                    be_smart, smart_punctuation, smart_punctuation_tup,
+                                    name_detect_space, additional_names, second_line_chara
+                                )
+                                if s != self.owner.strings[name]["strings"][sid][GloIndex.TL]:
+                                    self.owner.strings[name]["strings"][sid][GloIndex.TL] = s
+                                    self.owner.modified[name] = True
+                                    count += 1
             if count == 0:
                 return "No strings have been modified"
             else:
@@ -147,37 +183,146 @@ class GeneralActions(Plugin):
             self.owner.log.error("[General Actions] Tool 'tool_text_wrap' failed with error:\n" + self.owner.trbk(e))
             return "An unexpected error occured"
 
-    def _tool_text_wrap_sub(
+    def wrap_string(
         self : GeneralActions,
-        limit : int,
-        string : str,
-        start_delim : str,
-        end_delim : str,
-        use_space : bool
-    ) -> tuple[str, bool]:
-        start : str = ""
-        old : str = string
-        if end_delim != "":
-            if start_delim == "" or string.startswith(start_delim):
-                split = string.split(end_delim, 1)
-                if len(split) == 2:
-                    start, string = split
-                    start += end_delim
-        if len(string) <= limit:
-            return "", False
-        p : list[str] = [
-            s
-            for s in string.replace("\n", " ").split(" ")
-            if s != ""
-        ]
-        p = textwrap.wrap(" ".join(p), width=limit, break_on_hyphens=False)
-        if use_space:
-            for i in range(len(p) - 1):
-                p[i] = p[i].ljust(limit)
-            string = start + "".join(p)
+        ori : str, tl : str,
+        char_limit : int, line_limit : int,
+        be_smart : bool, smart_punctuation : set[str],  smart_punctuation_tup : tuple[str, ...],
+        name_detect_space : bool, additional_names : set[str], second_line_chara : tuple[str, ...]
+    ) -> str:
+        # check name
+        has_name : bool = False
+        ori_lines : list[str] = ori.split("\n")
+        if name_detect_space and ori_lines[0].count(" ") == 0:
+            has_name = True
+        elif ori_lines[0] in additional_names:
+            has_name = True
+        elif len(ori_lines) > 1 and ori_lines[1].startswith(second_line_chara):
+            has_name = True
+        # text wrap
+        ## smart wrap
+        if be_smart:
+            lines : list[str] = tl.split("\n")
+            start : int = 1 if has_name else 0
+            smart_start : int = start
+            # detect proper lines
+            for i in range(start, len(lines)):
+                if len(lines[i]) <= char_limit:
+                    smart_start = i + 1
+                else:
+                    break
+            if smart_start >= len(lines): # no need for changes
+                return tl
+            # parse punctuation groups count of the original string
+            punc_map : dict[int, int] = {}
+            for i in range(start, len(ori_lines)):
+                punc_state : bool = False
+                for c in ori_lines[i]:
+                    if punc_state:
+                        if c not in smart_punctuation:
+                            punc_state = False
+                    else:
+                        if c in smart_punctuation:
+                            punc_map[i] = punc_map.get(i, 0) + 1
+                            punc_state = True
+            # break per word/punctuation
+            split_lines : list[list[str]] = []
+            if has_name:
+                split_lines.append([lines[0]])
+            for i in range(start, len(lines)):
+                split_lines.append([""])
+                state : bool = False
+                for j, c in enumerate(lines[i]):
+                    if c == " ":
+                        if i < len(lines) - 1 or j < len(lines[i]) - 1:
+                            split_lines[i][-1] += c
+                        state = False
+                        split_lines[i].append("")
+                    else:
+                        if state:
+                            if c not in smart_punctuation:
+                                state = False
+                                split_lines[i].append("")
+                        else:
+                            if c in smart_punctuation:
+                                state = True
+                        split_lines[i][-1] += c
+                if len(split_lines[i]) > 1 and split_lines[i][-1] == "":
+                    split_lines[i].pop()
+            
+            while smart_start >= start:
+                cpy_lines = []
+                for i, line in enumerate(split_lines):
+                    cpy_lines.append(line)
+                    if smart_start <= i < len(split_lines) - 1:
+                        cpy_lines[-1][-1] += " "
+                result_lines : list[list[str]]|None = self.attempt_smart_wrap(
+                    cpy_lines,
+                    smart_start, char_limit, line_limit,
+                    punc_map,
+                    smart_punctuation_tup
+                )
+                if result_lines is not None:
+                    for i in range(0, len(result_lines)):
+                        result_lines[i] = "".join(result_lines[i])
+                        if result_lines[i].endswith(" "):
+                            result_lines[i] = result_lines[i][:-1]
+                    return "\n".join(result_lines)
+                else:
+                    smart_start -= 1
+        ## normal wrap
+        result : str
+        if has_name:
+            name, text = tuple(tl.split("\n", 1))
+            result = name +"\n" + "\n".join(textwrap.wrap(text, width=char_limit, break_on_hyphens=False))
         else:
-            string = start + "\n".join(p)
-        return string, string != old
+            result = "\n".join(textwrap.wrap(tl, width=char_limit, break_on_hyphens=False))
+        if result.count("\n") >= line_limit:
+            return tl
+        else:
+            return result
+
+    def attempt_smart_wrap(
+        self : GeneralActions,
+        lines : list[list[str]],
+        start : int, char_limit : int, line_limit : int, 
+        punc_map : dict[int, int],
+        smart_punctuation_tup : tuple[str, ...]
+    ) -> list[list[str]]|None:
+        result : list[list[str]] = []
+        current_line_len : int = 0
+        current_punc : int = 0
+        debt_punc : int = 0
+        for i in range(0, len(lines)):
+            if i < start:
+                result.append(lines[i])
+                continue
+            elif i == start:
+                result.append([])
+            for word in lines[i]:
+                expected_count : int = punc_map.get(len(result) - 1, 0)
+                space_shift : int = 1 if word.endswith(" ") else 0
+                if current_line_len + len(word) - space_shift > char_limit:
+                    if len(result[-1]) == 0 or len(result) == line_limit:
+                        return None # failsafe
+                    if current_punc < expected_count:
+                        debt_punc += expected_count - current_punc
+                    current_punc = 0
+                    result.append([word])
+                    current_line_len = len(word)
+                else:
+                    result[-1].append(word)
+                    current_line_len += len(word) + 1
+                if word.endswith(smart_punctuation_tup):
+                    current_punc += 1
+                    if len(result) < line_limit and current_punc >= expected_count + debt_punc:
+                        current_line_len = 0
+                        current_punc = 0
+                        debt_punc = 0
+                        result.append([])
+        if len(result[-1]) == 0:
+            result.pop()
+        return result
 
     def tool_special_char(self : GeneralActions, name : str, params : dict[str, Any]) -> str:
         checks : dict[str, Any] = {

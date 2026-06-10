@@ -132,7 +132,7 @@ class JSON(Plugin):
     def __init__(self : JSON) -> None:
         super().__init__()
         self.name : str = "JSON"
-        self.description : str = "v1.13\nHandle JSON files, including ones from RPG Maker MV/MZ"
+        self.description : str = "v1.14\nHandle JSON files, including ones from RPG Maker MV/MZ"
         self.related_tool_plugins : list[str] = [self.name]
 
     def get_setting_infos(self : JSON) -> dict[str, list]:
@@ -142,22 +142,6 @@ class JSON(Plugin):
 
     def get_tool_infos(self : JSON) -> dict[str, list]:
         return {
-            "json_rpgm_text_wrap": [
-                "assets/images/text_wrap.png", "RPGM Text wrap", self.tool_text_wrap,
-                {
-                    "type":self.COMPLEX_TOOL,
-                    "params":{
-                        "_t_char_limit":["Character Limit", "num", 60, None],
-                        "_t_text":["Apply on Show Text commands", "bool", True, None],
-                        "_t_name":["Ignore single-word first lines in Show Text commands", "bool", True, None],
-                        "_t_desc":["Apply on Item/Equipment descriptions", "bool", False, None],
-                        "_t_0000":["You can ignore the start of a string:", "display", None, None],
-                        "_t_start":["Starting with (Optional):", "str", "", None],
-                        "_t_end":["and ending with:", "str", "", None],
-                    },
-                    "help":"Tool to automatically wrap texts of RPG Maker games."
-                }
-            ],
             "json_rpgm_default_setup": [
                 "assets/images/bandaid.png", "RPGM Default Setup", self.apply_default,
                 {
@@ -169,115 +153,6 @@ class JSON(Plugin):
                 }
             ]
         }
-
-    def tool_text_wrap(self : JSON, name : str, params : dict[str, Any]) -> str:
-        try:
-            limit : int = int(params["_t_char_limit"])
-            if limit < 1:
-                raise Exception()
-        except:
-            return "Invalid character limit, it must be a positive integer."
-        try:
-            self.owner.save() # save first!
-            self.owner.backup_strings_file(name) # backup strings.json
-            self.owner.load_strings(name)
-            seen : set[str] = set() # used to track which strings we tested
-            count : int = 0
-            for file in self.owner.strings[name]["files"]:
-                for i, group in enumerate(self.owner.strings[name]["files"][file]):
-                    mode = 0
-                    if group[0] == "Command: Show Text":
-                        if not params["_t_text"]:
-                            continue
-                        mode = 0
-                    elif group[0] in {"description"} and file in {"data/Armors.json", "data/Weapons.json", "data/Items.json", "data/Skills.json"}:
-                        if not params["_t_desc"]:
-                            continue
-                        mode = 1
-                    else:
-                        continue
-                    for j in range(1, len(group)):
-                        sid : str = self.owner.strings[name]["files"][file][i][j][LocIndex.ID]
-                        if self.owner.strings[name]["strings"][sid][GloIndex.TL] is not None:
-                            if sid not in seen:
-                                seen.add(sid)
-                                s, b = self._tool_text_wrap_sub(
-                                    limit,
-                                    self.owner.strings[name]["strings"][sid][GloIndex.TL],
-                                    mode,
-                                    params["_t_name"],
-                                    params["_t_start"],
-                                    params["_t_end"]
-                                )
-                                if b:
-                                    self.owner.modified[name] = True
-                                    self.owner.strings[name]["strings"][sid][GloIndex.TL] = s
-                                    count += 1
-                        
-                        if self.owner.strings[name]["files"][file][i][j][LocIndex.TL] is not None:
-                            s, b = self._tool_text_wrap_sub(
-                                limit,
-                                self.owner.strings[name]["files"][file][i][j][LocIndex.TL],
-                                mode,
-                                params["_t_name"],
-                                params["_t_start"],
-                                params["_t_end"]
-                            )
-                            if b:
-                                self.owner.modified[name] = True
-                                self.owner.strings[name]["files"][file][i][j][LocIndex.TL] = s
-                                count += 1
-            if count == 0:
-                return "No strings have been modified"
-            else:
-                return str(count) + " strings have been wrapped"
-        except Exception as e:
-            self.owner.log.error("[JSON] Tool 'tool_text_wrap' failed with error:\n" + self.owner.trbk(e))
-            return "An unexpected error occured"
-
-    def _tool_text_wrap_sub(
-        self : JSON,
-        limit : int,
-        string : str,
-        mode : int,
-        first_line : bool,
-        start_delim : str,
-        end_delim : str
-    ) -> tuple[str, bool]:
-        start : str = ""
-        old : str = string
-        if end_delim != "":
-            if start_delim == "" or string.startswith(start_delim):
-                split = string.split(end_delim, 1)
-                if len(split) == 2:
-                    start, string = split
-                    start += end_delim
-        if len(string) <= limit:
-            # do nothing
-            return "", False
-        p : list[str] = string.split("\n")
-        # remove name
-        if mode == 0 and first_line:
-            if " " not in p[0] and len(p[0]) <= limit:
-                start += p[0]
-                p = p[1:]
-        # determine if has to check
-        check = False
-        if mode == 1 and len(p) > 2:
-            check = True
-        elif mode == 0 and len(p) > 4:
-            check = True
-        else:
-            for k in p:
-                if len(k) > limit:
-                    check = True
-                    break
-        if not check:
-            # do nothing
-            return "", False
-        p = textwrap.wrap(" ".join(p), width=limit, break_on_hyphens=False)
-        string = start + "\n".join(p)
-        return string, string != old
 
     def apply_default(self : JSON, name : str, params : dict[str, Any]) -> str:
         try:
