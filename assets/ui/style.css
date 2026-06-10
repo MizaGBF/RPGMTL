@@ -79,6 +79,13 @@ li {
 	overflow-x: hidden;
 }
 
+.rpgmtl-title {
+	display:inline-block;
+	font-weight: 600;
+	margin-left:5px;
+	vertical-align:middle;
+}
+
 #loading {
 	background: #00000080;
 	position: fixed;

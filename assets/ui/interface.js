@@ -364,6 +364,15 @@ class RPGMTL_Interface
 		
 		// main part
 		let fragment = this.new_page();
+		// title
+		util.add_to(
+			fragment,
+			"div",
+			{
+				cls:["project-title"],
+				innerHTML:'<img src="assets/ui/favicon.svg" class="project-icon-80px" onerror="this.remove();"><div class="rpgmtl-title">RPGMTL<br><small>v' + data.verstring + '</small></div>'
+			}
+		)
 		// add buttons
 		let grid = util.add_to(
 			fragment,
