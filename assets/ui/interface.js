@@ -401,7 +401,7 @@ class RPGMTL_Interface
 				const t = data.list[i];
 				util.add_grid_cell(
 					grid,
-					'<img src="projects/' + data.list[i] + '/icon" class="project-icon-35px" width="35" height="35" onerror="this.remove();"> ' + data.list[i],
+					'<img src="projects/' + data.list[i] + '/icon" class="project-icon-35px" onerror="this.remove();"> ' + data.list[i],
 					() => {
 						this.routes.project(t);
 					}
@@ -421,7 +421,7 @@ class RPGMTL_Interface
 				const c_entry = data.history[i];
 				util.add_interaction(
 					fragment,
-					'<img src="projects/' + c_entry[0] + '/icon" class="project-icon-35px" width="35" height="35" onerror="this.remove();"> ' + c_entry[0] + ": " + c_entry[1],
+					'<img src="projects/' + c_entry[0] + '/icon" class="project-icon-35px" onerror="this.remove();"> ' + c_entry[0] + ": " + c_entry[1],
 					() => {
 						this.routes.file(c_entry[0], c_entry[1], true);
 					}

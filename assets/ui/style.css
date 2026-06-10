@@ -163,16 +163,18 @@ li {
 
 .project-icon-35px {
 	border-radius: 4px;
-	max-height:35px;
-	max-width:35px;
+	width:35px;
+	height:35px;
+	object-fit: cover;
 	vertical-align:middle;
 	loading:lazy;
 }
 
 .project-icon-80px {
 	border-radius: 4px;
-	max-height:80px;
-	max-width:80px;
+	width:80px;
+	height:80px;
+	object-fit: cover;
 	vertical-align:middle;
 	loading:lazy;
 }
