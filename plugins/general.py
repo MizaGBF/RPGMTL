@@ -226,35 +226,42 @@ class GeneralActions(Plugin):
                             punc_map[i] = punc_map.get(i, 0) + 1
                             punc_state = True
             # break per word/punctuation
+            # lines are broken per word based on spaces or punctuation
             split_lines : list[list[str]] = []
             if has_name:
                 split_lines.append([lines[0]])
             for i in range(start, len(lines)):
                 split_lines.append([""])
                 state : bool = False
+                # read line characters
                 for j, c in enumerate(lines[i]):
-                    if c == " ":
-                        if i < len(lines) - 1 or j < len(lines[i]) - 1:
-                            split_lines[i][-1] += c
+                    if c == " ": # space
+                        split_lines[i][-1] += c
                         state = False
                         split_lines[i].append("")
                     else:
-                        if state:
+                        if state: # in a punctuation group
                             if c not in smart_punctuation:
                                 state = False
-                                split_lines[i].append("")
+                                split_lines[i].append("") # add new line
                         else:
                             if c in smart_punctuation:
                                 state = True
+                        # append character
                         split_lines[i][-1] += c
                 if len(split_lines[i]) > 1 and split_lines[i][-1] == "":
+                    # remove the last line if it's empty
                     split_lines[i].pop()
-            
+            # now attempt to wrap
+            # we start with the minimum of line and
+            # expand more and more
             while smart_start >= start:
                 cpy_lines = []
                 for i, line in enumerate(split_lines):
                     cpy_lines.append(line)
                     if smart_start <= i < len(split_lines) - 1:
+                        # append a space at the end of modifiable line
+                        # this is to avoid situations where we have "...word" as a result
                         cpy_lines[-1][-1] += " "
                 result_lines : list[list[str]]|None = self.attempt_smart_wrap(
                     cpy_lines,
@@ -263,6 +270,7 @@ class GeneralActions(Plugin):
                     smart_punctuation_tup
                 )
                 if result_lines is not None:
+                    # assemble the text
                     for i in range(0, len(result_lines)):
                         result_lines[i] = "".join(result_lines[i])
                         if result_lines[i].endswith(" "):
@@ -302,25 +310,29 @@ class GeneralActions(Plugin):
             for word in lines[i]:
                 expected_count : int = punc_map.get(len(result) - 1, 0)
                 space_shift : int = 1 if word.endswith(" ") else 0
+                # check if there is space on the line
                 if current_line_len + len(word) - space_shift > char_limit:
                     if len(result[-1]) == 0 or len(result) == line_limit:
                         return None # failsafe
+                    # increase debt if we're missing punctuation groups
                     if current_punc < expected_count:
                         debt_punc += expected_count - current_punc
                     current_punc = 0
-                    result.append([word])
+                    result.append([word]) # append on new line
                     current_line_len = len(word)
                 else:
                     result[-1].append(word)
-                    current_line_len += len(word) + 1
+                    current_line_len += len(word)
+                # if word ends with punctuation
                 if word.endswith(smart_punctuation_tup):
-                    current_punc += 1
+                    current_punc += 1 # increase count
+                    # check if we're matching expected count and if there are space for remaining lines
                     if len(result) < line_limit and current_punc >= expected_count + debt_punc:
                         current_line_len = 0
+                        debt_punc -= min(debt_punc, current_punc)
                         current_punc = 0
-                        debt_punc = 0
                         result.append([])
-        if len(result[-1]) == 0:
+        if len(result[-1]) == 0: # remove final empty line if any
             result.pop()
         return result
 
