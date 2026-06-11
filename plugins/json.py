@@ -605,11 +605,11 @@ class JSON(Plugin):
                 case list():
                     if k == "events":
                         for i in range(len(v)):
-                            if v[i].get("note", "") != "":
-                                tmp : str = helper.apply_string(v[i]["note"], "note")
-                                if helper.str_modified:
-                                    v[i]["note"] = tmp
                             if isinstance(v[i], dict):
+                                if v[i].get("note", "") != "":
+                                    tmp : str = helper.apply_string(v[i]["note"], "note")
+                                    if helper.str_modified:
+                                        v[i]["note"] = tmp
                                 for j in range(len(v[i]["pages"])):
                                     self._write_walk_event(v[i]["pages"][j]["list"], helper)
                     else:
