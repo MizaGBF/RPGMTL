@@ -4,7 +4,6 @@ import json
 import io
 from pathlib import PurePath
 from typing import Any
-import textwrap
 
 class JSON(Plugin):
     DEFAULT_RPGMK_DATA_FILE : set[str] = set(["data/actors.json", "data/animations.json", "data/armors.json", "data/classes.json", "data/enemies.json", "data/items.json", "data/mapinfos.json", "data/skills.json", "data/states.json", "data/tilesets.json", "data/weapons.json"])
@@ -319,8 +318,7 @@ class JSON(Plugin):
                                 continue
                             self.owner.strings[name]["files"][f][i][j][LocIndex.IGNORED] = IntBool.TRUE
                             self.owner.modified[name] = True
-                            modified_string += 1
-                            
+                            modified_string += 1    
                             
             # Disable number/boolean strings
             strids = set()
@@ -570,12 +568,21 @@ class JSON(Plugin):
                 case list():
                     if k == "events":
                         for ev in v:
+                            event_entries : list[list[str]] = []
                             if isinstance(ev, dict):
+                                if ev.get("note", "") != "":
+                                    event_entries.append(["note", ev.get("note", "")])
                                 for i, p in enumerate(ev["pages"]):
                                     strings = self._read_walk_event(p["list"])
                                     if len(strings) > 0:
-                                        entries.append([f"Page {i + 1}"])
-                                        entries.extend(strings)
+                                        event_entries.append([f"Page {i + 1}"])
+                                        event_entries.extend(strings)
+                            if len(event_entries) > 0:
+                                if ev.get("name", "") != "":
+                                    entries.append([f"Event {ev["id"]}: {ev["name"]}"])
+                                else:
+                                    entries.append([f"Event {ev["id"]}"])
+                                entries.extend(event_entries)
                     else:
                         group : list[str] = [k]
                         for s in v:
@@ -598,6 +605,10 @@ class JSON(Plugin):
                 case list():
                     if k == "events":
                         for i in range(len(v)):
+                            if v[i].get("note", "") != "":
+                                tmp : str = helper.apply_string(v[i]["note"], "note")
+                                if helper.str_modified:
+                                    v[i]["note"] = tmp
                             if isinstance(v[i], dict):
                                 for j in range(len(v[i]["pages"])):
                                     self._write_walk_event(v[i]["pages"][j]["list"], helper)
