@@ -289,8 +289,26 @@ class RPGMTL_Interface
 		*/
 		return new Promise((resolve, reject) => {
 			requestAnimationFrame(() => {
-				this.constant.main.innerHTML = "";
-				this.constant.main.appendChild(fragment);
+				const current_title = this.constant.main.firstElementChild;
+				const new_title = fragment.firstElementChild;
+
+				if(current_title && new_title && current_title.isEqualNode(new_title))
+				{
+					fragment.removeChild(new_title);
+					while(this.constant.main.childNodes.length > 1)
+					{
+						this.constant.main.removeChild(this.constant.main.lastChild);
+					}
+					this.constant.main.appendChild(fragment);
+				}
+				else
+				{
+					this.constant.main.innerHTML = '';
+					this.constant.main.appendChild(fragment);
+				}
+				
+				/*this.constant.main.innerHTML = "";
+				this.constant.main.appendChild(fragment);*/
 				this.nav.reset();
 				// Set initial focus
 				if(to_focus != null)
@@ -303,7 +321,7 @@ class RPGMTL_Interface
 					const firstFocusableElement = this.constant.main.querySelector('[tabindex="0"]');
 					if(firstFocusableElement) // Note: placeholder for future keyboard navigation
 					{
-						firstFocusableElement.focus({preventScroll: true});
+						firstFocusableElement.focus({preventScroll: false});
 					}
 					else
 					{
@@ -410,7 +428,7 @@ class RPGMTL_Interface
 				const t = data.list[i];
 				util.add_grid_cell(
 					grid,
-					'<img src="projects/' + data.list[i] + '/icon" class="project-icon-35px" onerror="this.remove();"> ' + data.list[i],
+					util.project_name_to_icon_banner(data.list[i]),
 					() => {
 						this.routes.project(t);
 					}
@@ -430,7 +448,7 @@ class RPGMTL_Interface
 				const c_entry = data.history[i];
 				util.add_interaction(
 					fragment,
-					'<img src="projects/' + c_entry[0] + '/icon" class="project-icon-35px" onerror="this.remove();"> ' + c_entry[0] + ": " + c_entry[1],
+					util.project_name_to_icon_banner(c_entry[0]) + ": " + c_entry[1],
 					() => {
 						this.routes.file(c_entry[0], c_entry[1], true);
 					}

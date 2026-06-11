@@ -174,7 +174,6 @@ li {
 	height:35px;
 	object-fit: cover;
 	vertical-align:middle;
-	loading:lazy;
 }
 
 .project-icon-80px {
@@ -183,7 +182,6 @@ li {
 	height:80px;
 	object-fit: cover;
 	vertical-align:middle;
-	loading:lazy;
 }
 
 .project-title {

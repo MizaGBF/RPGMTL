@@ -176,6 +176,11 @@ class util
 		return sel;
 	}
 	
+	static project_name_to_icon_banner(project_name, cls="project-icon-35px")
+	{
+		return '<img src="projects/' + project_name + '/icon" class="' + cls + '" onerror="this.remove();" loading="lazy"> ' + project_name;
+	}
+	
 	// add the top page title
 	static add_project_title(node, text)
 	{
@@ -184,7 +189,7 @@ class util
 			"div",
 			{
 				cls:["project-title"],
-				innerHTML:'<img src="projects/' + text + '/icon" class="project-icon-80px" onerror="this.remove();"> ' + text
+				innerHTML:util.project_name_to_icon_banner(text, "project-icon-80px")
 			}
 		)
 	}
@@ -408,4 +413,4 @@ class util
 			''
 		);
 	}
-}
+};
