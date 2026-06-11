@@ -364,11 +364,11 @@ class RPGMTL():
                 self.modified[k] = False # reset it
                 match (max_success - success):
                     case 0:
-                        self.log.info(f"Saved projects '{k}' files")
+                        self.log.info(f"Saved project '{k}' files")
                     case 1:
-                        self.log.info(f"Saved projects '{k}' files but an error occured")
+                        self.log.info(f"Saved project '{k}' files but an error occured")
                     case _:
-                        self.log.info(f"Failed to save projects '{k}' files")
+                        self.log.info(f"Failed to save projects'{k}' files")
         if self.settings_modified: # write settings if flag is set
             try:
                 with open('settings.json', mode='w', encoding='utf-8') as f:
@@ -571,8 +571,84 @@ class RPGMTL():
             except Exception as e:
                 self.log.critical(f"Error while copying icon {best_match} for project {project_name}\n{self.trbk(e)}")
 
+    # utility function to import a specific icon/image to a project
+    async def look_for_icon_at(self : RPGMTL, name : str, path : str) -> int:
+        use_ssl : bool = True
+        # Parse path
+        if path.startswith("https://vndb.org/v") or (path.lower().startswith("v") and path[1:].isdigit()):
+            # VNDB code
+            if path.startswith("https://vndb.org/v"):
+                code = path.split("https://vndb.org/", 1)[1].split(".", 1)[0].split("?", 1)[0]
+            else:
+                code = path
+            use_ssl = False # VNDB asset is causing SSL errors
+            async with ClientSession() as session:
+                async with session.post("https://api.vndb.org/kana/vn", json={"filters":["id","=",code], "fields":"image.thumbnail"}) as resp:
+                    if resp.status == 200:
+                        path = (await resp.json())["results"][0]["image"]["thumbnail"]
+                        # rely on HTTP parsing after this
+                    else:
+                        return 2000 + resp.status
+        # DLsite RJ code to thumbnail
+        if path.startswith("https://www.dlsite.com") or path.lower().startswith(("rj","re","vj")):
+            DLSITE_CATEGORIES : list[tuple[str, str]]
+            # extract code and category from url
+            if path.startswith("https://www.dlsite.com"):
+                DLSITE_CATEGORIES = [("ana","_ana")] if "announce" in path else [("work","")]
+                path = path.split("/product_id/", 1)[1].split(".html", 1)[0]
+            else:
+                DLSITE_CATEGORIES = [("work",""), ("ana","_ana")]
+            # calculate code/folder
+            try:
+                code_prefix : str = path[:2].upper()
+                code : int = int(path[2:])
+                folder_code : int = (code // 1000) * 1000
+                if code % 1000 != 0:
+                    folder_code += 1000
+            except:
+                return -1
+            async with ClientSession() as session:
+                work_type : str = "professional" if code_prefix == "VJ" else "doujin"
+                for i, (work_cat, work_cat_suffix) in enumerate(DLSITE_CATEGORIES):
+                    try:
+                        if code >= 1000000:
+                            path = f"https://img.dlsite.jp/modpub/images2/{work_cat}/{work_type}/{code_prefix}{folder_code:08}/{code_prefix}{code:08}{work_cat_suffix}_img_main.jpg"
+                        else:
+                            path = f"https://img.dlsite.jp/modpub/images2/{work_cat}/{work_type}/{code_prefix}{folder_code:06}/{code_prefix}{code:06}{work_cat_suffix}_img_main.jpg"
+                        async with session.get(path) as resp:
+                            if resp.status == 200:
+                                with open(f"projects/{name}/icon", "wb") as f:
+                                    f.write(await resp.read())
+                            else:
+                                raise Exception()
+                        break
+                    except:
+                        if i == len(DLSITE_CATEGORIES) - 1:
+                            return -2
+        elif path.startswith("http"):
+            # regular HTTP fetching
+            async with ClientSession() as session:
+                async with session.get(path, ssl=use_ssl) as resp:
+                    if resp.status == 200:
+                        with open(f"projects/{name}/icon", "wb") as f:
+                            f.write(await resp.read())
+                    else:
+                        return 1000 + resp.status
+        else:
+            # local fetching
+            try:
+                icon_path : Path = Path(path)
+                target_path : Path = Path('projects', name, 'icon')
+                if not icon_path.exists() or not icon_path.is_file():
+                    return -3
+                shutil.copyfile(icon_path, target_path)
+            except Exception as e:
+                self.log.error(f"Error in update_notes for project {name} with path {path}:\n{self.trbk(e)}")
+                return -4
+        return 0
+
     # create a blank new project
-    def create_new_project(self : RPGMTL, path : str, name : str) -> tuple[bool, str]:
+    async def create_new_project(self : RPGMTL, path : str, name : str, icon_path : str) -> tuple[bool, str]:
         try:
             # remove forbidden chara from project name
             name = self.clean_project_name(name)
@@ -605,8 +681,11 @@ class RPGMTL():
             self.backup_game_files(name)
             # save
             self.save()
+            self.log.info(f"Project {name} has been created")
             # find possible icon
-            self.find_and_copy_best_icon(Path(path), name)
+            if icon_path == "" or (await self.look_for_icon_at(name, icon_path)) != 0:
+                self.log.info(f"No valid icon set for new project {name}, looking for one in game files...")
+                self.find_and_copy_best_icon(Path(path), name)  
             return True, name
         except Exception as e:
             self.log.critical(f"Error while copying game files for project {name}\n{self.trbk(e)}")
@@ -1454,12 +1533,15 @@ class RPGMTL():
         payload = await request.json()
         path = payload.get('path', None)
         name = payload.get('name', None)
+        icon = payload.get('icon', None)
         if path is None:
             return web.json_response({"result":"bad", "message":"Bad request, missing 'path' parameter."}, status=400)
         elif name is None:
             return web.json_response({"result":"bad", "message":"Bad request, missing 'name' parameter."}, status=400)
+        elif icon is None:
+            return web.json_response({"result":"bad", "message":"Bad request, missing 'icon' parameter."}, status=400)
         else:
-            flag, string = self.create_new_project(path, name)
+            flag, string = await self.create_new_project(path, name, icon)
             if flag:
                 return  web.json_response({"result":"ok", "data":{"name":string, "config":self.projects[string]}, "message":"You can now set your Settings and Extract the strings"})
             else:
@@ -2622,7 +2704,7 @@ class RPGMTL():
             self.projects[name]["notes"] = notes
             self.modified[name] = True
             return web.json_response({"result":"ok", "data":{"config":self.projects[name], "name":name}, "message":"Saved"})
-            
+      
     # /api/update_icon
     async def update_icon(self : RPGMTL, request : web.Request) -> web.Response:
         payload = await request.json()
@@ -2633,78 +2715,21 @@ class RPGMTL():
         elif path is None:
             return web.json_response({"result":"bad", "message":"Bad request, missing 'path' parameter"}, status=400)
         else:
-            use_ssl : bool = True # VNDB asset is causing SSL errors
-            # Parse path
-            if path.startswith("https://vndb.org/v") or (path.lower().startswith("v") and path[1:].isdigit()):
-                # VNDB code
-                if path.startswith("https://vndb.org/v"):
-                    code = path.split("https://vndb.org/", 1)[1].split(".", 1)[0].split("?", 1)[0]
-                else:
-                    code = path
-                use_ssl = False
-                async with ClientSession() as session:
-                    async with session.post("https://api.vndb.org/kana/vn", json={"filters":["id","=",code], "fields":"image.thumbnail"}) as resp:
-                        if resp.status == 200:
-                            path = (await resp.json())["results"][0]["image"]["thumbnail"]
-                            # rely on HTTP parsing after this
-                        else:
-                            return web.json_response({"result":"bad", "message":f"Failed to find VNDB ID, HTTP Error {resp.status}"}, status=400) 
-            # DLsite RJ code to thumbnail
-            if path.startswith("https://www.dlsite.com") or path.lower().startswith(("rj","re","vj")):
-                DLSITE_CATEGORIES : list[tuple[str, str]]
-                # extract code and category from url
-                if path.startswith("https://www.dlsite.com"):
-                    DLSITE_CATEGORIES = [("ana","_ana")] if "announce" in path else [("work","")]
-                    path = path.split("/product_id/", 1)[1].split(".html", 1)[0]
-                else:
-                    DLSITE_CATEGORIES = [("work",""), ("ana","_ana")]
-                # calculate code/folder
-                try:
-                    code_prefix : str = path[:2].upper()
-                    code : int = int(path[2:])
-                    folder_code : int = (code // 1000) * 1000
-                    if code % 1000 != 0:
-                        folder_code += 1000
-                except:
+            status : int = await self.look_for_icon_at(name, path)
+            match status:
+                case -1:
                     return web.json_response({"result":"bad", "message":"The DLsite code is invalid"}, status=400)
-                async with ClientSession() as session:
-                    work_type : str = "professional" if code_prefix == "VJ" else "doujin"
-                    for i, (work_cat, work_cat_suffix) in enumerate(DLSITE_CATEGORIES):
-                        try:
-                            if code >= 1000000:
-                                path = f"https://img.dlsite.jp/modpub/images2/{work_cat}/{work_type}/{code_prefix}{folder_code:08}/{code_prefix}{code:08}{work_cat_suffix}_img_main.jpg"
-                            else:
-                                path = f"https://img.dlsite.jp/modpub/images2/{work_cat}/{work_type}/{code_prefix}{folder_code:06}/{code_prefix}{code:06}{work_cat_suffix}_img_main.jpg"
-                            async with session.get(path) as resp:
-                                if resp.status == 200:
-                                    with open(f"projects/{name}/icon", "wb") as f:
-                                        f.write(await resp.read())
-                                else:
-                                    raise Exception()
-                            break
-                        except:
-                            if i == len(DLSITE_CATEGORIES) - 1:
-                                return web.json_response({"result":"bad", "message":"Failed to find the DLsite thumbnail"}, status=400)
-            elif path.startswith("http"):
-                # regular HTTP fetching
-                async with ClientSession() as session:
-                    async with session.get(path, ssl=use_ssl) as resp:
-                        if resp.status == 200:
-                            with open(f"projects/{name}/icon", "wb") as f:
-                                f.write(await resp.read())
-                        else:
-                            return web.json_response({"result":"bad", "message":f"Failed to set icon, HTTP Error {resp.status}"}, status=400) 
-            else:
-                # local fetching
-                try:
-                    icon_path : Path = Path(path)
-                    target_path : Path = Path('projects', name, 'icon')
-                    if not icon_path.exists() or not icon_path.is_file():
-                        return web.json_response({"result":"bad", "message":"Failed to set icon, file not found"}, status=400)
-                    shutil.copyfile(icon_path, target_path)
-                except Exception as e:
-                    self.log.error(f"Error in update_notes for project {name} with path {path}:\n{self.trbk(e)}")
+                case -2:
+                    return web.json_response({"result":"bad", "message":"Failed to find the DLsite thumbnail"}, status=400)
+                case -3:
+                    return web.json_response({"result":"bad", "message":"Failed to set icon, file not found"}, status=400)
+                case -4:
                     return web.json_response({"result":"bad", "message":"Failed to set icon, an error occured while reading the file"}, status=400)
+                case _:
+                    if status > 2000:
+                        return web.json_response({"result":"bad", "message":f"Failed to find VNDB ID, HTTP Error {status - 2000}"}, status=400) 
+                    elif status > 1000:
+                        return web.json_response({"result":"bad", "message":f"Failed to set icon, HTTP Error {status - 1000}"}, status=400) 
         return web.json_response({"result":"ok", "data":{"config":self.projects[name], "name":name}, "message":"Icon updated"})
 
 if __name__ == "__main__":

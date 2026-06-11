@@ -104,7 +104,7 @@ Return in data: project 'name', project 'config', 'modified_default' setting key
   
 ```
 /api/new_project
-Payload: project 'name', game 'path'
+Payload: project 'name', game 'path', 'icon_path'
 Return in data: project 'name', project 'config'
 ```
   

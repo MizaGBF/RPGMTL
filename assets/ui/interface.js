@@ -1755,12 +1755,11 @@ class RPGMTL_Interface
 			let fragment = this.new_page();
 			util.add_label(
 				fragment,
-				"Folder/Project Name",
+				"Folder & Project Name",
 				["left"]
 			);
-			
 			// project name input element
-			let input = util.add_to(
+			const input = util.add_to(
 				fragment,
 				"input",
 				{
@@ -1770,6 +1769,23 @@ class RPGMTL_Interface
 				}
 			);
 			input.type = "text";
+			// Icon
+			util.add_label(
+				fragment,
+				"Icon path or URL",
+				["left"]
+			);
+			const icon = util.add_to(
+				fragment,
+				"input",
+				{
+					cls:["input"],
+					navigable:true,
+					br:true
+				}
+			);
+			icon.type = "text";
+			icon.placeholder = "Optional";
 			
 			let tmp = path.split("/"); // set input default value
 			if(tmp.length >= 1)
@@ -1789,7 +1805,7 @@ class RPGMTL_Interface
 					this.loader.text = "Creating the project...";
 					if(input.value.trim() != "")
 					{
-						this.routes.new_project(path, input.value);
+						this.routes.new_project(path, input.value, icon.value);
 					}
 				}
 			);

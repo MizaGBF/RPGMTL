@@ -1229,7 +1229,7 @@ class Routing extends Component
 		);
 	}
 
-	new_project(at_path, name)
+	new_project(at_path, name, icon_path)
 	{
 		this.owner.post(
 			"/api/new_project",
@@ -1237,7 +1237,8 @@ class Routing extends Component
 			() => this.main(),
 			{
 				path:at_path,
-				name:name
+				name:name,
+				icon:icon_path
 			}
 		);
 	}
