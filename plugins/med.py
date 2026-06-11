@@ -57,7 +57,7 @@ class MED(Plugin):
             - Pad the strings with space until size N
             - Join the strings
             
-            As such, the logic break is the function is ran again on an already processed line.
+            As such, the logic break if the function is ran again on an already processed line.
             To counter this, three spaces are added at the end, to be used as padding.
         """
         try:
