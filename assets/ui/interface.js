@@ -428,7 +428,7 @@ class RPGMTL_Interface
 				const t = data.list[i];
 				util.add_grid_cell(
 					grid,
-					util.project_name_to_icon_banner(data.list[i]),
+					util.project_name_add_icon(data.list[i]),
 					() => {
 						this.routes.project(t);
 					}
@@ -448,7 +448,7 @@ class RPGMTL_Interface
 				const c_entry = data.history[i];
 				util.add_interaction(
 					fragment,
-					util.project_name_to_icon_banner(c_entry[0]) + ": " + c_entry[1],
+					util.project_name_add_icon(c_entry[0]) + ": " + c_entry[1],
 					() => {
 						this.routes.file(c_entry[0], c_entry[1], true);
 					}

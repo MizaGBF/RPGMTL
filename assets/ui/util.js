@@ -176,22 +176,38 @@ class util
 		return sel;
 	}
 	
-	static project_name_to_icon_banner(project_name, cls="project-icon-35px")
+	static project_name_to_icon_banner(project_name, icon_cls="project-icon-35px")
 	{
-		return '<img src="projects/' + project_name + '/icon" class="' + cls + '" onerror="this.remove();" loading="lazy"> ' + project_name;
+		return (
+			'<div class="project-title-background" style=\
+			"background-image:linear-gradient( rgba(0, 0, 0, 0.5), rgba(0, 0, 0, 0.5) ), url(\'projects/' + project_name + '/icon\');"\
+			></div><div class="project-title-content">\
+			<img src="projects/' + project_name + '/icon" class="' + icon_cls + '" onerror="this.remove();" loading="lazy"> '
+			+ project_name
+			+ '</div>'
+		);
+	}
+	
+	static project_name_add_icon(project_name, icon_cls="project-icon-35px")
+	{
+		return (
+			'<img src="projects/' + project_name + '/icon" class="' + icon_cls + '" onerror="this.remove();" loading="lazy"> '
+			+ project_name
+		);
 	}
 	
 	// add the top page title
 	static add_project_title(node, text)
 	{
-		return util.add_to(
+		const title = util.add_to(
 			node,
 			"div",
 			{
 				cls:["project-title"],
 				innerHTML:util.project_name_to_icon_banner(text, "project-icon-80px")
 			}
-		)
+		);
+		return title;
 	}
 	
 	// add a simple text label

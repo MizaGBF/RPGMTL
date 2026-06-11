@@ -195,6 +195,26 @@ li {
 	position: relative;
 	word-wrap: break-word;
 	border-bottom: 2px solid #545454;
+	background-size: cover;
+	background-position: center;
+}
+
+.project-title-background {
+	position: absolute;
+	min-width: 100%;
+	min-height: 95%;
+	overflow: hidden;
+	filter: blur(3px);
+	background-size: cover;
+	background-position: center;
+	z-index: 1;
+	-webkit-mask-image: linear-gradient(to right, transparent 5%, black 10%, black 90%, transparent 95%);
+	mask-image: linear-gradient(to right, transparent 5%, black 10%, black 90%, transparent 95%);
+}
+
+.project-title-content {
+	position: relative;
+	z-index: 2;
 }
 
 .label {
