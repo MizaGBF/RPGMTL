@@ -176,19 +176,22 @@ class util
 		return sel;
 	}
 	
-	static project_name_to_icon_banner(project_name, icon_cls="project-icon-35px")
+	static project_name_to_icon_banner(project_name, icon_cls)
 	{
 		return (
-			'<div class="project-title-background" style=\
-			"background-image:linear-gradient( rgba(0, 0, 0, 0.5), rgba(0, 0, 0, 0.5) ), url(\'projects/' + project_name + '/icon\');"\
-			></div><div class="project-title-content">\
-			<img src="projects/' + project_name + '/icon" class="' + icon_cls + '" onerror="this.remove();" loading="lazy"> '
+			'<div class="project-title-background"></div><div class="project-title-content">\
+			<img src="projects/' + project_name + '/icon" class="'
+			+ icon_cls
+			+ '" onload="this.parentNode.parentNode.firstChild.style.backgroundImage=\'linear-gradient(rgba(0, 0, 0, 0.5), \
+			rgba(0, 0, 0, 0.5)), url(\\\'projects/' + project_name + '/icon\\\')\';" \
+			onerror="const node = document.createElement(\'span\'); node.classList.add(\'project-icon-dummy\'); this.replaceWith(node);" \
+			loading="lazy"> '
 			+ project_name
 			+ '</div>'
 		);
 	}
 	
-	static project_name_add_icon(project_name, icon_cls="project-icon-35px")
+	static project_name_add_icon(project_name, icon_cls="project-icon-small")
 	{
 		return (
 			'<img src="projects/' + project_name + '/icon" class="' + icon_cls + '" onerror="this.remove();" loading="lazy"> '
@@ -204,7 +207,7 @@ class util
 			"div",
 			{
 				cls:["project-title"],
-				innerHTML:util.project_name_to_icon_banner(text, "project-icon-80px")
+				innerHTML:util.project_name_to_icon_banner(text, "project-icon-banner")
 			}
 		);
 		return title;

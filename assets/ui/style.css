@@ -168,7 +168,7 @@ li {
 	width: 95%;
 }
 
-.project-icon-35px {
+.project-icon-small {
 	border-radius: 4px;
 	width:35px;
 	height:35px;
@@ -176,11 +176,18 @@ li {
 	vertical-align:middle;
 }
 
-.project-icon-80px {
+.project-icon-banner {
 	border-radius: 4px;
-	width:80px;
+	max-width:80px;
 	height:80px;
 	object-fit: cover;
+	vertical-align:middle;
+}
+
+.project-icon-dummy {
+	display:inline-block;
+	width:0px;
+	height:80px;
 	vertical-align:middle;
 }
 
@@ -188,7 +195,6 @@ li {
 	color: #eeeeee;
 	font-size: 34px;
 	padding: 5px;
-	padding-bottom: 10px;
 	margin: 5px;
 	margin-bottom: 10px;
 	text-align: center;
@@ -202,7 +208,7 @@ li {
 .project-title-background {
 	position: absolute;
 	min-width: 100%;
-	min-height: 95%;
+	height: 100px;
 	overflow: hidden;
 	filter: blur(3px);
 	background-size: cover;
@@ -215,6 +221,8 @@ li {
 .project-title-content {
 	position: relative;
 	z-index: 2;
+	height:90px;
+	margin-top:10px;
 }
 
 .label {

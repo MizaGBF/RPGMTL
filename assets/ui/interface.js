@@ -388,7 +388,7 @@ class RPGMTL_Interface
 			"div",
 			{
 				cls:["project-title"],
-				innerHTML:'<img src="assets/ui/favicon.svg" class="project-icon-80px" onerror="this.remove();"><div class="rpgmtl-title">RPGMTL<br><small>v' + data.verstring + '</small></div>'
+				innerHTML:'<img src="assets/ui/favicon.svg" class="project-icon-banner" onerror="this.remove();"><div class="rpgmtl-title">RPGMTL<br><small>v' + data.verstring + '</small></div>'
 			}
 		)
 		// add buttons
