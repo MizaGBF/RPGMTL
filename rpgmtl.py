@@ -337,8 +337,7 @@ class RPGMTL():
         for k, v in self.modified.items(): # check modified flags
             if v: # if raised
                 folder = f"projects/{k}/"
-                max_success : int = 2
-                success : int = 2
+                err_flag : bool = False
                 self.log.info(f"Saving projects '{k}' files...")
                 try:
                     # write config.json
@@ -347,7 +346,7 @@ class RPGMTL():
                     # move file to actual name
                     shutil.move(folder + "_tmp_config_.json", folder + "config.json")
                 except Exception as e:
-                    success -= 1
+                    err_flag = True
                     self.log.error(f"Failed to update projects/{k}/config.json:\n{self.trbk(e)}")
                 try:
                     if k in self.strings: # if strings.json is loaded
@@ -356,19 +355,14 @@ class RPGMTL():
                             f.write(self.serialize_format_json(self.strings[k]))
                         # move file to actual name
                         shutil.move(folder + "_tmp_strings_.json", folder + "strings.json")
-                    else:
-                        max_success -= 1
                 except Exception as e:
-                    success -= 1
+                    err_flag = True
                     self.log.error(f"Failed to update projects/{k}/strings.json:\n{self.trbk(e)}")
                 self.modified[k] = False # reset it
-                match (max_success - success):
-                    case 0:
-                        self.log.info(f"Saved project '{k}' files")
-                    case 1:
-                        self.log.info(f"Saved project '{k}' files but an error occured")
-                    case _:
-                        self.log.info(f"Failed to save projects'{k}' files")
+                if err_flag:
+                    self.log.info(f"Errors occured while saving project '{k}' files")
+                else:
+                    self.log.info(f"Saved project '{k}' files")
         if self.settings_modified: # write settings if flag is set
             try:
                 with open('settings.json', mode='w', encoding='utf-8') as f:
@@ -567,7 +561,7 @@ class RPGMTL():
         if best_match is not None:
             try:
                 shutil.copyfile(best_match, f"projects/{project_name}/icon")
-                self.log.info(f"Pick icon {best_match} for project {project_name}")
+                self.log.info(f"Picked icon {best_match} for project {project_name}")
             except Exception as e:
                 self.log.critical(f"Error while copying icon {best_match} for project {project_name}\n{self.trbk(e)}")
 
