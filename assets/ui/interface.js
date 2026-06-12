@@ -1742,6 +1742,14 @@ class RPGMTL_Interface
 					<li>If already taken, a number will be added after the name.</li>\
 				</ul>\
 				\
+				The Icon supports:\
+				<ul>\
+					<li>URL (Starting with http or https).</li>\
+					<li>An absolute or relative local path (Example: C:\Users\...\icon.png or ../folder/icon.png).</li>\
+					<li>DLsite URL or RJ/RE/VJ codes (such as RJ000000 or RJ00000000).</li>\
+					<li>A VNDB URL or code (such as v000).</li>\
+				</ul>\
+				\
 				Keyboard shortcuts\
 				<ul>\
 					<li><b>F1</b> for the help.</li>\
