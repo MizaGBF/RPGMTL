@@ -82,7 +82,7 @@ class GeneralActions(Plugin):
                 }
             ],
             "general_clear_unlinked": [
-                "assets/images/trash.png", "Clear all unlinked strings", self.tool_clear_unlinked,
+                "assets/images/trash.png", "Delete all unlinked strings", self.tool_clear_unlinked,
                 {
                     "type":self.COMPLEX_TOOL,
                     "params":{
@@ -91,7 +91,7 @@ class GeneralActions(Plugin):
                         "_t_0002":["The purpose is to clear garbage created by multiple batch translations at the start of a new translation project.", "display", None, None],
                         "_t_confirm":["I've read and I understand that data will be deleted.", "bool", False, None],
                     },
-                    "help":"Tool to automatically clear all unlinked strings."
+                    "help":"Tool to automatically delete all unlinked strings."
                 }
             ],
         }
