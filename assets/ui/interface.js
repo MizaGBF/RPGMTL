@@ -353,7 +353,7 @@ class RPGMTL_Interface
 						"/api/shutdown",
 						() => {
 							this.constant.bar.innerHTML = "";
-							let fragment = this.new_page();
+							const fragment = this.new_page();
 							util.add_label(
 								fragment,
 								"RPGMTL has been shutdown"
@@ -381,7 +381,7 @@ class RPGMTL_Interface
 		);
 		
 		// main part
-		let fragment = this.new_page();
+		const fragment = this.new_page();
 		// title
 		util.add_to(
 			fragment,
@@ -544,7 +544,7 @@ class RPGMTL_Interface
 			);
 			
 			// main part
-			let fragment = this.new_page();
+			const fragment = this.new_page();
 			const layout = data.layout;
 			const settings = data.settings;
 			const descriptions = data.descriptions;
@@ -947,7 +947,7 @@ class RPGMTL_Interface
 			);
 			
 			// main part
-			let fragment = this.new_page();
+			const fragment = this.new_page();
 			util.add_project_title(
 				fragment,
 				this.project.name
@@ -1140,7 +1140,7 @@ class RPGMTL_Interface
 			);
 			
 			// main part
-			let fragment = this.new_page();
+			const fragment = this.new_page();
 			util.add_project_title(
 				fragment,
 				this.project.name
@@ -1178,7 +1178,7 @@ class RPGMTL_Interface
 			);
 			
 			// main part
-			let fragment = this.new_page();
+			const fragment = this.new_page();
 			util.add_project_title(
 				fragment,
 				this.project.name
@@ -1467,7 +1467,7 @@ class RPGMTL_Interface
 			);
 			
 			// main part
-			let fragment = this.new_page();
+			const fragment = this.new_page();
 			util.add_project_title(
 				fragment,
 				this.project.name
@@ -1525,7 +1525,7 @@ class RPGMTL_Interface
 			);
 			
 			// main part
-			let fragment = this.new_page();
+			const fragment = this.new_page();
 			const title = util.add_project_title(
 				fragment,
 				this.project.name
@@ -1622,7 +1622,7 @@ class RPGMTL_Interface
 			);
 			
 			// main part
-			let fragment = this.new_page();
+			const fragment = this.new_page();
 			const list = data.list; // translator plugin list
 			const possibles = ["current", "batch"];
 			const possibles_text = ["Single Translation", "Batch Translation"];
@@ -1761,7 +1761,7 @@ class RPGMTL_Interface
 			);
 			
 			// main part
-			let fragment = this.new_page();
+			const fragment = this.new_page();
 			util.add_label(
 				fragment,
 				"Folder & Project Name",
@@ -1881,7 +1881,7 @@ class RPGMTL_Interface
 			// main part
 			// here we add various buttons
 			// some only appear if files have been parsed
-			let fragment = this.new_page();
+			const fragment = this.new_page();
 			util.add_project_title(
 				fragment,
 				this.project.name
@@ -2309,7 +2309,7 @@ class RPGMTL_Interface
 			);
 			
 			// main part
-			let fragment = this.new_page();
+			const fragment = this.new_page();
 			util.add_project_title(
 				fragment,
 				this.project.name
@@ -2529,7 +2529,7 @@ class RPGMTL_Interface
 			);
 			
 			// main part
-			let fragment = this.new_page();
+			const fragment = this.new_page();
 			util.add_project_title(
 				fragment,
 				this.project.name
@@ -2632,7 +2632,7 @@ class RPGMTL_Interface
 			);
 			
 			// main part
-			let fragment = this.new_page();
+			const fragment = this.new_page();
 			util.add_project_title(
 				fragment,
 				this.project.name
@@ -2741,7 +2741,7 @@ class RPGMTL_Interface
 			);
 			
 			// main part
-			let fragment = this.new_page();
+			const fragment = this.new_page();
 			// add various input and text elements
 			util.add_project_title(
 				fragment,
@@ -2885,7 +2885,7 @@ class RPGMTL_Interface
 			);
 			
 			// main part
-			let fragment = this.new_page();
+			const fragment = this.new_page();
 			util.add_project_title(
 				fragment,
 				this.project.name
@@ -3414,7 +3414,7 @@ class RPGMTL_Interface
 			);
 			
 			// main part
-			let fragment = this.new_page();
+			const fragment = this.new_page();
 			
 			const topsection = util.add_project_title(
 				fragment,
@@ -3859,7 +3859,6 @@ class RPGMTL_Interface
 		try
 		{
 			// don't update util.update_page_location here
-			
 			this.filebrowsingmode = mode;
 			// top bar
 			this.top_bar.update(
@@ -3894,7 +3893,14 @@ class RPGMTL_Interface
 			);
 		
 			// main part
-			let fragment = this.new_page();
+			const fragment = this.new_page();
+			if(this.project.name != null)
+			{
+				util.add_project_title(
+					fragment,
+					this.project.name
+				);
+			}
 			util.add_label(
 				fragment,
 				explanation
@@ -4166,7 +4172,7 @@ class RPGMTL_Interface
 			);
 		
 			// main part
-			let fragment = this.new_page();
+			const fragment = this.new_page();
 			util.add_project_title(
 				fragment,
 				this.project.name
