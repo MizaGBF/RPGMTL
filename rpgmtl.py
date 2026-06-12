@@ -674,6 +674,17 @@ class RPGMTL():
             }
             # backup files
             self.backup_game_files(name)
+            if len(self.projects[name]["files"]) == 0:
+                self.log.info(f"No files found for project {name}, aborting creating...")
+                self.projects.pop(name)
+                self.modified.pop(name)
+                try:
+                    pr_path : Path = Path("projects/" + name)
+                    if os.path.isdir(pr_path):
+                        shutil.rmtree(pr_path)
+                except Exception as ce:
+                    self.log.error(f"Error while cleaning up aborted project {name}\n{self.trbk(ce)}")
+                return False, "Creation aborted, no exploitable files found"
             # save
             self.save()
             self.log.info(f"Project {name} has been created")
