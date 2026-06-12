@@ -1917,6 +1917,7 @@ class RPGMTL_Interface
 				);
 			}
 			let grid = null;
+			let button_to_focus = null;
 			// translate options
 			if(this.project.config.version)
 			{
@@ -1933,7 +1934,7 @@ class RPGMTL_Interface
 						br:true
 					}
 				);
-				util.add_grid_cell(grid, '<img src="assets/images/folder.png"> Browse Files', () => {
+				button_to_focus = util.add_grid_cell(grid, '<img src="assets/images/folder.png"> Browse Files', () => {
 					this.routes.browse(this.project.name, "");
 				});
 				util.add_grid_cell(grid, '<img src="assets/images/bandaid.png"> Add a Fix', () => {
@@ -1975,13 +1976,17 @@ class RPGMTL_Interface
 					br:true
 				}
 			);
-			util.add_grid_cell(
+			const tmp_ref = util.add_grid_cell(
 				grid,
 				'<img src="assets/images/setting.png"> Project Settings',
 				() => {
 					this.routes.settings(this.project.name);
 				}
 			);
+			if(button_to_focus == null)
+			{
+				button_to_focus = tmp_ref;
+			}
 			util.add_grid_cell(
 				grid,
 				'<img src="assets/images/translate.png"> Project Translators',
@@ -2151,7 +2156,12 @@ class RPGMTL_Interface
 					);
 				}
 			}
-			this.update_main(fragment);
+			this.update_main(fragment).then(() => {
+				if(button_to_focus)
+				{
+					button_to_focus.focus({preventScroll: true});
+				}
+			});
 		}
 		catch(err)
 		{
