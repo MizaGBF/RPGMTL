@@ -115,6 +115,12 @@ Return in data: project 'name', project 'config', RPGMTL 'tools'
 ```
   
 ```
+/api/clear_project_path
+Payload: project 'name'
+Return in data: project 'name', project 'config'
+```
+  
+```
 /api/extract
 Payload: project 'name'
 Return in data: project 'name', project 'config'
