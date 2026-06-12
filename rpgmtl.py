@@ -968,7 +968,11 @@ class RPGMTL():
     # calculate number of translated lines
     async def compute_translated(self : RPGMTL, name : str) -> None:
         try:
+            # Store the task for later cleanup
+            task : asyncio.Task = self.computing[name]
+            # List all global translated strings
             tl_table : dict[str, bool] = {s : self.strings[name]["strings"][s][GloIndex.TL] is not None for s in self.strings[name]["strings"]}
+            # Look for individual strings
             for f in self.strings[name]["files"]:
                 await asyncio.sleep(0.005) # i.e 5s for 1000 files
                 counts = [0, 0, 0]
@@ -984,9 +988,13 @@ class RPGMTL():
                 self.projects[name]['files'][f]["translated"] = counts[0]
                 self.projects[name]['files'][f]["disabled_strings"] = counts[1]
                 self.projects[name]['files'][f]["strings"] = counts[2]
-            # Note: Not changing modified flag
+            # Note: Not raising the modified flag
             # This function is already called after modifying something
             # It's to avoid too much writes
+            
+            # Cleanup
+            if self.computing.get(name, None) is task:
+                self.computing.pop(name)
         except asyncio.CancelledError:
             return
         except Exception as e:
@@ -1960,7 +1968,19 @@ class RPGMTL():
             self.load_strings(name)
             try:
                 files, folders = self.get_folder_content(name, path)
-                return web.json_response({"result":"ok", "data":{"config":self.projects[name], "name":name, "path":path, "files":files, "folders":folders}})
+                return web.json_response(
+                    {
+                        "result":"ok",
+                        "data":{
+                            "config":self.projects[name],
+                            "name":name,
+                            "path":path,
+                            "files":files,
+                            "folders":folders,
+                            "updating_progress":name in self.computing
+                        }
+                    }
+                )
             except Exception:
                 return web.json_response({"result":"bad", "message":"Strings doesn't exist. You might have to extract them."}, status=400)
 

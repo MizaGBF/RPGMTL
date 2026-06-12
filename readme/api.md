@@ -128,7 +128,7 @@ Payload: project 'name'
 ```
 /api/browse
 Payload: project 'name', folder 'path'
-Return in data: project 'name', project 'config', folder 'path', list of 'files', list of 'folders'
+Return in data: project 'name', project 'config', folder 'path', list of 'files', list of 'folders', 'updating_progress' flag
 ```
   
 ```

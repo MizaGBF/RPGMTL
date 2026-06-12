@@ -2285,7 +2285,7 @@ class RPGMTL_Interface
 				},
 				"<ul>\
 					<li>Ctrl+Click on a file to <b>disable</b> it, it won't be patched during the release process.</li>\
-					<li>The string counts and completion percentages update slowly in the background, don't take them for granted.</li>\
+					<li>The Progress Tracker updates in the background. If you see " + this.constant.progress_updating_svg + ", it's being updated and will be refreshed upon changing page.</li>\
 				</ul>\
 				\
 				Keyboard shortcuts\
@@ -2412,7 +2412,7 @@ class RPGMTL_Interface
 									(result_data) => {
 										this.update_file_list(result_data);
 										// update completion
-										this.progress.compute_browse_view(this.project, bp);
+										this.progress.compute_browse_view(this.project, bp, data.updating_progress);
 									},
 									null,
 									{
@@ -2447,7 +2447,7 @@ class RPGMTL_Interface
 			// add space at the bottom
 			util.add_spacer(fragment);
 			// set completion tracker
-			this.progress.compute_browse_view(this.project, bp);
+			this.progress.compute_browse_view(this.project, bp, data.updating_progress);
 			this.update_main(fragment).then(() => {
 				if(scrollTo != null) // scroll to last opened file
 				{
