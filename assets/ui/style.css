@@ -527,6 +527,11 @@ li {
 	background: #333d3d;
 }
 
+.project-select-background {
+	background-size: cover;
+	background-position: right;
+}
+
 a:link {
 	color: #00ffff;
 }

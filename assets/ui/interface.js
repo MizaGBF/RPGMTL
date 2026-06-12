@@ -426,13 +426,15 @@ class RPGMTL_Interface
 			for(let i = 0; i < data.list.length; ++i)
 			{
 				const t = data.list[i];
-				util.add_grid_cell(
+				const cell = util.add_grid_cell(
 					grid,
 					util.project_name_add_icon(data.list[i]),
 					() => {
 						this.routes.project(t);
 					}
 				);
+				cell.classList.toggle("project-select-background", true);
+				cell.style.backgroundImage = "linear-gradient(to right, #181818 0%, #181818 50%, transparent 100%), url('projects/" + t + "/icon')";
 			}
 		}
 		// quick links
