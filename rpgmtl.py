@@ -146,6 +146,7 @@ class RPGMTL():
                 web.post('/api/update_location', self.select_project_exe), # Game Path selection
                 web.post('/api/new_project', self.create_project), # Create Project
                 web.post('/api/open_project', self.get_project), # Open Project
+                web.post('/api/clear_project_path', self.clear_project_path), # Delete Project import Path
                 web.post('/api/translator', self.get_translator), # Open Translator menu
                 web.post('/api/update_translator', self.update_translator), # Update Translator
                 web.post('/api/settings', self.get_settings), # Open Settings
@@ -1557,6 +1558,17 @@ class RPGMTL():
             return web.json_response({"result":"bad", "message":"Bad request, missing 'name' parameter."}, status=400)
         else:
             return web.json_response({"result":"ok", "data":{"name":name, "config":self.load_project(name), "tools":self.tool_list_info}})
+
+    # /api/clear_project_path
+    async def clear_project_path(self : RPGMTL, request : web.Request) -> web.Response:
+        payload = await request.json()
+        name = payload.get('name', None)
+        if name is None:
+            return web.json_response({"result":"bad", "message":"Bad request, missing 'name' parameter."}, status=400)
+        else:
+            self.projects[name]["path"] = ""
+            self.modified[name] = True
+            return web.json_response({"result":"ok", "data":{"name":name, "config":self.load_project(name)}})
 
     # /api/translator
     async def get_translator(self : RPGMTL, request : web.Request) -> web.Response:

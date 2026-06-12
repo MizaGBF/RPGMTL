@@ -1886,11 +1886,36 @@ class RPGMTL_Interface
 				fragment,
 				this.project.name
 			);
-			util.add_label(
-				fragment,
-				"Imported from: " + this.project.config.path,
-				["left", "smalltext"]
-			);
+			if(this.project.config.path != "")
+			{
+				const btn = util.add_button(
+					fragment,
+					"Remove import path",
+					"assets/images/trash.png",
+					(e) => {
+						if(
+							e.ctrlKey
+							|| window.confirm("Delete where the game files were imported from?\nThis can be useful if the path contains personal informations.")
+						) // confirmation / shortcut to insta confirm
+						{
+							this.post(
+								"/api/clear_project_path",
+								() => this.routes.redirect_to_project(),
+								() => this.routes.redirect_to_project(),
+								{
+									name:this.project.name
+								}
+							);
+						}
+					},
+					true
+				);
+				util.add_label(
+					fragment,
+					"Imported from: " + this.project.config.path,
+					["left", "settingtext", "smalltext"]
+				);
+			}
 			let grid = null;
 			// translate options
 			if(this.project.config.version)
