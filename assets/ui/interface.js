@@ -1526,7 +1526,7 @@ class RPGMTL_Interface
 			
 			// main part
 			let fragment = this.new_page();
-			util.add_project_title(
+			const title = util.add_project_title(
 				fragment,
 				this.project.name
 			);
@@ -1553,6 +1553,7 @@ class RPGMTL_Interface
 				this.post(
 					"/api/update_icon",
 					() => {
+						this.constant.main.innerHTML = ""; // to ensure it's reloaded
 						this.routes.project(this.project.name);
 					},
 					null,
