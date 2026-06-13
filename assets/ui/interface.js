@@ -523,8 +523,8 @@ class RPGMTL_Interface
 			// top bar
 			const specific_help_msg = (
 				is_project
-				? "<b>Project</b> Settings override <b>Default</b> Settings when modified and will have a <font color=#ffd802>yellow</font> outline."
-				: "<b>Default Global</b> Settings are your projects defaults."
+				? "<b>Project</b> Settings override <b>Default Global</b> Settings when modified and will have a <font color=#ffd802>yellow</font> outline."
+				: "<b>Default Global</b> Settings are used by all projects by default.<br>As a result, changing those settings will affect <b>all projects</b> unless they have been modified by those projects."
 			);
 			this.top_bar.update(
 				(is_project ? this.project.name + " Settings" : "Default Global Settings"),
@@ -582,17 +582,14 @@ class RPGMTL_Interface
 					}
 				);
 			}
-			else
-			{
-				util.add_to(
-					fragment,
-					"div",
-					{
-						cls:["label", "left", "smalltext"],
-						innerHTML:"Global settings are used by all projects by default.<br>As a result, changing those settings will affect <b>all projects</b> unless they have been modified by those projects."
-					}
-				)
-			}
+			util.add_to(
+				fragment,
+				"div",
+				{
+					cls:["label", "left", "smalltext"],
+					innerHTML:specific_help_msg
+				}
+			);
 			
 			let count = 0;
 			// go over received setting menu layout
@@ -615,7 +612,7 @@ class RPGMTL_Interface
 						cls:["label", "left"],
 						innerText:file
 					}
-				)
+				);
 				// and description if it exists
 				if(file in descriptions && descriptions[file] != "")
 				{
@@ -626,7 +623,7 @@ class RPGMTL_Interface
 							cls:["label", "left", "smalltext"],
 							innerText:descriptions[file]
 						}
-					)
+					);
 				}
 				// go over options
 				for(const [key, fdata] of Object.entries(fsett))
