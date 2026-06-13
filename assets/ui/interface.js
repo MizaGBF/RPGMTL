@@ -464,7 +464,7 @@ class RPGMTL_Interface
 	setting_menu_individual_reset(node, relevant_node, setting_key)
 	{
 		util.add_button(node, "Reset", "assets/images/update.png", () => {
-				if(window.confirm("Are you sure you want to reset this setting?"))
+				if(window.confirm("Are you sure you want to reset this setting to its Global value?"))
 				{
 					this.post(
 						"/api/update_settings",
@@ -649,7 +649,9 @@ class RPGMTL_Interface
 									util.push_popup("The setting has been updated.");
 									this.loader.state = false;
 									if(key in result_data.settings)
+									{
 										elem.classList.toggle("green", result_data.settings[key]);
+									}
 									elem.classList.toggle("settingmodifiedborder", result_data.modified_default.includes(key));
 								};
 								if(is_project)

@@ -1662,7 +1662,7 @@ class RPGMTL():
             self.load_project(name)
             psettings : dict[str, Any] = self.projects[name].get("settings", {})
             merged = self.settings | psettings
-            modified_default : list[str] = [k for k, v in self.settings.items() if (k in psettings and psettings[k] != v)]
+            modified_default : list[str] = [k for k, v in self.settings.items() if k in psettings]
             return web.json_response(
                 {
                     "result":"ok",
@@ -1721,7 +1721,7 @@ class RPGMTL():
             if key is None:
                 self.projects[name]["settings"] = {}
                 self.modified[name] = True
-            elif value is None or value == self.settings.get(key, None):
+            elif value is None: #or value == self.settings.get(key, None):
                 if key in self.projects[name]["settings"]:
                     self.projects[name]["settings"].pop(key)
                     self.modified[name] = True
@@ -1729,7 +1729,7 @@ class RPGMTL():
                 self.projects[name]["settings"][key] = value
                 self.modified[name] = True
             psettings : dict[str, Any] = self.projects[name].get("settings", {})
-            modified_default : list[str] = [k for k, v in self.settings.items() if (k in psettings and psettings[k] != v)]
+            modified_default : list[str] = [k for k, v in self.settings.items() if k in psettings]
             return web.json_response(
                 {
                     "result":"ok",
