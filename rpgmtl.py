@@ -1516,6 +1516,8 @@ class RPGMTL():
         path_exe : Path = Path(file_path).resolve()
         if path_exe in cwd.parents or path_exe == cwd:
             return web.json_response({"result":"bad", "message":"RPGMTL is present further down in the selected folder."})
+        elif path_exe.is_relative_to(cwd / "projects"):
+            return web.json_response({"result":"bad", "message":"Can't select anything in RPGMTL projects folder"})
         else:
             if not self.is_posix: # windows
                 if path_exe.as_posix() == "C:/":
