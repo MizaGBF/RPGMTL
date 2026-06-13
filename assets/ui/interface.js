@@ -1847,6 +1847,7 @@ class RPGMTL_Interface
 				},
 				"<ul>\
 					<li>Set your <b>Settings before</b> extracting the strings.</li>\
+					<li>To delete or rename a Project, make sure it's <b>unloaded</b> or that RPGMTL <b>isn't running</b>, and delete or rename its folder from inside the <b>projects</b> folder.</li>\
 				</ul>\
 				<ul>\
 					<li><b>Browse Files</b> to browse and translate strings.</li>\
