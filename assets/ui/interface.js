@@ -582,24 +582,34 @@ class RPGMTL_Interface
 			for(const [file, fsett] of Object.entries(layout))
 			{
 				fragment.appendChild(document.createElement("br"));
-				// add plugin name
-				util.add_label(
+				const plugin_info = util.add_to(
 					fragment,
-					file + " Plugin settings",
-					["left"]
+					"div",
+					{
+						cls:["interact-group"],
+						br:true
+					}
 				);
+				// add plugin name
+				util.add_to(
+					plugin_info,
+					"div",
+					{
+						cls:["label", "left"],
+						innerText:file
+					}
+				)
 				// and description if it exists
 				if(file in descriptions && descriptions[file] != "")
 				{
 					util.add_to(
-						fragment,
+						plugin_info,
 						"div",
 						{
-							cls:["left", "interact-group", "smalltext"],
-							innerText:descriptions[file],
-							br:true
+							cls:["label", "left", "smalltext"],
+							innerText:descriptions[file]
 						}
-					);
+					)
 				}
 				// go over options
 				for(const [key, fdata] of Object.entries(fsett))
