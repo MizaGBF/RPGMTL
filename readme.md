@@ -247,6 +247,7 @@ Select the location of the game you wish to translate.
 ![image](https://raw.githubusercontent.com/MizaGBF/RPGMTL/main/assets/readme/2.png)
   
 You'll then be asked a project name. This name will be the one used for the project folder and in the Web UI.
+You can also select an icon to the project. If you don't have any, RPGMTL will attempt to set it for you (either by detecting if the Game Path contains a DLsite code or VNDB ID, or by checking the game files for an icon) or you can set it later if it fails to.  
 Once done, hit `Create`. The game files will be copied for later use and backup purpose.  
   
 > [!NOTE]  
