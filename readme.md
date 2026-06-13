@@ -23,6 +23,9 @@ More will be added as I see fit.
 ![image](https://raw.githubusercontent.com/MizaGBF/RPGMTL/main/assets/readme/1.png)  
 *All screenshots are from version 3.30.*
   
+> [!IMPORTANT]  
+> Do not expose RPGMTL to the web or a public network without taking security measure. Do not share `settings.json` or individual project `config.json` files, as they might sensitive data such as **API keys**.   
+  
 ## Table of contents  
   
 * [Introduction](#introduction)  
