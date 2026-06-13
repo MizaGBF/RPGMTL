@@ -1766,7 +1766,7 @@ class RPGMTL_Interface
 			const fragment = this.new_page();
 			util.add_label(
 				fragment,
-				"Folder & Project Name",
+				"Project Name",
 				["left"]
 			);
 			// project name input element
@@ -1784,7 +1784,7 @@ class RPGMTL_Interface
 			// Icon
 			util.add_label(
 				fragment,
-				"Icon path or URL",
+				"Project Icon path or URL (Will attempt to auto-detect if empty)",
 				["left"]
 			);
 			const icon = util.add_to(

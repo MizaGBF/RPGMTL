@@ -530,7 +530,12 @@ class RPGMTL():
         # remove characters, trailing dot
         return re.sub(forbidden_chars, "", name).strip(". ")
 
-    def find_and_copy_best_icon(self : RPGMTL, path : Path, project_name : str) -> None:
+    async def find_and_copy_best_icon(self : RPGMTL, path : Path, project_name : str) -> None:
+        # check for DlSite/VNDB code presence
+        match : re.Match = re.search(r"((?:RJ|RE|VJ|V)\d+)", path.as_posix(), re.IGNORECASE)
+        if match and (await self.look_for_icon_at(project_name, match.group(1))) == 0:
+            return
+        # else check folder files
         keywords : dict[str, int] = {'icon': 10, 'logo': 10, 'favicon': 15, 'thumb': 5, 'app': 5}
         extensions : dict[str, int] = {'.ico': 3, '.png': 2, '.jpg': 1}
 
@@ -691,7 +696,7 @@ class RPGMTL():
             # find possible icon
             if icon_path == "" or (await self.look_for_icon_at(name, icon_path)) != 0:
                 self.log.info(f"No valid icon set for new project {name}, looking for one in game files...")
-                self.find_and_copy_best_icon(Path(path), name)  
+                await self.find_and_copy_best_icon(Path(path), name)  
             return True, name
         except Exception as e:
             self.log.critical(f"Error while copying game files for project {name}\n{self.trbk(e)}")
