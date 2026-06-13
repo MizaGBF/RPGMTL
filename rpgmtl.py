@@ -1408,7 +1408,7 @@ class RPGMTL():
         parser : argparse.ArgumentParser = argparse.ArgumentParser(prog="rpgmtl.py")
         command = parser.add_argument_group('command', 'Optional commands')
         command.add_argument('-p', '--port', help="set the web server port", nargs=1, type=int, metavar='PORT', default=[8000])
-        command.add_argument('-s', '--https', help="provide paths to your SSL certificate and key", nargs=2, default=None)
+        command.add_argument('-s', '--https', help="provide paths to your SSL certificate and key", nargs=2, default=None, metavar=('CERT', 'KEY'))
         command.add_argument('-n', '--http', help="clear SSL certificate settings and force HTTP", action='store_const', const=True, default=False, metavar='FILES')
         command.add_argument('-i', '--ip', help="set the IP filter status. Add 1, on, enable, enabled, 0, off, disable or disabled to set it.", nargs=1, default=None, metavar='STATE')
         command.add_argument('-v', '--verbose', help="add incoming HTTP requests to the logging and output", action='store_const', const=True, default=False, metavar='')
@@ -1437,7 +1437,9 @@ class RPGMTL():
                     self.settings_modified = True
                     self.log.info("HTTPS Certificates are set")
                 except Exception as e:
-                    self.log.error("Failed to set HTTPS Certificates, Exception: " + str(e))
+                    self.log.error(f"Failed to set HTTPS Certificates:\n{self.trbk(e)}")
+                    self.log.info("Force quitting to possibly avoid exposing RPGMTL to an unwanted network")
+                    os._exit(0)
         if args.ip is not None:
             res : bool|None = self.parse_string_parameter(args.ip[0])
             if res is None:
@@ -1472,7 +1474,7 @@ class RPGMTL():
             self.log.info(f"Starting RPGMTL on port {self.port}")
             web.run_app(self.app, port=self.port, shutdown_timeout=0, ssl_context=ssl_context)
         except Exception as e: # Ctrl+C is enough to trigger it
-            self.log.warning("The following exception occured:\n" + self.trbk(e))
+            self.log.warning(f"The following exception occured:\n{self.trbk(e)}")
         # temporarily ignore Ctrl+C (SIGINT) at the OS level
         original_handler = signal.signal(signal.SIGINT, signal.SIG_IGN)
         self.log.info("RPGMTL is shutting down...")
