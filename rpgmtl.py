@@ -80,7 +80,7 @@ class RPGMTL():
         for l in ['httpx']:
             logging.getLogger(l).setLevel(logging.FATAL)
         self.log = self.loggers['rpgmtl']
-        self.log.info(f"RPGMTL v{self.VERSION} is starting up...")
+        self.log.info(f"RPGMTL v{self.VERSION}")
         # Web server
         self.app : web.Application = self.setup_web_server()
         # variables
@@ -1388,6 +1388,20 @@ class RPGMTL():
             self.history = self.history[:self.HISTORY_LIMIT]
         self.settings_modified = True
 
+    def parse_string_parameter(self : RPGMTL, s : str) -> bool|None:
+        return {
+            "1":True,
+            "true":True,
+            "on":True,
+            "enable":True,
+            "enabled":True,
+            "0":False,
+            "false":False,
+            "off":False,
+            "disable":False,
+            "disabled":False,
+        }.get(s.lower(), None)
+
     # parse command line arguments
     def parse_command_line(self : RPGMTL) -> bool:
         # Parse command line
@@ -1425,17 +1439,13 @@ class RPGMTL():
                 except Exception as e:
                     self.log.error("Failed to set HTTPS Certificates, Exception: " + str(e))
         if args.ip is not None:
-            match args.ip[0].lower():
-                case "1"|"true"|"on"|"enable"|"enabled":
-                    self.settings["ip_filter"] = True
-                    self.settings_modified = True
-                    self.log.info("IP Filter is enabled")
-                case "0"|"false"|"off"|"disable"|"disabled":
-                    self.settings["ip_filter"] = False
-                    self.settings_modified = True
-                    self.log.info("IP Filter is disabled")
-                case _:
-                    self.log.error("Unknown value for -i/--ip parameter.")
+            res : bool|None = self.parse_string_parameter(args.ip[0])
+            if res is None:
+                self.log.error("Unknown value for -i/--ip parameter.")
+            else:
+                self.settings["ip_filter"] = res
+                self.settings_modified = True
+                self.log.info(f"IP Filter is {"enabled" if res else "disabld"}")
         self.save()
         if args.quit:
             os._exit(0)
@@ -1457,6 +1467,7 @@ class RPGMTL():
         self.load_project_list()
         
         # Start
+        self.log.info("RPGMTL is starting up...")
         try:
             self.log.info(f"Starting RPGMTL on port {self.port}")
             web.run_app(self.app, port=self.port, shutdown_timeout=0, ssl_context=ssl_context)
