@@ -289,10 +289,9 @@ class RPGMTL_Interface
 		*/
 		return new Promise((resolve, reject) => {
 			requestAnimationFrame(() => {
+				// avoid updating first element (i.e. the project banner) if identic
 				const current_title = this.constant.main.firstElementChild;
 				const new_title = fragment.firstElementChild;
-				console.log("=============");
-				console.log(current_title && new_title && current_title.isEqualNode(new_title));
 				if(current_title && new_title && current_title.isEqualNode(new_title))
 				{
 					fragment.removeChild(new_title);
@@ -307,9 +306,7 @@ class RPGMTL_Interface
 					this.constant.main.innerHTML = '';
 					this.constant.main.appendChild(fragment);
 				}
-				
-				/*this.constant.main.innerHTML = "";
-				this.constant.main.appendChild(fragment);*/
+				// reset navigation
 				this.nav.reset();
 				// Set initial focus
 				if(to_focus != null)
