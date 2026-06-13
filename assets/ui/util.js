@@ -176,7 +176,7 @@ class util
 		return sel;
 	}
 	
-	static project_name_to_icon_banner(project_name, icon_cls)
+	static project_name_to_icon_banner(project_name, icon_cls="project-icon-banner")
 	{
 		return (
 			'<div class="project-title-background"></div><div class="project-title-content">\
@@ -207,7 +207,7 @@ class util
 			"div",
 			{
 				cls:["project-title"],
-				innerHTML:util.project_name_to_icon_banner(text, "project-icon-banner")
+				innerHTML:util.project_name_to_icon_banner(text)
 			}
 		);
 		return title;

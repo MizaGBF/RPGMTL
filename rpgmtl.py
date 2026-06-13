@@ -1493,11 +1493,16 @@ class RPGMTL():
         icon_path : Path = Path('projects', project_name, 'icon')
         if not icon_path.exists() or not icon_path.is_file():
             raise web.HTTPNotFound(text=f"{project_name} icon not found")
+        stat : os.stat_result = icon_path.stat()
+        etag : str = f'"{stat.st_mtime}-{stat.st_size}"'
+        if request.headers.get('If-None-Match') == etag:
+            raise web.HTTPNotModified()
         return web.FileResponse(
             path=icon_path,
             headers={
-                "Cache-Control":"public, max-age=86400, immutable",
-                "Content-Disposition":f'inline; filename="{project_name}_icon.png"'
+                "Cache-Control": "no-cache", 
+                "ETag": etag,
+                "Content-Disposition": "inline;"
             }
         )
 

@@ -291,7 +291,8 @@ class RPGMTL_Interface
 			requestAnimationFrame(() => {
 				const current_title = this.constant.main.firstElementChild;
 				const new_title = fragment.firstElementChild;
-
+				console.log("=============");
+				console.log(current_title && new_title && current_title.isEqualNode(new_title));
 				if(current_title && new_title && current_title.isEqualNode(new_title))
 				{
 					fragment.removeChild(new_title);
@@ -1590,8 +1591,8 @@ class RPGMTL_Interface
 				this.post(
 					"/api/update_icon",
 					() => {
-						this.constant.main.innerHTML = ""; // to ensure it's reloaded
-						this.routes.project(this.project.name);
+						// to ensure the banner is reloaded, reload the page
+						window.location.reload();
 					},
 					null,
 					{
