@@ -171,10 +171,11 @@ Some shortcuts have alternatives. Click the Help button for a reminder.
   
 ### Port
   
-You can change the port used by RPGMTL with the `-p/--port` parameter:   
+You can change the port used by RPGMTL with the `-p/--port` argument:   
 ```console
 python rpgmtl.py --port 60000
 ```  
+  
   
 ### HTTPS
   
@@ -183,14 +184,14 @@ If you wish to access it remotely, it's **recommended** to enable HTTPS.
 You'll need to have a valid certificate and key.  
 Place them in the folder and run **once**:  
 ```console
-python rpgmtl.py --https name_of_your_key_file name_of_your_password_file
+python rpgmtl.py --https name_of_your_key_file name_of_your_password_file --quit
 ```  
 If everything goes well, `SSL is enabled` should appear in the log.  
 The certificate and key locations will be saved for the next use.  
   
 If you wish to revert this setting, run **once**:  
 ```console
-python rpgmtl.py --http
+python rpgmtl.py --http --quit
 ```  
 RPGMTL will *forget* these file locations.  
   
@@ -203,17 +204,25 @@ It supports both IP v4 and v6.
   
 Then to enable the filter, run **once**:  
 ```console
-python rpgmtl.py --ip on
+python rpgmtl.py --ip on --quit
 ```  
   
 To disable it at some point in time:  
 ```console
-python rpgmtl.py --ip off
+python rpgmtl.py --ip off --quit
 ```  
   
-### Parameter Help  
+### Quit Argument
   
-Simply `python rpgmtl.py --help`.  
+You surely noticed the `-q/--quit` argument in the commands presented above:   
+```console
+python rpgmtl.py --quit
+```  
+It instantly stops RPGMTL after parsing the arguments and saving the settings, making it useful to just modify settings using the command line arguments.  
+  
+### Arguments and Parameters Help  
+  
+If you need help, simply run `python rpgmtl.py --help`.  
   
 ### Disable a Plugin  
   

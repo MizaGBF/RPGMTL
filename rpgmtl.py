@@ -367,7 +367,7 @@ class RPGMTL():
         if self.settings_modified: # write settings if flag is set
             try:
                 with open('settings.json', mode='w', encoding='utf-8') as f:
-                    json.dump({"version":1, "settings":self.settings, "history":self.history}, f, ensure_ascii=False, indent=0, separators=(',', ':'))
+                    json.dump({"version":1, "settings":self.settings, "history":self.history}, f, ensure_ascii=False, indent=4, separators=(',', ':'))
             except Exception as e:
                 self.log.error("Failed to update settings.json:\n" + self.trbk(e))
             self.settings_modified = False
@@ -1389,7 +1389,7 @@ class RPGMTL():
         self.settings_modified = True
 
     # parse command line arguments
-    def parse_command_line(self : RPGMTL) -> None:
+    def parse_command_line(self : RPGMTL) -> bool:
         # Parse command line
         parser : argparse.ArgumentParser = argparse.ArgumentParser(prog="rpgmtl.py")
         command = parser.add_argument_group('command', 'Optional commands')
@@ -1398,6 +1398,7 @@ class RPGMTL():
         command.add_argument('-n', '--http', help="clear SSL certificate settings and force HTTP", action='store_const', const=True, default=False, metavar='FILES')
         command.add_argument('-i', '--ip', help="set the IP filter status. Add 1, on, enable, enabled, 0, off, disable or disabled to set it.", nargs=1, default=None, metavar='STATE')
         command.add_argument('-v', '--verbose', help="add incoming HTTP requests to the logging and output", action='store_const', const=True, default=False, metavar='')
+        command.add_argument('-q', '--quit', help="quit without starting the application", action='store_const', const=True, default=False, metavar='')
         args : argparse.Namespace = parser.parse_args()
         
         # set server port
@@ -1435,6 +1436,9 @@ class RPGMTL():
                     self.log.info("IP Filter is disabled")
                 case _:
                     self.log.error("Unknown value for -i/--ip parameter.")
+        self.save()
+        if args.quit:
+            os._exit(0)
 
     # Start RPGMTL and run the server
     def run(self : RPGMTL) -> None:
