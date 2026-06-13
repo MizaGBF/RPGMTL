@@ -347,6 +347,9 @@ Custom Patches are used to automate the patching of the some part of the game.
 This can be done via the `Add a Fix` menu.  
 Inside, you can set small Python code snippets, which will run during the patching process (after everything else, to be exact).  
   
+> [!NOTE]  
+> They can be imported to/exported from a file named `patch.py` in the project folder. This way, you can write the code in your favorite editor and import the result.  
+  
 To do so, create one and set what filename this code targets. For example, to target all the RPG Maker MV/MZ map files, you can set `data/Map`. Or to target a specific file, set its whole path (for example `data/Map001.json`).  
 For files contained into archives, you merely need to match the archive name.  
   
