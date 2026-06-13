@@ -373,11 +373,9 @@ class util
 	// set data for the browser to memorize the current page
 	static update_page_location(page, name, params)
 	{
-		if(page == null)
-		{
-			history.pushState(null, '', window.location.pathname);
-		}
-		else
+		let relative_path = window.location.pathname;
+		// check if we're on specific page
+		if(page != null)
 		{
 			let urlparams = new URLSearchParams("");
 			urlparams.set("page", page);
@@ -389,9 +387,15 @@ class util
 					urlparams.set("params", util.stob64(JSON.stringify(params)));
 				}
 			}
-			let newRelativePathQuery = window.location.pathname + '?' + urlparams.toString();
-			history.pushState(null, '', newRelativePathQuery);
+			relative_path += '?' + urlparams.toString();
 		}
+		// avoiding duplicates
+		if(window.location.pathname + window.location.search === relative_path)
+		{
+			return; 
+		}
+		// push to browser history
+		history.pushState(null, '', relative_path);
 	}
 	
 	// check if target is an input

@@ -21,6 +21,10 @@ class RPGMTL_Interface
 		this.strtablecache = [];
 		this.lastfileopened = null;
 		this.filebrowsingmode = 0;
+
+		window.addEventListener('popstate', () => {
+			this.routes.load();
+		});
 	}
 	
 	init()
