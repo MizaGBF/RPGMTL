@@ -1253,7 +1253,7 @@ class RPGMTL_Interface
 			const selected = util.add_label(
 				fragment,
 				"None selected",
-				["left"]
+				["left", "ai-knowledge-selected"]
 			);
 			selected.id = "base-selected";
 			selected.original_string = null;
@@ -1304,6 +1304,11 @@ class RPGMTL_Interface
 			base_note.contentEditable = "plaintext-only";
 			util.add_label(
 				fragment,
+				"Auto Cleanup Values",
+				["left"]
+			);
+			util.add_label(
+				fragment,
 				"Last seen (# of Translation ago)",
 				["left", "smalltext"]
 			);
@@ -1342,6 +1347,7 @@ class RPGMTL_Interface
 			);
 			util.add_grid_cell(grid, '<img src="assets/images/new.png"> New', () => {
 				selected.innerText = "None selected";
+				selected.classList.toggle("ai-is-enabled", false);
 				selected.original_string = null;
 				base_ori.textContent = "";
 				base_tl.textContent = "";
@@ -1404,6 +1410,7 @@ class RPGMTL_Interface
 									opt.selected = true;
 							}
 							selected.innerText = "Selected: " + base_ori.textContent + " / " + base_tl.textContent;
+							selected.classList.toggle("ai-is-enabled", true);
 							selected.original_string = base_ori.textContent;
 						},
 						null,
@@ -1447,7 +1454,8 @@ class RPGMTL_Interface
 									opt.textContent = this.project.config.ai_knowledge_base[i].original + " / " + this.project.config.ai_knowledge_base[i].translation;
 								}
 								selection.options[0].selected = true;
-								selected.innerText = "None selected";
+								selected.classList.toggle("ai-is-enabled", false);
+								selected.classList.toggle("ai-knowledge-selected", false);
 								selected.original_string = null;
 							},
 							null,
@@ -1462,6 +1470,7 @@ class RPGMTL_Interface
 			selection.onchange = () => {
 				const idx = selection.selectedIndex - 1;
 				selected.innerText = "Selected: " + this.project.config.ai_knowledge_base[idx].original + " / " + this.project.config.ai_knowledge_base[idx].translation;
+				selected.classList.toggle("ai-is-enabled", true);
 				selected.original_string = this.project.config.ai_knowledge_base[idx].original;
 				base_ori.textContent = this.project.config.ai_knowledge_base[idx].original;
 				base_tl.textContent = this.project.config.ai_knowledge_base[idx].translation;

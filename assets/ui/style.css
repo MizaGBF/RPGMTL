@@ -618,6 +618,14 @@ a:active {
 	border-color: #ffd802;
 }
 
+.ai-knowledge-selected {
+	min-height: 55px;
+}
+
+.ai-knowledge-selected.ai-is-enabled {
+	background-color: #3e3e40;
+}
+
 .path-container {
 	display: inline-flex;
 	align-items: center;
