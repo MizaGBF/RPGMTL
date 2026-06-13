@@ -519,8 +519,13 @@ class RPGMTL_Interface
 			util.update_page_location("settings", (is_project ? this.project.name : null), null);
 			
 			// top bar
+			const specific_help_msg = (
+				is_project
+				? "<b>Project</b> Settings override <b>Default</b> Settings when modified and will have a <font color=#ffd802>yellow</font> outline."
+				: "<b>Default Global</b> Settings are your projects defaults."
+			);
 			this.top_bar.update(
-				(is_project ? this.project.name + " Settings" : "Default Settings"),
+				(is_project ? this.project.name + " Settings" : "Default Global Settings"),
 				() => { // back callback
 					if(is_project)
 						this.routes.project(this.project.name);
@@ -529,8 +534,7 @@ class RPGMTL_Interface
 				},
 				"<ul>\
 					<li>Some settings might require you to extract your project strings again, be careful to not lose progress.</li>\
-					<li><b>Default</b> Settings are your projects defaults.</li>\
-					<li><b>Project</b> Settings override <b>Default</b> Settings when modified.</li>\
+					<li>" + specific_help_msg + "</li>\
 				</ul>\
 				\
 				Keyboard shortcuts\
@@ -575,6 +579,17 @@ class RPGMTL_Interface
 						);
 					}
 				);
+			}
+			else
+			{
+				util.add_to(
+					fragment,
+					"div",
+					{
+						cls:["label", "left", "smalltext"],
+						innerHTML:"Global settings are used by all projects by default.<br>As a result, changing those settings will affect <b>all projects</b> unless they have been modified by those projects."
+					}
+				)
 			}
 			
 			let count = 0;
