@@ -1455,7 +1455,6 @@ class RPGMTL_Interface
 								}
 								selection.options[0].selected = true;
 								selected.classList.toggle("ai-is-enabled", false);
-								selected.classList.toggle("ai-knowledge-selected", false);
 								selected.original_string = null;
 							},
 							null,
