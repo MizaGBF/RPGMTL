@@ -221,8 +221,7 @@ class util
 			"div",
 			{
 				cls:["label"].concat(extra_classes),
-				innerText:text,
-				br:!extra_classes.includes("inline")
+				innerText:text
 			}
 		)
 	}
