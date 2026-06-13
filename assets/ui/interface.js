@@ -1613,6 +1613,20 @@ class RPGMTL_Interface
 					• A VNDB URL or code (such as v000)"
 				}
 			);
+			util.add_interaction(fragment, '<img src="assets/images/trash.png"> Delete the icon', () => {
+				this.post(
+					"/api/update_icon",
+					() => {
+						// to ensure the banner is reloaded, reload the page
+						window.location.reload();
+					},
+					null,
+					{
+						name:this.project.name,
+						path:null
+					}
+				);
+			});
 			this.update_main(fragment);
 		}
 		catch(err)

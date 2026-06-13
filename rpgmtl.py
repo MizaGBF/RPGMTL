@@ -2758,27 +2758,40 @@ class RPGMTL():
     async def update_icon(self : RPGMTL, request : web.Request) -> web.Response:
         payload = await request.json()
         name = payload.get('name', None)
-        path = payload.get('path', None)
         if name is None:
             return web.json_response({"result":"bad", "message":"Bad request, missing 'name' parameter"}, status=400)
-        elif path is None:
+        elif "path" not in payload:
             return web.json_response({"result":"bad", "message":"Bad request, missing 'path' parameter"}, status=400)
         else:
-            status : int = await self.look_for_icon_at(name, path)
-            match status:
-                case -1:
-                    return web.json_response({"result":"bad", "message":"The DLsite code is invalid"}, status=400)
-                case -2:
-                    return web.json_response({"result":"bad", "message":"Failed to find the DLsite thumbnail"}, status=400)
-                case -3:
-                    return web.json_response({"result":"bad", "message":"Failed to set icon, file not found"}, status=400)
-                case -4:
-                    return web.json_response({"result":"bad", "message":"Failed to set icon, an error occured while reading the file"}, status=400)
-                case _:
-                    if status > 2000:
-                        return web.json_response({"result":"bad", "message":f"Failed to find VNDB ID, HTTP Error {status - 2000}"}, status=400) 
-                    elif status > 1000:
-                        return web.json_response({"result":"bad", "message":f"Failed to set icon, HTTP Error {status - 1000}"}, status=400) 
+            path = payload.get('path', None)
+            if path is None:
+                target : Path = Path(f"projects/{name}/icon")
+                if not target.exists():
+                    return web.json_response({"result":"bad", "message":"Set an icon first, before attempting to delete it"}, status=400)
+                elif not target.is_file():
+                    return web.json_response({"result":"bad", "message":"Something really weird happened"}, status=400)
+                try:
+                    os.remove(f"projects/{name}/icon")
+                    return web.json_response({"result":"ok", "data":{"config":self.projects[name], "name":name}, "message":"Icon removed"})
+                except Exception as e:
+                    self.log.critical(f"Error while deleting icon for project {name}\n{self.trbk(e)}")
+                    return web.json_response({"result":"bad", "message":"An unexpected error occured"}, status=400)
+            else:
+                status : int = await self.look_for_icon_at(name, path)
+                match status:
+                    case -1:
+                        return web.json_response({"result":"bad", "message":"The DLsite code is invalid"}, status=400)
+                    case -2:
+                        return web.json_response({"result":"bad", "message":"Failed to find the DLsite thumbnail"}, status=400)
+                    case -3:
+                        return web.json_response({"result":"bad", "message":"Failed to set icon, file not found"}, status=400)
+                    case -4:
+                        return web.json_response({"result":"bad", "message":"Failed to set icon, an error occured while reading the file"}, status=400)
+                    case _:
+                        if status > 2000:
+                            return web.json_response({"result":"bad", "message":f"Failed to find VNDB ID, HTTP Error {status - 2000}"}, status=400) 
+                        elif status > 1000:
+                            return web.json_response({"result":"bad", "message":f"Failed to set icon, HTTP Error {status - 1000}"}, status=400) 
         return web.json_response({"result":"ok", "data":{"config":self.projects[name], "name":name}, "message":"Icon updated"})
 
 if __name__ == "__main__":

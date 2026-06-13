@@ -307,6 +307,6 @@ Return in data: project 'name', project 'config'
 
 ```
 /api/update_icon
-Payload: project 'name', icon 'path' or url
+Payload: project 'name', icon 'path' or url or null to delete it
 Return in data: project 'name', project 'config'
 ```
