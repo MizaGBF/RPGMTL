@@ -26,6 +26,9 @@ More will be added as I see fit.
 > [!IMPORTANT]  
 > Do not expose RPGMTL to the web or a public network without taking security measures. And do not share `settings.json` or individual project `config.json` files, as they might contain sensitive data such as **API keys**.   
   
+> [!IMPORTANT]  
+> Do not blindly generate a new patch using a translation project downloaded from the internet. RPGMTL is capable of executing user-defined code called Patch or Fix (Please check the [Advanced Usage](#advanced-usage) section for details). Be sure to click the **Add a Fix** button and check if there might be malicious code included in.  
+  
 ## Table of contents  
   
 * [Introduction](#introduction)  
