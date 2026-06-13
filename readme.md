@@ -24,7 +24,7 @@ More will be added as I see fit.
 *All screenshots are from version 3.30.*
   
 > [!IMPORTANT]  
-> Do not expose RPGMTL to the web or a public network without taking security measure. Do not share `settings.json` or individual project `config.json` files, as they might sensitive data such as **API keys**.   
+> Do not expose RPGMTL to the web or a public network without taking security measures. And do not share `settings.json` or individual project `config.json` files, as they might contain sensitive data such as **API keys**.   
   
 ## Table of contents  
   
