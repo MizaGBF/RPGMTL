@@ -1780,6 +1780,7 @@ class RPGMTL_Interface
 				}
 			);
 			input.type = "text";
+			input.placeholder = "Project name";
 			// Icon
 			util.add_label(
 				fragment,
@@ -2190,6 +2191,7 @@ class RPGMTL_Interface
 				navigable:true
 			}
 		);
+		input.placeholder = "Search";
 		if(defaultVal != null)
 		{
 			input.value = defaultVal;
