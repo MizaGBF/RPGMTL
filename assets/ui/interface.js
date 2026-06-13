@@ -55,7 +55,7 @@ class RPGMTL_Interface
 			{
 				method: "POST", // Specify the HTTP method
 				headers: {
-						"Content-Type": "application/json;charset=UTF-8"
+					"Content-Type": "application/json;charset=UTF-8"
 				},
 				body: JSON.stringify(payload)
 			}
@@ -111,6 +111,11 @@ class RPGMTL_Interface
 	{
 		try
 		{
+			if(json.result == "login-required")
+			{
+				window.location.href = "/login";
+				return;
+			}
 			if("message" in json && json.message != "")
 			{
 				util.push_popup(json.message);
@@ -346,23 +351,43 @@ class RPGMTL_Interface
 		this.top_bar.update(
 			"RPGMTL v" + data.verstring,
 			(e) => { // back callback
-				if(
-					e.ctrlKey
-					|| window.confirm("Shutdown RPGMTL?\nEverything will be saved.")
-				)
+				if(data.logoff && !e.shiftKey)
 				{
-					this.post(
-						"/api/shutdown",
-						() => {
-							this.constant.bar.innerHTML = "";
-							const fragment = this.new_page();
-							util.add_label(
-								fragment,
-								"RPGMTL has been shutdown"
-							);
-							this.update_main(fragment);
-						}
-					);
+					if(
+						e.ctrlKey
+						|| window.confirm("Do you want to log off?\nIf you want to shutdown RPGMTL, hold SHIFT while pressing this button.")
+					)
+					{
+						this.loader.state = true;
+						fetch("/logoff", {
+							method:"POST"
+						}).then(() => {
+							window.location.reload();
+						}).catch(() => {
+							window.location.reload();
+						});
+					}
+				}
+				else
+				{
+					if(
+						e.ctrlKey
+						|| window.confirm("Shutdown RPGMTL?\nEverything will be saved.")
+					)
+					{
+						this.post(
+							"/api/shutdown",
+							() => {
+								this.constant.bar.innerHTML = "";
+								const fragment = this.new_page();
+								util.add_label(
+									fragment,
+									"RPGMTL has been shutdown"
+								);
+								this.update_main(fragment);
+							}
+						);
+					}
 				}
 			},
 			"<ul>\

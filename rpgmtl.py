@@ -17,6 +17,9 @@ import string
 import signal
 import argparse
 import ssl
+import hashlib
+from hmac import compare_digest
+import secrets
 
 import plugins
 from plugins import BasePlugin, TranslatorPlugin, FileType, GloIndex, LocIndex, IntBool
@@ -103,6 +106,12 @@ class RPGMTL():
         self.tool_list_info : list[Any] = [] # used to pass the tool list to the client
         self.history : list[list[str]] = [] # store link to last ten accessed files
         self.allowed_ips : list[str] = [] # allowed ips
+        self.auth : dict[str, bool|dict[str,str]] = { # authentification data
+            "enabled":False,
+            "users":{}
+        } 
+        self.auth_tokens : dict[str, str] = {}
+        self.auth_tokens_set : set[str] = set()
         # loaded plugins
         self.plugins : dict[str, plugins.Plugin] = {}
         self.translators : dict[str, plugins.TranslatorPlugin] = {}
@@ -129,7 +138,7 @@ class RPGMTL():
         return "".join(traceback.format_exception(type(e), e, e.__traceback__))
 
     def setup_web_server(self : RPGMTL) -> web.Application:
-        app = web.Application(middlewares=[self.ip_whitelist])
+        app = web.Application(middlewares=[self.ip_whitelist, self.verify_auth])
         # Autosave system
         app.on_startup.append(self.init_autosave)
         app.on_cleanup.append(self.stop_autosave)
@@ -140,6 +149,10 @@ class RPGMTL():
         app.add_routes([
                 web.get('/', self.index), # index.html 
                 web.get('/projects/{project_name}/icon', self.get_project_icon), # project icon
+                
+                web.get('/login', self.login), # login.html 
+                web.post('/login', self.process_login),
+                web.post('/logoff', self.process_logoff),
                 
                 web.post('/api/main', self.project_list), # main menu
                 web.post('/api/shutdown', self.shutdown), # stop RPGMTL
@@ -327,9 +340,15 @@ class RPGMTL():
                 ver = data.get("version", 0)
                 if ver < 1:
                     self.settings = data
-                elif ver >= 1:
+                elif ver < 2:
                     self.settings = data["settings"]
                     self.history = data["history"]
+                elif ver == 2:
+                    self.settings = data["settings"]
+                    self.history = data["history"]
+                    self.auth = data["auth"]
+                else:
+                    raise Exception("Invalid settings.json version")
         except Exception as e:
             self.log.warning("Failed to load settings.json, default value will be used:\n" + self.trbk(e))
 
@@ -367,7 +386,7 @@ class RPGMTL():
         if self.settings_modified: # write settings if flag is set
             try:
                 with open('settings.json', mode='w', encoding='utf-8') as f:
-                    json.dump({"version":1, "settings":self.settings, "history":self.history}, f, ensure_ascii=False, indent=4, separators=(',', ':'))
+                    json.dump({"version":2, "settings":self.settings, "history":self.history, "auth":self.auth}, f, ensure_ascii=False, indent=4, separators=(',', ':'))
             except Exception as e:
                 self.log.error("Failed to update settings.json:\n" + self.trbk(e))
             self.settings_modified = False
@@ -1408,11 +1427,17 @@ class RPGMTL():
         parser : argparse.ArgumentParser = argparse.ArgumentParser(prog="rpgmtl.py")
         command = parser.add_argument_group('command', 'Optional commands')
         command.add_argument('-p', '--port', help="set the web server port", nargs=1, type=int, metavar='PORT', default=[8000])
-        command.add_argument('-s', '--https', help="provide paths to your SSL certificate and key", nargs=2, default=None, metavar=('CERT', 'KEY'))
-        command.add_argument('-n', '--http', help="clear SSL certificate settings and force HTTP", action='store_const', const=True, default=False, metavar='FILES')
-        command.add_argument('-i', '--ip', help="set the IP filter status. Add 1, on, enable, enabled, 0, off, disable or disabled to set it.", nargs=1, default=None, metavar='STATE')
-        command.add_argument('-v', '--verbose', help="add incoming HTTP requests to the logging and output", action='store_const', const=True, default=False, metavar='')
-        command.add_argument('-q', '--quit', help="quit without starting the application", action='store_const', const=True, default=False, metavar='')
+        security = parser.add_argument_group('security', 'HTTPS commands')
+        security.add_argument('-s', '--https', help="provide paths to your SSL certificate and key", nargs=2, default=None, metavar=('CERT', 'KEY'))
+        security.add_argument('-n', '--http', help="clear SSL certificate settings and force HTTP", action='store_const', const=True, default=False, metavar='FILES')
+        middlewarecmds = parser.add_argument_group('middlewarecmds', 'Middleware commands')
+        middlewarecmds.add_argument('-i', '--ip', help="set the IP filter status. Add 1, on, enable, enabled, 0, off, disable or disabled to set it.", nargs=1, default=None, metavar='STATE')
+        middlewarecmds.add_argument('-a', '--auth', help="set the Authentification status. Add 1, on, enable, enabled, 0, off, disable or disabled to set it.", nargs=1, default=None, metavar='STATE')
+        middlewarecmds.add_argument('-nu', '--newuser', help="add a new user to the Authentification list", nargs=2, default=None, metavar=('USER','PASSWORD'))
+        middlewarecmds.add_argument('-ru', '--removeuser', help="remove an user from the Authentification list", nargs=1, default=None, metavar='USER')
+        utility = parser.add_argument_group('utility', 'Utility commands')
+        utility.add_argument('-v', '--verbose', help="add incoming HTTP requests to the logging and output", action='store_const', const=True, default=False, metavar='')
+        utility.add_argument('-q', '--quit', help="quit without starting the application", action='store_const', const=True, default=False, metavar='')
         args : argparse.Namespace = parser.parse_args()
         
         # set server port
@@ -1440,6 +1465,7 @@ class RPGMTL():
                     self.log.error(f"Failed to set HTTPS Certificates:\n{self.trbk(e)}")
                     self.log.info("Force quitting to possibly avoid exposing RPGMTL to an unwanted network")
                     os._exit(0)
+        # Middleware
         if args.ip is not None:
             res : bool|None = self.parse_string_parameter(args.ip[0])
             if res is None:
@@ -1448,9 +1474,51 @@ class RPGMTL():
                 self.settings["ip_filter"] = res
                 self.settings_modified = True
                 self.log.info(f"IP Filter is {"enabled" if res else "disabld"}")
+        if args.auth is not None:
+            res : bool|None = self.parse_string_parameter(args.auth[0])
+            if res is None:
+                self.log.error("Unknown value for -a/--auth parameter.")
+            else:
+                self.auth["enabled"] = res
+                self.settings_modified = True
+                self.log.info(f"Authentification is {"enabled" if res else "disabld"}")
+        if args.newuser:
+            self.auth["users"][args.newuser[0]] = self.hash_password(args.newuser[1])
+            self.settings_modified = True
+            self.log.info(f"Added new user {args.newuser[0]}")
+        if args.removeuser:
+            self.auth["users"].pop(args.removeuser[0], None)
+            self.settings_modified = True
+            self.log.info(f"Removed user {args.removeuser[0]}")
         self.save()
         if args.quit:
             os._exit(0)
+
+    def hash_password(self : RPGMTL, pw : str) -> str:
+        salt : bytes = secrets.token_bytes(16)
+        password_bytes : bytes = pw.encode('utf-8')
+        pwd_hash : bytes = hashlib.pbkdf2_hmac(
+            'sha256', 
+            password_bytes, 
+            salt, 
+            600000
+        )
+        return f"{salt.hex()}:{pwd_hash.hex()}"
+
+    def verify_password(self : RPGMTL, user : str, pw : str) -> bool:
+        try:
+            salt_hex, stored_hash_hex = self.auth["users"][user].split(':')
+            salt : str = bytes.fromhex(salt_hex)
+            stored_hash : str = bytes.fromhex(stored_hash_hex)
+        except:
+            return False
+        new_hash = hashlib.pbkdf2_hmac(
+            'sha256', 
+            pw.encode('utf-8'), 
+            salt, 
+            600000
+        )
+        return compare_digest(new_hash, stored_hash)
 
     # Start RPGMTL and run the server
     def run(self : RPGMTL) -> None:
@@ -1470,6 +1538,10 @@ class RPGMTL():
         
         # Start
         self.log.info("RPGMTL is starting up...")
+        if self.settings.get("ip_filter", False):
+            self.log.info("IP Filter is enabled (Use '--ip off' to disable)")
+        if self.auth.get("enabled", False):
+            self.log.info("Authentification is enabled (Use '--auth off' to disable)")
         try:
             self.log.info(f"Starting RPGMTL on port {self.port}")
             web.run_app(self.app, port=self.port, shutdown_timeout=0, ssl_context=ssl_context)
@@ -1500,9 +1572,29 @@ class RPGMTL():
                 raise web.HTTPForbidden(reason=f"IP {client_ip} not allowed")
         return await handler(request)
 
-    # Request the HTML page
+    @web.middleware
+    async def verify_auth(self : RPGMTL, request, handler):
+        """
+        This middleware validate the client's identity
+        """
+        if self.auth.get("enabled", False):
+            if request.path.startswith(("/login", "/assets/")):
+                return await handler(request)
+            auth_cookie = request.cookies.get('auth_token')
+            if not auth_cookie or auth_cookie not in self.auth_tokens_set:
+                if request.method == 'POST':
+                    return web.json_response({"result":"login-required"})
+                else:
+                    raise web.HTTPFound('/login')
+        return await handler(request)
+
+    # Request the main HTML page
     async def index(self : RPGMTL, request : web.Request) -> web.Response:
         return web.FileResponse('./assets/ui/index.html')
+
+    # Request the login HTML page
+    async def login(self : RPGMTL, request : web.Request) -> web.Response:
+        return web.FileResponse('./assets/ui/login.html')
 
     # Request a project icon
     async def get_project_icon(self : RPGMTL, request : web.Request) -> web.Response:
@@ -1523,9 +1615,50 @@ class RPGMTL():
             }
         )
 
+    # /login
+    async def process_login(self : RPGMTL, request : web.Request) -> web.Response:
+        if not self.auth["enabled"]:
+            return web.json_response({"result":"login-required"})
+        payload = await request.json()
+        username = payload.get('username')
+        password = payload.get('password')
+        if self.verify_password(username, password):
+            self.log.info(f"User {username} logged in")
+            response : web.Response = web.Response(status=200)
+            while True:
+                token : str = secrets.token_urlsafe(32)
+                if token not in self.auth_tokens_set:
+                    if username in self.auth_tokens:
+                        self.auth_tokens_set.remove(self.auth_tokens[username])
+                        self.log.info(f"Previous token of {username} has been invalidated")
+                    self.auth_tokens[username] = token
+                    self.auth_tokens_set.add(token)
+                    break
+            response.set_cookie('auth_token', token, httponly=True, path='/')
+            return response
+        if username not in self.auth:
+            self.log.warning(f"An attempt has been made to login with username {username}")
+        else:
+            self.log.warning(f"User {username} failed to log in")
+        await asyncio.sleep(4) # to avoid login spam
+        return web.Response(status=401)
+
+    # /logoff
+    async def process_logoff(self : RPGMTL, request : web.Request) -> web.Response:
+        if not self.auth["enabled"]:
+            return web.json_response({"result":"bad", "message":"Unexpected behavior, please reload the page."})
+        token : str = request.cookies.get('auth_token')
+        for username, tk in self.auth_tokens.items():
+            if token == tk:
+                self.auth_tokens.pop(username)
+                self.auth_tokens_set.remove(token)
+                self.log.info(f"User {username} has logged off")
+                break
+        return web.json_response({"result":"login-required"})
+
     # /api/main
     async def project_list(self : RPGMTL, request : web.Request) -> web.Response:
-        return web.json_response({"result":"ok", "data":{"list":self.load_project_list(), "verstring":self.VERSION, "history":self.history}})
+        return web.json_response({"result":"ok", "data":{"list":self.load_project_list(), "verstring":self.VERSION, "history":self.history, "logoff":self.auth["enabled"]}})
 
     # /api/shutdown
     async def shutdown(self : RPGMTL, request : web.Request) -> web.Response:

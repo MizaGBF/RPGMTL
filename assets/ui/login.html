@@ -1,0 +1,140 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+	<title>Login</title>
+	<meta charset="utf-8">
+	<link rel="icon" type="image/x-icon" href="assets/ui/favicon.svg"/>
+	<style>
+html, body {
+	background: #252526;
+	font-family: sans-serif;
+	font-size: 16px;
+	line-height: 1.2;
+	height: 100%;
+	margin: 0;
+}
+
+.label, label {
+	color: #eeeeee;
+	font-size: 30px;
+	padding: 5px;
+	margin: 5px;
+	text-align: center;
+	position: relative;
+	word-wrap: break-word;
+}
+
+form {
+	width:400px;
+	margin:auto;
+	text-align:center;
+}
+
+input {
+	background: #91a0b8;
+	color: #000000;
+	font-size: 30px;
+	width: 200px;
+	min-height: 34px;
+	padding: 5px;
+	padding-top: 0px;
+	margin: 5px;
+	margin-top: 0px;
+	vertical-align: middle;
+	text-align: left;
+	position: relative;
+	border-radius: 5px;
+	border-style: solid;
+	border-color: #000000;
+}
+
+button {
+	background: #181818;
+	color: #eeeeee;
+	width: 200px%;
+	font-size: 30px;
+	padding: 5px;
+	margin: 5px;
+	text-align: left;
+	position: relative;
+	border-radius: 5px;
+	border-style: solid;
+	border-color: #000000;
+	vertical-align: middle;
+	display:inline-block;
+	cursor: pointer;
+}
+
+input:focus, button:focus {
+	border-color: #00b0b0;
+	outline: none;
+}
+
+input:disabled, button:disabled {
+	color: #555555;
+	border-color: #b06000;
+	outline: none;
+}
+	</style>
+</head>
+<body>
+	<div class="login-card">
+		<div class="label">Login</div>
+		<form method="POST" action="/login" id="login-form">
+			<label for="username">User</label>
+			<input type="text" id="username" name="username" required autocomplete="username">
+			<br>
+			<label for="password">Pass</label>
+			<input type="password" id="password" name="password" required autocomplete="current-password">
+			<br>
+			<button type="submit" id="confirm">Log In</button>
+			<br>
+			<div class="label" id="error"></div>
+		</form>
+	</div>
+	<script>
+const user = document.getElementById("username");
+const pass = document.getElementById("password");
+const confirm = document.getElementById("confirm");
+const error = document.getElementById("error");
+function toggle(state)
+{
+	user.disabled = state;
+	pass.disabled = state;
+	confirm.disabled = state;
+}
+
+document.getElementById("login-form").addEventListener("submit", async (event) => {
+	event.preventDefault();
+	toggle(true);
+	error.textContent = "";
+	try {
+		const response = await fetch("/login", {
+			method:"POST",
+			headers:{
+				"Content-Type":"application/json"
+			},
+			body:JSON.stringify({
+				username:user.value,
+				password:pass.value
+			})
+		});
+		const result = await response.bytes();
+		if(response.ok)
+		{
+			window.location.href = "/";
+		}
+		else
+		{
+			error.textContent = "Login failed.";
+			toggle(false);
+		}
+	} catch(err) {
+		console.error("Exception thrown", err.stack);
+		error.textContent = "Unable to connect.";
+		toggle(false);
+	}
+});
+	</script>
+</body>
+</html>

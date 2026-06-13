@@ -203,7 +203,7 @@ RPGMTL will *forget* these file locations.
   
 ### IP Filter  
   
-This is another **recommended** feature if you wish to access it remotely.  
+This is **recommended** feature if you wish to access it remotely.  
 If you wish to filter which IP can access the server, create a `whitelist.txt` file near `rpgmtl.py`.  
 Add the allowed IP inside, one by line.  
 It supports both IP v4 and v6.  
@@ -216,6 +216,33 @@ python rpgmtl.py --ip on --quit
 To disable it at some point in time:  
 ```console
 python rpgmtl.py --ip off --quit
+```  
+  
+### Authentification  
+  
+This is **recommended** feature if you wish to access it remotely.  
+User accounts can't be created at runtime.  
+An username and password must be set via the command line:  
+```console
+python rpgmtl.py --quit --newuser USERNAME PASSWORD
+```  
+  
+Authentification must then be enabled:
+```console
+python rpgmtl.py --auth on --quit
+```  
+  
+Unverified users will be redirected to a login page to use their credentials.  
+A session token is valid as long until RPGMTL is shutdown or if the user login again (it will then invalidate the previous token).  
+  
+Authentification can be turned off with:  
+```console
+python rpgmtl.py --auth off --quit
+```  
+  
+And users can be removed with:  
+```console
+python rpgmtl.py --quit --removeuser USERNAME
 ```  
   
 ### Quit Argument
