@@ -341,7 +341,11 @@ When browsing your updated string list, you might spot some with a yellow rectan
 ### Custom Patches  
   
 > [!NOTE]  
-> They're called Fix in RPGMTL.  
+> They're also called Fix and this is how they're referred in the RPGMTL interface.  
+  
+> [!IMPORTANT]  
+> Be careful of downloading and running a translation project made by someone else, as running the Custom Patches can technically **execute anything**.  
+> Make sure to at least check the list of patches first.  
   
 Custom Patches are used to automate the patching of the some part of the game.  
 This can be done via the `Add a Fix` menu.  
@@ -372,14 +376,14 @@ d = helper.to_json() # get the content as json
 d["locale"] = "en_UK" # modify the locale
 helper.from_json(d, separators=(',',':')) # convert it back to bytes
 helper.modified = True # raise modified flag to True
+
+# Note: You can also use RPGMTL functions or its plugins function: 
+# Example to re-encode a CommonEvents.json: self.plugins["JSON"].format_json(d, 0)
+# Feel free to check how each plugin decode and encode the data.
 ```  
   
 The complexity will grow for other file formats.  
 The `PatcherHelper` is defined at the start of `rpgmtl.py`, if you wish to take a closer look at it.  
-  
-> [!IMPORTANT]  
-> Be careful of downloading and running a translation project made by someone else, as running the Custom Patches can technically execute anything.  
-> Make sure to at least check the list of patches first.  
   
 ### Import Strings from RPGMTL  
 This button allows you to import `strings.json` and `strings.py` files from older RPGMTL versions.  
