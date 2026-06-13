@@ -29,7 +29,6 @@ Endpoints without parameters don't need to be sent a payload.
 Return in data: 'list' of project names, 'version' string, file 'history', 'logoff' flag
 ```
   
-  
 ```
 /api/shutdown
 ```
