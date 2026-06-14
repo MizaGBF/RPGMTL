@@ -23,6 +23,9 @@ More will be added as I see fit.
 ![image](https://raw.githubusercontent.com/MizaGBF/RPGMTL/main/assets/readme/1.png)  
 *All screenshots are from version 3.30.*
   
+> [!NOTE]  
+> The project is mature. While new features and plugins can always be worked on, the release cycle has slowed down a lot.  
+  
 > [!IMPORTANT]  
 > Do not expose RPGMTL to the web or a public network without taking security measures. And do not share `settings.json` or individual project `config.json` files, as they might contain sensitive data such as **API keys**.   
   
@@ -47,8 +50,13 @@ RPGMTL is a tool, written in Python, allowing you to extract, translate and patc
 It works via a small web server, and the UI uses your own web browser.  
 It's lightweight and is designed to let you iterate over new game updates, to keep your patches up to date.  
   
+RPGMTL is pretty simple, it works by string auto-propagation: Set a translation for a string and all other occurences will have this translation.  
+You can, however, *unlink* an occurence from its peers to set an unique translation.  
+You can also set to ignore an occurence, if this particular one doesn't need to be translated.  
+Same matter for files: You can set to ignore a file and no patched version of this file will be generated.  
+  
 RPGMTL allows multiple people to work at the same time on the same project.  
-Some operations are blocking on purpose (for example, during string extraction), in case multiple users are working at the same time.  
+Some operations are blocking on purpose (for example, during string extraction or batch translation), in case multiple users are working at the same time.  
   
 ## Installation  
   
@@ -60,17 +68,18 @@ An older version might work, but isn't supported.
   
 ### Install RPGMTL  
   
-Grab a copy of this repository.  
-**For the latest version:**  
-*(It might be unstable, contains experimental features or unfinished features)*  
+**For older and stable versions:**  
+Go under the [Release](https://github.com/MizaGBF/RPGMTL/releases) tab.  
+  
+**For the latest development version:**  
+> [!WARNING]  
+> It might be unstable, contains experimental features or unfinished features.  
+  
 Either git clone:
 ```console
 git clone git@github.com:MizaGBF/RPGMTL.git
 ```  
 or use the **Green** Code button on top and download as ZIP (Don't forget to unzip).  
-  
-**For older and stable versions:**  
-Go under the [Release](https://github.com/MizaGBF/RPGMTL/releases) tab.  
   
 ### Install Requirements  
   
@@ -116,7 +125,8 @@ python rpgmtl.py
 ```  
   
 Or, on Windows, by double clicking the file and starting it with Python.  
-(Don't try to start it with the Python Launcher, the one with a rocket icon, it won't work. Make sure it's python.exe. Do `Right Click` and `Open with...` to go select it, if needed.)  
+> [!WARNING]  
+> On Windows, don't try to start it with the Python Launcher, the one with a rocket icon, it won't work. Make sure it's python.exe. Do `Right Click` and `Open with...` to go select it, if needed.  
   
 Then you can access it with your favorite web browser.  
 `http://localhost:8000/` should be the default address. [Direct Link](http://localhost:8000/).  
