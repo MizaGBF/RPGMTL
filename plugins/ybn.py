@@ -212,7 +212,7 @@ class YBN(Plugin):
                             ]
                         ]
                     },
-                    "help":"Tool to automatically wrap texts.<br>Only used and tested on newer games from Lusterise.<br>(ExS-TIA Parallel, R, Concerto 1~4 and Magie Ritter)<br>Character names are expected to be between 【This】 at the start of dialog strings."
+                    "help":"Tool to automatically wrap texts.<br>Only used and tested on newer games from Lusterise.<br>(ExS-TIA Parallel, R, M, Concerto and Magie Ritter)<br>Character names are expected to be between 【This】 at the start of dialog strings."
                 }
             ]
         }

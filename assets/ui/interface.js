@@ -989,10 +989,14 @@ class RPGMTL_Interface
 						this.routes.project(this.project.name);
 					}
 				},
-				(
+				"<ul>\
+					<li>"
+				+ (
 					tool[4].help
 					?? "There is no help for this Tool."
-				),
+				)
+				+ "</li>\
+				<ul>",
 				{
 					project:from_tool_list,
 					home:1
@@ -1186,7 +1190,9 @@ class RPGMTL_Interface
 				() => { // back callback
 					this.routes.project(this.project.name);
 				},
-				"You can use a Tool or bookmark it for the project page.",
+				"<ul>\
+					<li>You can use a Plugin Tool or bookmark it to the project page.</li>\
+				<ul>",
 				{
 					home:1
 				}
@@ -1224,7 +1230,9 @@ class RPGMTL_Interface
 				() => { // back callback
 					this.routes.project(this.project.name);
 				},
-				"Consult or edit the Knowledge Base for AI translations",
+				"<ul>\
+					<li>Consult or edit the Knowledge Base for AI translations.</li>\
+				</ul>",
 				{
 					home:1
 				}
@@ -1583,7 +1591,9 @@ class RPGMTL_Interface
 				() => { // back callback
 					this.routes.project(this.project.name);
 				},
-				"Set the project icon.",
+				"<ul>\
+					<li>Set the project icon.</li>\
+				</ul>",
 				{
 					home:1
 				}
@@ -4003,7 +4013,9 @@ class RPGMTL_Interface
 						}
 					}
 				},
-				null,
+				"<ul>\
+					<li>Browse the machine.</li>\
+				<ul>",
 				{
 					home:1
 				}
