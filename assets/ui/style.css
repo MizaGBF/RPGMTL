@@ -204,6 +204,7 @@ li {
 	border-bottom: 2px solid #545454;
 	background-size: cover;
 	background-position: center;
+	background-repeat: no-repeat;
 }
 
 .project-title-background {
@@ -214,6 +215,7 @@ li {
 	filter: blur(3px);
 	background-size: cover;
 	background-position: center;
+	background-repeat: no-repeat;
 	z-index: 1;
 	-webkit-mask-image: linear-gradient(to right, transparent 5%, black 10%, black 90%, transparent 95%);
 	mask-image: linear-gradient(to right, transparent 5%, black 10%, black 90%, transparent 95%);
@@ -531,6 +533,7 @@ li {
 .project-select-background {
 	background-size: cover;
 	background-position: right;
+	background-repeat: no-repeat;
 }
 
 a:link {
