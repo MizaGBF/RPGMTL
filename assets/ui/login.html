@@ -14,6 +14,14 @@ html, body {
 	margin: 0;
 }
 
+.spacer {
+	margin-top:50px;
+}
+
+.container {
+	text-align:center;
+}
+
 .label, label {
 	display:inline-block;
 	color: #eeeeee;
@@ -29,7 +37,6 @@ html, body {
 form {
 	width:400px;
 	margin:auto;
-	margin-top:50px;
 	text-align:center;
 }
 
@@ -54,11 +61,11 @@ input {
 button {
 	background: #181818;
 	color: #eeeeee;
-	width: 200px%;
+	width: 120px;
 	font-size: 30px;
 	padding: 5px;
 	margin: 5px;
-	text-align: left;
+	text-align:center;
 	position: relative;
 	border-radius: 5px;
 	border-style: solid;
@@ -81,20 +88,20 @@ input:disabled, button:disabled {
 	</style>
 </head>
 <body>
-	<form method="POST" action="/login" id="login-form">
+	<div class="spacer"></div>
+	<div class="container">
 		<div class="label">Login</div>
-		<br>
-		<label for="username">User</label>
-		<input type="text" id="username" name="username" required autocomplete="username">
-		<br>
-		<label for="password">Pass</label>
-		<input type="password" id="password" name="password" required autocomplete="current-password">
-		<br>
+	</div>
+	<form method="POST" action="/login" id="login-form">
+		<label for="username">User</label><input type="text" id="username" name="username" autocomplete="username" required>
+		<label for="password">Pass</label><input type="password" id="password" name="password" autocomplete="current-password" required>
 		<button type="submit" id="confirm">Log In</button>
-		<br>
-		<div class="label" id="error"></div>
 	</form>
+	<div class="container">
+		<div class="label" id="error"></div>
+	</div>
 	<script>
+const loginform = document.getElementById("login-form");
 const user = document.getElementById("username");
 const pass = document.getElementById("password");
 const confirm = document.getElementById("confirm");
@@ -107,6 +114,7 @@ function toggle(state)
 }
 
 document.getElementById("login-form").addEventListener("submit", async (event) => {
+	event.preventDefault();
 	toggle(true);
 	error.textContent = "";
 	try {
@@ -120,9 +128,16 @@ document.getElementById("login-form").addEventListener("submit", async (event) =
 				password:pass.value
 			})
 		});
-		const result = await response.bytes();
 		if(response.ok)
 		{
+			if(window.PasswordCredential)
+			{
+                const credential = new PasswordCredential({
+                    id:user.value,
+                    password:pass.value
+                });
+                await navigator.credentials.store(credential);
+            }
 			window.location.href = "/";
 		}
 		else
