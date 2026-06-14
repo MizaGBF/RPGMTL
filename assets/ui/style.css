@@ -623,7 +623,7 @@ a:active {
 }
 
 .ai-knowledge-selected {
-	min-height: 55px;
+	min-height: 85px;
 }
 
 .ai-knowledge-selected.ai-is-enabled {

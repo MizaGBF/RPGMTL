@@ -1284,9 +1284,10 @@ class RPGMTL_Interface
 			}
 			const selected = util.add_label(
 				fragment,
-				"None selected",
+				"",
 				["left", "ai-knowledge-selected"]
 			);
+			selected.innerHTML = "None selected<br><small>(Press Save to create an entry)</small>";
 			selected.id = "base-selected";
 			selected.original_string = null;
 			util.add_label(
@@ -1378,7 +1379,7 @@ class RPGMTL_Interface
 				}
 			);
 			util.add_grid_cell(grid, '<img src="assets/images/new.png"> New', () => {
-				selected.innerText = "None selected";
+				selected.innerHTML = "None selected<br><small>(Press Save to create an entry)</small>";
 				selected.classList.toggle("ai-is-enabled", false);
 				selected.original_string = null;
 				base_ori.textContent = "";
@@ -1441,7 +1442,7 @@ class RPGMTL_Interface
 								if(this.project.config.ai_knowledge_base[i].original == base_ori.textContent)
 									opt.selected = true;
 							}
-							selected.innerText = "Selected: " + base_ori.textContent + " / " + base_tl.textContent;
+							selected.innerHTML = "Selected: " + base_ori.textContent + " / " + base_tl.textContent + "<br><small>(Press New to unselect, Updated to update, Delete to delete)</small>";
 							selected.classList.toggle("ai-is-enabled", true);
 							selected.original_string = base_ori.textContent;
 						},
@@ -1486,6 +1487,7 @@ class RPGMTL_Interface
 									opt.textContent = this.project.config.ai_knowledge_base[i].original + " / " + this.project.config.ai_knowledge_base[i].translation;
 								}
 								selection.options[0].selected = true;
+								selected.innerHTML = "None selected<br><small>(Press Save to create an entry)</small>";
 								selected.classList.toggle("ai-is-enabled", false);
 								selected.original_string = null;
 							},
@@ -1500,7 +1502,7 @@ class RPGMTL_Interface
 			);
 			selection.onchange = () => {
 				const idx = selection.selectedIndex - 1;
-				selected.innerText = "Selected: " + this.project.config.ai_knowledge_base[idx].original + " / " + this.project.config.ai_knowledge_base[idx].translation;
+				selected.innerHTML = "Selected: " + this.project.config.ai_knowledge_base[idx].original + " / " + this.project.config.ai_knowledge_base[idx].translation + "<br><small>(Press New to unselect, Updated to update, Delete to delete)</small>";
 				selected.classList.toggle("ai-is-enabled", true);
 				selected.original_string = this.project.config.ai_knowledge_base[idx].original;
 				base_ori.textContent = this.project.config.ai_knowledge_base[idx].original;
@@ -1509,6 +1511,14 @@ class RPGMTL_Interface
 				base_seen.value = "" + this.project.config.ai_knowledge_base[idx].last_seen;
 				base_occu.value = "" + this.project.config.ai_knowledge_base[idx].occurence;
 			};
+			util.add_to(
+				fragment,
+				"pre",
+				{
+					cls:["documentation"],
+					innerText:"• Entries are identified by their Original string. If you create a new entry but there is already an entry with the same Original string, it will be overwritten.\n• When an entry is spotted during translation, the Last Seen counter is resets to 0 and Occurence increases by 1. Else, Last Seen increases by 1.\n• When the Last Seen counter is greater than 15, Occurence starts decreasing after each translation. If it reaches 0, the entry is deleted.\n• If you want an entry to stay nearly forever, just put a very large number in \"# of Recent occurences\"."
+				}
+			);
 			this.update_main(fragment);
 		}
 		catch(err)
