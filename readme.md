@@ -182,7 +182,6 @@ You can change the port used by RPGMTL with the `-p/--port` argument:
 python rpgmtl.py --port 60000
 ```  
   
-  
 ### HTTPS
   
 The project is intended to be used on a local network.  
@@ -203,7 +202,7 @@ RPGMTL will *forget* these file locations.
   
 ### IP Filter  
   
-This is **recommended** feature if you wish to access it remotely.  
+This is a **recommended** feature if you wish to access it remotely.  
 If you wish to filter which IP can access the server, create a `whitelist.txt` file near `rpgmtl.py`.  
 Add the allowed IP inside, one by line.  
 It supports both IP v4 and v6.  
@@ -220,12 +219,15 @@ python rpgmtl.py --ip off --quit
   
 ### Authentification  
   
-This is **recommended** feature if you wish to access it remotely.  
+This is a **recommended** feature if you wish to access it remotely.  
 User accounts can't be created at runtime.  
 An username and password must be set via the command line:  
 ```console
 python rpgmtl.py --quit --newuser USERNAME PASSWORD
 ```  
+
+> [!NOTE]  
+> The password strength is not verified.  
   
 Authentification must then be enabled:
 ```console
@@ -234,6 +236,9 @@ python rpgmtl.py --auth on --quit
   
 Unverified users will be redirected to a login page to use their credentials.  
 A session token is valid as long until RPGMTL is shutdown or if the user login again (it will then invalidate the previous token).  
+  
+> [!WARNING]  
+> Make sure you have HTTPS enabled for uses on public networks, or a man in the middle might be able to hijack credentials.  
   
 Authentification can be turned off with:  
 ```console
