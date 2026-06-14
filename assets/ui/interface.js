@@ -1391,7 +1391,7 @@ class RPGMTL_Interface
 			util.add_grid_cell(
 				grid,
 				'<img src="assets/images/confirm.png"> Save/Update',
-				() => {
+				(e) => {
 					if(
 						selected.original_string == null
 						|| selected.original_string != base_ori.textContent
@@ -1401,7 +1401,10 @@ class RPGMTL_Interface
 						{
 							if(this.project.config.ai_knowledge_base[i].original == base_ori.textContent)
 							{
-								if(!window.confirm("Another entry exists for this original string, this will replace it.\nConfirm?"))
+								if(
+									!e.ctrlKey
+									&& !window.confirm("Another entry exists for this Original string, this will replace it.\nConfirm?")
+								)
 								{
 									return;
 								}
@@ -1462,41 +1465,47 @@ class RPGMTL_Interface
 			util.add_grid_cell(
 				grid,
 				'<img src="assets/images/trash.png"> Delete',
-				() => {
+				(e) => {
 					if(selected.original_string == null)
 					{
 						util.push_popup("No entry selected");
 					}
 					else
 					{
-						this.post(
-							"/api/delete_knowledge",
-							() => {
-								this.loader.state = false;
-								for(let i = selection.options.length - 1; i >= 1; i--)
+						if(
+							e.ctrlKey
+							|| window.confirm("Delete this entry?")
+						) // confirmation / shortcut to insta confirm
+						{
+							this.post(
+								"/api/delete_knowledge",
+								() => {
+									this.loader.state = false;
+									for(let i = selection.options.length - 1; i >= 1; i--)
+									{
+										selection.remove(i);
+									}
+									for(let i = 0; i < this.project.config.ai_knowledge_base.length; ++i)
+									{
+										let opt = util.add_to(
+											selection,
+											"option"
+										);
+										opt.value = i;
+										opt.textContent = this.project.config.ai_knowledge_base[i].original + " / " + this.project.config.ai_knowledge_base[i].translation;
+									}
+									selection.options[0].selected = true;
+									selected.innerHTML = "None selected<br><small>(Press Save to create an entry)</small>";
+									selected.classList.toggle("ai-is-enabled", false);
+									selected.original_string = null;
+								},
+								null,
 								{
-									selection.remove(i);
+									name:this.project.name,
+									entry:selected.original_string
 								}
-								for(let i = 0; i < this.project.config.ai_knowledge_base.length; ++i)
-								{
-									let opt = util.add_to(
-										selection,
-										"option"
-									);
-									opt.value = i;
-									opt.textContent = this.project.config.ai_knowledge_base[i].original + " / " + this.project.config.ai_knowledge_base[i].translation;
-								}
-								selection.options[0].selected = true;
-								selected.innerHTML = "None selected<br><small>(Press Save to create an entry)</small>";
-								selected.classList.toggle("ai-is-enabled", false);
-								selected.original_string = null;
-							},
-							null,
-							{
-								name:this.project.name,
-								entry:selected.original_string
-							}
-						);
+							);
+						}
 					}
 				}
 			);
