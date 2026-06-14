@@ -15,8 +15,10 @@ html, body {
 }
 
 .label, label {
+	display:inline-block;
 	color: #eeeeee;
 	font-size: 30px;
+	min-width:100px;
 	padding: 5px;
 	margin: 5px;
 	text-align: center;
@@ -27,6 +29,7 @@ html, body {
 form {
 	width:400px;
 	margin:auto;
+	margin-top:50px;
 	text-align:center;
 }
 
@@ -78,20 +81,19 @@ input:disabled, button:disabled {
 	</style>
 </head>
 <body>
-	<div class="login-card">
+	<form method="POST" action="/login" id="login-form">
 		<div class="label">Login</div>
-		<form method="POST" action="/login" id="login-form">
-			<label for="username">User</label>
-			<input type="text" id="username" name="username" required autocomplete="username">
-			<br>
-			<label for="password">Pass</label>
-			<input type="password" id="password" name="password" required autocomplete="current-password">
-			<br>
-			<button type="submit" id="confirm">Log In</button>
-			<br>
-			<div class="label" id="error"></div>
-		</form>
-	</div>
+		<br>
+		<label for="username">User</label>
+		<input type="text" id="username" name="username" required autocomplete="username">
+		<br>
+		<label for="password">Pass</label>
+		<input type="password" id="password" name="password" required autocomplete="current-password">
+		<br>
+		<button type="submit" id="confirm">Log In</button>
+		<br>
+		<div class="label" id="error"></div>
+	</form>
 	<script>
 const user = document.getElementById("username");
 const pass = document.getElementById("password");
@@ -105,7 +107,6 @@ function toggle(state)
 }
 
 document.getElementById("login-form").addEventListener("submit", async (event) => {
-	event.preventDefault();
 	toggle(true);
 	error.textContent = "";
 	try {
