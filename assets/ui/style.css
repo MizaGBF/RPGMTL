@@ -630,6 +630,91 @@ a:active {
 	background-color: #3e3e40;
 }
 
+.python-editor-container {
+	background: #2b2b2b;
+	color: #000000;
+	font-family: 'Courier New', Courier, monospace;
+	font-size: 24px;
+	font-weight: 500;
+	line-height: 35px;
+	width: 90%;
+	min-height: 34px;
+	padding: 5px;
+	padding-top: 0px;
+	margin: 5px;
+	margin-top: 0px;
+	vertical-align: middle;
+	text-align: left;
+	position: relative;
+	border-radius: 5px;
+	border-style: solid;
+	border-color: #000000;
+	box-sizing: border-box;
+	/* background grid */
+	background-size: 1ch 20px, 1ch 35px; /* match the gradients below */
+	background-position: 5px 0px;
+	background-image:
+    linear-gradient(to right, #111111 1px, transparent 1px),
+    linear-gradient(to bottom, #111111 1px, transparent 1px);
+	background-repeat: repeat;
+}
+
+.python-backdrop, .python-input {
+	width: calc(100% - 15px);
+	min-height: 100%;
+	white-space: pre-wrap;
+	word-wrap: break-word;
+	padding: 0px;
+	margin: 0px;
+	vertical-align: middle;
+	text-align: left;
+}
+
+.python-backdrop {
+	position: absolute;
+	background: transparent;
+	z-index: 1;
+	color: #ffffff;
+	pointer-events: none;
+	overflow: hidden;
+}
+
+.python-input {
+	position: relative;
+	color: transparent;
+	background: transparent;
+	caret-color: #ffffff;
+	z-index: 2;
+	outline: none;
+	overflow-y: visible;
+}
+
+.python-keyword {
+	color: #569cd6;
+	font-weight: bold;
+}
+
+.python-function {
+	color: #f5f584;
+}
+
+.python-string {
+	color: #fcb395;
+}
+
+.python-comment {
+	color: #8ff065;
+}
+
+.python-value {
+	color: #88f2cf;
+}
+
+.python-helper {
+	color: #dc6ef5;
+	font-weight: bold;
+}
+
 .path-container {
 	display: inline-flex;
 	align-items: center;

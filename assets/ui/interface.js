@@ -2898,38 +2898,59 @@ class RPGMTL_Interface
 				"Filename match",
 				["left"]
 			);
-			util.add_to(
+			const python_filter = util.add_to(
 				fragment,
 				"input",
 				{
 					cls:["input"],
-					id:"filter",
 					navigable:true,
 					br:true
 				}
-			).type = "text";
+			);
+			python_filter.type = "text";
 			util.add_label(
 				fragment,
 				"Python Code",
 				["left"]
 			);
-			util.add_to(
+			const editor_container = util.add_to(
 				fragment,
 				"div",
 				{
-					cls:["input"],
-					id:"fix",
-					navigable:true,
+					cls:["python-editor-container"],
 					br:true
 				}
-			).contentEditable = "plaintext-only";
+			);
+			const python_backdrop = util.add_to(
+				editor_container,
+				"div",
+				{
+					cls:["python-backdrop"]
+				}
+			);
+			const python_input = util.add_to(
+				editor_container,
+				"div",
+				{
+					cls:["python-input"],
+					navigable:true
+				}
+			);
+			python_input.spellcheck = false;
+			python_input.contentEditable = "plaintext-only";
+			
+			// add syntax highlight
+			python_input.addEventListener('input', () => {
+				python_backdrop.innerHTML = util.highlight_python(python_input.textContent);
+			});
+			
 			// add confirm button
 			util.add_interaction(
 				fragment,
 				'<img src="assets/images/confirm.png"> Confirm',
 				() => {
-					let newkey = document.getElementById("filter").value;
-					let code = document.getElementById("fix").textContent;
+					let newkey = python_filter.value;
+					let code = python_input.textContent;
 					if(newkey.trim() != "" && code.trim() != "")
 					{
 						this.post(
@@ -2981,11 +3002,12 @@ class RPGMTL_Interface
 					innerText:"Byte Access:\n• helper.content -> str\n• helper.content = modified_bytes\n\n• helper.to_str(encoding='utf-8') -> str\n• helper.from_str(modified_string, encoding='utf-8')\n\nJSON Access:\n• helper.to_json(encoding='utf-8') -> Any\n• helper.from_json(modified_data, encoding='utf-8', ensure_ascii=False, indent=None, separators=None)\n\nConfirm modifications:\n• helper.modified = True"
 				}
 			);
-			
 			if(key != null)
 			{
-				fragment.getElementById("filter").value = key;
-				fragment.getElementById("fix").textContent = this.project.config.patches[key];
+				python_filter.value = key;
+				const code = this.project.config.patches[key];
+				python_input.textContent = this.project.config.patches[key];
+				python_backdrop.innerHTML = util.highlight_python(code);
 			}
 			this.update_main(fragment);
 		}

@@ -410,6 +410,7 @@ class util
 		return !(
 			["TEXTAREA", "INPUT"].includes(el.tagName)
 			|| el.classList.contains("input")
+			|| el.classList.contains("python-input")
 		);
 	}
 	
@@ -429,6 +430,45 @@ class util
 			&& e.altKey == alt
 			&& e.ctrlKey == ctrl
 		);
+	}
+	
+	// used for python hightlighing
+	static highlight_python(code)
+	{
+		let escaped = code
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;');
+
+		const regex = /(#.*)|("(?:\\.|[^"\\])*"|'(?:\\.|[^'\\])*')|\b(def|class|return|if|else|elif|for|while|import|from|as|in|try|except|pass|print|lambda|with|assert|break|continue|del|global|not|and|or|is|yield)\b|(\b\w+)(?=\s*\()|\b(\d+|True|False|None)\b|\b(helper)\b/g;
+
+		return escaped.replace(regex, (match, comment, string, keyword, functionName, value, helper) => {
+			if(comment)
+			{
+				return `<span class="python-comment">${comment}</span>`;
+			}
+			if(string)
+			{
+				return `<span class="python-string">${string}</span>`;
+			}
+			if(keyword)
+			{
+				return `<span class="python-keyword">${keyword}</span>`;
+			}
+			if(functionName)
+			{
+				return `<span class="python-function">${functionName}</span>`;
+			}
+			if(value)
+			{
+				return `<span class="python-value">${value}</span>`;
+			}
+			if(helper)
+			{
+				return `<span class="python-helper">${helper}</span>`;
+			}
+			return match;
+		});
 	}
 	
 	// used for testing
