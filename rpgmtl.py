@@ -1979,15 +1979,19 @@ class RPGMTL():
         if name is None:
             return web.json_response({"result":"bad", "message":"Bad request, missing 'name' parameter"}, status=400)
         else:
+            has_been_modified : bool = False
             if key is not None and key in self.projects[name]["patches"]:
                 self.projects[name]["patches"].pop(key)
+                has_been_modified = True
             if newkey is not None and code is not None:
                 self.projects[name]["patches"][newkey] = code
-            if len(self.projects[name]["patches"]) > 0: # sort by file filters
-                l : list[str] = list(self.projects[name]["patches"].keys())
-                l.sort()
-                self.projects[name]["patches"] = {k:self.projects[name]["patches"][k] for k in l}
-            self.modified[name] = True
+                has_been_modified = True
+            if has_been_modified:
+                if len(self.projects[name]["patches"]) > 0: # sort by file filters
+                    l : list[str] = list(self.projects[name]["patches"].keys())
+                    l.sort()
+                    self.projects[name]["patches"] = {k:self.projects[name]["patches"][k] for k in l}
+                self.modified[name] = True
             return web.json_response({"result":"ok", "data":{"name":name, "config":self.projects[name]}})
 
     # /api/import_patch
