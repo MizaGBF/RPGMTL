@@ -399,6 +399,12 @@ class util
 	}
 	
 	// check if target is an input
+	static is_notepad(el)
+	{
+		return el.classList.contains("noteinput");
+	}
+	
+	// check if target is an input
 	static is_not_using_input(el)
 	{
 		return !(

@@ -1456,7 +1456,18 @@ class Shortcuts extends Component
 		{
 			return;
 		}
-		let all_allowed = util.is_not_using_input(e.target);
+		// notepad Ctrl+S exception
+		if(util.is_notepad(e.target) && ["S","s"].includes(e.key) && e.ctrlKey)
+		{
+			util.stop_event(e);
+			const note = document.getElementById("notepad-confirm");
+			if(note)
+			{
+				note.click();
+			}
+			return;
+		}
+		const all_allowed = util.is_not_using_input(e.target);
 		switch(e.key)
 		{
 			case "Escape":

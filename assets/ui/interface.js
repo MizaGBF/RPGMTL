@@ -1521,7 +1521,10 @@ class RPGMTL_Interface
 				() => { // back callback
 					this.routes.project(this.project.name);
 				},
-				"Take notes.",
+				"<ul>\
+					<li>Take notes.</li>\
+					<li><b>CTRL+S</b> lets you save.</li>\
+				</ul>",
 				{
 					home:1
 				}
@@ -1548,7 +1551,7 @@ class RPGMTL_Interface
 			);
 			notepad.contentEditable = "plaintext-only";
 			notepad.textContent = this.project.config.notes;
-			util.add_interaction(fragment, '<img src="assets/images/confirm.png"> Save', () => {
+			const notepad_confirm = util.add_interaction(fragment, '<img src="assets/images/confirm.png"> Save', () => {
 				this.post(
 					"/api/update_notes",
 					null,
@@ -1559,6 +1562,7 @@ class RPGMTL_Interface
 					}
 				);
 			});
+			notepad_confirm.id = "notepad-confirm";
 			this.update_main(fragment);
 		}
 		catch(err)
