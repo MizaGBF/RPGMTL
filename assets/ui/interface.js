@@ -2858,8 +2858,16 @@ class RPGMTL_Interface
 		try
 		{
 			const key = data.key; // patch key. Note: CAN be null
+			let check_duplicate = false;
 			if(key != null)
+			{
 				util.update_page_location("open_patch", this.project.name, key);
+			}
+			else
+			{
+				check_duplicate = true;
+			}
+				
 			// top bar
 			this.top_bar.update(
 				"Create a Fix",
@@ -2943,27 +2951,36 @@ class RPGMTL_Interface
 			python_input.addEventListener('input', () => {
 				python_backdrop.innerHTML = util.highlight_python(python_input.textContent);
 			});
-			
 			// add confirm button
 			util.add_interaction(
 				fragment,
 				'<img src="assets/images/confirm.png"> Confirm',
-				() => {
+				(e) => {
 					let newkey = python_filter.value;
 					let code = python_input.textContent;
 					if(newkey.trim() != "" && code.trim() != "")
 					{
-						this.post(
-							"/api/update_patch",
-							(result_data) => this.browse_patches(result_data),
-							null,
-							{
-								name:this.project.name,
-								key:key,
-								newkey:newkey,
-								code:code
-							}
-						);
+						if(
+							!check_duplicate
+							|| !(newkey in this.project.config.patches)
+							|| (
+								e.ctrlKey
+								|| window.confirm("This match is already in use for another patch.\nOverwrite?")
+							)
+						)
+						{
+							this.post(
+								"/api/update_patch",
+								(result_data) => this.browse_patches(result_data),
+								null,
+								{
+									name:this.project.name,
+									key:key,
+									newkey:newkey,
+									code:code
+								}
+							);
+						}
 					}
 					else
 					{
