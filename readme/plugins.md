@@ -257,7 +257,7 @@ An example of a callback is defined as such:
             return "Hello world!"
         except Exception as e:
             self.owner.log.error("[MyPlugin] Action 'callback' failed with error:\n" + self.owner.trbk(e))
-            return "An error occured."
+            return "An error occurred."
 ```  
   
 If you wish to restrict actions to specific files, you can either:  
@@ -328,5 +328,5 @@ When used, both will trigger the callback. Callbacks have the same format for bo
             return "Hello world!"
         except Exception as e:
             self.owner.log.error("[MyPlugin] Tool 'callback' failed with error:\n" + self.owner.trbk(e))
-            return "An error occured."
+            return "An error occurred."
 ```  
