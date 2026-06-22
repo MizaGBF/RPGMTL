@@ -35,7 +35,7 @@ class RGSSAD(Plugin):
                 for metadata in metadatas:
                     file_path : PurePath = target_dir / metadata["filename"]
                     if os.path.isfile(file_path):
-                        self.owner.log.error("[RGSSAD] Failed to extract:" + metadata["filename"] + ", file already exists\n" + self.owner.trbk(e))
+                        self.owner.log.error(f"[RGSSAD] Failed to extract:{metadata["filename"]}, file already exists\n{self.owner.trbk(e)}")
                         continue
                     # check if file is valid for a plugin
                     for p in self.owner.plugins.values():
@@ -62,7 +62,7 @@ class RGSSAD(Plugin):
                             break
                 return len(metadatas) > 0
         except Exception as e:
-            self.owner.log.error("[RGSSAD] Failed to extract content from:" + full_path.as_posix() + "\n" + self.owner.trbk(e))
+            self.owner.log.error(f"[RGSSAD] Failed to extract content from:{full_path.as_posix()}\n{self.owner.trbk(e)}")
             return False
 
     def decrypt_file_data(self : RGSSAD, encrypted_data : bytes, initial_key : int) -> bytes:

@@ -341,7 +341,7 @@ class JSON(Plugin):
             self.owner.start_compute_translated(name)
             return f"{modified_string + modified_file} modifications applied"
         except Exception as e:
-            self.owner.log.error("[JSON] Tool 'tool_text_wrap' failed with error:\n" + self.owner.trbk(e))
+            self.owner.log.error(f"[JSON] Tool 'tool_text_wrap' failed with error:\n{self.owner.trbk(e)}")
             return "An unexpected error occured"
 
     def match(self : JSON, file_path : str, is_for_action : bool) -> bool:

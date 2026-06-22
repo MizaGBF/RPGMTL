@@ -272,7 +272,7 @@ class YBN(Plugin):
             else:
                 return "No strings in need of text wrapping."
         except Exception as e:
-            self.owner.log.error("[YBN] Action 'lusterise_text_wrap' failed with error:\n" + self.owner.trbk(e))
+            self.owner.log.error(f"[YBN] Action 'lusterise_text_wrap' failed with error:\n{self.owner.trbk(e)}")
             return "An error occured."
 
     def lusterise_load_names(self : YBN, name : str) -> dict[str, str]:
@@ -339,7 +339,7 @@ class YBN(Plugin):
             if isinstance(self.last_ypf_data.get("key", None), str):
                 self.last_ypf_data["key"] = bytes.fromhex(self.last_ypf_data["key"])
         except Exception as e:
-            self.owner.log.warning("[YPF] No ypf.json found in " + folder.as_posix() + "\n" + self.owner.trbk(e))
+            self.owner.log.warning(f"[YPF] No ypf.json found in {folder.as_posix()}\n{self.owner.trbk(e)}")
             self.last_ypf_data = {}
 
     def read(self : YBN, file_path : str, content : bytes) -> list[list[str]]:

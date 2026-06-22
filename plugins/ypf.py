@@ -323,7 +323,7 @@ class YPF(Plugin):
                         json.dump(d, f)
                 return True
         except Exception as e:
-            self.owner.log.error("[YPF] Failed to extract content from:" + full_path.as_posix() + "\n" + self.owner.trbk(e))
+            self.owner.log.error(f"[YPF] Failed to extract content from:{full_path.as_posix()}\n{self.owner.trbk(e)}")
             return False
 
 if __name__ == "__main__":

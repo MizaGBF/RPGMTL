@@ -63,7 +63,7 @@ class KiriKiri(Plugin):
             else:
                 return str(count) + " strings have been modified"
         except Exception as e:
-            self.owner.log.error("[KiriKiri] Tool 'tool_space_removal' failed with error:\n" + self.owner.trbk(e))
+            self.owner.log.error(f"[KiriKiri] Tool 'tool_space_removal' failed with error:\n{self.owner.trbk(e)}")
             return "An unexpected error occured"
 
     def edit_non_standard_spaces(self : KiriKiri, text : str) -> tuple[str, bool]:

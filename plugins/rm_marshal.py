@@ -156,7 +156,7 @@ class RM_Marshal(Plugin):
                 f.write("\n")
             return "File deserialized to " + output_path
         except Exception as e:
-            self.owner.log.error("[RPG Maker Marshal] Action 'rm_marshal_export' failed with error:\n" + self.owner.trbk(e))
+            self.owner.log.error(f"[RPG Maker Marshal] Action 'rm_marshal_export' failed with error:\n{self.owner.trbk(e)}")
             return "An error occured, the file might be badly formatted."
 
     def _export_script(self : RM_Marshal, name : str, file_path : str, settings : dict[str, Any] = {}) -> str:
@@ -182,7 +182,7 @@ class RM_Marshal(Plugin):
                 return "This action is only for RPG Maker Scripts files."
         except Exception as e:
             self.allow_ruby_plugin = True
-            self.owner.log.error("[RPG Maker Marshal] Action 'rm_marshal_script_export' failed with error:\n" + self.owner.trbk(e))
+            self.owner.log.error(f"[RPG Maker Marshal] Action 'rm_marshal_script_export' failed with error:\n{self.owner.trbk(e)}")
             return "An error occured, the file might be badly formatted."
 
     def match(self : RM_Marshal, file_path : str, is_for_action : bool) -> bool:

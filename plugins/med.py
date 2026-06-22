@@ -98,7 +98,7 @@ class MED(Plugin):
             else:
                 return "No strings in need of text wrapping."
         except Exception as e:
-            self.owner.log.error("[MED] Action 'lusterise_text_wrap' failed with error:\n" + self.owner.trbk(e))
+            self.owner.log.error(f"[MED] Action 'lusterise_text_wrap' failed with error:\n{self.owner.trbk(e)}")
             return "An error occured."
 
     def textwrap_string(self : MED, string : str, limit : int) -> tuple[str, bool]:
@@ -146,7 +146,7 @@ class MED(Plugin):
             else:
                 return "No strings contain non-ASCII characters in this file"
         except Exception as e:
-            self.owner.log.error("[MED] Action 'look_non_ascii' failed with error:\n" + self.owner.trbk(e))
+            self.owner.log.error(f"[MED] Action 'look_non_ascii' failed with error:\n{self.owner.trbk(e)}")
             return "An error occured."
 
     def read(self : MED, file_path : str, content : bytes) -> list[list[str]]:
@@ -267,7 +267,7 @@ class MED(Plugin):
                                     strings = [""]
                                 strings[0] = decoded
                     except Exception as e:
-                        self.owner.log.warning("[MED] Error in 'extract_med':\n" + self.owner.trbk(e))
+                        self.owner.log.warning(f"[MED] Error in 'extract_med':\n{self.owner.trbk(e)}")
                     file_content = b''
             if len(strings) > 1:
                 file_entries.append(strings)

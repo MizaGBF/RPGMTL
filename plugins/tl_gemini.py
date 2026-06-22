@@ -164,7 +164,7 @@ class TLGemini(TranslatorPlugin):
                 self.instance = current
                 self.key_in_use = settings["gemini_api_key"]
         except Exception as e:
-             self.owner.log.error("[TL Gemini] Error in '_init_translator':\n" + self.owner.trbk(e))
+             self.owner.log.error(f"[TL Gemini] Error in '_init_translator':\n{self.owner.trbk(e)}")
 
     def parse_model_output(
         self : TLGemini,
@@ -412,7 +412,7 @@ class TLGemini(TranslatorPlugin):
                     raise Exception("Resource exhausted")
                 elif "Request has been blocked: PROHIBITED_CONTENT" in str(e):
                     break
-                self.owner.log.error("[TL Gemini] Error in 'translate':\n" + self.owner.trbk(e))
+                self.owner.log.error(f"[TL Gemini] Error in 'translate':\n{self.owner.trbk(e)}")
                 await asyncio.sleep(settings["gemini_rate_limit"])
         return None
 
@@ -439,7 +439,7 @@ class TLGemini(TranslatorPlugin):
                     break
                 except Exception as e:
                     retry += 1
-                    self.owner.log.error("[TL Gemini] Error in 'translate_batch':\n" + self.owner.trbk(e))
+                    self.owner.log.error(f"[TL Gemini] Error in 'translate_batch':\n{self.owner.trbk(e)}")
                     if "429 RESOURCE_EXHAUSTED" in str(e):
                         return result, False
                     elif "Request has been blocked: PROHIBITED_CONTENT" in str(e):

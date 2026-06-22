@@ -33,7 +33,7 @@ class TLGoogle(TranslatorPlugin):
             self._init_translator(settings)
             return self.instance.translate(string)
         except Exception as e:
-            self.owner.log.error("[TL Google] Error in 'translate':\n" + self.owner.trbk(e))
+            self.owner.log.error(f"[TL Google] Error in 'translate':\n{self.owner.trbk(e)}")
             return None
 
     async def translate_batch(
@@ -46,5 +46,5 @@ class TLGoogle(TranslatorPlugin):
             self._init_translator(settings)
             return self.instance.translate_batch(strings), True
         except Exception as e:
-            self.owner.log.error("[TL Google] Error in 'translate_batch':\n" + self.owner.trbk(e))
+            self.owner.log.error(f"[TL Google] Error in 'translate_batch':\n{self.owner.trbk(e)}")
             return [], True

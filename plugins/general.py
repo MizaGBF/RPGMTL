@@ -180,7 +180,7 @@ class GeneralActions(Plugin):
             else:
                 return f"{count} strings have been wrapped"
         except Exception as e:
-            self.owner.log.error("[General Actions] Tool 'tool_text_wrap' failed with error:\n" + self.owner.trbk(e))
+            self.owner.log.error(f"[General Actions] Tool 'tool_text_wrap' failed with error:\n{self.owner.trbk(e)}")
             return "An unexpected error occured"
 
     def wrap_string(
@@ -400,7 +400,7 @@ class GeneralActions(Plugin):
             else:
                 return f"{count} strings have been modified"
         except Exception as e:
-            self.owner.log.error("[General Actions] Tool 'tool_special_char' failed with error:\n" + self.owner.trbk(e))
+            self.owner.log.error(f"[General Actions] Tool 'tool_special_char' failed with error:\n{self.owner.trbk(e)}")
             return "An unexpected error occured"
 
     def _tool_special_remove_latin_accent(self : GeneralActions, input_string: str) -> str:
@@ -445,7 +445,7 @@ class GeneralActions(Plugin):
             else:
                 return "Please confirm that you understand the purpose of this tool" 
         except Exception as e:
-            self.owner.log.error("[General Actions] Tool 'tool_clear_unlinked' failed with error:\n" + self.owner.trbk(e))
+            self.owner.log.error(f"[General Actions] Tool 'tool_clear_unlinked' failed with error:\n{self.owner.trbk(e)}")
             return "An unexpected error occured"
 
     def check_limit(self : GeneralActions, name : str, file_path : str, settings : dict[str, Any] = {}) -> str:
@@ -478,7 +478,7 @@ class GeneralActions(Plugin):
             else:
                 return "No strings are over the limit"
         except Exception as e:
-            self.owner.log.error("[General Actions] Action 'check_limit' failed with error:\n" + self.owner.trbk(e))
+            self.owner.log.error(f"[General Actions] Action 'check_limit' failed with error:\n{self.owner.trbk(e)}")
             return "An error occured."
 
     def clear_modified(self : GeneralActions, name : str, file_path : str, settings : dict[str, Any] = {}) -> str:
@@ -493,7 +493,7 @@ class GeneralActions(Plugin):
                         self.owner.modified[name] = True
             return "Modified Flags have been cleared."
         except Exception as e:
-            self.owner.log.error("[General Actions] Action 'clear_modified' failed with error:\n" + self.owner.trbk(e))
+            self.owner.log.error(f"[General Actions] Action 'clear_modified' failed with error:\n{self.owner.trbk(e)}")
             return "An error occured."
 
     def clear_all(self : GeneralActions, name : str, params : dict[str, Any]) -> str:
@@ -506,5 +506,5 @@ class GeneralActions(Plugin):
             self.owner.modified[name] = True
             return "Modified Flags have been cleared."
         except Exception as e:
-            self.owner.log.error("[General Actions] Action 'clear_all' failed with error:\n" + self.owner.trbk(e))
+            self.owner.log.error(f"[General Actions] Action 'clear_all' failed with error:\n{self.owner.trbk(e)}")
             return "An error occured."
