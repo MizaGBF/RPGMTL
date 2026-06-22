@@ -4,5 +4,7 @@
   
 ## Quick Overview  
   
-The INI Plugin targets standards INI files.  
-Each non-empty string is paired, in a String Group, with the name of the variable.  
+The INI plugin extracts translatable strings from standard INI configuration files.  
+  
+Each non-empty string is organized into a String Group. For context, the group name corresponds to the name of the variable (key) associated with the string.  
+  

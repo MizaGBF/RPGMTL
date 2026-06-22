@@ -4,5 +4,4 @@
   
 ## Quick Overview  
   
-The General Plugin doesn't actually target any file.  
-Instead, it provides utility File Actions and some generic Tools.  
+The General plugin does not target specific file formats. Instead, it provides a suite of utility **File Actions** and generic **Tools** that can be applied across various project contexts.  

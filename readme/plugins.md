@@ -4,101 +4,97 @@
   
 ## Introduction  
   
-Plugins are loaded on RPGMTL boot.  
-In case of an error, the plugin is skipped and an error message will appear in the logs.  
-There are two types of Plugin:  
-- Plugins, also referred as File Plugins below. They extract and patch strings in game files.  
-- Translator Plugins, which interface to Translator APIs and such.  
-Both are inheriting from `BasePlugin`.  
+Plugins are automatically loaded upon RPGMTL startup in alphabetical order of their filenames. If an error occurs during loading, the system skips the problematic plugin and records the error in the logs.  
   
-To disable a plugin and stops it from loading, you can create a file named `disabled.txt` in the same folder as `rpgmtl.py`, with the name of the plugin files you which to ignore, one per line.  
-For example:  
+Plugins must use unique names for their Python classes and for all setting, action, and tool keys to avoid conflicts and undefined behavior.  
+  
+### Plugin Types  
+  
+There are two primary types of plugins:  
+1. **File Plugins**: Responsible for extracting strings from game files and patching them back.  
+2. **Translator Plugins**: Interface with external translation APIs.  
+
+Both types inherit from the `BasePlugin` class.
+  
+### Disabling Plugins  
+  
+To prevent a plugin from loading, create a file named `disabled.txt` in the same directory as `rpgmtl.py`. List the filenames of the plugins to be ignored, one per line (without the `.py` extension).  
+  
+Example `disabled.txt`:  
 ```
 json
 rm_marshal
 ```  
-will disable both those plugins.  
   
-## Plugin develoment  
+---
   
-### Quickstart
+## Plugin development  
+  
+### Quickstart  
   
 Create a new Python file in the `plugins` folder.  
   
-For File Plugins, import `from . import Plugin`.  
-For Translator Plugins, import `from . import TranslatorPlugin`.  
+* For **File Plugins**, import the base class: `from . import Plugin`  
+* For **Translator Plugins**, import the base class: `from . import TranslatorPlugin`  
   
-Then create a class inheriting from those type and implement the functions you wish to overload.  
+Inherit from the appropriate class and override the necessary methods.  
+#### Required Methods for File Plugins:  
   
-For File Plugins, it will be at least the following methods:  
-- `match`  
-- `read` (for standard File Handling)  
-- `write` (for standard File Handling)  
-- `is_streaming` (for File Streaming)  
-- `read_streaming` (for File Streaming)  
-- `write_streaming` (for File Streaming)  
+* `match`: Determines if the plugin handles a specific file.  
+* **Standard I/O**: `read` and `write`.  
+* **Streaming I/O** (for large files): `is_streaming`, `read_streaming`, and `write_streaming`.  
   
-If `is_streaming` return True for a given file name, File Streaming will be used.  
-It uses a handle instead of loading the whole file in memory.  
-It's Intended for large files.  
+> [!NOTE]  
+> `is_streaming` must return `True` to enable Streaming I/O operations. Otherwise, it defaults to Standard I/O.  
   
-For Translator Plugins, it will be at least the following methods:  
-- `translate`  
-- `translate_batch`  
+#### Required Methods for Translator Plugins:  
+* `translate`  
+* `translate_batch`  
   
-Refer to the base class definitions in `plugins/__init__.py` if you need more infos or a list of all methods you can use.  
-Refer to existing plugins if you need examples.  
+Refer to the base class definitions in `plugins/__init__.py` and existing plugins for implementation examples and details.  
   
 ### Extracting Strings  
   
-In `read` or `read_streaming`, you must return a list of String Group.  
-A String Group is a mere Python list of strings.  
-The first string of a String Group is its name.  
-It can be empty but MUST be present.  
-It will be displayed to the user at the top of the String Group.  
-Following it are the extract strings, in order.  
+In `read` or `read_streaming`, you must return a list of **String Groups**. A String Group is a list of strings where the first element is the group name (can be empty but must be present).  
   
-Hence why the return type is list[list[str]].  
-For Example:  
+**Example:**  
 ```python
-# Example of returned list of String Groups:
 results = [
     ["Group 1", "string 1", "string 2"],
     ["Group 2", "string 3"],
-    ["Group 3", "string 4", "string 5", "string 6", "string 7"],
-    ["Group 4", "string 8"]
 ]
 ```  
-Don't add empty strings to your String Groups.  
-You can, however, add a String Group without strings, just to display something to the user between groups of strings:  
+  
+Empty strings should not be added to groups. However, a group containing only a name can be used to display informations in the UI.  
+  
+**Example:**  
 ```python
-# Example of returned list of String Groups:
 results = [
     ["Group 1", "string 1", "string 2"],
-    ["Hello World!"],
-    ["Group 2", "string 3", "string 4", "string 5"],
-    ["Group 3", "string 6"]
+    ["Below are important strings!!"],
+    ["Group 2", "string 3"],
 ]
 ```  
   
 ### Patching Strings  
   
-In `write` or `write_streaming`, you must modify the file content with modified strings and return it, along with a boolean indicating if the content has been modified.  
-How to proceed will depend on the file format.  
-However, you can use the `WalkHelper` to help with it.  
-Add it to your import:  
+In `write` or `write_streaming`, modify the file content using translated strings and return the updated content along with a boolean indicating if any modifications were made.  
+  
+The `WalkHelper` class is available to assist with patching and ensure data integrity:  
 ```python
 from . import Plugin, WalkHelper
-```  
-And instantiate it in your function:  
-```python
-helper : WalkHelper = WalkHelper(file_path, self.owner.strings[name])
+
+# Inside write function:
+helper = WalkHelper(file_path, self.owner.strings[name])
+data["key"] = helper.apply_string(data["key"], group_name)
 ```  
   
-This class helps you patch strings and make sure nothing is corrupted.  
-If it raises an error, it means your writing function isn't following the same path as your reading one.  
-To patch a string with:  
-```
+The `helper.modified` flag will be set to `True` if any strings were successfully replaced.  
+  
+If it raises an error, it means your writing function isn't following the same code path as your reading one.  
+Or that you must re-extract the strings if the plugin has been updated.  
+**A few more usages**: 
+```python
 # In this example, let's imagine we're patching a string in a Python dictionary:
 data["mystring"] = helper.apply_string(data["mystring"], group_name) # The returned value will be either the same string OR the patched string if it exists
 # Note 1: group_name is an OPTIONAL parameter and will raise an error if it's not the exact same as at the time of extracting this string.  
@@ -109,38 +105,31 @@ if helped.str_modified:
     # do stuff ...
     data["mystring"] = tmp
 ```  
-If at least one string has been modified, the `modified` parameter of the Helper will be set to True.  
-You can use it in the return tuple of your writing function.  
   
 ### Archive and Virtual files  
   
-For archive type files (i.e. files containing other files), you might want to separate them in the UI.  
-To do so, add an empty group with a special name uring the extraction:  
+For archive files (files containing other files), you can represent internal files as "Virtual Files" in the UI by adding a special prefix to a group name during extraction:  
+  
 ```python
-# Example of returned list of String Groups:
 results = [
-    [self.owner.CHILDREN_FILE_ID + "script.txt"],
-    ["Group 1", "string 1", "string 2"],
-    [self.owner.CHILDREN_FILE_ID + "data.txt"],
-    ["Group 2", "string 3", "string 4", "string 5"],
-    ["Group 3", "string 6"]
+    [self.owner.CHILDREN_FILE_ID + "internal_file.txt"],
+    ["Group 1", "extracted string"]
 ]
 ```  
-`self.owner.CHILDREN_FILE_ID` is defined in the main `RPGMTL` class.  
   
-In this example, Group 1 will appear under the Virtual File `script.txt` in the user interface, and Groupe 2 under `data.txt`.  
-Your plugin is still responsible of extracting and patching their strings.  
-Although you can also call other plugins if you wish:  
+`self.owner.CHILDREN_FILE_ID` is a constant defined in the `RPGMTL` class.  
+  
+**Implementation example:**  
 ```python
 groups = []
 for file in my_archive:
-    # Way 1
+    # Method 1
     groups.append([self.owner.CHILDREN_FILE_ID + file.name])
     # extract String Groups and append them to groups...
     
-    # Way 2
+    # Method 2
     groups.append([self.owner.CHILDREN_FILE_ID + file.name])
-    # we call another plugin
+    # we call another plugin capable of handling this file
     if "PluginName" in self.owner.plugins: # Check if this plugin exists and is loaded
         self.owner.plugins["PluginName"].reset() # Reset its state (Don't forget!)
         groups.extend(self.owner.plugins["PluginName"].whatever_function(...)) # Do whatever you want with it and get the extracted strings
@@ -155,7 +144,7 @@ for file in my_archive:
     
     # Way 2
     helper : WalkHelper = WalkHelper(file.name, self.owner.strings[name])
-    # we call another plugin
+    # we call another plugin capable of handling this file
     if "PluginName" in self.owner.plugins: # Check if this plugin exists and is loaded
         self.owner.plugins["PluginName"].reset() # Reset its state (Don't forget!)
         content = self.owner.plugins["PluginName"].whatever_function(helper, ...) # Do whatever you want with it, make sure to pass the helper
@@ -164,15 +153,11 @@ for file in my_archive:
             # ...
 ```  
   
-### Translator Plugin Batch Format
-  
-You can override a `TranslatorPlugin` `get_format` so that `translate_batch` will receive and return data in a different way.  
-If set with `TranslatorBatchFormat.STANDARD`:  
-Input is a list of string to translate.  
-Output is a list, of same size, of translated strings (or None if one failed to translate). Indexes must correspond with the Input.  
- 
-If set with `TranslatorBatchFormat.AI`:  
-Input format is the following:  
+### Translator Plugin Formats
+You can override `get_format` in a `TranslatorPlugin` to specify how data is delivered to `translate_batch`.
+
+* **STANDARD**: Input is a list of strings. Output is a corresponding list of translations or `None`.
+* **AI**: Input is a JSON object containing file and group context, including previously translated strings for better accuracy. Output is a JSON object mapping string IDs to translations:  
 ```json
 {
     "file":"FILE_NAME",
@@ -192,24 +177,27 @@ Input format is the following:
 }
 ```  
 It contains even translated strings, for context.  
-If you need to broke it down to fit in a token budget, it's up to the plugin to handle it.  
+If you need to break it down to fit in a token budget, it's up to the plugin to handle it.  
   
-Output format is:  
+The output format of `translate_batch` is:  
 ```json
 {
     "STRING_ID":"TRANSLATION"
 }
 ```  
-For additional control, you can ovveride:   
+For additional control, you can override:  
 - `update_knowledge()`, to build some sort of knowledge base during translation.  
   
-## Plugin Settings  
+---
   
-Both Plugin types can provide a list of settings to RPGMTL.  
-The user can then change those settings at a Global level or per projects.  
+## UI Integration  
   
-To do so, implement the function `get_setting_infos`.  
-For example:  
+### Plugin Settings  
+  
+Plugins can provide configurable settings that users can adjust globally or per project. Implement `get_setting_infos` to return a dictionary of settings.  
+  
+**Types supported**: `str`, `text`, `password`, `bool`, `num`, `display`.
+For example, to add a setting to RPGMTL:  
 ```python
     def get_setting_infos(self : MyPlugin) -> dict[str, list]:
         return {
@@ -217,19 +205,22 @@ For example:
         }
 ```  
   
-This add one setting to RPGMTL.  
-The first parameter is the description.  
-The second is the type of the setting. It can be `"str"`, `"password"`, `"text"`, `"bool"`, `"num"` (Which can be either a Python Integer or Float) or `"display"` (which is used purely to display the first parameter).  
+The first parameter is the description of the setting.  
+The second is the setting type:  
+- `"str"`       Standard string input.  
+- `"text"`      Multi-line text block.  
+- `"password"`  Obfuscated string input.  
+- `"bool"`      Boolean checkbox (True/False).  
+- `"num"`       Numeric input (will match either Python int or float).  
+- `"display"`   Read-only text, used purely to display the description parameter.  
+  
 The third is the default value.  
-The fourth is the list of possible values. If you don't wish to provide one, set it to None.  
+The fourth is the list of possible values, to display an option box. If you don't wish to use one, set it to None.  
   
-## Plugin Actions
+### Plugin Actions
   
-Actions are buttons than the user can press in a file, to perform specific actions provided by Plugins.  
+Actions are buttons that appear within a specific file view in the UI. Implement `get_action_infos` to define the icon, label, and callback function.  
   
-To do so, you must first implement the function `get_action_infos`.
-For example:
-
 ```python
     def get_action_infos(self : MyPlugin) -> dict[str, list]:
         return {
@@ -238,7 +229,7 @@ For example:
 ```  
   
 The first parameter is the path towards the Action icon. You can reuse an existing one from the `assets/images` folder or create your own icon and put it in `assets/plugins`.  
-The second parameter is the Action name displayed on its button.  
+The second parameter is the Action name displayed on the button.  
 The third parameter is the function callback to be called when the user will press this button.  
 An example of a callback is defined as such:  
 ```python
@@ -253,16 +244,28 @@ An example of a callback is defined as such:
         try:
             #  
             # Do stuff...
+            #
+            # You can access a plugin setting for that project as such:
+            # settings["myplugin_setting"]
+            # Modifying them here is considered an undefined behavior.
             #  
-            return "Hello world!"
+            return "Hello world!" # the returning string is displayed to the user
         except Exception as e:
             self.owner.log.error(f"[MyPlugin] Action 'callback' failed with error:\n{self.owner.trbk(e)}")
-            return "An error occured."
+            return "An unexpected error occured, please check the logs." # same here, any returning string is displayed to the user
 ```  
   
 If you wish to restrict actions to specific files, you can either:  
-- Add a check in the callback.  
-- In your implementation of match, return False for the given file to not show any actions for this plugin:  
+- Add a check in the callback:  
+```python
+    def callback(self : MyPlugin, name : str, file_path : str, settings : dict[str, Any] = {}) -> str:
+        if file_path != ...
+            return "You can't use this action on this file"
+        else:
+            ...
+```  
+  
+- In your implementation of `match`, return False for the given file to not show any actions for this plugin:  
 ```python
     def match(self : MyPlugin, file_path : str, is_for_action : bool) -> bool:
         if is_for_action:
@@ -274,19 +277,21 @@ If you wish to restrict actions to specific files, you can either:
         #  
 ```  
   
-## Plugin Tools  
+### Plugin Tools
   
-Tool are buttons than the user can press on a project's page, to perform specific actions provided by Plugins, on a Project level.  
-There are two types, Simple and Complex tools.
-Example for a Simple tool:
-
+Tools are buttons that appear on the project dashboard.  
+* **Simple Tools**: Execute a command immediately (optionally with a confirmation message).  
+* **Complex Tools**: Open a dialog to request parameters from the user before execution.  
+  
 ```python
     def get_tool_infos(self : MyPlugin) -> dict[str, list]:
         return {
             "myplugin_simple_tool": ["assets/images/setting.png", "Simple Tool", self.callback, {"type":self.SIMPLE_TOOL, "message":"Do something?"}]
         }
 ```  
+`message` is an optional confirmation message displayed before execution.  
   
+Complex tools open a page requesting specific parameters from the user before executing. Parameter definitions follow the identical format used for Plugin Settings.  
 Example for a Complex tool:
 
 ```python
@@ -325,8 +330,8 @@ When used, both will trigger the callback. Callbacks have the same format for bo
             #  
             # Do stuff...
             #  
-            return "Hello world!"
+            return "Hello world!" # the returning string is displayed to the user
         except Exception as e:
             self.owner.log.error(f"[MyPlugin] Tool 'callback' failed with error:\n{self.owner.trbk(e)}")
-            return "An error occured."
+            return "An unexpected error occured, please check the logs." # same here, any returning string is displayed to the user
 ```  

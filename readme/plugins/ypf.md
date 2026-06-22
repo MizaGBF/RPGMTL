@@ -4,6 +4,6 @@
   
 ## Quick Overview  
   
-The YPF plugin targets YPF Archive files from the YU-RIS Engine.  
-It only extracts YBN files.  
-A json file will be created near archive content, containing the YBN decryption key and opcodes (It requires the YBN plugin).  
+The YPF plugin targets archive files from the YU-RIS Engine.  
+  
+It handles the extraction of internal YBN script files. During extraction, a JSON file is generated alongside the archive contents; this file contains the necessary YBN decryption keys and opcodes required by the **YBN Plugin** for processing.  

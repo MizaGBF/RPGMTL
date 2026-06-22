@@ -2,6 +2,11 @@
   
 ## Translating NScripter games  
   
-Refer to the nscripter.md plugin manual for details.  
-We recommend using the plugin with the Single-byte mode enabled, combined with [ONScripter](https://github.com/Galladite27/ONScripter-EN).  
-Simply use the ONScripter-EN executable, maybe a default font and your patched file(s).  
+For technical details regarding the plugin, refer to the [NScripter Plugin Manual](../plugins/nscripter.md).  
+
+## Recommended Workflow
+  
+It is recommended to use the NScripter plugin with **Single-byte mode** enabled, in conjunction with [ONScripter-EN](https://github.com/Galladite27/ONScripter-EN).
+  
+To run the translated game, use the ONScripter-EN executable along with a compatible default font and your patched script file(s).  
+  

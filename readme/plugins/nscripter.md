@@ -4,26 +4,22 @@
   
 ## Quick Overview  
   
-The NScripter Plugin targets scripts from the NScripter engine.  
+The NScripter plugin targets script files used by the NScripter engine. It is designed to facilitate translations for use with modern open-source engine forks like [ONScripter-EN](https://github.com/Galladite27/ONScripter-EN).  
   
-## Usage  
+To prevent conflicts with the standard TXT plugin, script files should use the `.nscript` extension.  
   
-Depending on the game, the script files can be either in the `arc.nsa` or `nscript.dat` files, or both. And the patching process can be different.  
-As such, this plugin is intended to support Open Source forks of the engine such as [ONScripter](https://github.com/Galladite27/ONScripter-EN).  
+## Workflow Example (nscript.dat)  
   
-To not interfer with the TXT plugin, the scripts are expected to have the `nscript` extension instead.  
+1. **Decompile**: Use `nscdec` to decompile the `nscript.dat` file into a text file (e.g., `result.txt`).  
+2. **Rename**: Rename the decompiled file to `result.nscript`.  
+3. **Import**: Create an RPGMTL project and import `result.nscript`.  
+4. **Translate**: Perform your translations and generate the patched `.nscript` file.  
+5. **Recompile**: Use `nscmake` (e.g., `nscmake.exe result.nscript`) on the patched file to generate an updated `nscript.dat`.  
   
-Example for a game with a `nscript.dat`:  
-1. Use `nscdec` to decompile the file into `result.txt`.  
-2. Rename `result.txt` to `result.nscript`.  
-3. Create a new RPGMTL project and import the game content with `result.nscript`.  
-4. Make your edit and generate the patched `result.nscript`.  
-5. Make any extra edit you need for compatibility with [ONScripter](https://github.com/Galladite27/ONScripter-EN).  
-6. Use `nscmake` (example: `nscmake.exe result.nscript`) on the patched file to generate an up-to-date `nscript.dat`.  
+## Compatibility Settings  
   
-The `nscripter_single_byte` Plugin setting is enabled by default and will add a backquote before english lines to avoid some issues.  
-See [this documentation](https://kaisernet.org/onscripter/api/NScrAPI.html#_backquote`).  
+* **Single-byte Mode**: This plugin setting (enabled by default) prepends a backquote (`` ` ``) to English lines. This is required by some engine versions to ensure correct rendering of single-byte characters. Refer to the [ONScripter API Documentation](https://kaisernet.org/onscripter/api/NScrAPI.html#_backquote) for more details.  
   
 ## Development References  
   
-[API](https://07th-mod.github.io/ponscripter-fork/api/)  
+* [PONSScripter API Documentation](https://07th-mod.github.io/ponscripter-fork/api/)  

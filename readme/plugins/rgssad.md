@@ -4,6 +4,6 @@
   
 ## Quick Overview  
   
-The RGSSAD plugin targets RPG Maker XP, VX and VX Ace Encrypted Archive files (.rgssad, .rgss2a, .rgss3a).  
-Those files contains game files.  
-As such, this plugin doesn't extract or patch strings but merely extract files usable by other plugins.  
+The RGSSAD plugin handles encrypted archive files from RPG Maker XP, VX, and VX Ace (`.rgssad`, `.rgss2a`, `.rgss3a`).  
+  
+These archives serve as containers for game assets and data. This plugin acts as an extractor, making the internal files accessible to other RPGMTL plugins for string extraction and patching. It does not perform string manipulation directly.  

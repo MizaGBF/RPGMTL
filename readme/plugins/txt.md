@@ -4,5 +4,6 @@
   
 ## Quick Overview  
   
-The TXT Plugin targets standards .txt files.  
-Each line is considered a separate strings.  
+The TXT plugin targets standard text (`.txt`) files.  
+  
+During extraction, each line is treated as an individual string.  

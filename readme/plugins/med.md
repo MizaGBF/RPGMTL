@@ -4,66 +4,48 @@
   
 ## Overview  
   
-The MED Plugin targets the md_scr.med archive (containing Script Files) used in some japanese games from Triangle and Lusterise.  
-While the plugin is mature, it hasn't been tested on a lot of games.  
-It **won't** extract non-japanese strings in its current state.  
+The MED plugin targets `md_scr.med` archives used by Triangle and Lusterise games. It extracts internal scripts as **Virtual Files** for an organized workflow.  
   
-Each file contained inside are extracted as Virtual Files, for clarity sake.  
-  
-RPGMTL Fix/Patches aren't supported on this file format.  
+**Limitations**:
+* The plugin is optimized for Japanese text extraction and may not extract other languages correctly in its current state.  
+* Custom RPGMTL **Fixes** are not supported for this file format.  
   
 ## File Actions  
   
 ### Adjust New Line  
   
-This engine doesn't always support newline `\n`, so lines must be padded with spaces to wrap properly.  
-As this process can be quite destructive, it's not recommended to do it until your project is complete.  
-This action automatically does it for you.  
-The default is 64 characters per line and can be adjusted in the settings.  
+The engine often requires lines to be padded with spaces for proper text wrapping instead of using standard `\n` characters.  
+* **Recommendation**: Run this action only once your translation is complete, as it is a destructive formatting process.  
+* **Configuration**: The default line length is 64 characters, which can be adjusted in the plugin settings. Make sure to check the length of a line for your targeted game.  
   
 ### Look for invalid characters  
   
-Non-ASCII characters (and some more) might break with text wrap above.  
-As such, unless you're making a translation in Chinese or Korean for example, you must make sure your text only contains ASCII characters.  
-This action will check and mark strings for you.  
-Do note that it also check for the character `♪[]`, the first one could cause the same issue, and the later two can make the text break in some games.  
+This utility identifies characters that may cause rendering or wrapping issues.  
+* **ASCII Check**: It flags non-ASCII characters in the current file.  
+* **Special Characters**: It also checks for `♪`, `[`, and `]`, which are known to cause issues in certain games.  
   
-## Development References  
+## Technical Details  
   
-Those files start with `MDE0` as the first 4 bytes.  
-Values inside are in little endian.  
+### Header Format (Little Endian)
+1. **Magic Number**: `MDE0` (4 bytes).  
+2. **File Entry Length**: 2 bytes.  
+3. **Entry Count**: 2 bytes.  
+4. **File Entries**: (16 bytes + File Entry Length) each:  
+    * **Name**: NULL-terminated string (4 bytes + Entry Length).  
+    * **Unknown**: 4 bytes.  
+    * **Size**: 4 bytes.  
+    * **Offset**: 4 bytes.  
   
-The header is as such:  
-- "Magic Number" `MDE0`, 4 bytes.  
-- File Entry length, 2 bytes.  
-- Number of File Entry, 2 bytes.  
-- Each File Entry, one by one, 16 bytes PLUS the File Entry length:
-    - File Name, 4 bytes PLUS the File Entry length, NULL terminated.  
-    - An unknown value, 4 bytes.  
-    - The File Size, 4 bytes.  
-    - The File Offset, 4 bytes.  
+### Encryption/Decryption
+The archive uses a secret 24-byte key for encryption, derived from a file typically named `_VIEW`.  
   
-To extract a file:  
-- Go to its Offset.  
-- Read the number of bytes corresponding to the File Size.  
-- You'll need the secret key to decrypt the content.  
-  
-To get the secret key, search for the file whose name starts with `_VIEW`.  
-Get its 16th byte to 40th (not included). 24 bytes total.  
-Iterate over and substract the byte in the same position in this byte array:  
+1. **Key Extraction**: Locate the `_VIEW` file. Take bytes 16 through 39 (inclusive).
+2. **Key Transformation**: Subtract each byte from the corresponding byte in the following sequence (If the result is **negative**, **add 256**):  
 ```python
 b'\x00\x23\x52\x55\x4C\x45\x5F\x56\x49\x45\x57\x45\x52\x00\x3A\x56\x49\x45\x57\x5F\x30\x00\x7B\x00'
-```
-Add 256 if negative.  
-The resulting 24 bytes is the secret key.  
+```  
+3. **Processing**: Starting from the 16th byte of a script file, add (for decryption) or subtract (for encryption) the secret key bytes in a rotating fashion.  
   
-Then to decrypt a file:  
-- Iterate from the 16h byte to the end of the File.  
-- Add the corresponding byte from the secret key (16th File byte corresponds to the 1st byte of the secret key, it wraps around the key).  
+### Script Format  
   
-To encrypt, it's the opposite, substract the corresponding byte.  
-  
-A script file is composed of the following:  
-- A 16 bytes header containing the length of the content (4 bytes), the offset (4 bytes) and possibly more data.  
-- The file content, mostly null terminated strings encoded in `cp932`. 'Mostly' because there is what looks like binary data too, mostly at the beginning of files.  
-  
+Script files consist of a 16-byte header followed by `cp932` (Shift-JIS) encoded strings and binary data.  

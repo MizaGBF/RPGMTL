@@ -4,5 +4,6 @@
   
 ## Quick Overview  
   
-The Subtitle Plugin targets some subtitle file formats, such as .lrc, .ssa/.ass and .srt.  
-The parsers and patchers are very straightforward, so please report bugs if something doesn't work out on files with some esoteric content.  
+The Subtitle plugin provides extraction and patching support for common subtitle formats, including `.lrc`, `.ssa`, `.ass`, and `.srt`.  
+  
+The implementation follows standard specifications for these formats. If you encounter issues with specialized or unconventional subtitle content, please report them as potential bugs.  

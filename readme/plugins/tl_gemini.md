@@ -4,26 +4,23 @@
   
 ## Quick Overview  
   
-The TL Gemini Plugin is a Translator Plugin.  
-It's a wrapper around the `google-genai` module.  
-The later Python module must be installed for the Plugin to load.  
+The Google Gemini plugin interfaces with the Gemini API using the `google-genai` Python module. This module must be installed for the plugin to function.  
   
-Do note that the plugin can be slow, especially on the free tier.  
-This plugin is best suited for Batch Translation (using the `Translate this File` or `Batch Translate` buttons).  
+Due to its processing nature, this plugin is best suited for **Batch Translation** (e.g., "Translate this File" or "Batch Translate"). Note that performance may vary, particularly when using the free API tier.  
   
-You can generate an API key at https://aistudio.google.com/apikey  
-Recommended model is `gemini-3.1-flash-lite` **at the time of this writing**.  
+## Configuration  
   
-You can also use experimental preview models when available.  
-Consult the changelog here: https://ai.google.dev/gemini-api/docs/changelog  
-It's untested with the Gemma model family (the context window in particular might cause issues).
+* **API Key**: Generate a key at the [Google AI Studio](https://aistudio.google.com/apikey).  
+* **Recommended Model**: `gemini-3.1-flash-lite` (or the latest stable Flash model).  
+* **Rate Limits**: Consult the [AI Studio Usage Dashboard](https://aistudio.google.com/usage) for details on current limits and model availability.  
   
-Check the models and rate limits here: https://aistudio.google.com/usage?timeRange=last-28-days&tab=rate-limit  
+Consult the changelog here: https://ai.google.dev/gemini-api/docs/changelog to learn about discontinued or newer models.  
   
-## Note on safety  
+Check the models and your   rate limits here: https://aistudio.google.com/usage?timeRange=last-28-days&tab=rate-limit  
   
-Safety filters are turned off except the `PROHIBITED_CONTENT` filter enforced by Google.  
-It's, sadly, very sensitive and is easily triggered if you're translating H-games or some violent games.  
-The only workaround is to reduce the translation batch token count in the project setting, to the point where RPGMTL will break the file in multiple batch.  
-This way, while the sensitive batch might still be blocked, other parts of the file should still be translated.  
-You'll then have to translate the sensitive content by yourself.  
+## Safety Filters and Content  
+  
+Safety filters are disabled by default within the plugin, with the exception of the `PROHIBITED_CONTENT` filter enforced by Google. This filter can be sensitive to violent or adult-oriented content.  
+  
+**Workaround for Blocked Content**:  
+If translations are frequently blocked, reduce the batch token count in the project settings. This forces RPGMTL to split files into smaller batches. While specific sensitive sections may still be blocked, the rest of the file can often be processed successfully. Content that remains blocked must be translated manually.  

@@ -4,35 +4,38 @@
   
 ## Quick Overview  
   
-The KiriKiri Plugin targets scripts from the KiriKiri (also known as KrKr or TVP) engine.  
+The KiriKiri plugin targets scripts from the KiriKiri (KrKr/TVP) engine, specifically KAG scripts (`.ks`) and TVP JavaScript scripts (`.tjs`).  
   
-**The Javascript Plugin is required** to parse `.tjs` files, so make sure it's present and enabled.  
+**Requirement**: The **JavaScript Plugin** must be enabled to parse `.tjs` files.  
   
-## Usage  
+## Workflow
+
+The plugin does not handle the decryption or extraction of `.xp3` archives. You must extract the scripts manually before importing them into RPGMTL.  
+
+### Preparation  
   
-This plugin targets only the KAG scripts (`.ks`) and TVP Javascript scripts (`.tjs`).  
-The plugin **doesn't** handle decryption of `.xp3` files ans so on, as the method can vary from one game to another.  
-  
-Start by extracting those files from your targeted game, into a folder called `patch`.  
-Optional but likely needed in most case:  
-1. Move `patch/system/Config.ts` to `patch/Config.ts`.
-2. Append the following code inside:  
+Extract the game scripts into a folder named `patch`. In most cases, you will need to register this folder with the engine:  
+1. Move `patch/system/Config.tjs` to `patch/Config.tjs`.  
+2. Append the following code to `patch/Config.tjs` to ensure the engine loads your patched files:  
 ```javascript
 Storages.addAutoPath(System.exePath + "patch.xp3>scenario/");
 Storages.addAutoPath(System.exePath + "patch.xp3>system/");
-```
-If patch.xp3 already exists, change it above for `patch2.xp3`, and so on.  
-If you have other folders mattering (for example, image ones), add a new line in the same maner pointing to it.  
+```  
   
-Now import the game into RPGMTL, make your edit then release the patch.  
-The folder structure will likely be something like `<PROJECT>/release/patch/...`.  
-Run your repacker of choice on the **patch** folder to generate `patch.xp3`.  
+*If `patch.xp3` already exists, increment the filename (e.g., `patch2.xp3`). Add additional `addAutoPath` lines for other directories (like images) as needed.*  
   
-## Note  
+### Translation and Patching  
   
-If you need to start a line with the `[` character, make sure to double it (`[[`) to not cause issues.  
+Import the extracted files into RPGMTL. After completing your translations, use the **Release a Patch** button. The patched files will be located in `<PROJECT_ROOT>/release/patch/`.
+  
+### Repacking
+Use an XP3 repacker to pack the contents of the `release/patch/` folder into a `patch.xp3` archive and place it in the game directory.  
+  
+## Technical Notes  
+  
+* **Character Escaping**: If a line in your translation must start with the `[` character, you must double it (`[[`) to prevent it from being interpreted as a KAG command.  
   
 ## Development References  
   
-[Doc](https://kirikirikag.sourceforge.net/contents/index.html)  
-[KirikiriTools](https://github.com/arcusmaximus/KirikiriTools)  
+* [KiriKiri KAG Documentation](https://kirikirikag.sourceforge.net/contents/index.html)  
+* [KirikiriTools (GitHub)](https://github.com/arcusmaximus/KirikiriTools)  

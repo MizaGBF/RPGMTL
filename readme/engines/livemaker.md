@@ -2,72 +2,65 @@
   
 ## Translating LiveMaker games  
   
-LiveMaker games are recognizable by the presence of a `live.dll` file.  
-The version of the engine can be found in the executable properties.  
-You'll need [pylivemaker](https://github.com/pmrowla/pylivemaker) installed.  
-Make sure Python and its scripts folder is in your PATH if you're on Windows.  
+LiveMaker games are typically identified by the presence of a `live.dll` file.  
+The engine version number can be found in the game executable's properties.  
+Translation requires [pylivemaker](https://github.com/pmrowla/pylivemaker).  
+Make sure Python and its scripts folder is in your system `PATH` if you're on Windows.  
   
-### Unpack a game  
+### Unpacking a game  
   
-Go in the directory of the game that you want to translate, with a terminal/command prompt.  
-Start by making a folder:  
+Navigate to the game directory using a  terminal/command prompt and create a working folder:  
 ```console
 mkdir game_files
 ```  
+
+Depending on how the game data is packaged, use one of the following commands:  
   
-If the game data is packed in a split archive, you'll see something like `game.001`, `game.002`, ... and `game.ext`.  
-Run:
+* **Split Archives** (`game.001`, `game.002`, etc. + `game.ext`):  
 ```console
 lmar x game.ext -o game_files
 ```  
-If there is a simple `game.dat`, run:
+* **Simple Archive** (`game.dat`):  
 ```console
 lmar x game.dat -o game_files
 ```  
-Else, if the data is packed in the executable (it should be visible at its file size):  
+* **Packed Executable** (large `game.exe`):  
 ```console
 lmar x game.exe -o game_files
 ```  
   
-### Convert to CSV  
+### Converting to CSV  
   
-The next step is to extract the strings from the CSV.  
-You'll need to run the following two commands on each `.lsb` file:  
+Strings must be extracted into CSV format for RPGMTL.   
+Run the following two commands on each `.lsb` file:  
 ```console
 lmlsb extractcsv --encoding=utf-8-sig FILE_NAME.lsb FILE_NAME.csv
 lmlsb extractmenu --encoding=utf-8-sig FILE_NAME.lsb FILE_NAME_menu.csv
 ```  
-You can then import those `.csv` in RPGMTL.  
+The resulting `.csv` files can then be imported into RPGMTL.  
   
-### Patch the strings  
+### Patching the strings  
   
-Once the strings are translated, copy the modified `.csv` back to `game_files``.  
-And run for each of them:  
+After translating the strings in RPGMTL, copy the modified `.csv` files back to the `game_files` directory and run:  
 ```console
 lmlsb insertcsv --encoding=utf-8-sig FILE_NAME.lsb FILE_NAME.csv
 lmlsb insertmenu --encoding=utf-8-sig FILE_NAME.lsb FILE_NAME_menu.csv
 ```  
-A backup of the `.lsb` will be created.  
+This process will update the `.lsb` files and create backups automatically.
   
-### Repacking  
+### Repacking and Distribution  
   
-You can repack with a simple command (depending on how you extracted):  
-```console
-cd ..
-lmpatch -r game.ext game_files
-lmpatch -r game.dat game_files
-lmpatch -r game.exe game_files
-```  
-**However**, there is a better method.  
-The engine first checks if a file exists outside the archive.  
-So, all you have to do is put your modified `.lsb` in the game folder.  
-This also makes distributing a translation patch either.  
+While you can repack the files using `lmpatch`, a simpler method exists: the engine prioritizes files located outside its archives. You can distribute your translation by placing the modified `.lsb` files directly in the game folder.  
+
+---
+
+## Technical Considerations  
   
 ### Encoding
   
-Strings must be able to be encoded to `cp932` (an extended variant of the `Shift JIS` encoding), or `pylivemaker` won't be able to patch them back in.  
-You can use the built-in RPGMTL tool `Special Character Remover` to quickly swap out problematic characters.  
-Alternatively, you can run the following Python script in the project folder to find problematic strings:  
+Strings must be compatible with `cp932` (an extended Shift JIS encoding) for `pylivemaker` to patch them. 
+The built-in RPGMTL tool `Special Character Remover` is a quick way to swap out problematic characters resulting from machine translations.  
+Alternatively, running the following Python script in the project folder can identify problematic strings by their internal ID numbers:  
 ```python
 import json
 
@@ -90,16 +83,15 @@ for file in d["files"]:
                 except:
                     print("# Local", file, i, j, d["files"][file][i][j][0])
                     print( d["files"][file][i][j][1])
-```
+```  
   
 ### Full-width ASCII  
   
 [Relevant documentation](https://pylivemaker.readthedocs.io/en/latest/usage.html#notes-for-translation-patches)  
-You'll likely notice that the engine forces ASCII characters to full-width, making it hardly usable for English translations.  
+The engine forces ASCII characters to full-width, which can be problematic for English translations.  
 There are solutions, however.  
   
-For LiveMaker 3 games, you must edit `メッセージボックス作成.lsb`.  
-It's the file responsible for message boxes.  
+For LiveMaker 3 games, you must edit `メッセージボックス作成.lsb` (the message box configuration).  
 Start by dumping the content:  
 ```console
 lmlsb dump メッセージボックス作成.lsb > メッセージボックス作成.txt
@@ -113,17 +105,17 @@ For each of them, run:
 ```console
 lmlsb edit メッセージボックス作成.lsb 36
 ```  
-by replacing 36 by the number at the beginning of the line.  
-  
-In the console, it will let you edit the values.  
-Press Return to skip until you attain: `PR_FONTCHANGEABLED`  
+by replacing 36 with the number at the beginning of the line.  
+It will allow you to edit the values.  
+Simply press Return to skip until you attain: `PR_FONTCHANGEABLED`  
 If you see `PR_FONTCHANGEABLED[0]`, all good.  
 If you see `PR_FONTCHANGEABLED[1]`, type `0` and press Return.  
 Repeat this process for each `MesNew` line number.  
   
 For LiveMaker 2 games, **there is no solution**.  
-The best I can propose is to replace the game executable and `live.dll` with one from a v3 game (If the game data is packed in the `.exe`, make sure to extract in the game folder beforehand).  
-Then, I had success replacing the original `メッセージボックス作成.lsb` with one coming from a v3 game of the same developer, with all the `PR_FONTCHANGEABLED` set to 0.  
+However, if you happen to be working on a game series which has v2 AND v3 games, you can try to replace the game executable and `live.dll` of the v2 game with ones from the v3 game (If the game data is packed in the `.exe`, make sure to extract it beforehand).  
+Then, use the v3 game's `メッセージボックス作成.lsb` with all the `PR_FONTCHANGEABLED` variables set to 0.  
+This will only work if the games are similar enough and that the developper reused codes accross the games.  
   
 ### Translating the context Menu
   
@@ -135,7 +127,7 @@ lmlsb dump ■初期化.lsb > ■初期化.txt
 ```  
 and open the text file.  
   
-You should fine two StringArrays:  
+You should find two StringArrays:  
 ```
   48: Calc StringToArray("文字を消す,シナリオ回想,読んだ文章を飛ばす,自動テキスト送り,セーブ,...
   49: Calc StringToArray("文字を消す,シナリオ回想,読んだ文章を飛ばす,自動テキスト送り,セーブ,...
@@ -152,7 +144,7 @@ In my example, `文字を消す`.
 To replace it by `Hide Text`, just type `"Hide Text"` and press return.  
 Repeat the process for each menu entry.  
   
-### Automation  
+### Automation Script  
   
 The following is a script to automate extracting the strings to CSV and patching them back.  
 It requires the `pylivemaker` package to be installed.  

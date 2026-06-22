@@ -4,47 +4,53 @@
   
 ## Quick Overview  
   
-The Javascript Plugin targets RPG Maker MV and MZ Javascript (.js) files, along with any other Javascript files from any other games.  
-It supports all string literals along with regexes.  
-For context, String Groups are named with the function name of where the string is located.  
+The JavaScript plugin targets JavaScript (`.js`) files, including those from RPG Maker MV/MZ and other engines. It supports the extraction and patching of string literals and regular expressions.  
   
-RPG Maker MV and MZ `plugins.js` files are processed differently, almost as a JSON file. Each plugin settings are extracted as Virtual Files, for clarity sake.  
+To provide context, String Groups are named after the function in which the string is located.  
   
-## New Lines
-For strings originally formatted as such:  
-```Javascript
-const string = "Hello\
+## RPG Maker Specific Processing  
+  
+For RPG Maker MV and MZ, `plugins.js` files are treated similarly to JSON. Each plugin's settings are extracted as separate Virtual Files for improved clarity and management.  
+  
+## Handling New Lines  
+  
+The plugin handles various JavaScript string formatting conventions:  
+  
+### Multi-line Literals  
+  
+Strings formatted with a backslash for continuation:  
+```javascript
+const str = "Hello\
 world!";
 ```  
-in RPGMTL, they will appear as:
-```console
+will appear in RPGMTL as:
+```text
 Hello
 world!
 ```  
   
-During patching processes, new lines will automatically be replaced by `\n`. Example:  
-```console
+### Patching Behavior  
+  
+During the patching process, literal new lines in the translation are automatically escaped as `\n`.
+
+* **Input**:  
+```text
 Hello
 world!
 ```  
-is patched as  
-```Javascript
-const string = "Hello\nworld!";
+* **Resulting Patch**:  
+```javascript
+const str = "Hello\nworld!";
 ```  
-But they behave as javascript strings otherwise. Example:  
-```console
-Hello\nworld!
-```  
-is patched as  
-```Javascript
-const string = "Hello\nworld!";
-```  
-And the following **won't work**. Example:  
-```console
+  
+Explicitly typed `\n` characters are also preserved correctly. However, attempting to use the backslash continuation syntax (`\`) within the RPGMTL editor will result in an escaped backslash (`\\n`) and is not supported:  
+  
+* **Input**:  
+```text
 Hello\
 world!
 ```  
-is patched as  
+* **Resulting Patch**:  
 ```Javascript
 const string = "Hello\\nworld!";
 ```  
