@@ -166,7 +166,7 @@ class Plugin(BasePlugin):
         self._enc_set_ : bool = False # internal variable keeping track if the above has been set
 
     def connect(self : Plugin, rpgmtl : RPGMTL) -> None:
-        # No ned to reimplement this one
+        # No need to reimplement this one
         self.owner = rpgmtl
         self.owner.log.info("Plugin " + self.name + " has been loaded")
 
@@ -294,7 +294,7 @@ class TranslatorPlugin(BasePlugin):
         return TranslatorPlugin.TranslatorBatchFormat.STANDARD
 
     def connect(self : TranslatorPlugin, rpgmtl : RPGMTL) -> None:
-        # No ned to reimplement this one
+        # No need to reimplement this one
         self.owner = rpgmtl
         self.owner.log.info("Translator " + self.name + " has been loaded")
 
