@@ -106,7 +106,7 @@ class RPGMTL():
         self.tool_list_info : list[Any] = [] # used to pass the tool list to the client
         self.history : list[list[str]] = [] # store link to last ten accessed files
         self.allowed_ips : list[str] = [] # allowed ips
-        self.auth : dict[str, bool|dict[str,str]] = { # authentification data
+        self.auth : dict[str, bool|dict[str,str]] = { # authentication data
             "enabled":False,
             "users":{}
         } 
@@ -1432,9 +1432,9 @@ class RPGMTL():
         security.add_argument('-n', '--http', help="clear SSL certificate settings and force HTTP", action='store_const', const=True, default=False, metavar='FILES')
         middlewarecmds = parser.add_argument_group('middlewarecmds', 'Middleware commands')
         middlewarecmds.add_argument('-i', '--ip', help="set the IP filter status. Add 1, on, enable, enabled, 0, off, disable or disabled to set it.", nargs=1, default=None, metavar='STATE')
-        middlewarecmds.add_argument('-a', '--auth', help="set the Authentification status. Add 1, on, enable, enabled, 0, off, disable or disabled to set it.", nargs=1, default=None, metavar='STATE')
-        middlewarecmds.add_argument('-nu', '--newuser', help="add a new user to the Authentification list", nargs=2, default=None, metavar=('USER','PASSWORD'))
-        middlewarecmds.add_argument('-ru', '--removeuser', help="remove an user from the Authentification list", nargs=1, default=None, metavar='USER')
+        middlewarecmds.add_argument('-a', '--auth', help="set the Authentication status. Add 1, on, enable, enabled, 0, off, disable or disabled to set it.", nargs=1, default=None, metavar='STATE')
+        middlewarecmds.add_argument('-nu', '--newuser', help="add a new user to the Authentication list", nargs=2, default=None, metavar=('USER','PASSWORD'))
+        middlewarecmds.add_argument('-ru', '--removeuser', help="remove an user from the Authentication list", nargs=1, default=None, metavar='USER')
         utility = parser.add_argument_group('utility', 'Utility commands')
         utility.add_argument('-v', '--verbose', help="add incoming HTTP requests to the logging and output", action='store_const', const=True, default=False, metavar='')
         utility.add_argument('-q', '--quit', help="quit without starting the application", action='store_const', const=True, default=False, metavar='')
@@ -1481,7 +1481,7 @@ class RPGMTL():
             else:
                 self.auth["enabled"] = res
                 self.settings_modified = True
-                self.log.info(f"Authentification is {"enabled" if res else "disabld"}")
+                self.log.info(f"Authentication is {"enabled" if res else "disabled"}")
         if args.newuser:
             self.auth["users"][args.newuser[0]] = self.hash_password(args.newuser[1])
             self.settings_modified = True
@@ -1541,7 +1541,7 @@ class RPGMTL():
         if self.settings.get("ip_filter", False):
             self.log.info("IP Filter is enabled (Use '--ip off' to disable)")
         if self.auth.get("enabled", False):
-            self.log.info("Authentification is enabled (Use '--auth off' to disable)")
+            self.log.info("Authentication is enabled (Use '--auth off' to disable)")
         try:
             self.log.info(f"Starting RPGMTL on port {self.port}")
             web.run_app(self.app, port=self.port, shutdown_timeout=0, ssl_context=ssl_context)

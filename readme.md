@@ -6,7 +6,7 @@ The interface runs in your Web Browser.
 The list of supported files is currently:  
 - JSON (for RPG Maker MV, MZ and other games)  
 - Javascript (for RPG Maker MV, MZ and other games)  
-- CSV (for RPG Maker MV, MZ games, and LiveMaker files converted via [pylivemaker](https://github.com/pmrowla/pylivemaker))  
+- CSV (for RPG Maker MV, MZ games, and LiveMaker files converted to CSV via [pylivemaker](https://github.com/pmrowla/pylivemaker))  
 - INI (for RPG Maker MV, MZ and other games)  
 - TXT (i.e. regular text files)  
 - Ruby Marshal (.rxdata, .rvdata, .rvdata2 for RPG Maker XP to VX Ace)  
@@ -20,7 +20,7 @@ The list of supported files is currently:
   
 More will be added as I see fit.  
   
-![image](https://raw.githubusercontent.com/MizaGBF/RPGMTL/main/assets/readme/1.png)  
+![image](assets/readme/1.png)  
 *All screenshots are from version 3.30.*
   
 > [!NOTE]  
@@ -42,7 +42,7 @@ More will be added as I see fit.
 * [Advanced Usage](#advanced-usage)  
   
 > [!NOTE]  
-> Looking for more informations? Check the [readme folder](readme/readme.md).  
+> Looking for more informations? Check the [readme folder](readme/readme.md) for more detailed documentation.  
   
 ## Introduction  
   
@@ -57,6 +57,7 @@ Same matter for files: You can set to ignore a file and no patched version of th
   
 RPGMTL allows multiple people to work at the same time on the same project.  
 Some operations are blocking on purpose (for example, during string extraction or batch translation), in case multiple users are working at the same time.  
+In the same way, because it uses your own web browser, you can open as many windows or tabs as you might need.  
   
 ## Installation  
   
@@ -69,7 +70,7 @@ An older version might work, but isn't supported.
 ### Install RPGMTL  
   
 **For older and stable versions:**  
-Go under the [Release](https://github.com/MizaGBF/RPGMTL/releases) tab.  
+Go under the [Release](https://github.com/MizaGBF/RPGMTL/releases) section of the Github repository.  
   
 **For the latest development version:**  
 > [!WARNING]  
@@ -108,10 +109,12 @@ python -m pip install -U deep-translator
 python -m pip install -U google-genai
 ```  
   
+If a required module is missing, the corresponding plugin will fail to load.  
+  
 ### Update  
   
 Simply repeat the installation process.  
-Make sure to keep `settings.json` file and your `projects` folder.  
+Make sure to keep `settings.json` file, your `projects` folder, your own custom plugins and other configuration files.  
 If a plugin's implementation changed, you might need to Extract the strings again in your project.  
   
 ## Usage  
@@ -146,9 +149,14 @@ Before starting anything, you can tinker with the various settings.
 Global settings will affect every projects.  
 They can be overrided individually for each project, if needed.  
   
-![image](https://raw.githubusercontent.com/MizaGBF/RPGMTL/main/assets/readme/4.png)
+![image](assets/readme/4.png)
   
 ### Keyboard shortcuts
+  
+> [!NOTE]  
+> The **Help** usually lists relevant shortcuts.  
+> Open the **Help** by clicking the `?` button in the top right corner or by pressing `F1`.  
+> It will also list alternatives available for some of these shortcuts.  
   
 RPGMTL is entirely usable without mouse:  
 - `Tab`, `Shift+Tab`, `Arrow`, `Page Up`, `Page Down`, `Home` and `End` keys to navigate around. `Tab` works even if you're focused on a text input.  
@@ -183,7 +191,8 @@ When the edit area is open:
 - `Ctrl+O` to copy the original string, if focused.  
 - `Ctrl+D` to delete the translation.  
   
-Some shortcuts have alternatives. Click the Help button for a reminder.
+> [!NOTE]  
+> Changing the key binds is currently not possible but considered for the far future.  
   
 ### Port
   
@@ -227,7 +236,7 @@ To disable it at some point in time:
 python rpgmtl.py --ip off --quit
 ```  
   
-### Authentification  
+### Authentication  
   
 This is a **recommended** feature if you wish to access it remotely.  
 User accounts can't be created at runtime.  
@@ -239,7 +248,7 @@ python rpgmtl.py --quit --newuser USERNAME PASSWORD
 > [!NOTE]  
 > The password strength is not verified.  
   
-Authentification must then be enabled:
+Authentication must then be enabled:
 ```console
 python rpgmtl.py --auth on --quit
 ```  
@@ -250,7 +259,7 @@ A session token is valid as long until RPGMTL is shutdown or if the user login a
 > [!WARNING]  
 > Make sure you have HTTPS enabled for uses on public networks, or a man in the middle might be able to hijack credentials.  
   
-Authentification can be turned off with:  
+Authentication can be turned off with:  
 ```console
 python rpgmtl.py --auth off --quit
 ```  
@@ -289,7 +298,7 @@ will disable both those plugins.
 On the Home Page, click on `New Project`.  
 Select the location of the game you wish to translate.  
   
-![image](https://raw.githubusercontent.com/MizaGBF/RPGMTL/main/assets/readme/2.png)
+![image](assets/readme/2.png)
   
 You'll then be asked a project name. This name will be the one used for the project folder and in the Web UI.
 You can also select an icon to the project. If you don't have any, RPGMTL will attempt to set it for you (either by detecting if the Game Path contains a DLsite code or VNDB ID, or by checking the game files for an icon) or you can set it later if it fails to.  
@@ -303,7 +312,7 @@ Once done, hit `Create`. The game files will be copied for later use and backup 
   
 You can then modify your **Project Settings** and then **Extract the Strings**.  
   
-![image](https://raw.githubusercontent.com/MizaGBF/RPGMTL/main/assets/readme/3.png)
+![image](assets/readme/3.png)
   
 ### Project Structure  
   
@@ -329,7 +338,7 @@ For a general use, you only need to care about the `edit` and `release` folders.
   
 On your project page, click on `Browse Files`.  
   
-![image](https://raw.githubusercontent.com/MizaGBF/RPGMTL/main/assets/readme/5.png)  
+![image](assets/readme/5.png)  
   
 Here you'll be able to go through the detected files.  
 You can set a file to be **ignored** by pressing `CTRL+Left Click` on it. It'll then appear **red**.  
@@ -342,7 +351,7 @@ Additionally, folders containing virtual files will appear with a light grey bac
   
 Click on a file to open the list of strings found inside.  
 Strings are listed in groups, and the group name, if it exists, is show on the top left. It's mostly here for context and as a visual aid.  
-![image](https://raw.githubusercontent.com/MizaGBF/RPGMTL/main/assets/readme/6.png)
+![image](assets/readme/6.png)
   
 The list shows, on the left, original strings and, on the right, translations.  
 You can click on one to open the editing box.  
