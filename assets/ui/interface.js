@@ -1550,7 +1550,7 @@ class RPGMTL_Interface
 				},
 				"<ul>\
 					<li>Take notes.</li>\
-					<li><b>CTRL+S</b> lets you save.</li>\
+					<li><b>CTRL+S</b> to save.</li>\
 				</ul>",
 				{
 					home:1
@@ -4072,7 +4072,7 @@ class RPGMTL_Interface
 					}
 				},
 				"<ul>\
-					<li>Browse the machine.</li>\
+					<li>Browse the local files of the machine.</li>\
 				<ul>",
 				{
 					home:1
