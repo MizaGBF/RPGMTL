@@ -15,7 +15,7 @@ class GeneralActions(Plugin):
 
     def get_setting_infos(self : GeneralActions) -> dict[str, list]:
         return {
-            "char_limit_count": ["Character Limit (0 or less means None)", "num", 0, None],
+            "char_limit_count": ["Character Limit (0 or less means None) of the 'Check the Character Limit' action", "num", 0, None],
             "char_limit_rpgmaker": ["Only check character limit of RPG Maker Text commands ", "bool", True, None],
         }
 
