@@ -21,7 +21,7 @@ The list of supported files is currently:
 More will be added as I see fit.  
   
 ![image](assets/readme/1.png)  
-*All screenshots are from version 3.30.*
+*All screenshots are from version 3.31.*
   
 > [!NOTE]  
 > The project is mature. While new features and plugins can always be worked on, the release cycle has slowed down a lot.  
