@@ -12,6 +12,8 @@ For installation and general instructions, check the [main readme](../readme.md)
   
 ## Engine Specific Documentation  
   
+- [RPG Maker](engines/rpgmaker.md)  
+- [YU-RIS](engines/yuris.md)  
 - [LiveMaker](engines/livemaker.md)  
 - [NScripter](engines/nscripter.md)  
 - [Tyranobuilder](engines/tyranobuilder.md)  
