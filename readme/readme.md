@@ -34,7 +34,7 @@ For installation and general instructions, check the [main readme](../readme.md)
 - [RM Marshal](plugins/rm_marshal.md)  
 - [Ruby](plugins/ruby.md)  
 - [Subtitle](plugins/subtitle.md)  
-- [TXT](plugins/txt.md  
+- [TXT](plugins/txt.md)  
 - [YBN Scripts](plugins/ybn.md)  
 - [YPF Archives](plugins/ypf.md)  
   
