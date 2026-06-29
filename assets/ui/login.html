@@ -12,6 +12,7 @@ html, body {
 	line-height: 1.2;
 	height: 100%;
 	margin: 0;
+	overflow: hidden;
 }
 
 .spacer {
@@ -106,6 +107,7 @@ const user = document.getElementById("username");
 const pass = document.getElementById("password");
 const confirm = document.getElementById("confirm");
 const error = document.getElementById("error");
+
 function toggle(state)
 {
 	user.disabled = state;
@@ -117,6 +119,7 @@ document.getElementById("login-form").addEventListener("submit", async (event) =
 	event.preventDefault();
 	toggle(true);
 	error.textContent = "";
+	confirm.innerHTML = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 14 32 4" fill="#ffffff" preserveAspectRatio="none"><path opacity="0.8" transform="translate(0 0)" d="M2 14 V18 H6 V14z"><animateTransform attributeName="transform" type="translate" values="0 0; 24 0; 0 0" dur="2s" begin="0" repeatCount="indefinite" keySplines="0.2 0.2 0.4 0.8;0.2 0.2 0.4 0.8" calcMode="spline"/></path><path opacity="0.5" transform="translate(0 0)" d="M0 14 V18 H8 V14z"><animateTransform attributeName="transform" type="translate" values="0 0; 24 0; 0 0" dur="2s" begin="0.1s" repeatCount="indefinite" keySplines="0.2 0.2 0.4 0.8;0.2 0.2 0.4 0.8" calcMode="spline"/></path><path opacity="0.25" transform="translate(0 0)" d="M0 14 V18 H8 V14z"><animateTransform attributeName="transform" type="translate" values="0 0; 24 0; 0 0" dur="2s" begin="0.2s" repeatCount="indefinite" keySplines="0.2 0.2 0.4 0.8;0.2 0.2 0.4 0.8" calcMode="spline"/></path></svg>';
 	try {
 		const response = await fetch("/login", {
 			method:"POST",
@@ -144,11 +147,13 @@ document.getElementById("login-form").addEventListener("submit", async (event) =
 		{
 			error.textContent = "Login failed.";
 			toggle(false);
+			confirm.textContent = "Log In";
 		}
 	} catch(err) {
 		console.error("Exception thrown", err.stack);
 		error.textContent = "Unable to connect.";
 		toggle(false);
+		confirm.textContent = "Log In";
 	}
 });
 	</script>
