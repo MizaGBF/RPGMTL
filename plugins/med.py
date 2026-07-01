@@ -251,7 +251,7 @@ class MED(Plugin):
             content : bytearray = data[offset:]
             file_content : bytes = b''
             strings : list[str] = [""]
-            file_entries : list[list[str]] = [[self.owner.CHILDREN_FILE_ID + f"{count:05}_" + f]]
+            file_entries : list[list[str]] = [[f"{self.owner.CHILDREN_FILE_ID}{count:05}_{f}"]]
             for i in content:
                 if i:
                     file_content += int.to_bytes(i, 1, byteorder='little')
@@ -280,7 +280,7 @@ class MED(Plugin):
         modified : bool = False
         count = 0
         for f in files:
-            fname : str = file_path + f"/{count:05}_" + f.replace("/", " ").replace("\\", " ")
+            fname : str = f"{file_path}/{count:05}_{f.replace("/", " ").replace("\\", " ")}"
             group : str = ""
             if fname in strings["files"] and not self.owner.projects[pname]["files"][fname]["ignored"]:
                 helper : WalkHelper = WalkHelper(fname, strings)

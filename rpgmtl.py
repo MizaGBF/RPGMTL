@@ -943,7 +943,7 @@ class RPGMTL():
                     for group in groups:
                         if len(group) == 1 and group[0].startswith(self.CHILDREN_FILE_ID):
                             # special group identifying a sub file
-                            target_file = f + "/" + group[0][len(self.CHILDREN_FILE_ID):].replace("/", "").replace("/", "\\")
+                            target_file = f"{f}/{group[0][len(self.CHILDREN_FILE_ID):].replace("/", "").replace("/", "\\")}"
                             file_info["file_type"] = FileType.ARCHIVE
                             if target_file in self.projects[name]['files']: # confirm file as virtual
                                 self.projects[name]['files'][target_file]["file_type"] = FileType.VIRTUAL

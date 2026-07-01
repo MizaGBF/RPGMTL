@@ -340,7 +340,7 @@ class RM_Marshal(Plugin):
                 strings = self._read_walk_event(cmds)
                 if len(strings) > 0:
                     eid : ME = e.get(b"@id")
-                    evname : str = self.owner.CHILDREN_FILE_ID + f"{eid.data:04}"
+                    evname : str = f"{self.owner.CHILDREN_FILE_ID}{eid.data:04}"
                     n : ME = e.get(b"@name")
                     if n is not None:
                         evname += " " + n.data.decode('utf-8')
@@ -356,7 +356,7 @@ class RM_Marshal(Plugin):
             cmds : ME = e.get(b"@list")
             if cmds is not None:
                 eid : ME = e.get(b"@id")
-                evname : str = file_path + f"/{eid.data:04}"
+                evname : str = f"{file_path}/{eid.data:04}"
                 n : ME = e.get(b"@name")
                 if n is not None:
                     evname += " " + n.data.decode('utf-8')
@@ -503,7 +503,7 @@ class RM_Marshal(Plugin):
         count : int = 0
         use_ruby : bool = self.allow_ruby_plugin and "Ruby" in self.owner.plugins
         for e in me:
-            scriptname = self.owner.CHILDREN_FILE_ID + f"{count:04}"
+            scriptname = f"{self.owner.CHILDREN_FILE_ID}{count:04}"
             if e.data[1].data:
                 scriptname += " " + e.data[1].data.decode('utf-8')
             if e.data[2].data:
@@ -525,7 +525,7 @@ class RM_Marshal(Plugin):
         count : int = 0
         use_ruby : bool = self.allow_ruby_plugin and "Ruby" in self.owner.plugins
         for e in me:
-            scriptname = file_path + f"/{count:04}"
+            scriptname = f"{file_path}/{count:04}"
             if e.data[1].data:
                 scriptname += " " + e.data[1].data.decode('utf-8').replace("/", " ").replace("\\", " ")
             if e.data[2].data:
