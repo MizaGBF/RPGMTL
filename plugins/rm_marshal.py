@@ -500,14 +500,15 @@ class RM_Marshal(Plugin):
     # RPGMK Scripts processing
     def _read_walk_script(self : RM_Marshal, me : ME) -> list[list[str]]:
         entries : list[list[str]] = []
-        count = 0
+        count : int = 0
+        use_ruby : bool = self.allow_ruby_plugin and "Ruby" in self.owner.plugins
         for e in me:
             scriptname = self.owner.CHILDREN_FILE_ID + f"{count:04}"
             if e.data[1].data:
                 scriptname += " " + e.data[1].data.decode('utf-8')
             if e.data[2].data:
                 script = zlib.decompressobj().decompress(e.data[2].data).decode('utf-8')
-                if self.allow_ruby_plugin and "Ruby" in self.owner.plugins:
+                if use_ruby:
                     self.owner.plugins["Ruby"].reset()
                     strings = self.owner.plugins["Ruby"]._parse_strings(script, None, len(entries))[0]
                     if len(strings) > 0:
@@ -521,7 +522,8 @@ class RM_Marshal(Plugin):
 
     def _write_walk_script(self : RM_Marshal, name : str, file_path : str, strings : dict, me : ME) -> bool:
         modified : bool = False
-        count = 0
+        count : int = 0
+        use_ruby : bool = self.allow_ruby_plugin and "Ruby" in self.owner.plugins
         for e in me:
             scriptname = file_path + f"/{count:04}"
             if e.data[1].data:
@@ -530,7 +532,7 @@ class RM_Marshal(Plugin):
                 if scriptname in strings["files"] and not self.owner.projects[name]["files"][scriptname]["ignored"]:
                     helper : WalkHelper = WalkHelper(scriptname, strings)
                     script = zlib.decompressobj().decompress(e.data[2].data).decode('utf-8')
-                    if self.allow_ruby_plugin and "Ruby" in self.owner.plugins:
+                    if use_ruby:
                         self.owner.plugins["Ruby"].reset()
                         newscript = self.owner.plugins["Ruby"]._parse_strings(script, helper)[1]
                         if newscript != script:

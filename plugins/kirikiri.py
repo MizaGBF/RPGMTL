@@ -113,6 +113,7 @@ class KiriKiri(Plugin):
             lines = self.decode(content).splitlines()
         entries : list[list[str]] = []
         group : list[str] = [""]
+        use_js : bool = "Javascript" in self.owner.plugins
         i : int = 0
         while i < len(lines):
             line = lines[i]
@@ -160,7 +161,7 @@ class KiriKiri(Plugin):
                         start = i
                         while not lines[i].strip().startswith("[endscript]"):
                             i += 1
-                        if "Javascript" in self.owner.plugins:
+                        if use_js:
                             result, _ = self.owner.plugins["Javascript"]._parse_strings("\r\n".join(lines[start:i]), None)
                             if len(result) > 0:
                                 if len(group) > 1:
@@ -215,6 +216,7 @@ class KiriKiri(Plugin):
         except:
             lines = self.decode(content).splitlines()
             encoding = self.FILE_ENCODINGS[self._enc_cur_]
+        use_js : bool = "Javascript" in self.owner.plugins
         i : int = 0
         while i < len(lines):
             line = lines[i]
@@ -271,7 +273,7 @@ class KiriKiri(Plugin):
                         start = i
                         while not lines[i].strip().startswith("[endscript]"):
                             i += 1
-                        if "Javascript" in self.owner.plugins:
+                        if use_js:
                             tjs_script = "\r\n".join(lines[start:i])
                             _, changed = self.owner.plugins["Javascript"]._parse_strings(tjs_script, helper)
                             if tjs_script != changed:
