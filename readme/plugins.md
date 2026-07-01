@@ -135,10 +135,13 @@ for file in my_archive:
         groups.extend(self.owner.plugins["PluginName"].whatever_function(...)) # Do whatever you want with it and get the extracted strings
 ```  
   
+`self.owner.CHILDREN_FILE_ID` will be automatically replaced by the archive path to ensure uniqueness.  
+  
 For patching, this is the opposite process.  
 ```python
 for file in my_archive:
     # Note: name is the project name, file_path is the archive path. They're passed as function parameters.
+    # As explained above, self.owner.CHILDREN_FILE_ID -> file_path
     identifier : str = file_path + file.name
     # First, check if the file is valid
     if identifier not in strings["files"] or self.owner.projects[name]["files"][identifier]["ignored"]:
