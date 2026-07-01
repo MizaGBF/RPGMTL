@@ -638,8 +638,7 @@ class JSON(Plugin):
         for i in range(len(obj)):
             if obj[i] is None:
                 continue
-                entries.append([f"{self.owner.CHILDREN_FILE_ID}{ev['id']:04} {ev["name"].replace("/", " ")}"])
-            evname : str = file_path + f"/{obj[i]['id']:04}" + " " + obj[i]["name"].replace("/", " ")
+            evname : str = f"{file_path}/{obj[i]['id']:04} {obj[i]["name"].replace("/", " ")}"
             if evname in strings["files"] and not self.owner.projects[name]["files"][evname]["ignored"]:
                 helper : WalkHelper = WalkHelper(evname, strings)
                 self._write_walk_event(obj[i]["list"], helper)
