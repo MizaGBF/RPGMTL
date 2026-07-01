@@ -138,12 +138,19 @@ for file in my_archive:
 For patching, this is the opposite process.  
 ```python
 for file in my_archive:
+    # Note: name is the project name, file_path is the archive path. They're passed as function parameters.
+    identifier : str = file_path + file.name
+    # First, check if the file is valid
+    if identifier not in strings["files"] or self.owner.projects[name]["files"][identifier]["ignored"]:
+        # if the identifier is not found or if the file is ignored, we skip
+        continue
+
     # Way 1
-    helper : WalkHelper = WalkHelper(file.name, self.owner.strings[name])
+    helper : WalkHelper = WalkHelper(identifier, self.owner.strings[name])
     # patch the strings like you would normally
     
     # Way 2
-    helper : WalkHelper = WalkHelper(file.name, self.owner.strings[name])
+    helper : WalkHelper = WalkHelper(identifier, self.owner.strings[name])
     # we call another plugin capable of handling this file
     if "PluginName" in self.owner.plugins: # Check if this plugin exists and is loaded
         self.owner.plugins["PluginName"].reset() # Reset its state (Don't forget!)
