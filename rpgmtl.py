@@ -1067,13 +1067,13 @@ class RPGMTL():
                 updated_metadata["Guessed Engine"] = "Unknown"
             else:
                 updated_metadata["Guessed Engine"] = max(possible_engine, key=possible_engine.get)
-            updated_metadata["Project Build"] = f"{self.projects[name]["version"]:,}".format(",", " ")
+            updated_metadata["Project Build"] = f"{self.projects[name]["version"]:,}".replace(",", " ")
             ## file related
-            updated_metadata["Project Files"] = f"{total_file:,}".format(",", " ")
-            updated_metadata["Virtual Files"] = f"{total_virtual:,}".format(",", " ")
+            updated_metadata["Project Files"] = f"{total_file:,}".replace(",", " ")
+            updated_metadata["Virtual Files"] = f"{total_virtual:,}".replace(",", " ")
             updated_metadata["File Formats"] = []
             for f, c in file_detection.items():
-                updated_metadata["File Formats"].append(f"{c:,} {f} ({100 * c / total_file:.2f}%)".format(",", " "))
+                updated_metadata["File Formats"].append(f"{c:,} {f} ({100 * c / total_file:.2f}%)".replace(",", " "))
             if len(updated_metadata["File Formats"]) == 0:
                 updated_metadata.pop("File Formats", None)
             else:
@@ -1084,9 +1084,9 @@ class RPGMTL():
                 for f in ori_path.rglob('*') 
                 if f.is_file(follow_symlinks=False)
             )
-            updated_metadata["Original Files Size"] = f"{ori_size:,} Bytes".format(",", " ")
+            updated_metadata["Original Files Size"] = f"{ori_size:,} Bytes".replace(",", " ")
             ## string related
-            updated_metadata["Total Strings"] = f"{total_string:,}".format(",", " ")
+            updated_metadata["Total Strings"] = f"{total_string:,}".replace(",", " ")
             if name in self.strings:
                 total_string = 0
                 orphaned : int = 0
@@ -1095,8 +1095,8 @@ class RPGMTL():
                         total_string += 1
                     else:
                         orphaned += 1
-                updated_metadata["Unique Strings"] = f"{total_string:,}".format(",", " ")
-                updated_metadata["Orphaned Strings"] = f"{orphaned:,}".format(",", " ")
+                updated_metadata["Unique Strings"] = f"{total_string:,}".replace(",", " ")
+                updated_metadata["Orphaned Strings"] = f"{orphaned:,}".replace(",", " ")
             ## rpg maker related
             if (
                 updated_metadata["Guessed Engine"] in {"RPG Maker MV", "RPG Maker MZ"}
