@@ -268,8 +268,9 @@ li {
 }
 
 .metadata-content{
-	overflow: hidden;
+	overflow: none;
 	white-space: wrap;
+	word-break: break-all;
 }
 
 #folder_container, #file_container {
