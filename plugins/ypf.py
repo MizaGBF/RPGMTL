@@ -241,7 +241,7 @@ class YPF(Plugin):
     def __init__(self : YPF):
         super().__init__()
         self.name : str = "YPF"
-        self.description : str = " v1.4\nExtract content from YPF files"
+        self.description : str = " v1.5\nExtract content from YPF files"
         self.related_tool_plugins : list[str] = [self.name]
 
     def extract(
@@ -254,6 +254,7 @@ class YPF(Plugin):
         if full_path.suffix.lower() != ".ypf":
             return False
         try:
+            project_name : str = target_dir.parts[1]
             ybn_keys : dict[str, int] = {}
             ybn_msgs : dict[int, int] = {}
             ybn_calls : dict[int, int] = {}
@@ -306,21 +307,22 @@ class YPF(Plugin):
                                         ybn_msgs[msg_op] = ybn_msgs.get(msg_op, 0) + 1
                                     if call_op != 0:
                                         ybn_calls[call_op] = ybn_calls.get(call_op, 0) + 1
-                # we take note of most commonly used key, msg_opcode and call_opcode in a separate, commong json file
-                if "YBN" in self.owner.plugins:
-                    with open(target_dir / archive_name / "ypf.json", mode="w", encoding="utf-8") as f:
-                        d = {
-                            "key":None,
-                            "msg":None,
-                            "op":None
-                        }
-                        if len(ybn_keys) > 0:
-                            d["key"] = max(ybn_keys, key=ybn_keys.get)
-                        if len(ybn_msgs) > 0:
-                            d["msg"] = max(ybn_msgs, key=ybn_msgs.get)
-                        if len(ybn_calls) > 0:
-                            d["op"] = max(ybn_calls, key=ybn_calls.get)
-                        json.dump(d, f)
+                # we take note of most commonly used key, msg_opcode and call_opcode
+                with open(target_dir / archive_name / "ypf.json", mode="w", encoding="utf-8") as f:
+                    d = {
+                        "key":None,
+                        "msg":None,
+                        "op":None
+                    }
+                    if len(ybn_keys) > 0:
+                        d["key"] = max(ybn_keys, key=ybn_keys.get)
+                    if len(ybn_msgs) > 0:
+                        d["msg"] = max(ybn_msgs, key=ybn_msgs.get)
+                    if len(ybn_calls) > 0:
+                        d["op"] = max(ybn_calls, key=ybn_calls.get)
+                    self.owner.projects[project_name]["metadata"][archive_name + " YPF Data"] = json.dumps(d)
+                    self.owner.modified[project_name] = True
+                    json.dump(d, f) # also save it in a file, as a fallback
                 return True
         except Exception as e:
             self.owner.log.error(f"[YPF] Failed to extract content from:{full_path.as_posix()}\n{self.owner.trbk(e)}")

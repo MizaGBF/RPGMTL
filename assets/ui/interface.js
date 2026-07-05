@@ -1693,6 +1693,103 @@ class RPGMTL_Interface
 		}
 	}
 
+	open_metadata()
+	{
+		try
+		{
+			// top bar
+			this.top_bar.update(
+				"Set Project Icon",
+				() => { // back callback
+					this.routes.project(this.project.name);
+				},
+				"<ul>\
+					<li>Display some project informations.</li>\
+				</ul>",
+				{
+					home:1
+				}
+			);
+			
+			// main part
+			const fragment = this.new_page();
+			const title = util.add_project_title(
+				fragment,
+				this.project.name
+			);
+			if(Object.keys(this.project.config.metadata).length == 0)
+			{
+				util.add_label(
+					fragment,
+					"There are no metadata available. Please use the update button.",
+					["left"]
+				);
+			}
+			else
+			{
+				const table = util.add_to(
+					fragment,
+					"table",
+					{
+						cls:["metadata-table"]
+					}
+				);
+				for(const [category, content] of Object.entries(this.project.config.metadata))
+				{
+					const row = util.add_to(table, "tr");
+					util.add_to(
+						row,
+						"td",
+						{
+							cls:[
+								"metadata-cell",
+								"metadata-category"
+							],
+							innerText:category
+						}
+					);
+					util.add_to(
+						row,
+						"td",
+						{
+							cls:[
+								"metadata-cell",
+								"metadata-content"
+							],
+							innerText:content
+						}
+					);
+				}
+			}
+			util.add_spacer(fragment);
+			util.add_interaction(
+				fragment,
+				'<img src="assets/images/update.png"> Update Metadata',
+				() => {
+					this.post(
+						"/api/update_metadata",
+						() => {
+							this.loader.state = false;
+							util.push_popup("Metadata have been updated");
+							this.open_metadata();
+						},
+						null,
+						{
+							name:this.project.name
+						}
+					);
+				}
+			);
+			this.update_main(fragment);
+		}
+		catch(err)
+		{
+			console.error("Exception thrown", err.stack);
+			util.push_popup("An unexpected error occured.");
+			this.routes.project(this.project.name);
+		}
+	}
+
 	// translator pick menu /api/translator
 	translator_menu(data)
 	{
@@ -2214,6 +2311,13 @@ class RPGMTL_Interface
 			);
 			if(this.project.config.version)
 			{
+				util.add_grid_cell(
+					grid,
+					'<img src="assets/images/info.png"> Metadata',
+					() => {
+						this.open_metadata();
+					}
+				);
 				util.add_grid_cell(
 					grid,
 					'<img src="assets/images/import.png"> Import RPGMTL Strings',

@@ -22,6 +22,11 @@ Game Directory/
 └── game.exe
 ```  
   
+## Note  
+  
+The **YPF Plugin** will store encryption keys and  string-related opcodes are stored in the project `config.json` metadata, along in a `ypf.json` file in the `originals` directory, as a fallback (in case the `config.json` has been corrupted or manually edited by an user).  
+These informations are read by this **YBN Plugin** during extraction and patching.  
+  
 ## Reference  
   
 * [Official YU-RIS Engine Manual](http://yu-ris.net/manual/eris/html/top.html)  

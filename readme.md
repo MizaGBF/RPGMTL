@@ -11,7 +11,7 @@ The list of supported files is currently:
 - TXT (i.e. regular text files)  
 - Ruby Marshal (.rxdata, .rvdata, .rvdata2 for RPG Maker XP to VX Ace)  
 - RGSSAD Archives (.rgssad, .rgss2a, .rgss3a for RPG Maker XP to VX Ace)  
-- RPY files (for Renpy Scripts)  
+- RPY files (for Ren'Py Scripts)  
 - MED (md_scr.med archives, used by Triangle and Lusterise games)  
 - YPF Archives and YBN Scripts (YU-RIS Engine)  
 - KAG (KiriKiri) Engine scripts (.ks and .tjs)  

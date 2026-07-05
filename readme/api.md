@@ -64,6 +64,10 @@ Endpoints without listed parameters do not require a payload.
 * **Payload**: project `name`, icon `path` or url or null to delete it  
 * **Returns**: project `name`, project `config`  
   
+`/api/update_metadata`  
+* **Payload**: project `name`  
+* **Returns**: project `name`, project `config`  
+  
 ### Settings  
   
 `/api/translator `  

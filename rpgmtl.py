@@ -67,6 +67,7 @@ class RPGMTL():
     VERSION = "3.30"
     CHILDREN_FILE_ID = "@__children_file__@:"
     HISTORY_LIMIT = 10
+    CURRENT_CONFIG_VERSION = 3
     CURRENT_STRING_VERSION = 2
 
     def __init__(self : RPGMTL) -> None:
@@ -193,7 +194,8 @@ class RPGMTL():
                 web.post('/api/delete_knowledge', self.delete_knowledge), # delete a knowledge base entry
                 web.post('/api/update_knowledge', self.update_knowledge), # update a knowledge base entry
                 web.post('/api/update_notes', self.update_notes), # update project notes
-                web.post('/api/update_icon', self.update_icon), # update project notes
+                web.post('/api/update_icon', self.update_icon), # update project icon
+                web.post('/api/update_metadata', self.update_metadata), # update project metadata
         ])
         return app
 
@@ -689,12 +691,13 @@ class RPGMTL():
                     self.log.error(f"Couldn't create the following folder: {name}{k}\n{self.trbk(ex)}")
             # initialize config.json
             self.projects[name] = {
-                "format_version":2, # config.json format version
+                "format_version":self.CURRENT_CONFIG_VERSION, # config.json format version
                 "version":0, # string iteration
                 "settings":{},
                 "path":path + "/",
                 "patches":{},
-                "ai_knowledge_base":[]
+                "ai_knowledge_base":[],
+                "metadata":{}
             }
             # backup files
             self.backup_game_files(name)
@@ -726,14 +729,14 @@ class RPGMTL():
         try:
             if name not in self.projects:
                 with open('projects/' + name + '/config.json', mode='r', encoding='utf-8') as f:
-                    self.projects[name] = self.update_project_config_format(json.load(f))
+                    self.projects[name] = self.update_project_config_format(json.load(f), name)
                 self.log.info(f"Project {name} has been loaded")
             return self.projects[name]
         except:
             return None
 
     # Update the content of config.json to later formats
-    def update_project_config_format(self : RPGMTL, data : dict[str, Any]) -> dict[str, Any]:
+    def update_project_config_format(self : RPGMTL, data : dict[str, Any], name : str) -> dict[str, Any]:
         ver = data.get("format_version", 0)
         if ver < 1:
             if "ai_knowledge_base" in data["settings"]:
@@ -741,12 +744,17 @@ class RPGMTL():
                 data["settings"].pop("ai_knowledge_base")
             else:
                 data["ai_knowledge_base"] = []
+            for f in data["files"]:
+                data["files"][f]["file_type"] = FileType.NORMAL
         if ver < 2:
             if "gemini_knowledge_base" in data:
                 data["ai_knowledge_base"] = data["gemini_knowledge_base"]
                 data["settings"].pop("gemini_knowledge_base")
             data["notes"] = ""
-        data["format_version"] = 2
+        if ver < 3:
+            if "metadata" not in data:
+                data["metadata"] = {}
+        data["format_version"] = self.CURRENT_CONFIG_VERSION
         return data
 
     # load a project strings.json file
@@ -989,12 +997,100 @@ class RPGMTL():
         self.strings[name] = index
         # increase project version
         self.projects[name]["version"] = self.projects[name].get("version", 0) + 1
+        # update metadata
+        self.generate_metadata(name)
         # start computing completion
         self.start_compute_translated(name)
         # set save flag
         self.modified[name] = True
         self.log.info(f"Strings extraction for project {name} completed")
         return err
+
+    def generate_metadata(self : RPGMTL, name : str) -> None:
+        try:
+            self.load_strings(name)
+            updated_metadata : dict[str, str] = {}
+            # engine/file detection
+            possible_engine : dict[str, int] = {}
+            file_detection : dict[str, int] = {}
+            total_file : int = 0
+            for f in self.projects[name]["files"]:
+                total_file += 1
+                tf : str
+                if self.projects[name]["files"][f]["file_type"] == FileType.VIRTUAL:
+                    tf = self.projects[name]["files"][f]["parent"].lower()
+                else:
+                    tf = f.lower()
+                ext : str
+                if "." in tf:
+                    ext = tf.rsplit(".", 1)[-1]
+                else:
+                    ext = "Unknown"
+                file_detection[ext] = file_detection.get(ext, 0) + 1
+                if tf.endswith("package.json"):
+                    possible_engine["nwjs (Tyrano, RPGM, ...)"] = possible_engine.get("nwjs (Tyrano, RPGM, ...)", 0) + 1
+                elif ext == "rpy":
+                    possible_engine["Ren'Py"] = possible_engine.get("Ren'Py", 0) + 1
+                elif ext in {"json", "js"} and tf.startswith(("www/js", "www/data/")):
+                    possible_engine["RPG Maker MV"] = possible_engine.get("RPG Maker MV", 0) + 1
+                elif tf.startswith("data/"):
+                    match ext:
+                        case "json":
+                            possible_engine["RPG Maker MZ"] = possible_engine.get("RPG Maker MZ", 0) + 1
+                        case "rxdata":
+                            possible_engine["RPG Maker XP"] = possible_engine.get("RPG Maker XP", 0) + 1
+                        case "rvdata":
+                            possible_engine["RPG Maker VX"] = possible_engine.get("RPG Maker VX", 0) + 1
+                        case "rvdata2":
+                            possible_engine["RPG Maker VX Ace"] = possible_engine.get("RPG Maker VX Ace", 0) + 1
+                elif tf == "nscript":
+                    possible_engine["NScripter"] = possible_engine.get("NScripter", 0) + 1
+                elif tf == "med":
+                    possible_engine["MED Format"] = possible_engine.get("MED Format", 0) + 1
+                elif "ysbin" in tf or tf == "ybn":
+                    possible_engine["YU-RIS"] = possible_engine.get("YU-RIS", 0) + 1
+                elif tf in {".tjs", ".ks"}:
+                    possible_engine["KAG"] = possible_engine.get("KAG", 0) + 1
+            if "nwjs (Tyrano, RPGM, ...)" in possible_engine:
+                if "ks" in file_detection or "tjs" in file_detection:
+                    possible_engine.pop("RPG Maker MV", None)
+                    possible_engine.pop("RPG Maker MZ", None)
+            # write
+            if len(possible_engine) == 0:
+                updated_metadata["Guessed Engine"] = "Unknown"
+            else:
+                updated_metadata["Guessed Engine"] = max(possible_engine, key=possible_engine.get)
+            updated_metadata["File Formats"] = []
+            for f, c in file_detection.items():
+                updated_metadata["File Formats"].append(f"{c} {f} ({100 * c / total_file:.2f}%)")
+            if len(updated_metadata["File Formats"]) == 0:
+                updated_metadata.pop("File Formats", None)
+            else:
+                updated_metadata["File Formats"] = ", ".join(updated_metadata["File Formats"])
+            if (
+                updated_metadata["Guessed Engine"] in {"RPG Maker MV", "RPG Maker MZ"}
+                and name in self.strings
+            ):
+                for f in self.strings[name]["files"]:
+                    if f.endswith("data/System.json"):
+                        found : bool = False
+                        for group in self.strings[name]["files"][f]:
+                            if len(group) == 2 and group[0] == "encryptionKey":
+                                sid : str = group[1][LocIndex.ID]
+                                updated_metadata["RPG Maker Encryption Key"] = self.strings[name]["strings"][sid][GloIndex.ORI]
+                                found = True
+                                break
+                        if found:
+                            break
+            # apply
+            for k, v in self.projects[name]["metadata"].items():
+                # preserve extra metadata set by plugins
+                if k not in updated_metadata:
+                    updated_metadata[k] = v
+            self.projects[name]["metadata"] = updated_metadata
+            self.modified[name] = True
+        except Exception as e:
+             self.log.error(f"Unexpected error in generate_metadata for project {name}\n{self.trbk(e)}")
 
     def start_compute_translated(self : RPGMTL, name : str) -> None:
         if name in self.computing:
@@ -2947,6 +3043,16 @@ class RPGMTL():
                         elif status > 1000:
                             return web.json_response({"result":"bad", "message":f"Failed to set icon, HTTP Error {status - 1000}"}, status=400) 
         return web.json_response({"result":"ok", "data":{"config":self.projects[name], "name":name}, "message":"Icon updated"})
+      
+    # /api/update_metadata
+    async def update_metadata(self : RPGMTL, request : web.Request) -> web.Response:
+        payload = await request.json()
+        name = payload.get('name', None)
+        if name is None:
+            return web.json_response({"result":"bad", "message":"Bad request, missing 'name' parameter"}, status=400)
+        else:
+            self.generate_metadata(name)
+            return web.json_response({"result":"ok", "data":{"config":self.projects[name], "name":name}})
 
 if __name__ == "__main__":
     RPGMTL().run()

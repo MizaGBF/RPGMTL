@@ -248,6 +248,30 @@ li {
 	display:inline-block;
 }
 
+.metadata-table {
+	table-layout: auto;
+	width: 95%;
+	color: white;
+	font-size: 20px;
+	margin: 5px;
+}
+
+.metadata-cell{
+	border: 1px solid #dddddd;
+}
+
+.metadata-category{
+	overflow: hidden;
+	white-space: nowrap;
+	text-overflow: ellipsis;
+	font-weight: 600;
+}
+
+.metadata-content{
+	overflow: hidden;
+	white-space: wrap;
+}
+
 #folder_container, #file_container {
 	max-width: 100%;
 }
