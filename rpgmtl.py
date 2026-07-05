@@ -1014,8 +1014,15 @@ class RPGMTL():
             possible_engine : dict[str, int] = {}
             file_detection : dict[str, int] = {}
             total_file : int = 0
+            total_virtual : int = 0
+            total_string : int = 0
             for f in self.projects[name]["files"]:
-                total_file += 1
+                match self.projects[name]["files"][f]["file_type"]:
+                    case FileType.NORMAL|FileType.ARCHIVE:
+                        total_file += 1
+                    case _:
+                        total_virtual += 1
+                total_string += self.projects[name]["files"][f]["strings"]
                 tf : str
                 if self.projects[name]["files"][f]["file_type"] == FileType.VIRTUAL:
                     tf = self.projects[name]["files"][f]["parent"].lower()
@@ -1060,26 +1067,55 @@ class RPGMTL():
                 updated_metadata["Guessed Engine"] = "Unknown"
             else:
                 updated_metadata["Guessed Engine"] = max(possible_engine, key=possible_engine.get)
+            updated_metadata["Project Build"] = f"{self.projects[name]["version"]:,}".format(",", " ")
+            ## file related
+            updated_metadata["Project Files"] = f"{total_file:,}".format(",", " ")
+            updated_metadata["Virtual Files"] = f"{total_virtual:,}".format(",", " ")
             updated_metadata["File Formats"] = []
             for f, c in file_detection.items():
-                updated_metadata["File Formats"].append(f"{c} {f} ({100 * c / total_file:.2f}%)")
+                updated_metadata["File Formats"].append(f"{c:,} {f} ({100 * c / total_file:.2f}%)".format(",", " "))
             if len(updated_metadata["File Formats"]) == 0:
                 updated_metadata.pop("File Formats", None)
             else:
                 updated_metadata["File Formats"] = ", ".join(updated_metadata["File Formats"])
+            ori_path : Path = Path(f"projects/{name}/originals")
+            ori_size : int = sum(
+                f.stat(follow_symlinks=False).st_size 
+                for f in ori_path.rglob('*') 
+                if f.is_file(follow_symlinks=False)
+            )
+            updated_metadata["Original Files Size"] = f"{ori_size:,} Bytes".format(",", " ")
+            ## string related
+            updated_metadata["Total Strings"] = f"{total_string:,}".format(",", " ")
+            if name in self.strings:
+                total_string = 0
+                orphaned : int = 0
+                for sid, sdt in self.strings[name]["strings"].items():
+                    if sdt[GloIndex.COUNT]:
+                        total_string += 1
+                    else:
+                        orphaned += 1
+                updated_metadata["Unique Strings"] = f"{total_string:,}".format(",", " ")
+                updated_metadata["Orphaned Strings"] = f"{orphaned:,}".format(",", " ")
+            ## rpg maker related
             if (
                 updated_metadata["Guessed Engine"] in {"RPG Maker MV", "RPG Maker MZ"}
                 and name in self.strings
             ):
                 for f in self.strings[name]["files"]:
                     if f.endswith("data/System.json"):
-                        found : bool = False
+                        found : int = 0
                         for group in self.strings[name]["files"][f]:
-                            if len(group) == 2 and group[0] == "encryptionKey":
-                                sid : str = group[1][LocIndex.ID]
-                                updated_metadata["RPG Maker Encryption Key"] = self.strings[name]["strings"][sid][GloIndex.ORI]
-                                found = True
-                                break
+                            if len(group) == 2:
+                                match group[0]:
+                                    case "gameTitle":
+                                        sid : str = group[1][LocIndex.ID]
+                                        updated_metadata["RPG Maker Game Title"] = self.strings[name]["strings"][sid][GloIndex.ORI]
+                                        found += 1
+                                    case "encryptionKey":
+                                        sid : str = group[1][LocIndex.ID]
+                                        updated_metadata["RPG Maker Encryption Key"] = self.strings[name]["strings"][sid][GloIndex.ORI]
+                                        found += 1
                         if found:
                             break
             # apply

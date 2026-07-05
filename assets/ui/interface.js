@@ -1699,12 +1699,27 @@ class RPGMTL_Interface
 		{
 			// top bar
 			this.top_bar.update(
-				"Set Project Icon",
+				"Metadata",
 				() => { // back callback
 					this.routes.project(this.project.name);
 				},
 				"<ul>\
 					<li>Display some project informations.</li>\
+				</ul>\
+				<ul>\
+					<li>Guessed Engine - What RPGMTL thinks the game is using.</li>\
+					<li>Project Build - The number of times strings have been extracted.</li>\
+					<li>Project Files - The number of physical files extracted from the games.</li>\
+					<li>Virtual Files - The number of virtual files generated from normal files by RPGMTL.</li>\
+					<li>File Formats - A breakdown of file formats.</li>\
+					<li>Original Files Size - The size of the <b>originals</b> directory.</li>\
+					<li>Total Strings - The total number of strings accross all files.</li>\
+					<li>Unique Strings - The total number of unique string occurences accross all files.</li>\
+					<li>Orphaned Strings - The number of strings not in use, from a previous game version.</li>\
+				</ul>\
+				<ul>\
+					<li>RPG Maker Game Title - The game title extracted from System.json</li>\
+					<li>RPG Maker Encryption Key - The asset encryption key extracted from System.json</li>\
 				</ul>",
 				{
 					home:1
