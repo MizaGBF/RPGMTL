@@ -1062,6 +1062,7 @@ class RPGMTL():
                 if "ks" in file_detection or "tjs" in file_detection:
                     possible_engine.pop("RPG Maker MV", None)
                     possible_engine.pop("RPG Maker MZ", None)
+            file_detection = dict(sorted(file_detection.items(), key=lambda item: item[1], reverse=True))
             # write
             if len(possible_engine) == 0:
                 updated_metadata["Guessed Engine"] = "Unknown"
