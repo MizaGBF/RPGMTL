@@ -136,7 +136,7 @@ class JSON(Plugin):
 
     def get_setting_infos(self : JSON) -> dict[str, list]:
         return {
-            "json_rpgm_multiline": ["Merge multiline commands into one (Require re-extract)", "bool", False, None]
+            "json_rpgm_multiline": ["Merge multiline commands into one (Require re-extract)", "bool", True, None]
         }
 
     def get_tool_infos(self : JSON) -> dict[str, list]:
