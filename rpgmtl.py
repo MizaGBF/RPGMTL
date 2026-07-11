@@ -106,6 +106,7 @@ class RPGMTL():
         self.tools : dict[str, list] = {} # store plugin tools
         self.tool_list_info : list[Any] = [] # used to pass the tool list to the client
         self.history : list[list[str]] = [] # store link to last ten accessed files
+        self.enforce_https : bool = False # HTTPS flag
         self.allowed_ips : list[str] = [] # allowed ips
         self.auth : dict[str, bool|dict[str,str]] = { # authentication data
             "enabled":False,
@@ -139,7 +140,13 @@ class RPGMTL():
         return "".join(traceback.format_exception(type(e), e, e.__traceback__))
 
     def setup_web_server(self : RPGMTL) -> web.Application:
-        app = web.Application(middlewares=[self.ip_whitelist, self.verify_auth])
+        app = web.Application(
+            middlewares=[
+                self.https_check,
+                self.ip_whitelist,
+                self.verify_auth
+            ]
+        )
         # Autosave system
         app.on_startup.append(self.init_autosave)
         app.on_cleanup.append(self.stop_autosave)
@@ -1585,7 +1592,7 @@ class RPGMTL():
             if "https_cert" in self.settings:
                 self.settings.pop("https_cert")
                 self.settings_modified = True
-                self.log.info("SSL settings have been deleted")
+                self.log.info("HTTPS settings have been deleted")
         else:
             if args.https is not None:
                 try:
@@ -1663,18 +1670,25 @@ class RPGMTL():
                 ssl_context.load_cert_chain(self.settings["https_cert"][0], self.settings["https_cert"][1])
             except:
                 ssl_context = None
-        if ssl_context is not None:
-            self.log.info("SSL is enabled")
         if self.settings.get("ip_filter", False):
             self.load_ip_whitelist()
         self.load_project_list()
         
         # Start
         self.log.info("RPGMTL is starting up...")
+        if ssl_context is not None:
+            self.enforce_https = True
+            self.log.info("HTTPS is enabled")
+        else:
+            self.log.warning("HTTPS is disabled")
         if self.settings.get("ip_filter", False):
-            self.log.info("IP Filter is enabled (Use '--ip off' to disable)")
+            self.log.info("IP Filter is enabled")
+        else:
+            self.log.warning("IP Filter is disabled")
         if self.auth.get("enabled", False):
-            self.log.info("Authentication is enabled (Use '--auth off' to disable)")
+            self.log.info("Authentication is enabled")
+        else:
+            self.log.warning("Authentication is disabled")
         try:
             self.log.info(f"Starting RPGMTL on port {self.port}")
             web.run_app(self.app, port=self.port, shutdown_timeout=0, ssl_context=ssl_context)
@@ -1691,6 +1705,19 @@ class RPGMTL():
     ######################################################
     # Request Responses start here
     ######################################################
+
+    @web.middleware
+    async def https_check(self : RPGMTL, request, handler):
+        """
+        This middleware checks if the client request is using the HTTPS protocol
+        """
+        if self.enforce_https and request.scheme != "https":
+            raise web.HTTPMovedPermanently(
+                location=str(
+                    request.url.with_scheme("https")
+                )
+            )
+        return await handler(request)
 
     @web.middleware
     async def ip_whitelist(self : RPGMTL, request, handler):
@@ -1767,7 +1794,7 @@ class RPGMTL():
                     self.auth_tokens[username] = token
                     self.auth_tokens_set.add(token)
                     break
-            response.set_cookie('auth_token', token, httponly=True, path='/')
+            response.set_cookie('auth_token', token, httponly=True, samesite="Strict", secure=True, path='/')
             return response
         if username not in self.auth:
             self.log.warning(f"An attempt has been made to login with username {username}")

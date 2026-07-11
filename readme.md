@@ -194,23 +194,27 @@ When the edit area is open:
 > [!NOTE]  
 > Changing the key binds is currently not possible but considered for the far future.  
   
-### Port
+### Port  
   
 You can change the port used by RPGMTL with the `-p/--port` argument:   
 ```console
 python rpgmtl.py --port 60000
 ```  
   
-### HTTPS
+### HTTPS  
   
-The project is intended to be used on a local network.  
-If you wish to access it remotely, it's **recommended** to enable HTTPS.  
+> [!IMPORTANT]  
+> This is a **recommended** security feature if you wish to access RPGMTL remotely.  
+  
+> [!NOTE]  
+> This feature makes RPGMTL unaccessible over regular HTTP.  
+  
 You'll need to have a valid certificate and key.  
 Place them in the folder and run **once**:  
 ```console
 python rpgmtl.py --https name_of_your_key_file name_of_your_password_file --quit
 ```  
-If everything goes well, `SSL is enabled` should appear in the log.  
+If everything goes well, `HTTPS is enabled` should appear in the log.  
 The certificate and key locations will be saved for the next use.  
   
 If you wish to revert this setting, run **once**:  
@@ -221,7 +225,9 @@ RPGMTL will *forget* these file locations.
   
 ### IP Filter  
   
-This is a **recommended** feature if you wish to access it remotely.  
+> [!IMPORTANT]  
+> This is a **recommended** security feature if you wish to access RPGMTL remotely.  
+  
 If you wish to filter which IP can access the server, create a `whitelist.txt` file near `rpgmtl.py`.  
 Add the allowed IP inside, one by line.  
 It supports both IP v4 and v6.  
@@ -238,13 +244,15 @@ python rpgmtl.py --ip off --quit
   
 ### Authentication  
   
-This is a **recommended** feature if you wish to access it remotely.  
+> [!IMPORTANT]  
+> This is a **recommended** security feature if you wish to access RPGMTL remotely.  
+  
 User accounts can't be created at runtime.  
 An username and password must be set via the command line:  
 ```console
 python rpgmtl.py --quit --newuser USERNAME PASSWORD
 ```  
-
+  
 > [!NOTE]  
 > The password strength is not verified.  
   
