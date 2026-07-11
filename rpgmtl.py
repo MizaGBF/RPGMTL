@@ -1783,10 +1783,7 @@ class RPGMTL():
     async def process_login(self : RPGMTL, request : web.Request) -> web.Response:
         if not self.auth["enabled"]:
             return web.Response(status=200)
-        payload = await request.json()
         ip_address : str = request.remote 
-        username = payload.get('username')
-        password = payload.get('password')
         # check rate limit
         current_time : float = time.time()
         active_attempts : list[float] = [
@@ -1808,6 +1805,14 @@ class RPGMTL():
         self.auth_tracker[ip_address] = active_attempts
         # add new attempt
         self.auth_tracker[ip_address].append(current_time)
+        # parse json
+        try:
+            payload = await request.json()
+            username = payload['username']
+            password = payload['password']
+        except Exception as e:
+            self.log.error(f"Invalid login attempt from {ip_address}:\n{self.trbk(e)}")
+            return web.Response(text="Bad request", status=400)
         # check credentials
         if self.verify_password(username, password):
             self.log.info(f"User {username} logged in from {ip_address}")
@@ -1824,13 +1829,13 @@ class RPGMTL():
                     break
             response.set_cookie('auth_token', token, httponly=True, samesite="Strict", secure=True, path='/')
             return response
-        if username not in self.auth:
+        if username not in self.auth["users"]:
             self.log.warning(f"An attempt has been made to login with username {username} from {ip_address}")
         else:
             self.log.warning(f"User {username} failed to log in from {ip_address}")
         await asyncio.sleep(0.1)
         return web.Response(
-            text=f"Login attempt failed.",
+            text="Login attempt failed.",
             status=401
         )
 
