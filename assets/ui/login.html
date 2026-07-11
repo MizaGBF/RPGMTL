@@ -145,7 +145,7 @@ document.getElementById("login-form").addEventListener("submit", async (event) =
 		}
 		else
 		{
-			error.textContent = "Login failed.";
+			error.textContent = await response.text();
 			toggle(false);
 			confirm.textContent = "Log In";
 		}

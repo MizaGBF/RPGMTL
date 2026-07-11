@@ -247,6 +247,9 @@ python rpgmtl.py --ip off --quit
 > [!IMPORTANT]  
 > This is a **recommended** security feature if you wish to access RPGMTL remotely.  
   
+> [!IMPORTANT]  
+> When enabled, an user on a given IP address can only make **5** login attempts every **10** minutes.  
+  
 User accounts can't be created at runtime.  
 An username and password must be set via the command line:  
 ```console

@@ -3,6 +3,7 @@ import asyncio
 from aiohttp import web, ClientSession
 from typing import Any
 from dataclasses import dataclass
+import time
 import os
 import re
 import shutil
@@ -69,6 +70,8 @@ class RPGMTL():
     HISTORY_LIMIT = 10
     CURRENT_CONFIG_VERSION = 3
     CURRENT_STRING_VERSION = 2
+    AUTH_RATE_LIMIT_WINDOW : float = 10 * 60 # 10 minutes
+    AUTH_MAX_ATTEMPTS : int = 5
 
     def __init__(self : RPGMTL) -> None:
         # Setting up logging
@@ -108,6 +111,7 @@ class RPGMTL():
         self.history : list[list[str]] = [] # store link to last ten accessed files
         self.enforce_https : bool = False # HTTPS flag
         self.allowed_ips : list[str] = [] # allowed ips
+        self.auth_tracker : dict[str, list[float]] = {}
         self.auth : dict[str, bool|dict[str,str]] = { # authentication data
             "enabled":False,
             "users":{}
@@ -1780,10 +1784,34 @@ class RPGMTL():
         if not self.auth["enabled"]:
             return web.json_response({"result":"login-required"})
         payload = await request.json()
+        ip_address : str = request.remote 
         username = payload.get('username')
         password = payload.get('password')
+        # check rate limit
+        current_time : float = time.time()
+        active_attempts : list[float] = [
+            timestamp for timestamp in self.auth_tracker.get(ip_address, [])
+            if current_time - timestamp < self.AUTH_RATE_LIMIT_WINDOW
+        ]
+        if len(active_attempts) >= self.AUTH_MAX_ATTEMPTS:
+            oldest_attempt : float = active_attempts[0]
+            wait_time = int(self.AUTH_RATE_LIMIT_WINDOW - (current_time - oldest_attempt))
+            self.log.warning(f"{ip_address} login attempts are rate limited for {wait_time:.2f}s")
+            await asyncio.sleep(1) # to avoid login spam
+            # Return standard HTTP 429 Too Many Requests
+            return web.Response(
+                text=f"Too many login attempts. Please try again in {wait_time:.2f}s.",
+                status=429,
+                headers={"Retry-After": str(wait_time)}
+            )
+        if ip_address not in self.auth_tracker:
+            self.auth_tracker[ip_address] = []
+        elif len(active_attempts) < len(self.auth_tracker[ip_address]):
+            self.auth_tracker[ip_address] = self.auth_tracker[ip_address][-len(active_attempts):]
+        self.auth_tracker[ip_address].append(current_time) 
+        # check credentials
         if self.verify_password(username, password):
-            self.log.info(f"User {username} logged in")
+            self.log.info(f"User {username} logged in from {ip_address}")
             response : web.Response = web.Response(status=200)
             while True:
                 token : str = secrets.token_urlsafe(32)
@@ -1797,11 +1825,14 @@ class RPGMTL():
             response.set_cookie('auth_token', token, httponly=True, samesite="Strict", secure=True, path='/')
             return response
         if username not in self.auth:
-            self.log.warning(f"An attempt has been made to login with username {username}")
+            self.log.warning(f"An attempt has been made to login with username {username} from {ip_address}")
         else:
-            self.log.warning(f"User {username} failed to log in")
+            self.log.warning(f"User {username} failed to log in from {ip_address}")
         await asyncio.sleep(4) # to avoid login spam
-        return web.Response(status=401)
+        return web.Response(
+            text=f"Login attempt failed.",
+            status=401
+        )
 
     # /logoff
     async def process_logoff(self : RPGMTL, request : web.Request) -> web.Response:
