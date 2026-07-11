@@ -1782,7 +1782,7 @@ class RPGMTL():
     # /login
     async def process_login(self : RPGMTL, request : web.Request) -> web.Response:
         if not self.auth["enabled"]:
-            return web.json_response({"result":"login-required"})
+            return web.Response(status=200)
         payload = await request.json()
         ip_address : str = request.remote 
         username = payload.get('username')
@@ -1797,27 +1797,27 @@ class RPGMTL():
             oldest_attempt : float = active_attempts[0]
             wait_time = int(self.AUTH_RATE_LIMIT_WINDOW - (current_time - oldest_attempt))
             self.log.warning(f"{ip_address} login attempts are rate limited for {wait_time:.2f}s")
-            await asyncio.sleep(1) # to avoid login spam
+            await asyncio.sleep(0.1)
             # Return standard HTTP 429 Too Many Requests
             return web.Response(
                 text=f"Too many login attempts. Please try again in {wait_time:.2f}s.",
                 status=429,
                 headers={"Retry-After": str(wait_time)}
             )
-        if ip_address not in self.auth_tracker:
-            self.auth_tracker[ip_address] = []
-        elif len(active_attempts) < len(self.auth_tracker[ip_address]):
-            self.auth_tracker[ip_address] = self.auth_tracker[ip_address][-len(active_attempts):]
-        self.auth_tracker[ip_address].append(current_time) 
+        # clean up
+        self.auth_tracker[ip_address] = active_attempts
+        # add new attempt
+        self.auth_tracker[ip_address].append(current_time)
         # check credentials
         if self.verify_password(username, password):
             self.log.info(f"User {username} logged in from {ip_address}")
+            self.auth_tracker.pop(ip_address, None)
             response : web.Response = web.Response(status=200)
             while True:
                 token : str = secrets.token_urlsafe(32)
                 if token not in self.auth_tokens_set:
                     if username in self.auth_tokens:
-                        self.auth_tokens_set.remove(self.auth_tokens[username])
+                        self.auth_tokens_set.discard(self.auth_tokens[username])
                         self.log.info(f"Previous token of {username} has been invalidated")
                     self.auth_tokens[username] = token
                     self.auth_tokens_set.add(token)
@@ -1828,7 +1828,7 @@ class RPGMTL():
             self.log.warning(f"An attempt has been made to login with username {username} from {ip_address}")
         else:
             self.log.warning(f"User {username} failed to log in from {ip_address}")
-        await asyncio.sleep(4) # to avoid login spam
+        await asyncio.sleep(0.1)
         return web.Response(
             text=f"Login attempt failed.",
             status=401
