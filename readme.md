@@ -462,3 +462,31 @@ If the RM Marshal plugin is present, the `rm_marshal_multiline` setting of the p
 For the best results, you might want it to be **enabled**.  
 Be aware it's a convenience feature and far from perfect.  
   
+### Tools  
+  
+You can find external tools in the `tools` directory.  
+`rpgm_decrypt.pyw` is the only available tool, right now.  
+You can either run it with a GUI by executing it normally, or via command line.  
+Here's a basic example:  
+```console
+# Decrypt a RPG Maker MV image.
+# Note: The script automatically detects if you wish to decrypt or encrypt based on the file extension.
+python rpgm_decrypt.pyw -i image.rpgmvp -k a083a0c9d8995f60b34fea6f5344eeb1
+
+# Encrypt a RPG Maker MZ image.
+# Note: The mode (MZ or MV) is only important when encrypting.
+python rpgm_decrypt.pyw -i image.png -m MZ -k a083a0c9d8995f60b34fea6f5344eeb1
+
+# You can set the output directory with -o.
+python rpgm_decrypt.pyw -i image.png -o output -k a083a0c9d8995f60b34fea6f5344eeb1
+
+# Display the help with -h.
+python rpgm_decrypt.pyw -h
+
+# Run without parameters to run the GUI.
+python rpgm_decrypt.pyw
+```  
+  
+> [!NOTE]  
+> On Windows, make sure to execute the file with `pythonw.exe`, so that no console is open at the same time as the GUI.  
+  
