@@ -232,7 +232,7 @@ class RPGMakerDecryptGUI:
         )
         if key is not None:
             if key == "":
-                self.log(f"[ERROR] The key can't be an empty string")
+                self.log("[ERROR] The key can't be an empty string")
             else:
                 self.rpgm.set_key(key.strip())
 
@@ -306,13 +306,13 @@ if __name__ == "__main__":
                 rpgm.read_key(args.system)
             else:
                 parser.print_help()
-                print(f"Please provide the encryption key with either '-k' or '-s'")
+                print("Please provide the encryption key with either '-k' or '-s'")
                 os._exit(0)
             if args.output_folder:
                 rpgm.output_folder = Path(args.output_folder)
             if not args.input:
                 parser.print_help()
-                print(f"Please provide a file with '-i'")
+                print("Please provide a file with '-i'")
                 os._exit(0)
             rpgm.mode = args.mode
             rpgm.process_single_file(Path(args.input))
