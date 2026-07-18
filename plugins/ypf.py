@@ -284,7 +284,7 @@ class YPF(Plugin):
                             # create dir if needed
                             os.makedirs(file_path.parent.as_posix(), exist_ok=True)
                         except Exception as e:
-                            self.owner.log.error("[YPF] Couldn't create the following folder:" + file_path.parent.as_posix() + "\n" + self.trbk(e))
+                            self.owner.log.error("[YPF] Couldn't create the following folder:" + file_path.parent.as_posix() + "\n" + self.trace(e))
                     # write file
                     with open(file_path, mode="wb") as out:
                         out.write(data)
@@ -325,7 +325,7 @@ class YPF(Plugin):
                     json.dump(d, f) # also save it in a file, as a fallback
                 return True
         except Exception as e:
-            self.owner.log.error(f"[YPF] Failed to extract content from:{full_path.as_posix()}\n{self.owner.trbk(e)}")
+            self.owner.log.error(f"[YPF] Failed to extract content from:{full_path.as_posix()}\n{self.owner.trace(e)}")
             return False
 
 if __name__ == "__main__":

@@ -261,7 +261,7 @@ An example of a callback is defined as such:
             #  
             return "Hello world!" # the returning string is displayed to the user
         except Exception as e:
-            self.owner.log.error(f"[MyPlugin] Action 'callback' failed with error:\n{self.owner.trbk(e)}")
+            self.owner.log.error(f"[MyPlugin] Action 'callback' failed with error:\n{self.owner.trace(e)}")
             return "An unexpected error occured, please check the logs." # same here, any returning string is displayed to the user
 ```  
   
@@ -342,6 +342,6 @@ When used, both will trigger the callback. Callbacks have the same format for bo
             #  
             return "Hello world!" # the returning string is displayed to the user
         except Exception as e:
-            self.owner.log.error(f"[MyPlugin] Tool 'callback' failed with error:\n{self.owner.trbk(e)}")
+            self.owner.log.error(f"[MyPlugin] Tool 'callback' failed with error:\n{self.owner.trace(e)}")
             return "An unexpected error occured, please check the logs." # same here, any returning string is displayed to the user
 ```  

@@ -141,7 +141,7 @@ class RPGMTL():
             )
 
     # Function to format an exception into something readable
-    def trbk(self : RPGMTL, e : Exception) -> str:
+    def trace(self : RPGMTL, e : Exception) -> str:
         return "".join(traceback.format_exception(type(e), e, e.__traceback__))
 
     def setup_web_server(self : RPGMTL) -> web.Application:
@@ -247,7 +247,7 @@ class RPGMTL():
                 if k not in self.settings:
                     self.settings[k] = v[2]
             except Exception as e:
-                self.log.error(f"Error loading plugin '{plugin.name}' setting infos:\n{self.trbk(e)}")
+                self.log.error(f"Error loading plugin '{plugin.name}' setting infos:\n{self.trace(e)}")
         
     def _process_plugin_actions(self : RPGMTL, plugin : BasePlugin) -> None:
         for k, v in plugin.get_action_infos().items():
@@ -260,7 +260,7 @@ class RPGMTL():
                 # add action
                 self.actions[k] = [plugin.name, v[0], v[1], v[2]] # plugin name (for reverse lookup), icon path, UI text, and callback
             except Exception as e:
-                self.log.error(f"Error loading plugin '{plugin.name}' action infos:\n{self.trbk(e)}")
+                self.log.error(f"Error loading plugin '{plugin.name}' action infos:\n{self.trace(e)}")
         
     def _process_tool_actions(self : RPGMTL, plugin : BasePlugin) -> None:
         for k, v in plugin.get_tool_infos().items():
@@ -273,7 +273,7 @@ class RPGMTL():
                 # add tool
                 self.tools[k] = [plugin.name, v[0], v[1], v[2], v[3]] # plugin name (for reverse lookup), icon path, UI text, callback and params
             except Exception as e:
-                self.log.error(f"Error loading plugin '{plugin.name}' tool infos:\n{self.trbk(e)}")
+                self.log.error(f"Error loading plugin '{plugin.name}' tool infos:\n{self.trace(e)}")
 
     # Generic function used by add_plugin and add_translator
     def process_infos(self : RPGMTL, plugin : BasePlugin) -> None:
@@ -364,7 +364,7 @@ class RPGMTL():
                 else:
                     raise Exception("Invalid settings.json version")
         except Exception as e:
-            self.log.warning("Failed to load settings.json, default value will be used:\n" + self.trbk(e))
+            self.log.warning("Failed to load settings.json, default value will be used:\n" + self.trace(e))
 
     # Save config.json, strings.json and load_settings.json
     def save(self : RPGMTL) -> None:
@@ -381,7 +381,7 @@ class RPGMTL():
                     shutil.move(folder + "_tmp_config_.json", folder + "config.json")
                 except Exception as e:
                     err_flag = True
-                    self.log.error(f"Failed to update projects/{k}/config.json:\n{self.trbk(e)}")
+                    self.log.error(f"Failed to update projects/{k}/config.json:\n{self.trace(e)}")
                 try:
                     if k in self.strings: # if strings.json is loaded
                         # also save it
@@ -391,7 +391,7 @@ class RPGMTL():
                         shutil.move(folder + "_tmp_strings_.json", folder + "strings.json")
                 except Exception as e:
                     err_flag = True
-                    self.log.error(f"Failed to update projects/{k}/strings.json:\n{self.trbk(e)}")
+                    self.log.error(f"Failed to update projects/{k}/strings.json:\n{self.trace(e)}")
                 self.modified[k] = False # reset it
                 if err_flag:
                     self.log.info(f"Errors occured while saving project '{k}' files")
@@ -402,7 +402,7 @@ class RPGMTL():
                 with open('settings.json', mode='w', encoding='utf-8') as f:
                     json.dump({"version":2, "settings":self.settings, "history":self.history, "auth":self.auth}, f, ensure_ascii=False, indent=4, separators=(',', ':'))
             except Exception as e:
-                self.log.error("Failed to update settings.json:\n" + self.trbk(e))
+                self.log.error("Failed to update settings.json:\n" + self.trace(e))
             self.settings_modified = False
 
     # Utility recursive function to format strings.json in a certain way, to make it humanly readable and easy to pick apart by git
@@ -481,7 +481,7 @@ class RPGMTL():
                 if folder.is_dir() and (folder / 'config.json').is_file()
             ]
         except Exception as e:
-            self.log.error("Error loading project list:\n" + self.trbk(e))
+            self.log.error("Error loading project list:\n" + self.trace(e))
             return []
 
     # function to search a game executable
@@ -499,7 +499,7 @@ class RPGMTL():
                     self.log.info(f"Project {name} path is updated to {file_path}")
                 return file_path # return the path
         except Exception as e:
-            self.log.error(f"Error during selection of an executable for project {name}\n{self.trbk(e)}")
+            self.log.error(f"Error during selection of an executable for project {name}\n{self.trace(e)}")
             return None
 
     # Backup game files matching the plugin extensions for the given project name
@@ -532,7 +532,7 @@ class RPGMTL():
                                 # create dir if needed
                                 os.makedirs(target_dir.as_posix(), exist_ok=True)
                             except Exception as e:
-                                self.log.error("Couldn't create the following folder:" + target_dir.as_posix() + "\n" + self.trbk(e))
+                                self.log.error("Couldn't create the following folder:" + target_dir.as_posix() + "\n" + self.trace(e))
                         # backup
                         try:
                             # file copy to project folder
@@ -547,7 +547,7 @@ class RPGMTL():
                             }
                             self.log.info(fpr.as_posix() + " has been copied to project folder " + pname)
                         except Exception as e:
-                            self.log.error("Couldn't copy the following file:" + fp.as_posix() + " to project folder " + pname + "\n" + self.trbk(e))
+                            self.log.error("Couldn't copy the following file:" + fp.as_posix() + " to project folder " + pname + "\n" + self.trace(e))
                         copied = True
         # keep file setting if it exists
         for k, v in self.projects[pname].get("files", {}).items():
@@ -602,7 +602,7 @@ class RPGMTL():
                 shutil.copyfile(best_match, f"projects/{project_name}/icon")
                 self.log.info(f"Picked icon {best_match} for project {project_name}")
             except Exception as e:
-                self.log.critical(f"Error while copying icon {best_match} for project {project_name}\n{self.trbk(e)}")
+                self.log.critical(f"Error while copying icon {best_match} for project {project_name}\n{self.trace(e)}")
 
     # utility function to import a specific icon/image to a project
     async def look_for_icon_at(self : RPGMTL, name : str, path : str) -> int:
@@ -676,7 +676,7 @@ class RPGMTL():
                     return -3
                 shutil.copyfile(icon_path, target_path)
             except Exception as e:
-                self.log.error(f"Error in update_notes for project {name} with path {path}:\n{self.trbk(e)}")
+                self.log.error(f"Error in update_notes for project {name} with path {path}:\n{self.trace(e)}")
                 return -4
         return 0
 
@@ -700,7 +700,7 @@ class RPGMTL():
                     os.mkdir('projects/' + name + k)
                     self.log.info("projects/" + name + k + " has been created")
                 except Exception as ex:
-                    self.log.error(f"Couldn't create the following folder: {name}{k}\n{self.trbk(ex)}")
+                    self.log.error(f"Couldn't create the following folder: {name}{k}\n{self.trace(ex)}")
             # initialize config.json
             self.projects[name] = {
                 "format_version":self.CURRENT_CONFIG_VERSION, # config.json format version
@@ -722,7 +722,7 @@ class RPGMTL():
                     if os.path.isdir(pr_path):
                         shutil.rmtree(pr_path)
                 except Exception as ce:
-                    self.log.error(f"Error while cleaning up aborted project {name}\n{self.trbk(ce)}")
+                    self.log.error(f"Error while cleaning up aborted project {name}\n{self.trace(ce)}")
                 return False, "Creation aborted, no exploitable files found"
             # save
             self.save()
@@ -733,7 +733,7 @@ class RPGMTL():
                 await self.find_and_copy_best_icon(Path(path), name)  
             return True, name
         except Exception as e:
-            self.log.critical(f"Error while copying game files for project {name}\n{self.trbk(e)}")
+            self.log.critical(f"Error while copying game files for project {name}\n{self.trace(e)}")
             return False, str(e)
 
     # load a project config.json file
@@ -780,7 +780,7 @@ class RPGMTL():
         except OSError:
             return None
         except Exception as e:
-            self.log.error(f"Failed to load strings of project {name}\n{self.trbk(e)}")
+            self.log.error(f"Failed to load strings of project {name}\n{self.trace(e)}")
             raise e
 
     # Update the content of strings.json to later formats
@@ -851,7 +851,7 @@ class RPGMTL():
                             output.write_bytes(content)
                             return (1, totalerr)
             except Exception as e:
-                self.log.error(f"Failed to patch strings in {filename} for project {name} using the plugin {p.name}\n{self.trbk(e)}")
+                self.log.error(f"Failed to patch strings in {filename} for project {name} using the plugin {p.name}\n{self.trace(e)}")
                 return (0, totalerr + 1)
         return (0, totalerr)
 
@@ -872,7 +872,7 @@ class RPGMTL():
             self.log.info(f"Previous copy of projects/{name}/strings.json will be used")
             update_run_flag = 1
         except Exception as e:
-            self.log.warning(f"The following error occured while loading existing strings (Ignore if it's a fresh project):\n{self.trbk(e)}")
+            self.log.warning(f"The following error occured while loading existing strings (Ignore if it's a fresh project):\n{self.trace(e)}")
             index = {
                 "strings":{},
                 "files":{},
@@ -1000,7 +1000,7 @@ class RPGMTL():
                         index["files"][target_file].append(group)
             except Exception as e:
                 err += 1
-                self.log.error(f"Failed to extract strings from {f} for project {name}\n{self.trbk(e)}")
+                self.log.error(f"Failed to extract strings from {f} for project {name}\n{self.trace(e)}")
         if update_run_flag: # we're updating
             index = self._generate_cleanup(name, index, old)
         else: # first time creating the project
@@ -1139,7 +1139,7 @@ class RPGMTL():
             self.projects[name]["metadata"] = updated_metadata
             self.modified[name] = True
         except Exception as e:
-             self.log.error(f"Unexpected error in generate_metadata for project {name}\n{self.trbk(e)}")
+             self.log.error(f"Unexpected error in generate_metadata for project {name}\n{self.trace(e)}")
 
     def start_compute_translated(self : RPGMTL, name : str) -> None:
         if name in self.computing:
@@ -1179,7 +1179,7 @@ class RPGMTL():
         except asyncio.CancelledError:
             return
         except Exception as e:
-            self.log.error(f"Unexpected error in compute_translated for project {name}\n{self.trbk(e)}")
+            self.log.error(f"Unexpected error in compute_translated for project {name}\n{self.trace(e)}")
 
     def _create_release_cleanup(self : RPGMTL, release_folder : PurePath) -> int:
         if os.path.isdir(release_folder):
@@ -1187,7 +1187,7 @@ class RPGMTL():
                 shutil.rmtree(release_folder)
                 self.log.info("Cleaned up " + release_folder.as_posix())
             except Exception as e:
-                self.log.error("Failed to properly clean " + release_folder.as_posix() + "\n" + self.trbk(e))
+                self.log.error("Failed to properly clean " + release_folder.as_posix() + "\n" + self.trace(e))
                 return 1
         return 0
 
@@ -1265,7 +1265,7 @@ class RPGMTL():
                         _content_ = helper._content_ # and replace the content with the new one
                         self.log.info("Applied fix " + _k_ + " on file " + _file_path_ + " for project " + _name_)
                 except Exception as _e_:
-                    self.log.error("Failed to apply the fix " + _k_ + " on file " + _file_path_ + " for project " + _name_ + "\n" + self.trbk(_e_))
+                    self.log.error("Failed to apply the fix " + _k_ + " on file " + _file_path_ + " for project " + _name_ + "\n" + self.trace(_e_))
                     _error_ += 1
         # return content (either old or new modified one), modified flag and error count
         return _content_, _modified_, _error_
@@ -1434,7 +1434,7 @@ class RPGMTL():
                 self.start_compute_translated(name)
             return 1, count
         except Exception as e:
-            self.log.error("The following exception occured in import_rpgmtrans_data():\n" + self.trbk(e))
+            self.log.error("The following exception occured in import_rpgmtrans_data():\n" + self.trace(e))
             return -1, count
 
     def update_ai_knowledge_base(
@@ -1607,7 +1607,7 @@ class RPGMTL():
                     self.settings_modified = True
                     self.log.info("HTTPS Certificates are set")
                 except Exception as e:
-                    self.log.error(f"Failed to set HTTPS Certificates:\n{self.trbk(e)}")
+                    self.log.error(f"Failed to set HTTPS Certificates:\n{self.trace(e)}")
                     self.log.info("Force quitting to possibly avoid exposing RPGMTL to an unwanted network")
                     os._exit(0)
         # Middleware
@@ -1697,7 +1697,7 @@ class RPGMTL():
         try:
             asyncio.run(self.start_server(ssl_context))
         except Exception as e:
-            self.log.warning(f"The following exception occurred:\n{self.trbk(e)}")
+            self.log.warning(f"The following exception occurred:\n{self.trace(e)}")
         # temporarily ignore both Ctrl+C and graceful termination signals
         original_int_handler = signal.signal(signal.SIGINT, signal.SIG_IGN)
         original_term_handler = signal.signal(signal.SIGTERM, signal.SIG_IGN)
@@ -1829,7 +1829,7 @@ class RPGMTL():
             username = payload['username']
             password = payload['password']
         except Exception as e:
-            self.log.error(f"Invalid login attempt from {ip_address}:\n{self.trbk(e)}")
+            self.log.error(f"Invalid login attempt from {ip_address}:\n{self.trace(e)}")
             return web.Response(text="Bad request", status=400)
         # check credentials
         if self.verify_password(username, password):
@@ -2237,10 +2237,10 @@ class RPGMTL():
                         self.modified[name] = True
                         return web.json_response({"result":"ok", "data":{"name":name, "config":self.projects[name]}, "message":f"projects/{name}/patch.py has been imported"})
             except IOError as ioe:
-                self.log.error(f"Import of {name}/patch.py aborted due to following exception:\n{self.trbk(ioe)}")
+                self.log.error(f"Import of {name}/patch.py aborted due to following exception:\n{self.trace(ioe)}")
                 return web.json_response({"result":"bad", "message":f"Failed to read projects/{name}/patch.py"}, status=400)
             except Exception as e:
-                self.log.error(f"Import of {name}/patch.py aborted due to following exception:\n{self.trbk(e)}")
+                self.log.error(f"Import of {name}/patch.py aborted due to following exception:\n{self.trace(e)}")
                 return web.json_response({"result":"bad", "message":f"An error occured while importing projects/{name}/patch.py"}, status=400)
 
     # /api/export_patch
@@ -2261,7 +2261,7 @@ class RPGMTL():
                     f.write("\n".join(file_content))
                     return web.json_response({"result":"ok", "data":{"name":name, "config":self.projects[name]}, "message":f"projects/{name}/patch.py has been exported"})
             except Exception as e:
-                self.log.error(f"Export to {name}/patch.py aborted due to following exception:\n{self.trbk(e)}")
+                self.log.error(f"Export to {name}/patch.py aborted due to following exception:\n{self.trace(e)}")
                 return web.json_response({"result":"bad", "message":f"An error occured while exporting to projects/{name}/patch.py"}, status=400)
         
     # /api/import
@@ -2644,7 +2644,7 @@ class RPGMTL():
         try:
             translated, continue_flag = await plugin.translate_batch(name, batch, self.settings | self.projects[name]['settings'])
         except Exception as e:
-            self.log.error(f"File translation aborted due to the following exception:\n{self.trbk(e)}")
+            self.log.error(f"File translation aborted due to the following exception:\n{self.trace(e)}")
             return False, True, str(e)
         if translated is not None:
             # check version
@@ -2673,7 +2673,7 @@ class RPGMTL():
                     lc[LocIndex.MODIFIED] = IntBool.FALSE
                     count += 1
                 except Exception as e:
-                    self.log.error("Exception: " + self.trbk(e))
+                    self.log.error("Exception: " + self.trace(e))
         if count > 0:
             self.log.info(f"{count} strings have been translated in file '{path}' for project {name}...")
             self.modified[name] = True
@@ -2754,7 +2754,7 @@ class RPGMTL():
                             case _:
                                 state, continue_flag, res =  await self.standard_batch_translate_file(name, path, current)
                     except Exception as e:
-                        self.log.error("Exception: " + self.trbk(e))
+                        self.log.error("Exception: " + self.trace(e))
                         self.log.error("An exception has been raised and 'translate_project' has been aborted for project " + name)
                         error += 1
                         break
@@ -3141,7 +3141,7 @@ class RPGMTL():
                     os.remove(f"projects/{name}/icon")
                     return web.json_response({"result":"ok", "data":{"config":self.projects[name], "name":name}, "message":"Icon removed"})
                 except Exception as e:
-                    self.log.critical(f"Error while deleting icon for project {name}\n{self.trbk(e)}")
+                    self.log.critical(f"Error while deleting icon for project {name}\n{self.trace(e)}")
                     return web.json_response({"result":"bad", "message":"An unexpected error occured"}, status=400)
             else:
                 status : int = await self.look_for_icon_at(name, path)

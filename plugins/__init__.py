@@ -61,7 +61,7 @@ def _loadPlugin_(rpgmtl : RPGMTL, path_filename : str, filename : str, relative 
                     _class : Plugin = getattr(import_module(relative + module_name, package=package), node.name)
                     rpgmtl.add_plugin(_class())
                 except Exception as e2:
-                    rpgmtl.log.error("Failed to instantiate plugin " + node.name + "\n" + rpgmtl.trbk(e2))
+                    rpgmtl.log.error("Failed to instantiate plugin " + node.name + "\n" + rpgmtl.trace(e2))
             
             for node in translators:
                 try:
@@ -69,9 +69,9 @@ def _loadPlugin_(rpgmtl : RPGMTL, path_filename : str, filename : str, relative 
                     _class : Plugin = getattr(import_module(relative + module_name, package=package), node.name)
                     rpgmtl.add_translator(_class())
                 except Exception as e2:
-                    rpgmtl.log.error("Failed to instantiate translator " + node.name + "\n" + rpgmtl.trbk(e2))
+                    rpgmtl.log.error("Failed to instantiate translator " + node.name + "\n" + rpgmtl.trace(e2))
     except Exception as e:
-        rpgmtl.log.error("Exception in plugin file " + path_filename + "\n" + rpgmtl.trbk(e))
+        rpgmtl.log.error("Exception in plugin file " + path_filename + "\n" + rpgmtl.trace(e))
 
 def load(rpgmtl : RPGMTL) -> None:
     disabled = set()
