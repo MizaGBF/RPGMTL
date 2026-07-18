@@ -1590,7 +1590,7 @@ class RPGMTL():
         
         # Remove aiohttp.access
         if not args.verbose:
-            self.loggers['aiohttp.access'].propagate = False
+            self.loggers['aiohttp.access'].setLevel(logging.CRITICAL)
         
         # Check HTTPS/SSL
         if args.http:
