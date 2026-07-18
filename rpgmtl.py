@@ -1711,9 +1711,9 @@ class RPGMTL():
         
     async def start_server(self : RPGMTL, ssl_context : SSLContext|None = None) -> None:
         # setup
-        runner = web.AppRunner(self.app)
+        runner : web.AppRunner = web.AppRunner(self.app)
         await runner.setup()
-        site = web.TCPSite(runner, '0.0.0.0', self.port, ssl_context=ssl_context)
+        site : web.TCPSite = web.TCPSite(runner, '0.0.0.0', self.port, ssl_context=ssl_context)
         await site.start()
         self.log.info(f"Starting RPGMTL on port {self.port}")
         # run
