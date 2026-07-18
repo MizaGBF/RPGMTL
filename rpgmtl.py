@@ -90,6 +90,7 @@ class RPGMTL():
         self.log.info(f"RPGMTL v{self.VERSION}")
         # Web server
         self.app : web.Application = self.setup_web_server()
+        self.server_stop_event : asyncio.Event = asyncio.Event()
         # variables
         self.port : int = 8000 # Port to start the server with
         self.last_directory = os.getcwd() # used for file browsing
@@ -1667,7 +1668,7 @@ class RPGMTL():
     # Start RPGMTL and run the server
     def run(self : RPGMTL) -> None:
         # Init
-        ssl_context = None
+        ssl_context : SSLContext|None = None
         if "https_cert" in self.settings:
             try:
                 ssl_context = ssl.create_default_context(ssl.Purpose.CLIENT_AUTH)
@@ -1694,10 +1695,9 @@ class RPGMTL():
         else:
             self.log.warning("Authentication is disabled")
         try:
-            self.log.info(f"Starting RPGMTL on port {self.port}")
-            web.run_app(self.app, port=self.port, shutdown_timeout=0, ssl_context=ssl_context)
-        except Exception as e: # Ctrl+C is enough to trigger it
-            self.log.warning(f"The following exception occured:\n{self.trbk(e)}")
+            asyncio.run(self.start_server(ssl_context))
+        except Exception as e:
+            self.log.warning(f"The following exception occurred:\n{self.trbk(e)}")
         # temporarily ignore Ctrl+C (SIGINT) at the OS level
         original_handler = signal.signal(signal.SIGINT, signal.SIG_IGN)
         self.log.info("RPGMTL is shutting down...")
@@ -1705,6 +1705,21 @@ class RPGMTL():
         self.save()
         # restore handler
         signal.signal(signal.SIGINT, original_handler)
+        
+    async def start_server(self : RPGMTL, ssl_context : SSLContext|None = None) -> None:
+        # setup
+        runner = web.AppRunner(self.app)
+        await runner.setup()
+        site = web.TCPSite(runner, '0.0.0.0', self.port, ssl_context=ssl_context)
+        await site.start()
+        self.log.info(f"Starting RPGMTL on port {self.port}")
+        # run
+        try:
+            await self.server_stop_event.wait()
+        except asyncio.CancelledError:
+            self.log.info("Server stopped by interrupt.")
+        finally:
+            await runner.cleanup()
 
     ######################################################
     # Request Responses start here
@@ -1858,9 +1873,8 @@ class RPGMTL():
 
     # /api/shutdown
     async def shutdown(self : RPGMTL, request : web.Request) -> web.Response:
-        loop = asyncio.get_event_loop()
-        loop.call_later(0.2, loop.stop)
-        return web.json_response({"result":"ok", "data":{}}, status=200)
+        self.server_stop_event.set()
+        return web.json_response({"result":"ok", "data":{}, "message":"RPGMTL is shutting down..."}, status=200)
 
     # /api/update_location
     async def select_project_exe(self : RPGMTL, request : web.Request) -> web.Response:
