@@ -1698,13 +1698,16 @@ class RPGMTL():
             asyncio.run(self.start_server(ssl_context))
         except Exception as e:
             self.log.warning(f"The following exception occurred:\n{self.trbk(e)}")
-        # temporarily ignore Ctrl+C (SIGINT) at the OS level
-        original_handler = signal.signal(signal.SIGINT, signal.SIG_IGN)
-        self.log.info("RPGMTL is shutting down...")
-        # save on quit
-        self.save()
-        # restore handler
-        signal.signal(signal.SIGINT, original_handler)
+        # temporarily ignore both Ctrl+C and graceful termination signals
+        original_int_handler = signal.signal(signal.SIGINT, signal.SIG_IGN)
+        original_term_handler = signal.signal(signal.SIGTERM, signal.SIG_IGN)
+        try:
+            self.log.info("RPGMTL is shutting down...")
+            # save on quit
+            self.save()
+        finally:
+            signal.signal(signal.SIGINT, original_int_handler)
+            signal.signal(signal.SIGTERM, original_term_handler)
         
     async def start_server(self : RPGMTL, ssl_context : SSLContext|None = None) -> None:
         # setup
