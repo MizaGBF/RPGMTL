@@ -1713,7 +1713,7 @@ class RPGMTL():
         # setup
         runner : web.AppRunner = web.AppRunner(self.app)
         await runner.setup()
-        site : web.TCPSite = web.TCPSite(runner, '0.0.0.0', self.port, ssl_context=ssl_context)
+        site : web.TCPSite = web.TCPSite(runner, ['0.0.0.0', '::'], self.port, ssl_context=ssl_context)
         await site.start()
         self.log.info(f"Starting RPGMTL on port {self.port}")
         # run
