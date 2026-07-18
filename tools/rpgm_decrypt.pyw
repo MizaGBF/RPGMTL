@@ -281,8 +281,11 @@ class RPGMakerDecryptGUI:
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="RPG Maker MV/MZ Asset Encrypter/Decrypter")
     parser.add_argument("-m", "--mode", choices=["MZ", "MV"], default='MV', nargs='?', help="RPG Maker game engine")
-    parser.add_argument("-i", "--input", help="Input file path")
     parser.add_argument("-o", "--output_folder", help="Output directory path")
+    
+    input_group = parser.add_mutually_exclusive_group()
+    input_group.add_argument("-i", "--input", help="Input file path")
+    input_group.add_argument("-f", "--filelistinput", help="Path to a file containing a list of files to decrypt/encrypt")
     
     # You only need one of these two arguments
     group = parser.add_mutually_exclusive_group()
@@ -290,7 +293,7 @@ if __name__ == "__main__":
     group.add_argument("-s", "--system", help="Path to System.json to extract the key automatically")
 
     args = parser.parse_args()
-    if args.input is None:
+    if args.input is None and args.filelistinput is None:
         if DRAG_AND_DROP:
             root = TkinterDnD.Tk()
         else:
@@ -310,11 +313,16 @@ if __name__ == "__main__":
                 os._exit(0)
             if args.output_folder:
                 rpgm.output_folder = Path(args.output_folder)
-            if not args.input:
-                parser.print_help()
-                print("Please provide a file with '-i'")
-                os._exit(0)
             rpgm.mode = args.mode
-            rpgm.process_single_file(Path(args.input))
+            if args.input:
+                rpgm.process_single_file(Path(args.input))
+            else:
+                try:
+                    with open(args.filelistinput, mode="r", encoding="utf-8") as f:
+                        file_list : list[str] = [fn.strip() for fn in f.readlines()]
+                    rpgm.process_files(file_list)
+                except Exception as e:
+                    print(f"Failed to read '{args.filelistinput}': {e}")
+                    os._exit(0)
         except Exception as e:
             print(f"Error: {e}")
