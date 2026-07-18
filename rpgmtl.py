@@ -65,7 +65,7 @@ class PatcherHelper():
 ######################################################
 class RPGMTL():
     # constant
-    VERSION = "3.30"
+    VERSION = "3.31"
     CHILDREN_FILE_ID = "@__children_file__@:"
     HISTORY_LIMIT = 10
     CURRENT_CONFIG_VERSION = 3
