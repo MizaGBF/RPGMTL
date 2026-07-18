@@ -477,8 +477,8 @@ python rpgm_decrypt.pyw -i image.rpgmvp -k a083a0c9d8995f60b34fea6f5344eeb1
 # Note: The mode (MZ or MV) is only important when encrypting.
 python rpgm_decrypt.pyw -i image.png -m MZ -k a083a0c9d8995f60b34fea6f5344eeb1
 
-# You can set the output directory with -o.
-python rpgm_decrypt.pyw -i image.png -o output -k a083a0c9d8995f60b34fea6f5344eeb1
+# You can set the output directory with -o, and a System.json with -s.
+python rpgm_decrypt.pyw -i image.png -o output -s ../projects/test/originals/data/System.json
 
 # Display the help with -h.
 python rpgm_decrypt.pyw -h
