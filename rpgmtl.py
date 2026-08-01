@@ -2856,7 +2856,10 @@ class RPGMTL():
             keys : list[str] = list(files)
             keys.sort()
             files = {k : files[k] for k in keys if len(files[k][1]) > 0}
-            return web.json_response({"result":"ok", "data":{"config":self.projects[name], "name":name, "path":path, "search":search, "useorigin":useorigin, "case":case, "contains":contains, "files":files}, "message":f"Found in {len(files)} files"})
+            count : int = 0
+            for v in files.values():
+                count += len(v)
+            return web.json_response({"result":"ok", "data":{"config":self.projects[name], "name":name, "path":path, "search":search, "useorigin":useorigin, "case":case, "contains":contains, "files":files}, "message":f"{count} matches"})
 
     # /api/local_path
     async def local_path(self : RPGMTL, request : web.Request) -> web.Response:
