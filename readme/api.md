@@ -144,7 +144,7 @@ Endpoints without listed parameters do not require a payload.
   
 `/api/search_string`  
 * **Payload**: project `name`, file `path` (Only used for UI purpose), `search` string, `case` bool, `contains` bool  
-* **Returns**: project `name`, project `config`, `search` string, `useorigin` bool, `case` bool, `contains` bool, matched `files`  
+* **Returns**: project `name`, project `config`, `search` string, `useorigin` bool, `case` bool, `contains` bool, object of matched `files` and pair of their ignored flag and matching strings  
   
 `/api/replace_strings`  
 * **Payload**: `src` string, `dst` string, string `casing` boolean, `file_match` string  
