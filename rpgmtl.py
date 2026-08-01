@@ -2823,43 +2823,40 @@ class RPGMTL():
                     if useorigin:
                         original_matches = {k for k, s in self.strings[name]["strings"].items() if lsearch == s[GloIndex.ORI]}
                     translation_matches = {k for k, s in self.strings[name]["strings"].items() if (s[GloIndex.TL] is not None and lsearch == s[GloIndex.TL])}
-            files : set[str] = set()
+            files : dict[str, list] = {}
             for f, groups in self.strings[name]["files"].items():
+                files[f] = [
+                    self.projects[name]["files"].get(f, {}).get("ignored", IntBool.FALSE),
+                    []
+                ]
+                offset : int = 0
                 for g in groups:
-                    if f in files:
-                        break
                     for i in range(1, len(g)):
                         if g[i][LocIndex.ID] in original_matches:
-                            files.add(f)
+                            files[f][1].append(offset + i - 1)
                         elif g[i][LocIndex.LOCAL]:
                             if g[i][LocIndex.TL] is not None:
                                 if not case:
                                     if contains:
                                         if lsearch in g[i][LocIndex.TL].lower():
-                                            files.add(f)
-                                            break
+                                            files[f][1].append(offset + i - 1)
                                     else:
                                         if lsearch == g[i][LocIndex.TL].lower():
-                                            files.add(f)
-                                            break
+                                            files[f][1].append(offset + i - 1)
                                 else:
                                     if contains:
                                         if lsearch in g[i][LocIndex.TL]:
-                                            files.add(f)
-                                            break
+                                            files[f][1].append(offset + i - 1)
                                     else:
                                         if lsearch == g[i][LocIndex.TL]:
-                                            files.add(f)
-                                            break
+                                            files[f][1].append(offset + i - 1)
                         elif g[i][LocIndex.ID] in translation_matches:
-                            files.add(f)
-                            break
-            result : dict[str, bool] = {}
+                            files[f][1].append(offset + i - 1)
+                    offset += len(g) - 1
             keys : list[str] = list(files)
             keys.sort()
-            for f in keys:
-                result[f] = self.projects[name]["files"].get(f, {}).get("ignored", False)
-            return web.json_response({"result":"ok", "data":{"config":self.projects[name], "name":name, "path":path, "search":search, "useorigin":useorigin, "case":case, "contains":contains, "files":result}, "message":f"Found in {len(files)} files"})
+            files = {k : files[k] for k in keys if len(files[k][1]) > 0}
+            return web.json_response({"result":"ok", "data":{"config":self.projects[name], "name":name, "path":path, "search":search, "useorigin":useorigin, "case":case, "contains":contains, "files":files}, "message":f"Found in {len(files)} files"})
 
     # /api/local_path
     async def local_path(self : RPGMTL, request : web.Request) -> web.Response:

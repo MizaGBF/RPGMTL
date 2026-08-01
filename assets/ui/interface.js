@@ -2812,13 +2812,15 @@ class RPGMTL_Interface
 			];
 			// list files
 			let first_element = null;
-			for(const [key, value] of Object.entries(data.files))
+			const search_results = {};
+			for(const [key, [ignored, strings]] of Object.entries(data.files))
 			{
+				search_results[key] = new Set(strings);
 				const button = util.add_to(
 					fragment,
 					"div",
 					{
-						cls:cls[+value],
+						cls:cls[+ignored],
 						id:"text:"+key,
 						navigable:true,
 						onclick:(e) => {
@@ -2846,13 +2848,15 @@ class RPGMTL_Interface
 				this.progress.add_path_info(
 					button,
 					key,
-					this.project.config.files[key]
+					this.project.config.files[key],
+					strings.length
 				);
 				if(first_element == null)
 				{
 					first_element = button;
 				}
 			}
+			this.search.cache_result(this.project.name, search_results);
 			this.update_main(fragment, first_element);
 		}
 		catch(err)
@@ -3289,7 +3293,7 @@ class RPGMTL_Interface
 	}
 
 	// Prepare string space for string list
-	prepareGroupOn(node, i)
+	prepare_string_group(node, i, searched_set, searched_offset)
 	{
 		let base = util.add_to(
 			node,
@@ -3331,7 +3335,10 @@ class RPGMTL_Interface
 			); // add container
 			span.group = i;
 			span.string = j;
-			
+			if(searched_set.has(searched_offset + j - 1))
+			{
+				span.classList.toggle("line-is-search-result", true);
+			}
 			let marker = util.add_to(
 				span,
 				"div",
@@ -3811,7 +3818,6 @@ class RPGMTL_Interface
 					}
 				}
 			);
-			
 			switch(this.project.config.files[this.lastfileopened].file_type)
 			{
 				case 0: // NORMAL
@@ -3846,11 +3852,15 @@ class RPGMTL_Interface
 				default:
 					break;
 			}
+			// search result references
+			const searched = this.search.retrieve_result(this.project.name, data.path);
+			let search_offset = 0;
 			// list strings
 			this.strtablecache = [];
 			for(let i = 0; i < this.project.string_groups.length; ++i)
 			{
-				this.prepareGroupOn(fragment, i);
+				this.prepare_string_group(fragment, i, searched, search_offset);
+				search_offset += this.project.string_groups[i].length - 1;
 			}
 			// add 5 spaces for the bottom part to not cover the last elements
 			for(let i = 0; i < 5; ++i)

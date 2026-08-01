@@ -764,7 +764,8 @@ class Project_Progress extends Component
 	add_path_info(
 		node,
 		title,
-		infos
+		infos,
+		search_count = 0
 	)
 	{
 		const total = infos.strings - infos.disabled_strings;
@@ -779,21 +780,50 @@ class Project_Progress extends Component
 		{
 			node.classList.add("complete");
 		}
-		util.add_to(
-			node,
-			"div",
-			{
-				cls:["file-path-text"],
-				innerText:title
-			}
-		)
+		if(search_count)
+		{
+			const cont = util.add_to(
+				node,
+				"div",
+				{
+					cls:["file-path-text"]
+				}
+			)
+			util.add_to(
+				cont,
+				"span",
+				{
+					cls:[],
+					innerText:title
+				}
+			)
+			util.add_to(
+				cont,
+				"span",
+				{
+					cls:["file-search-result-count"],
+					innerText:"[" + search_count + "]"
+				}
+			)
+		}
+		else
+		{
+			util.add_to(
+				node,
+				"div",
+				{
+					cls:["file-path-text"],
+					innerText:title
+				}
+			);
+		}
 		const tracker = util.add_to(
 			node,
 			"div",
 			{
 				cls:["file-progress-tracker"]
 			}
-		)
+		);
 		util.add_to(
 			tracker,
 			"div",
@@ -1432,11 +1462,28 @@ class Search_Setting extends Component
 		this.useorigin = true;
 		this.casesensitive = false;
 		this.contains = true;
+		this.result_cache = {};
 	}
 	
 	reset()
 	{
 		this.string = null;
+	}
+	
+	cache_result(project_name, results)
+	{
+		this.result_cache[project_name] = results;
+	}
+	
+	retrieve_result(project_name, file)
+	{
+		if(project_name in this.result_cache && file in this.result_cache[project_name])
+		{
+			const result = this.result_cache[project_name][file];
+			delete this.result_cache[project_name]; // the extraction is one way
+			return result;
+		}
+		return new Set();
 	}
 }
 
