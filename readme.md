@@ -99,9 +99,9 @@ Additionally, if Python isn't in your `PATH`, replace `python` with the full pat
 python -m pip install -U aiohttp
 ```  
   
-[Deep Translator](https://github.com/nidhaloff/deep-translator) is required for the Google Translator plugin to function.  
+[Translators](https://github.com/uliontse/translators) is required for the Google Translator plugin to function.  
 ```console
-python -m pip install -U deep-translator
+python -m pip install -U translators
 ```  
   
 [Google Gen AI SDK](https://github.com/googleapis/python-genai) is required for the Gemini Translator plugin to function.   

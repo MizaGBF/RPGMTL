@@ -4159,7 +4159,9 @@ class RPGMTL_Interface
 					this.edit.string_length.innerHTML = this.edit.translation.value.length;
 				}
 			},
-			() => {},
+			() => {
+				this.loader.state = false;
+			},
 			{
 				name:this.project.name,
 				string:this.edit.original.textContent

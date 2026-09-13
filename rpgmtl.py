@@ -65,7 +65,7 @@ class PatcherHelper():
 ######################################################
 class RPGMTL():
     # constant
-    VERSION = "4.0"
+    VERSION = "4.1"
     CHILDREN_FILE_ID = "@__children_file__@:"
     HISTORY_LIMIT = 10
     CURRENT_CONFIG_VERSION = 3
@@ -89,6 +89,7 @@ class RPGMTL():
         self.log = self.loggers['rpgmtl']
         self.log.info(f"RPGMTL v{self.VERSION}")
         # Web server
+        self.running : bool = False
         self.app : web.Application = self.setup_web_server()
         self.server_stop_event : asyncio.Event = asyncio.Event()
         # variables
@@ -128,6 +129,14 @@ class RPGMTL():
         self.parse_command_line()
         # load the plugins (see plugins/__init__.py )
         plugins.load(self)
+        # default translators
+        for key in self.setting_key_set: # init special settings if not set
+            if key not in self.settings: # init translator setting if not set
+                if "TL Standard" in self.translators:
+                    self.settings[key] = "TL Standard"
+                elif len(self.translators) > 0:
+                    self.settings[key] = list(self.translators.values())[0].name
+                self.settings_modified = True
         # preset tool_list_info
         for key, data in self.tools.items():
             self.tool_list_info.append(
@@ -305,10 +314,6 @@ class RPGMTL():
         self.process_infos(plugin)
         # Add and connect plugin
         self.translators[plugin.name] = plugin
-        for key in ("rpgmtl_current_translator", "rpgmtl_current_batch_translator"): # init special settings if not set
-            if key not in self.settings: # init translator setting if not set
-                self.settings[key] = plugin.name
-                self.settings_modified = True
         plugin.connect(self)
         self.plugin_descriptions[plugin.name] = plugin.description
 
@@ -363,6 +368,11 @@ class RPGMTL():
                     self.auth = data["auth"]
                 else:
                     raise Exception("Invalid settings.json version")
+            # update translator (TL Google -> TL Standard)
+            for k in self.setting_key_set:
+                if self.settings.get(k, "") == "TL Google":
+                    self.settings[k] = "TL Standard"
+                    self.log.info(f"Translator '{k}' TL Google has been replaced by TL Standard")
         except Exception as e:
             self.log.warning("Failed to load settings.json, default value will be used:\n" + self.trace(e))
 
@@ -766,6 +776,11 @@ class RPGMTL():
         if ver < 3:
             if "metadata" not in data:
                 data["metadata"] = {}
+        # update translator (TL Google -> TL Standard)
+        for k in self.setting_key_set:
+            if data["settings"].get(k, "") == "TL Google":
+                data["settings"][k] = "TL Standard"
+                self.log.info(f"Translator '{k}' TL Google has been replaced by TL Standard for project {name}")
         data["format_version"] = self.CURRENT_CONFIG_VERSION
         return data
 
@@ -1710,6 +1725,7 @@ class RPGMTL():
             signal.signal(signal.SIGTERM, original_term_handler)
         
     async def start_server(self : RPGMTL, ssl_context : SSLContext|None = None) -> None:
+        self.running = True
         # setup
         runner : web.AppRunner = web.AppRunner(self.app)
         await runner.setup()
@@ -1721,6 +1737,7 @@ class RPGMTL():
             await self.server_stop_event.wait()
         except asyncio.CancelledError:
             self.log.info("Server stopped by interrupt.")
+            self.running = False
         finally:
             await runner.cleanup()
 
@@ -2547,7 +2564,11 @@ class RPGMTL():
                 current = self.get_current_translator(name)
                 if current[1] is None:
                     return web.json_response({"result":"bad", "message":"No Single Translator currently set"})
-                translation = await current[1].translate(name, string, self.settings | self.projects[name]['settings'])
+                try:
+                    translation = await current[1].translate(name, string, self.settings | self.projects[name]['settings'])
+                except Exception as e:
+                    self.log.error(f"Uncaught exception:\n{self.trace(e)}")
+                    return web.json_response({"result":"bad", "message":f"An unexpected error occured: {e}"})
                 if translation is not None and (translation.lower() == string.lower() or translation.strip() == ""):
                     translation = None
             return web.json_response({"result":"ok", "data":{"translation":translation}})
@@ -2581,7 +2602,11 @@ class RPGMTL():
         if len(to_translate) > 0:
             # Translating
             self.log.info(f"Batch translating {len(to_translate)} strings in file '{path}' for project {name}...")
-            result, continue_flag = await plugin.translate_batch(name, to_translate, self.settings | self.projects[name]['settings'])
+            try:
+                result, continue_flag = await plugin.translate_batch(name, to_translate, self.settings | self.projects[name]['settings'])
+            except Exception as e:
+                self.log.error(f"Uncaught exception:\n{self.trace(e)}")
+                return False, False, f"An unexpected error occured: {e}"
             if len(result) != len(to_translate):
                 self.log.error(f"Batch translation for project {name} failed")
                 return False, False, "Batch translation failed."
