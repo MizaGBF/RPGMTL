@@ -117,7 +117,7 @@ class RPGMTL():
         self.auth : dict[str, bool|dict[str,str]] = { # authentication data
             "enabled":False,
             "users":{}
-        } 
+        }
         self.auth_tokens : dict[str, str] = {}
         self.auth_tokens_set : set[str] = set()
         # loaded plugins
@@ -172,7 +172,7 @@ class RPGMTL():
                 web.get('/', self.index), # index.html 
                 web.get('/projects/{project_name}/icon', self.get_project_icon), # project icon
                 
-                web.get('/login', self.login), # login.html 
+                web.get('/login', self.login), # login.html
                 web.post('/login', self.process_login),
                 web.post('/logoff', self.process_logoff),
                 
@@ -740,7 +740,7 @@ class RPGMTL():
             # find possible icon
             if icon_path == "" or (await self.look_for_icon_at(name, icon_path)) != 0:
                 self.log.info(f"No valid icon set for new project {name}, looking for one in game files...")
-                await self.find_and_copy_best_icon(Path(path), name)  
+                await self.find_and_copy_best_icon(Path(path), name)
             return True, name
         except Exception as e:
             self.log.critical(f"Error while copying game files for project {name}\n{self.trace(e)}")
@@ -1108,8 +1108,8 @@ class RPGMTL():
                 updated_metadata["File Formats"] = ", ".join(updated_metadata["File Formats"])
             ori_path : Path = Path(f"projects/{name}/originals")
             ori_size : int = sum(
-                f.stat(follow_symlinks=False).st_size 
-                for f in ori_path.rglob('*') 
+                f.stat(follow_symlinks=False).st_size
+                for f in ori_path.rglob('*')
                 if f.is_file(follow_symlinks=False)
             )
             updated_metadata["Original Files Size"] = f"{ori_size:,} Bytes".replace(",", " ")
@@ -1523,7 +1523,7 @@ class RPGMTL():
                 i += 1
         # result
         if updated + added + deleted != 0:
-            self.log.info(f"[TL Gemini] Knowledge base of project {name}: {updated} update(s), {added} addition(s), {deleted} deletion(s)")  
+            self.log.info(f"[TL Gemini] Knowledge base of project {name}: {updated} update(s), {added} addition(s), {deleted} deletion(s)")
 
     # Return the file list and folder list inside a project folder
     def get_folder_content(self : RPGMTL, name : str, path : str) -> tuple[dict[str, bool], list[str]]:
@@ -1658,9 +1658,9 @@ class RPGMTL():
         salt : bytes = secrets.token_bytes(16)
         password_bytes : bytes = pw.encode('utf-8')
         pwd_hash : bytes = hashlib.pbkdf2_hmac(
-            'sha256', 
-            password_bytes, 
-            salt, 
+            'sha256',
+            password_bytes,
+            salt,
             600000
         )
         return f"{salt.hex()}:{pwd_hash.hex()}"
@@ -1673,9 +1673,9 @@ class RPGMTL():
         except:
             return False
         new_hash = hashlib.pbkdf2_hmac(
-            'sha256', 
-            pw.encode('utf-8'), 
-            salt, 
+            'sha256',
+            pw.encode('utf-8'),
+            salt,
             600000
         )
         return compare_digest(new_hash, stored_hash)
@@ -1808,7 +1808,7 @@ class RPGMTL():
         return web.FileResponse(
             path=icon_path,
             headers={
-                "Cache-Control": "no-cache", 
+                "Cache-Control": "no-cache",
                 "ETag": etag,
                 "Content-Disposition": "inline;"
             }
@@ -1818,7 +1818,7 @@ class RPGMTL():
     async def process_login(self : RPGMTL, request : web.Request) -> web.Response:
         if not self.auth["enabled"]:
             return web.Response(status=200)
-        ip_address : str = request.remote 
+        ip_address : str = request.remote
         # check rate limit
         current_time : float = time.time()
         active_attempts : list[float] = [
@@ -2323,7 +2323,7 @@ class RPGMTL():
             return web.json_response({"result":"bad", "message":"Bad request, missing 'name' parameter"}, status=400)
         else:
             self.load_project(name)
-            targets : set[str] = set(["strings.bak-1.json", "strings.bak-2.json", "strings.bak-3.json", "strings.bak-4.json", "strings.bak-5.json"]) 
+            targets : set[str] = set(["strings.bak-1.json", "strings.bak-2.json", "strings.bak-3.json", "strings.bak-4.json", "strings.bak-5.json"])
             l : list[list] = []
             with os.scandir("projects/" + name) as it:
                 for item in it:
@@ -2901,7 +2901,7 @@ class RPGMTL():
                 if spath.startswith(":"):
                     dirs : list[str] = []
                     for letter in string.ascii_uppercase:
-                        drive_path : Path = Path(letter + ":/") 
+                        drive_path : Path = Path(letter + ":/")
                         if drive_path.exists():
                             dirs.append(drive_path.as_posix()[:-1])
                     return web.json_response({"result":"ok", "data":{"path":"", "folders":dirs, "files":[]}})
@@ -3181,9 +3181,9 @@ class RPGMTL():
                         return web.json_response({"result":"bad", "message":"Failed to set icon, an error occured while reading the file"}, status=400)
                     case _:
                         if status > 2000:
-                            return web.json_response({"result":"bad", "message":f"Failed to find VNDB ID, HTTP Error {status - 2000}"}, status=400) 
+                            return web.json_response({"result":"bad", "message":f"Failed to find VNDB ID, HTTP Error {status - 2000}"}, status=400)
                         elif status > 1000:
-                            return web.json_response({"result":"bad", "message":f"Failed to set icon, HTTP Error {status - 1000}"}, status=400) 
+                            return web.json_response({"result":"bad", "message":f"Failed to set icon, HTTP Error {status - 1000}"}, status=400)
         return web.json_response({"result":"ok", "data":{"config":self.projects[name], "name":name}, "message":"Icon updated"})
       
     # /api/update_metadata
