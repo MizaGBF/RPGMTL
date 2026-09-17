@@ -104,13 +104,17 @@ class Ruby(Plugin):
         if len(group) > 1:
             entries.append(group)
         if helper is not None: # write mode
-            for i in range(len(string_table)-1, -1, -1):
+            for i in range(len(string_table) - 1, -1, -1):
                 st = string_table[i]
-                tmp : str = helper.apply_string(entries[st[2]][st[3]], entries[st[2]][0], loc=(st[2]+entry_offset, st[3]))
+                tmp : str = helper.apply_string(
+                    entries[st[2]][st[3]],
+                    entries[st[2]][0],
+                    loc=(st[2]+entry_offset, st[3])
+                )
                 if tmp != entries[st[2]][st[3]]:
                     script = script[:st[0]] + tmp.replace(st[4], '\\'+st[4]) + script[st[1]:]
             if len(string_table) > 0:
-                helper.group = string_table[-1][2]+entry_offset
+                helper.group = string_table[-1][2] + entry_offset
                 helper.index = string_table[-1][3]
                 helper._goNext()
         return entries, script

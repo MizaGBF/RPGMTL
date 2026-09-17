@@ -6,7 +6,7 @@ class Javascript(Plugin):
     def __init__(self : Javascript) -> None:
         super().__init__()
         self.name : str = "Javascript"
-        self.description : str = " v1.8\nHandle Javascript files, including the plugins.js file from RPG Maker MV/MZ"
+        self.description : str = " v1.9\nHandle Javascript files, including the plugins.js file from RPG Maker MV/MZ"
         self.related_tool_plugins : list[str] = [self.name]
 
     def match(self : Javascript, file_path : str, is_for_action : bool) -> bool:
@@ -143,11 +143,19 @@ class Javascript(Plugin):
         if len(group) > 1:
             entries.append(group)
         if helper is not None: # write mode
-            for i in range(len(string_table)-1, -1, -1):
+            for i in range(len(string_table) - 1, -1, -1):
                 st = string_table[i]
-                tmp : str = helper.apply_string(entries[st[2]][st[3]], entries[st[2]][0], loc=(st[2]+entry_offset, st[3]))
+                tmp : str = helper.apply_string(
+                    entries[st[2]][st[3]],
+                    entries[st[2]][0],
+                    loc=(st[2]+entry_offset, st[3])
+                )
                 if tmp != entries[st[2]][st[3]]:
                     js = js[:st[0]] + tmp.replace(st[4], '\\'+st[4]).replace("\n", "\\n") + js[st[1]:]
+            if len(string_table) > 0:
+                helper.group = string_table[-1][2] + entry_offset
+                helper.index = string_table[-1][3]
+                helper._goNext()
         return entries, js
 
     # RPGMK MZ/MV plugins.js
